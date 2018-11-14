@@ -100,6 +100,8 @@ for strtInd in strtInds:
 
 # Write SDATA, run GRASP and read in results
 graspObjs[0].writeSDATA()
+graspObjs[0].runGRASP()
+rslts = graspObjs[0].readOutput()
 
 # Read in model "truth" from levC lidar file
 varNames = ['reff', 'refi', 'refr', 'ssa', 'tau']
