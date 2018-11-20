@@ -12,7 +12,8 @@ sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
 from runGRASP import graspRun, pixel
 
 # Paths to files
-basePath = '/Users/wrespino/Synced/'
+basePath = '/Users/wrespino/Synced/' # NASA MacBook
+#basePath = '/home/respinosa/ReedWorking/' # Uranus
 dirGRASPworking = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/graspWorking') # path to store GRASP SDATA and output files
 pathYAML = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_HARP_16bin_6lambda.yml') # path to GRASP YAML file
 radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase/calipso-g5nr.vlidort.vector.MCD43C.20060801_00z_%dd00nm.nc4')
@@ -33,7 +34,7 @@ orbHghtKM = 700 # sensor height (km)
 
 # Read in radiances, solar spectral irradiance and find reflectances
 # Currently stores wavelength independent data Nwvlth times but this method is simple...
-varNames = ['I', 'Q', 'U', 'solar_zenith', 'solar_azimuth', 'sensor_zenith', 'sensor_azimuth', 'time','trjLon','trjLat']
+varNames = ['I', 'Q', 'U', 'surf_reflectance', 'solar_zenith', 'solar_azimuth', 'sensor_zenith', 'sensor_azimuth', 'time','trjLon','trjLat']
 datStr = re.match(dateRegex, levBFN).group(1)
 dayDtNm = dt.strptime('20000302', "%Y%m%d").toordinal()
 Nwvlth = len(wvls)
@@ -75,16 +76,16 @@ graspObjs = []
 nip = msTyp.shape[0]
 Npix = measData[0]['I'].shape[0]
 strtInds = np.r_[0:Npix:grspChnkSz]
-strtInds = [18] # HACK!!!
+#strtInds = [0] # HACK!!!
 for strtInd in strtInds:
     gObj = graspRun(pathYAML, orbHghtKM, dirGRASPworking)
     endInd = min(strtInd+grspChnkSz, Npix)
-    endInd = strtInd+1 # HACK!!!
+#    endInd = strtInd+10 # HACK!!!
     for ind in range(strtInd, endInd):
         dtNm = measData[0]['dtNm'][ind]
         lon = measData[0]['trjLon'][ind]
         lat = measData[0]['trjLat'][ind]
-        masl = measData[0]['masl'][ind]
+        masl = max(measData[0]['masl'][ind], -100) # below -100m GRASP complains with defualt build 
         nowPix = pixel(dtNm, 1, 1, lon, lat, masl, lndPrct)
         sza = measData[0]['solar_zenith'][ind] # assume instantaneous measurement
         for l,wl in enumerate(wvls): # LOOP OVER WAVELENGTHS
