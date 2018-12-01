@@ -90,10 +90,11 @@ for strtInd in strtInds:
         lon = measData[0]['trjLon'][ind]
         lat = measData[0]['trjLat'][ind]
         masl = max(measData[0]['masl'][ind], -100) # defualt GRASP build complains below -100m  
+#        masl = 20000 #HACK to remove most of Rayleigh signal
         nowPix = pixel(dtNm, 1, 1, lon, lat, masl, lndPrct)
         sza = measData[0]['solar_zenith'][ind] # assume instantaneous measurement
         for l,wl in enumerate(wvls): # LOOP OVER WAVELENGTHS
-             phi = measData[l]['solar_azimuth'][ind] - measData[l]['sensor_azimuth'][ind,:]
+             phi = measData[l]['solar_azimuth'][ind] - measData[l]['sensor_azimuth'][ind,:] # HINT: might cause phi<-180 which GRASP technically doesn't like
              nbvm = phi.shape[0] 
              phi = np.tile(phi, nip) # ex. 11, 35, 55, 11, 35, 55...
              thtv = np.abs(np.tile(measData[l]['sensor_zenith'], nip))
