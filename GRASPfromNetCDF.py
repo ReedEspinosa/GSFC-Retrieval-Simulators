@@ -17,16 +17,18 @@ basePath = '/Users/wrespino/Synced/' # NASA MacBook
 dayStr = '20060901'
 dirGRASPworking = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/graspWorking') # path to store GRASP SDATA and output files
 pathYAML = os.path.join(basePath, 'Remote_Sensing_Analysis/GRASP_PythonUtils/settings_HARP_16bin_6lambda.yml') # path to GRASP YAML file
-radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase/calipso-g5nr.vlidort.vector.MCD43C.'+dayStr+'_00z_%dd00nm.nc4')
+#radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase/calipso-g5nr.vlidort.vector.MCD43C.'+dayStr+'_00z_%dd00nm.nc4')
+#radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase_regenerated/calipso-g5nr.vlidort.vector.MCD43C.'+dayStr+'_00z_%dd00nm.nc4')
+radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase_regenerated/calipso-g5nr.vlidort.vector.MCD43C_noBPDF.'+dayStr+'_00z_%dd00nm.nc4')
 lidarFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase/calipso-g5nr.lc2.ext.'+dayStr+'_00z_%dd00nm.nc4')
 levBFN = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase/calipso-g5nr.lb2.aer_Nv.'+dayStr+'_00z.nc4')
 lndCvrFN = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase/calipso-g5nr.lb2.land_cover.'+dayStr+'_00z.nc4')
 
 # Constants
-wvls = [0.410, 0.440, 0.470, 0.550, 0.670, 0.865, 1.020, 1.650, 2.100] # wavelengths to read from levC files
+#wvls = [0.410, 0.440, 0.470, 0.550, 0.670, 0.865, 1.020, 1.650, 2.100] # wavelengths to read from levC files
 #wvls = [0.440, 0.470, 0.550, 0.670, 0.865, 1.020] # wavelengths to read from levC files
-#wvls = [0.410, 0.670, 0.865, 1.020, 1.650, 2.100] # wavelengths to read from levC files
-#wvls = [0.440, 0.550, 0.670, 0.865] # wavelengths to read from levC vlidort files
+wvls = [0.440, 0.550, 0.670, 0.865, 1.020, 2.100] # wavelengths to read from levC files
+#wvls = [1.020, 2.100] # wavelengths to read from levC vlidort files
 wvlsLidar = [0.532, 1.064] # wavelengths to read from levC lidar files
 dateRegex = '.*([0-9]{8})_[0-9]+z.nc4$' # regex to pull date string from levBFN, should give 'YYYYMMDD'
 scaleHght = 7640 # atmosphere scale height (meters)
@@ -35,10 +37,11 @@ lndPrct = 100; # land cover amount (%), ocean only for now
 grspChnkSz = 120 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
 
+GRASP_MIN = 1e-6 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
 
 # Read in radiances, solar spectral irradiance and find reflectances
 # Currently stores wavelength independent data Nwvlth times but this method is simple...
-varNames = ['I', 'Q', 'U', 'surf_reflectance', 'toa_reflectance', 'solar_zenith', 'solar_azimuth', 'sensor_zenith', 'sensor_azimuth', 'time','trjLon','trjLat']
+varNames = ['ROT', 'I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'toa_reflectance', 'solar_zenith', 'solar_azimuth', 'sensor_zenith', 'sensor_azimuth', 'time','trjLon','trjLat']
 datStr = re.match(dateRegex, levBFN).group(1)
 dayDtNm = dt.strptime(datStr, "%Y%m%d").toordinal()
 Nwvlth = len(wvls)
@@ -100,6 +103,7 @@ for strtInd in strtInds:
              thtv = np.abs(np.tile(measData[l]['sensor_zenith'], nip))
 #             msrmnts = np.r_[measData[l]['I'][ind,:], measData[l]['DOLP'][ind,:]]
              msrmnts = np.r_[measData[l]['I'][ind,:], measData[l]['Q'][ind,:], measData[l]['U'][ind,:]]
+             msrmnts[np.abs(msrmnts) < GRASP_MIN] = GRASP_MIN # HINT: could change sign but doesn't matter for DoLP
              nowPix.addMeas(wl, msTyp, np.repeat(nbvm, nip), sza, thtv, phi, msrmnts)
         gObj.addPix(nowPix)
     graspObjs.append(gObj)

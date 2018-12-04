@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import matplotlib as mpl
+import os
+os.environ["PROJ_LIB"] = "/Users/wrespino/anaconda3/share/proj" # fix for "KeyError: 'PROJ_LIB'" bug
+from mpl_toolkits.basemap import Basemap
 
 maxAOD = 2
 logLogAOD = True
 
 #i = 3
 #wvl = 0.67
-i = 3
+i = 1
 wvl = wvls[i]
 
 # we should plot DoLP error VS aodSum/albSum
@@ -38,8 +41,9 @@ grnAOD = np.array([rslt['aod'][i] for rslt in rslts])
 lidAOD = trueData[0]['tau'][0:120]
 grnAlb = np.array([rslt['brdf'][0,i] for rslt in rslts])
 plt.figure()
-plt.scatter(lidAOD, grnAOD, c=grnAlb)
+#plt.scatter(lidAOD, grnAOD, c=grnAlb)
 plt.plot(np.r_[0, maxAOD], np.r_[0, maxAOD], 'k')
+plt.scatter(lidAOD, grnAOD, c='r')
 plt.xlabel("AOD Simulated (0.532 μm)")
 plt.ylabel("AOD GRASP (%.3f μm)"  % wvl)
 plt.xlim([0.01, maxAOD])
@@ -53,40 +57,62 @@ if logLogAOD:
     plt.xscale('log')
 else:
     plt.text(0.7*maxAOD, 0.03, textstr, fontsize=12)
+    
+plt.title('Sept 1, No BPDF')
 
-plt.figure()
-#plt.scatter(albSum, DoLPres, c=aodSum)
-#plt.scatter(aodSum, DoLPres, c=phi[0:120, -1])
-#plt.scatter(phi[0:120, -1], DoLPres, c=aodSum)
-#plt.scatter(measData[i]['solar_azimuth'][0:120]-measData[i]['sensor_azimuth'][0:120,0], DoLPres, c=aodSum)
-plt.scatter(measData[i]['sensor_azimuth'][0:120,0], DoLPres, c=aodSum)
-#plt.scatter(measData[i]['solar_zenith'][0:120], DoLPres, c=aodSum)
-#plt.yscale('log')
-#plt.xscale('log')
-#plt.ylim([-0.45, 0.65])
-#plt.xlim([0.04, 0.5])
-#plt.xlabel("OSSE Mean Surface Reflectance (%.3f um)" % wvl)
-plt.xlabel("Relative Azimuth")
-plt.ylabel('DoLP Fractional Residual (%.3f μm)' % wvl)
-plt.title('OSSE - GRASP')
+if 'rEff' in rslts[0]: # GRASP doesn't report reff with log normals
+    maxReff = 3
+    plt.figure()
+    reffGRASP = [rslt['rEff'] for rslt in rslts]
+    plt.plot(np.r_[0, maxReff], np.r_[0, maxReff], 'k')
+    plt.scatter(trueData[0]['reff'][0:120]*1e6, reffGRASP, c='r')
+    plt.xlabel('Reff Simulated (μm)')
+    plt.ylabel('Reff GRASP (μm)')
+    plt.xlim([0,maxReff])
+    plt.ylim([0,maxReff])
+
+plt.figure(figsize=(8, 8))
+m = Basemap(projection='robin', resolution='c', lat_0=0, lon_0=0)
+#m.bluemarble(scale=1);
+m.shadedrelief(scale=0.2)
+lon = measData[0]['trjLon'][0:120]
+lat = measData[0]['trjLat'][0:120]
+x, y = m(lon, lat)
+#plt.scatter(x, y, c=DoLPres, s=4, cmap='plasma')
+#plt.title('DoLP Residaul (%4.2f μm), No BPDF, Fitting I and DoLP' % wvl)
+#cbar = plt.colorbar()
+#cbar.set_label("(OSSE-GRASP)/(OSSE+GRASP)")
+plt.scatter(x, y, c=2*(grnAOD-lidAOD)/(grnAOD+lidAOD), s=4, cmap='plasma')
+#plt.scatter(x, y, c=lidAOD, s=4, cmap='plasma')
+#plt.title('OSSE AOD, No BPDF, Fitting I and DoLP')
+plt.title('AOD residual, No BPDF, Fitting I and DoLP')
 cbar = plt.colorbar()
-cbar.set_label("OSSE AOD (532nm)")
-#cbar.set_label("Relative Azimuth")
+#cbar.set_label("$τ_{OSSE}$", FontSize=16)
+cbar.set_label("$2(τ_{GRASP} - τ_{OSSE})/(τ_{GRASP} + τ_{OSSE})$", FontSize=14)
+
+
 
 sys.exit()
 
-# PLOT RRI
 #plt.figure()
-#ref = [np.sum(rslt['vol']*rslt['n'][:,2])/np.sum(rslt['vol']) for rslt in rslts]
-#plt.hist(ref,30)
-#plt.hist(trueData[0]['refr'],30)
+##plt.scatter(albSum, DoLPres, c=aodSum)
+##plt.scatter(aodSum, DoLPres, c=phi[0:120, -1])
+##plt.scatter(phi[0:120, -1], DoLPres, c=aodSum)
+##plt.scatter(measData[i]['solar_azimuth'][0:120]-measData[i]['sensor_azimuth'][0:120,0], DoLPres, c=aodSum)
+#plt.scatter(measData[i]['sensor_azimuth'][0:120,0], DoLPres, c=aodSum)
+##plt.scatter(measData[i]['solar_zenith'][0:120], DoLPres, c=aodSum)
+##plt.yscale('log')
+##plt.xscale('log')
+##plt.ylim([-0.45, 0.65])
+##plt.xlim([0.04, 0.5])
+##plt.xlabel("OSSE Mean Surface Reflectance (%.3f um)" % wvl)
+#plt.xlabel("Relative Azimuth")
+#plt.ylabel('DoLP Fractional Residual (%.3f μm)' % wvl)
+#plt.title('OSSE - GRASP')
+#cbar = plt.colorbar()
+#cbar.set_label("OSSE AOD (532nm)")
+##cbar.set_label("Relative Azimuth")
 
-# PLOT BPDF COEF
-plt.figure()
-C = [rslt['bpdf'][0] for rslt in rslts]
-plt.scatter(trueData[0]['BPDFcoef'][0:120], C, c=aodSum)
-cbar = plt.colorbar()
-cbar.set_label("OSSE AOD (532nm)")
 
 
 # look at dark atmosphere pixels
@@ -101,34 +127,21 @@ plt.legend(['θ=%d' % val for val in measData[0]['sensor_zenith']], ncol=3)
 #plt.ylim([0,10])
 
 
-rWvInd = 1;
-#for i in range(np.sum(surfDmInd)):
-for i in range(1):
-    ind = np.nonzero(surfDmInd)[0][i]
-    phiN = phi[ind, :]
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111, projection='polar')
-    c = ax1.scatter(phiN*np.pi/180, np.abs(measData[0]['sensor_zenith']), c=100*measData[rWvInd]['toa_reflectance'][ind,:]*measData[rWvInd]['DOLP'][ind,:])
-#    c = ax1.scatter(phiN*np.pi/180, np.abs(measData[0]['sensor_zenith']), c=100*measData[rWvInd]['DOLP'][ind,:])
-    ax1.scatter(0, np.abs(measData[0]['solar_zenith'][ind]), s=100, facecolors='none', edgecolors='r')
-    vmin,vmax = c.get_clim() #-- obtaining the colormap limits
-    cNorm = mpl.colors.Normalize(vmin=vmin, vmax=vmax) #-- Defining a normalised scale
-    ax3 = fig.add_axes([0.8, 0.1, 0.03, 0.8]) #-- Creating a new axes at the right side
-    cb1 = mpl.colorbar.ColorbarBase(ax3, norm=cNorm) #-- Plotting the colormap in the created axes
-    fig.subplots_adjust(left=0.05,right=0.85)
-    plt.ylabel("100 x Polarized Reflectance (%5.3f um)" % wvls[rWvInd])
-    plt.title('T = %d sec' % measData[0]['time'][ind])
+#rWvInd = 1;
+##for i in range(np.sum(surfDmInd)):
+#for i in range(1):
+#    ind = np.nonzero(surfDmInd)[0][i]
+#    phiN = phi[ind, :]
+#    fig = plt.figure()
+#    ax1 = fig.add_subplot(111, projection='polar')
+#    c = ax1.scatter(phiN*np.pi/180, np.abs(measData[0]['sensor_zenith']), c=100*measData[rWvInd]['toa_reflectance'][ind,:]*measData[rWvInd]['DOLP'][ind,:])
+##    c = ax1.scatter(phiN*np.pi/180, np.abs(measData[0]['sensor_zenith']), c=100*measData[rWvInd]['DOLP'][ind,:])
+#    ax1.scatter(0, np.abs(measData[0]['solar_zenith'][ind]), s=100, facecolors='none', edgecolors='r')
+#    vmin,vmax = c.get_clim() #-- obtaining the colormap limits
+#    cNorm = mpl.colors.Normalize(vmin=vmin, vmax=vmax) #-- Defining a normalised scale
+#    ax3 = fig.add_axes([0.8, 0.1, 0.03, 0.8]) #-- Creating a new axes at the right side
+#    cb1 = mpl.colorbar.ColorbarBase(ax3, norm=cNorm) #-- Plotting the colormap in the created axes
+#    fig.subplots_adjust(left=0.05,right=0.85)
+#    plt.ylabel("100 x Polarized Reflectance (%5.3f um)" % wvls[rWvInd])
+#    plt.title('T = %d sec' % measData[0]['time'][ind])
     
-
-
-plt.figure(figsize=(8, 8))
-m = Basemap(projection='robin', resolution='c', lat_0=0, lon_0=0)
-m.bluemarble(scale=1);
-#m.shadedrelief(scale=0.2)
-lon = measData[0]['trjLon'][0:120]
-lat = measData[0]['trjLat'][0:120]
-x, y = m(lon, lat)
-plt.scatter(x, y, c=DoLPres, s=4, cmap='plasma')
-plt.title('DoLP Residaul (%4.2f μm), Orignal netCDF, Fitting I only' % wvl)
-cbar = plt.colorbar()
-cbar.set_label("(OSSE-GRASP)/(OSSE+GRASP)")
