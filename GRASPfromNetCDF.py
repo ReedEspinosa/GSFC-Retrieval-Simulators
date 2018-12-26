@@ -34,7 +34,7 @@ dateRegex = '.*([0-9]{8})_[0-9]+z.nc4$' # regex to pull date string from levBFN,
 scaleHght = 7640 # atmosphere scale height (meters)
 stndPres = 1.01e5 # standard pressure (Pa)
 lndPrct = 100; # land cover amount (%), ocean only for now
-grspChnkSz = 120 # number of pixles in a single SDATA file
+grspChnkSz = 300 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
 
 GRASP_MIN = 1e-6 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
@@ -61,10 +61,15 @@ for i in range(Nwvlth):
     for varName in np.setdiff1d(varNames, 'sensor_zenith'):
         measData[i][varName] = np.delete(measData[i][varName], invldInd, axis=0)
     measData[i]['DOLP'] = np.sqrt(measData[i]['Q']**2+measData[i]['U']**2)/measData[i]['I']
-    measData[i]['I'] = measData[i]['I']*np.pi # GRASP "I"=R=L/FO*pi
+    measData[i]['I'] = measData[i]['I']*np.pi # GRASP "I"=R=L/FO*pi 
     measData[i]['Q'] = measData[i]['Q']*np.pi 
     measData[i]['U'] = measData[i]['U']*np.pi 
+#    measData[i]['I'] = measData[i]['surf_reflectance']*np.cos(measData[i]['solar_zenith']*np.pi/180).reshape(-1,1) # GRASP "I"=R=L/FO*pi
+#    measData[i]['Q'] = measData[i]['surf_reflectance_Q']*np.cos(measData[i]['solar_zenith']*np.pi/180).reshape(-1,1) 
+#    measData[i]['U'] = measData[i]['surf_reflectance_U']*np.cos(measData[i]['solar_zenith']*np.pi/180).reshape(-1,1)
+#    measData[i]['DOLP'] = np.sqrt(measData[i]['Q']**2+measData[i]['U']**2)/measData[i]['I']
     measData[i]['dtNm'] = dayDtNm + measData[i]['time']/86400
+
 
 
 # Read in levelB data to obtain pressure and then surface altitude
