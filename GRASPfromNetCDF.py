@@ -3,11 +3,12 @@
 
 import numpy as np
 from netCDF4 import Dataset
-import re
 from datetime import datetime as dt
 import warnings
 import os
 import sys
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 sys.path.append(os.path.join("..", "GRASP_scripts"))
 from runGRASP import graspDB, graspRun, pixel
 
@@ -15,39 +16,30 @@ from runGRASP import graspDB, graspRun, pixel
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
 #basePath = '/home/respinosa/ReedWorking/' # Uranus
 dayStr = '20060901'
-#dirGRASPworking = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/graspWorking') # path to store GRASP SDATA and output files
 dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
-pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_6lambda.yml') # path to GRASP YAML file
-#radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase/calipso-g5nr.vlidort.vector.MCD43C.'+dayStr+'_00z_%dd00nm.nc4')
-#radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase_regenerated/calipso-g5nr.vlidort.vector.MCD43C.'+dayStr+'_00z_%dd00nm.nc4')
-radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase_regenerated/calipso-g5nr.vlidort.vector.MCD43C_noBPDF.'+dayStr+'_00z_%dd00nm.nc4')
-lidarFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase/calipso-g5nr.lc2.ext.'+dayStr+'_00z_%dd00nm.nc4')
-levBFN = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase/calipso-g5nr.lb2.aer_Nv.'+dayStr+'_00z.nc4')
-lndCvrFN = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase/calipso-g5nr.lb2.land_cover.'+dayStr+'_00z.nc4')
+pathYAML = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/settings_HARP_16bin_6lambda.yml') # path to GRASP YAML file
+radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/calipso-g5nr.vlidort.vector.MODIS_BRDF.%dd00.nc4')
+binPathGRASP = '/usr/local/bin/grasp' # path to grasp binary
+savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/sulfate_bench_fit.pkl')
 
 # Constants
-#wvls = [0.410, 0.440, 0.470, 0.550, 0.670, 0.865, 1.020, 1.650, 2.100] # wavelengths to read from levC files
 wvls = [0.440, 0.550, 0.670, 0.865, 1.020, 2.100] # wavelengths to read from levC files
-wvlsLidar = [0.532, 1.064] # wavelengths to read from levC lidar files
-dateRegex = '.*([0-9]{8})_[0-9]+z.nc4$' # regex to pull date string from levBFN, should give 'YYYYMMDD'
-scaleHght = 7640 # atmosphere scale height (meters)
-stndPres = 1.01e5 # standard pressure (Pa)
 lndPrct = 100; # land cover amount (%), land only for now
-grspChnkSz = 3 # number of pixles in a single SDATA file
+grspChnkSz = 2 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
 GRASP_MIN = 1e-6 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
 graspInputs = 'IQU' # 'Ionly' (intensity), 'DOLP' (I & DOLP) or 'IQU' (1st 3 stokes)
 maxCPUs = 2; # maximum number of simultaneous grasp run threads
-binPathGRASP = '/usr/local/bin/grasp' # path to grasp binary
-savePath = '/Users/wrespino/Desktop/MADCAP_test.pkl'
+solar_zenith = 30
+solar_azimuth = 0
 
 # Variable to read in from radiance netCDF file, note that many variables are hard coded below
 # Also, this currently stores wavelength independent data Nwvlth times but the method is simple
-varNames = ['ROT', 'I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'toa_reflectance', 'solar_zenith', 'solar_azimuth', 'sensor_zenith', 'sensor_azimuth', 'time','trjLon','trjLat']
+varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'toa_reflectance', 'sensor_zenith', 'sensor_azimuth']
 
 
 # Read in radiances, solar spectral irradiance and find reflectances
-datStr = re.match(dateRegex, levBFN).group(1)
+datStr = dayStr
 dayDtNm = dt.strptime(datStr, "%Y%m%d").toordinal()
 Nwvlth = len(wvls)
 measData = [{} for _ in range(Nwvlth)]
@@ -65,7 +57,7 @@ warnings.simplefilter('always')
 for i in range(Nwvlth):
     for varName in np.setdiff1d(varNames, 'sensor_zenith'):
         measData[i][varName] = np.delete(measData[i][varName], invldInd, axis=0)
-    measData[i]['dtNm'] = dayDtNm + measData[i]['time']/86400
+    measData[i]['dtNm'] = dayDtNm + np.r_[0:measData[0]['sensor_zenith'].shape[0]]/24
     measData[i]['DOLP'] = np.sqrt(measData[i]['Q']**2+measData[i]['U']**2)/measData[i]['I']
     measData[i]['I'] = measData[i]['I']*np.pi # GRASP "I"=R=L/FO*pi 
     measData[i]['Q'] = measData[i]['Q']*np.pi 
@@ -78,33 +70,26 @@ for i in range(Nwvlth):
 
 
 # Read in levelB data to obtain pressure and then surface altitude
-netCDFobj = Dataset(levBFN)
-warnings.simplefilter('ignore') # ignore missing_value not cast warning
-surfPres = np.array(netCDFobj.variables['PS'])
-warnings.simplefilter('always')
-surfPres = np.delete(surfPres, invldInd)
-maslTmp = [scaleHght*np.log(stndPres/PS) for PS in surfPres]
+maslTmp = np.r_[0]
 for i in range(Nwvlth): measData[i]['masl'] = maslTmp
-
 
 # Generate GRASPruns from cases
 graspObjs = []
 Npix = measData[0]['I'].shape[0]
-Npix = 6 # HACK to test with only 6 pixels
+Npix = 4 # HACK to test with only 6 pixels
 strtInds = np.r_[0:Npix:grspChnkSz]
 for strtInd in strtInds:
     gObj = graspRun(pathYAML, orbHghtKM, dirGRASPworking)
     endInd = min(strtInd+grspChnkSz, Npix)
     for ind in range(strtInd, endInd):
         dtNm = measData[0]['dtNm'][ind]
-        lon = measData[0]['trjLon'][ind]
-        lat = measData[0]['trjLat'][ind]
-        masl = max(measData[0]['masl'][ind], -100) # defualt GRASP build complains below -100m  
-#        masl = 20000 #HACK to remove most of Rayleigh signal (requires special GRASP build)
+        lon = 0
+        lat = 0
+        masl = 0
         nowPix = pixel(dtNm, 1, 1, lon, lat, masl, lndPrct)
-        sza = measData[0]['solar_zenith'][ind] # assume instantaneous measurement
+        sza = solar_zenith # assume instantaneous measurement
         for l,wl in enumerate(wvls): # LOOP OVER WAVELENGTHS
-             phi = measData[l]['solar_azimuth'][ind] - measData[l]['sensor_azimuth'][ind,:] # HINT: might cause phi<-180 which GRASP technically doesn't like
+             phi = solar_azimuth - measData[l]['sensor_azimuth'][:] # HINT: might cause phi<-180 which GRASP technically doesn't like
              nbvm = phi.shape[0] 
              if graspInputs.upper()=='Ionly':
                  msTyp = np.r_[41]
@@ -120,40 +105,24 @@ for strtInd in strtInds:
              msrmnts[np.abs(msrmnts) < GRASP_MIN] = GRASP_MIN # HINT: could change Q or U sign but still small absolute shift
              nip = msTyp.shape[0]
              phi = np.tile(phi, nip) # ex. 11, 35, 55, 11, 35, 55...
-             thtv = np.abs(np.tile(measData[l]['sensor_zenith'], nip))
+             thtv = np.abs(np.tile(measData[l]['sensor_zenith'][ind], nbvm*nip))
              nowPix.addMeas(wl, msTyp, np.repeat(nbvm, nip), sza, thtv, phi, msrmnts)
         gObj.addPix(nowPix)
     graspObjs.append(gObj)
 
+#plt I
+l=5; pltVar = 'I'
+azimth=measData[l]['sensor_azimuth']*np.pi/180
+zenith=measData[l]['sensor_zenith']
+data=measData[l][pltVar].T
+r, theta = np.meshgrid(zenith, azimth)
+fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))
+c = ax.contourf(theta, r, data)
+cb = plt.colorbar(c)
+cb.ax.set_ylabel(pltVar)
+plt.tight_layout()
 
 # Write SDATA, run GRASP and read in results
 gDB = graspDB(graspObjs)
 gDB.processData(maxCPUs, binPathGRASP, savePath)
 
-# Read in model "truth" from levC lidar file
-#varNames = ['reff', 'refi', 'refr', 'ssa', 'tau']
-#Nwvlth = len(wvlsLidar)
-#trueData = [{} for _ in range(Nwvlth)]
-#warnings.simplefilter('ignore') # ignore missing_value not cast warning
-#for i,wvl in enumerate(wvlsLidar):
-#    lidarFN = lidarFNfrmtStr % int(wvl*1000)
-#    netCDFobj = Dataset(lidarFN)
-#    for varName in varNames:
-#        trueData[i][varName] = np.array(netCDFobj.variables[varName])      
-#    netCDFobj.close()
-#warnings.simplefilter('always')
-#for i in range(Nwvlth): 
-#    for varName in varNames:
-#        trueData[i][varName] = np.delete(trueData[i][varName], invldInd, axis=0)
-#    tauKrnl = trueData[i]['tau']
-#    trueData[i]['tau'] = np.sum(trueData[i]['tau'], axis=1)
-#    tauKrnl = tauKrnl/trueData[i]['tau'].reshape(Npix,1)
-#    for varName in np.setdiff1d(varNames, 'tau'):
-#        trueData[i][varName] = np.sum(tauKrnl*trueData[i][varName], axis=1)
-#
-#warnings.simplefilter('ignore') # ignore missing_value not cast warning
-#netCDFobj = Dataset(lndCvrFN)
-#trueData[0]['BPDFcoef'] = np.array(netCDFobj.variables['BPDFcoef'])
-#netCDFobj.close()
-#warnings.simplefilter('always')
-#trueData[0]['BPDFcoef'] = np.delete(trueData[0]['BPDFcoef'], invldInd)

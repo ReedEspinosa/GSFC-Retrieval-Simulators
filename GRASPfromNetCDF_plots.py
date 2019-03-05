@@ -8,10 +8,10 @@ import sys
 sys.path.append(os.path.join("..", "GRASP_PythonUtils"))
 from runGRASP import graspDB
 
-pltInd = 4 # pixel index to plot
+pltInd = 0 # pixel index to plot
 polVar = 'PoI' #'P' (absolute) or 'PoI' (relative)
-titleStr = 'BRDF + BPDF + Rayleigh'
-rsltsFile = '/Users/wrespino/Desktop/MADCAP_test.pkl'
+titleStr = 'Sulfate Benchmark'
+rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/sulfate_bench_fit.pkl'
 
 yVarNm = 'n'
 xVarNm = 'k'
