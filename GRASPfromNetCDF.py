@@ -2,81 +2,52 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from netCDF4 import Dataset
-from datetime import datetime as dt
-import warnings
 import os
 import sys
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 sys.path.append(os.path.join("..", "GRASP_scripts"))
 from runGRASP import graspDB, graspRun, pixel
+from MADCAP_functions import readVILDORTnetCDF
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
 #basePath = '/home/respinosa/ReedWorking/' # Uranus
 dayStr = '20060901'
 dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
-pathYAML = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/settings_HARP_16bin_6lambda.yml') # path to GRASP YAML file
-radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/calipso-g5nr.vlidort.vector.MODIS_BRDF.%dd00.nc4')
-binPathGRASP = '/usr/local/bin/grasp' # path to grasp binary
-savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/sulfate_bench_fit.pkl')
+pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/settings_HARP_16bin_1lambda.yml') # path to GRASP YAML file
+radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_BRDF_BPDF_PP/calipso-g5nr.vlidort.vector.MODIS_BRDF_BPDF.%dd00.nc4')
+#binPathGRASP = '/usr/local/bin/grasp' # path to grasp binary
+binPathGRASP = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/build/bin/grasp')
+savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_BRDF_BPDF_PP/rayleigh_bench_LAMBERTIAN.pkl')
 
 # Constants
-wvls = [0.440, 0.550, 0.670, 0.865, 1.020, 2.100] # wavelengths to read from levC files
+wvls = [0.865] # wavelengths to read from levC files
 lndPrct = 100; # land cover amount (%), land only for now
-grspChnkSz = 2 # number of pixles in a single SDATA file
+grspChnkSz = 6 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
 GRASP_MIN = 1e-6 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
 graspInputs = 'IQU' # 'Ionly' (intensity), 'DOLP' (I & DOLP) or 'IQU' (1st 3 stokes)
-maxCPUs = 2; # maximum number of simultaneous grasp run threads
+maxCPUs = 3; # maximum number of simultaneous grasp run threads
 solar_zenith = 30
 solar_azimuth = 0
 
 # Variable to read in from radiance netCDF file, note that many variables are hard coded below
 # Also, this currently stores wavelength independent data Nwvlth times but the method is simple
-varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'toa_reflectance', 'sensor_zenith', 'sensor_azimuth']
+#varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'toa_reflectance', 'sensor_zenith', 'sensor_azimuth']
+varNames = ['I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'ROT','surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'toa_reflectance', 'sensor_zenith', 'sensor_azimuth']
 
 
 # Read in radiances, solar spectral irradiance and find reflectances
-datStr = dayStr
-dayDtNm = dt.strptime(datStr, "%Y%m%d").toordinal()
-Nwvlth = len(wvls)
-measData = [{} for _ in range(Nwvlth)]
-invldInd = np.array([])
-warnings.simplefilter('ignore') # ignore missing_value not cast warning
-for i,wvl in enumerate(wvls):
-    radianceFN = radianceFNfrmtStr % int(wvl*1000)
-    netCDFobj = Dataset(radianceFN)
-    for varName in varNames:
-        measData[i][varName] = np.array(netCDFobj.variables[varName])       
-    invldInd = np.append(invldInd, np.nonzero((measData[i]['I']<0).any(axis=1))[0])
-    netCDFobj.close()
-invldInd = np.array(np.unique(invldInd), dtype='int') # only take points w/ I>0 at all wavelengths & angles    
-warnings.simplefilter('always')
-for i in range(Nwvlth):
-    for varName in np.setdiff1d(varNames, 'sensor_zenith'):
-        measData[i][varName] = np.delete(measData[i][varName], invldInd, axis=0)
-    measData[i]['dtNm'] = dayDtNm + np.r_[0:measData[0]['sensor_zenith'].shape[0]]/24
-    measData[i]['DOLP'] = np.sqrt(measData[i]['Q']**2+measData[i]['U']**2)/measData[i]['I']
-    measData[i]['I'] = measData[i]['I']*np.pi # GRASP "I"=R=L/FO*pi 
-    measData[i]['Q'] = measData[i]['Q']*np.pi 
-    measData[i]['U'] = measData[i]['U']*np.pi 
-    # HACK to only retrieve surface
-#    measData[i]['I'] = measData[i]['surf_reflectance']*np.cos(measData[i]['solar_zenith']*np.pi/180).reshape(-1,1) # GRASP "I"=R=L/FO*pi
-#    measData[i]['Q'] = measData[i]['surf_reflectance_Q']*np.cos(measData[i]['solar_zenith']*np.pi/180).reshape(-1,1) 
-#    measData[i]['U'] = measData[i]['surf_reflectance_U']*np.cos(measData[i]['solar_zenith']*np.pi/180).reshape(-1,1)
-#    measData[i]['DOLP'] = np.sqrt(measData[i]['Q']**2+measData[i]['U']**2)/measData[i]['I']
-
+measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls)
 
 # Read in levelB data to obtain pressure and then surface altitude
 maslTmp = np.r_[0]
-for i in range(Nwvlth): measData[i]['masl'] = maslTmp
+for i in range(len(wvls)): measData[i]['masl'] = maslTmp
 
 # Generate GRASPruns from cases
 graspObjs = []
 Npix = measData[0]['I'].shape[0]
-Npix = 4 # HACK to test with only 6 pixels
+#Npix = 4 # HACK to test with only 6 pixels
 strtInds = np.r_[0:Npix:grspChnkSz]
 for strtInd in strtInds:
     gObj = graspRun(pathYAML, orbHghtKM, dirGRASPworking)
@@ -85,7 +56,7 @@ for strtInd in strtInds:
         dtNm = measData[0]['dtNm'][ind]
         lon = 0
         lat = 0
-        masl = 0
+        masl = 1743.45 # ROT=0.01258532 @ 865nm
         nowPix = pixel(dtNm, 1, 1, lon, lat, masl, lndPrct)
         sza = solar_zenith # assume instantaneous measurement
         for l,wl in enumerate(wvls): # LOOP OVER WAVELENGTHS
@@ -100,6 +71,7 @@ for strtInd in strtInds:
              elif graspInputs.upper()=='IQU':
                  msTyp = np.r_[41, 42, 43]
                  msrmnts = np.r_[measData[l]['I'][ind,:], measData[l]['Q'][ind,:], measData[l]['U'][ind,:]]
+#                 msrmnts = np.r_[measData[l]['I'][ind,:], measData[l]['Q_scatplane'][ind,:], measData[l]['U_scatplane'][ind,:]]
              else:
                  assert False, '%s is unrecognized value for graspInputs [Ionly,DOLP,IQU]' % graspInputs
              msrmnts[np.abs(msrmnts) < GRASP_MIN] = GRASP_MIN # HINT: could change Q or U sign but still small absolute shift
@@ -111,16 +83,16 @@ for strtInd in strtInds:
     graspObjs.append(gObj)
 
 #plt I
-l=5; pltVar = 'I'
-azimth=measData[l]['sensor_azimuth']*np.pi/180
-zenith=measData[l]['sensor_zenith']
-data=measData[l][pltVar].T
-r, theta = np.meshgrid(zenith, azimth)
-fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))
-c = ax.contourf(theta, r, data)
-cb = plt.colorbar(c)
-cb.ax.set_ylabel(pltVar)
-plt.tight_layout()
+#l=5; pltVar = 'I'
+#azimth=measData[l]['sensor_azimuth']*np.pi/180
+#zenith=measData[l]['sensor_zenith']
+#data=measData[l][pltVar].T
+#r, theta = np.meshgrid(zenith, azimth)
+#fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))
+#c = ax.contourf(theta, r, data)
+#cb = plt.colorbar(c)
+#cb.ax.set_ylabel(pltVar)
+#plt.tight_layout()
 
 # Write SDATA, run GRASP and read in results
 gDB = graspDB(graspObjs)
