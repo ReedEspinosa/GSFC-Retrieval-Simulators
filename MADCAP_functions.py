@@ -29,6 +29,10 @@ def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101'):
         measData[i]['I'] = measData[i]['I']*np.pi # GRASP "I"=R=L/FO*pi 
         measData[i]['Q'] = measData[i]['Q']*np.pi 
         measData[i]['U'] = measData[i]['U']*np.pi
+        measData[i]['I_surf'] = measData[i]['surf_reflectance']*np.cos(30*np.pi/180)
+        measData[i]['Q_surf'] = measData[i]['surf_reflectance_Q']*np.cos(30*np.pi/180)
+        measData[i]['U_surf'] = measData[i]['surf_reflectance_U']*np.cos(30*np.pi/180)
+        measData[i]['DOLP_surf'] = np.sqrt(measData[i]['surf_reflectance_Q']**2+measData[i]['surf_reflectance_U']**2)/measData[i]['surf_reflectance']
         if 'Q_scatplane' in varNames: measData[i]['Q_scatplane'] = measData[i]['Q_scatplane']*np.pi
         if 'U_scatplane' in varNames: measData[i]['U_scatplane'] = measData[i]['U_scatplane']*np.pi
     return measData

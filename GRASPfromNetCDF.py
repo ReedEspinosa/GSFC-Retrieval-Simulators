@@ -18,7 +18,7 @@ pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/settings_H
 radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_BRDF_BPDF_PP/calipso-g5nr.vlidort.vector.MODIS_BRDF_BPDF.%dd00.nc4')
 #binPathGRASP = '/usr/local/bin/grasp' # path to grasp binary
 binPathGRASP = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/build/bin/grasp')
-savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_BRDF_BPDF_PP/rayleigh_bench_LAMBERTIAN.pkl')
+savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_BRDF_BPDF_PP/NOrayleigh_bench.pkl')
 
 # Constants
 wvls = [0.865] # wavelengths to read from levC files
@@ -26,7 +26,7 @@ lndPrct = 100; # land cover amount (%), land only for now
 grspChnkSz = 6 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
 GRASP_MIN = 1e-6 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
-graspInputs = 'IQU' # 'Ionly' (intensity), 'DOLP' (I & DOLP) or 'IQU' (1st 3 stokes)
+graspInputs = 'IQU_SURF' # 'Ionly' (intensity), 'DOLP' (I & DOLP) or 'IQU' (1st 3 stokes)
 maxCPUs = 3; # maximum number of simultaneous grasp run threads
 solar_zenith = 30
 solar_azimuth = 0
@@ -56,7 +56,11 @@ for strtInd in strtInds:
         dtNm = measData[0]['dtNm'][ind]
         lon = 0
         lat = 0
-        masl = 1743.45 # ROT=0.01258532 @ 865nm
+#        masl = 1743.45 # ROT=0.01258532 @ 865nm
+        if graspInputs.upper()=='IQU_SURF':
+            masl = 7000 # ROT=0.? @ 2.5um
+        else:
+            masl = 1743.45 # ROT=0.01258532 @ 865nm
         nowPix = pixel(dtNm, 1, 1, lon, lat, masl, lndPrct)
         sza = solar_zenith # assume instantaneous measurement
         for l,wl in enumerate(wvls): # LOOP OVER WAVELENGTHS
@@ -72,13 +76,19 @@ for strtInd in strtInds:
                  msTyp = np.r_[41, 42, 43]
                  msrmnts = np.r_[measData[l]['I'][ind,:], measData[l]['Q'][ind,:], measData[l]['U'][ind,:]]
 #                 msrmnts = np.r_[measData[l]['I'][ind,:], measData[l]['Q_scatplane'][ind,:], measData[l]['U_scatplane'][ind,:]]
+             elif graspInputs.upper()=='IQU_SURF':
+                 msTyp = np.r_[41, 42, 43]
+                 msrmnts = np.r_[measData[l]['I_surf'][ind,:], measData[l]['Q_surf'][ind,:], measData[l]['U_surf'][ind,:]]
              else:
                  assert False, '%s is unrecognized value for graspInputs [Ionly,DOLP,IQU]' % graspInputs
              msrmnts[np.abs(msrmnts) < GRASP_MIN] = GRASP_MIN # HINT: could change Q or U sign but still small absolute shift
              nip = msTyp.shape[0]
              phi = np.tile(phi, nip) # ex. 11, 35, 55, 11, 35, 55...
              thtv = np.abs(np.tile(measData[l]['sensor_zenith'][ind], nbvm*nip))
-             nowPix.addMeas(wl, msTyp, np.repeat(nbvm, nip), sza, thtv, phi, msrmnts)
+             if graspInputs.upper()=='IQU_SURF':
+                 nowPix.addMeas(2.5, msTyp, np.repeat(nbvm, nip), sza, thtv, phi, msrmnts)
+             else:
+                 nowPix.addMeas(wl, msTyp, np.repeat(nbvm, nip), sza, thtv, phi, msrmnts)                 
         gObj.addPix(nowPix)
     graspObjs.append(gObj)
 
