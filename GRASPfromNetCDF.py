@@ -15,10 +15,10 @@ basePath = '/Users/wrespino/Synced/' # NASA MacBook
 dayStr = '20060901'
 dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
 pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/settings_HARP_16bin_1lambda.yml') # path to GRASP YAML file
-radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_BRDF_BPDF_PP/calipso-g5nr.vlidort.vector.MODIS_BRDF_BPDF.%dd00.nc4')
+radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_BPDF_PP_neg/calipso-g5nr.vlidort.vector.LAMBERTIAN_BPDF.%dd00.nc4')
 #binPathGRASP = '/usr/local/bin/grasp' # path to grasp binary
 binPathGRASP = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/build/bin/grasp')
-savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_BRDF_BPDF_PP/NOrayleigh_bench.pkl')
+savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_BPDF_PP_neg/rayleigh_bench.pkl')
 
 # Constants
 wvls = [0.865] # wavelengths to read from levC files
@@ -26,7 +26,7 @@ lndPrct = 100; # land cover amount (%), land only for now
 grspChnkSz = 6 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
 GRASP_MIN = 1e-6 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
-graspInputs = 'IQU_SURF' # 'Ionly' (intensity), 'DOLP' (I & DOLP) or 'IQU' (1st 3 stokes)
+graspInputs = 'IQU' # 'Ionly' (intensity), 'DOLP' (I & DOLP) or 'IQU' (1st 3 stokes)
 maxCPUs = 3; # maximum number of simultaneous grasp run threads
 solar_zenith = 30
 solar_azimuth = 0

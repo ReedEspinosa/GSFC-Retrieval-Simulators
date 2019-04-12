@@ -8,11 +8,11 @@ import sys
 sys.path.append(os.path.join("..", "GRASP_Scripts"))
 from runGRASP import graspDB
 
-pltInd = 15 # pixel index to plot
+pltInd = 1 # pixel index to plot
 polVar = 'U' #'P' (absolute) or 'PoI' (relative)
 titleStr = 'New RT, Rayleigh Benchmark Almucantar ($h_{surf}=1850$m,'
 #rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/rayleigh_bench_fit__Allfixed_noHot_altGT0.pkl'
-rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP/rayleigh_bench_LAMBERTIAN.pkl'
+rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_BPDF_PP_neg/NOrayleigh_bench.pkl'
 viewZenith = np.r_[0:85:5];
 titleStr = titleStr + ' $\\theta_{v}=$%d)' % viewZenith[pltInd]
 
