@@ -32,16 +32,20 @@ def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101'):
         measData[i]['I'] = measData[i]['I']*np.pi # GRASP "I"=R=L/FO*pi 
         measData[i]['Q'] = measData[i]['Q']*np.pi 
         measData[i]['U'] = measData[i]['U']*np.pi
-        measData[i]['I_surf'] = measData[i]['surf_reflectance']*np.cos(30*np.pi/180)
-        if 'surf_reflectance_Q_scatplane' in measData[i].keys():
-            measData[i]['Q_surf'] = measData[i]['surf_reflectance_Q_scatplane']*np.cos(30*np.pi/180)
-            measData[i]['U_surf'] = measData[i]['surf_reflectance_U_scatplane']*np.cos(30*np.pi/180)
-            print('Q[U]_surf derived from surf_reflectance_Q[U]_scatplane (scat. plane system)')
-        else:
-            measData[i]['Q_surf'] = measData[i]['surf_reflectance_Q']*np.cos(30*np.pi/180)
-            measData[i]['U_surf'] = measData[i]['surf_reflectance_U']*np.cos(30*np.pi/180)
-            print('Q[U]_surf derived from surf_reflectance_Q[U] (meridian system)')
-        measData[i]['DOLP_surf'] = np.sqrt(measData[i]['Q_surf']**2+measData[i]['U_surf']**2)/measData[i]['I_surf']
+        if 'surf_reflectance' in measData[i].keys():
+            measData[i]['I_surf'] = measData[i]['surf_reflectance']*np.cos(30*np.pi/180)
+            if 'surf_reflectance_Q_scatplane' in measData[i].keys():
+                measData[i]['Q_surf'] = measData[i]['surf_reflectance_Q_scatplane']*np.cos(30*np.pi/180)
+                measData[i]['U_surf'] = measData[i]['surf_reflectance_U_scatplane']*np.cos(30*np.pi/180)
+                print('Q[U]_surf derived from surf_reflectance_Q[U]_scatplane (scat. plane system)')
+            else:
+                measData[i]['Q_surf'] = measData[i]['surf_reflectance_Q']*np.cos(30*np.pi/180)
+                measData[i]['U_surf'] = measData[i]['surf_reflectance_U']*np.cos(30*np.pi/180)
+                print('Q[U]_surf derived from surf_reflectance_Q[U] (meridian system)')
+            if (measData[i]['I_surf'] > 0).all(): # TODO: This will produce NaN in all DOLP if any I_surf<0
+                measData[i]['DOLP_surf'] = np.sqrt(measData[i]['Q_surf']**2+measData[i]['U_surf']**2)/measData[i]['I_surf']
+            else:
+                measData[i]['DOLP_surf'] = np.full(measData[i]['I_surf'].shape, np.nan)
         if 'Q_scatplane' in varNames: measData[i]['Q_scatplane'] = measData[i]['Q_scatplane']*np.pi
         if 'U_scatplane' in varNames: measData[i]['U_scatplane'] = measData[i]['U_scatplane']*np.pi
     return measData

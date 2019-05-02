@@ -11,9 +11,9 @@ import numpy as np
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-savePlotPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/April01_BenchmarkPlots')
-radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_BPDF_PP_neg/calipso-g5nr.vlidort.vector.LAMBERTIAN_BPDF.%dd00.nc4')
-rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_BPDF_PP_neg/rayleigh_bench.pkl'
+savePlotPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/')
+radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/rayleigh_bench_MS.pkl'
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
 varNames = ['I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'surf_reflectance_Q_scatplane','surf_reflectance_U_scatplane', 'sensor_zenith', 'sensor_azimuth']
@@ -44,19 +44,20 @@ if Nwvl == 1:
 else:
     fig, ax = plt.subplots(3,Nwvl, subplot_kw=dict(projection='polar'), figsize=(20,15))
 for l in range(Nwvl):
+    # Get VLIDORT netCDF values
     if noRayleigh: 
-        vildort = measData[l][pltVar+'_surf']
-        if pltVar in ['Q', 'U']:
-            vildort = -vildort
-            print('Plotting netCDF variable -%s' % pltVar+'_surf')
-        else:
-            print('Plotting netCDF variable %s' % pltVar+'_surf')
+        pltVarApnd = '_surf'
     elif pltVar in ['Q', 'U']:
-        vildort = -measData[l][pltVar+'_scatplane'] # negative sign due to 90 deg cord. sys. rotation 
-        print('Plotting netCDF variable -%s' % pltVar+'_scatplane')
+        pltVarApnd = '_scatplane'
     else:
-        vildort = measData[l][pltVar]
-        print('Plotting netCDF variable %s' % pltVar)
+        pltVarApnd = ''
+    pltVarStr = pltVar+pltVarApnd    
+    vildort = measData[l][pltVarStr]
+    if (pltVar in ['Q', 'U']) and (measData[l]['Q'+pltVarApnd].sum() > 0): # we probably need a 90 deg cord. sys. rotation
+            vildort = -vildort
+            pltVarStr = '-'+pltVarStr
+    print('Plotting netCDF variable %s' % pltVarStr)
+    # Get GRASP values and find delta
     if pltVar in ['I', 'Q', 'U']:
         fitStr = 'fit_%s' % pltVar
         fit = np.array([rslt[fitStr][:,l] for rslt in gDB.rslts])
@@ -69,13 +70,15 @@ for l in range(Nwvl):
         delta = 100*(fit-vildort)
         lbl1 = '$DoLP_{VLIDORT}$ [absolute]' # these are differnt from I,Q,U labels
         lbl2 = '$DoLP_{GRASP}$ [absolute]'
-        lbl3 = '$DoLP_{grasp} - DoLP_{vildort}$ [%]'       
+        lbl3 = '$DoLP_{grasp} - DoLP_{vildort}$ [%]'
+    # Plot the results
     azimth=measData[l]['sensor_azimuth']*np.pi/180
     zenith=measData[l]['sensor_zenith']
     r, theta = np.meshgrid(zenith, azimth)
     if pltVar in ['I','DOLP']:
-        clrMin = 0.9*vildort.min()
+        clrMin = 0.9*np.minimum(vildort.min(), fit.min())
         clrMax = 1.1*vildort.max()
+        if pltVar=='DOLP': clrMax = np.minimum(clrMax, 1)
         clrMap = cmap=plt.cm.jet
     else:
         mag = np.abs(np.r_[vildort.min(),vildort.max(), fit.min(),fit.max()]).max()
@@ -95,7 +98,7 @@ for l in range(Nwvl):
 #            data=np.log10(delta.T)
             data=delta.T
             mag = np.abs(np.r_[data.min(),data.max()]).max()
-#            mag = np.r_[0.3]
+#            mag = np.r_[np.abs(data.max())] # HACK
             v = np.linspace(-mag, mag, 256, endpoint=True)
             ticks = np.linspace(-mag, mag, 3, endpoint=True)
             clrMap = plt.cm.seismic

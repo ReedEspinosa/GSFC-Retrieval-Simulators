@@ -11,13 +11,13 @@ import numpy as np
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_BRDF_BPDF_PP/calipso-g5nr.vlidort.vector.MODIS_BRDF_BPDF.%dd00.nc4')
+radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
 #radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/calipso-g5nr.vlidort.vector.MODIS_BRDF.%dd00.nc4')
 yamlFile = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/settings_HARP_16bin_6lambda.yml')
 rsltsFile = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/sulfate_bench_fit__PSDlt600nm_BRDF_FREE.pkl')
 
 #varNames = ['I', 'Q', 'U', 'sensor_zenith', 'RGEO', 'RISO', 'RVOL', 'TAU', 'VOL', 'radius', 'TOTdist', 'REFR', 'REFI', 'ZE']
-varNames = ['I', 'Q', 'U', 'sensor_zenith', 'RGEO', 'RISO', 'RVOL']
+varNames = ['I', 'Q', 'U', 'sensor_zenith', 'U10m', 'V10m', 'ROT']
 #wvls = [0.410, 0.440, 0.550, 0.670, 1.020, 2.100] # wavelengths to read from levC files
 wvls = [0.865] # wavelengths to read from levC files
 
@@ -49,11 +49,19 @@ measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls)
 #print([md['REFI'] for md in measData]);
 #print('hieght:')
 #print([md['ZE'] for md in measData]);
-print('RTLS BRDF (ISO,VOL,GEOM):')
-riso = np.array([md['RISO'] for md in measData])[:,0]
-print(riso.tolist());
-print((np.array([md['RVOL'] for md in measData])[:,0]/riso).tolist());
-print((np.array([md['RGEO'] for md in measData])[:,0]/riso).tolist());
+
+#print('RTLS BRDF (ISO,VOL,GEOM):')
+#riso = np.array([md['RISO'] for md in measData])[:,0]
+#print(riso.tolist());
+#print((np.array([md['RVOL'] for md in measData])[:,0]/riso).tolist());
+#print((np.array([md['RGEO'] for md in measData])[:,0]/riso).tolist());
+
+print('Ocean Parameters (U10m,V10m,ROT):')
+#riso = np.array([md['U10m'] for md in measData])
+#print(riso.tolist());
+#print((np.array([md['V10m'] for md in measData])).tolist());
+print((np.array([md['ROT'].sum() for md in measData])).tolist());
+
 
 #plt.figure()
 #l=2; t=0
