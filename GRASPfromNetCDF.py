@@ -18,12 +18,12 @@ pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_setti
 radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
 #binPathGRASP = '/usr/local/bin/grasp' # path to grasp binary
 binPathGRASP = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/build/bin/grasp')
-savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/rayleigh_bench_MS.pkl')
+savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/rayleigh_bench_MS_azmth.pkl')
 
 # Constants
 wvls = [0.865] # wavelengths to read from levC files
 lndPrct = 100; # land cover amount (%)
-grspChnkSz = 6 # number of pixles in a single SDATA file
+grspChnkSz = 25 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
 GRASP_MIN = 1e-6 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
 graspInputs = 'IQU' # 'Ionly' (intensity), 'DOLP' (I & DOLP), 'IQU' (1st 3 stokes), IQU_SURF (IQU for surface only)
@@ -38,7 +38,7 @@ varNames = ['I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'ROT','surf_reflectance
 
 
 # Read in radiances, solar spectral irradiance and find reflectances
-measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls)
+measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datSizeVar = 'sensor_azimuth')
 
 # Read in levelB data to obtain pressure and then surface altitude
 maslTmp = np.r_[0]
@@ -46,7 +46,7 @@ for i in range(len(wvls)): measData[i]['masl'] = maslTmp
 
 # Generate GRASPruns from cases
 graspObjs = []
-Npix = measData[0]['I'].shape[0]
+Npix = measData[0]['I'].shape[1]
 #Npix = 4 # HACK to test with only 6 pixels
 strtInds = np.r_[0:Npix:grspChnkSz]
 for strtInd in strtInds:
@@ -60,27 +60,27 @@ for strtInd in strtInds:
         nowPix = pixel(dtNm, 1, 1, lon, lat, masl, lndPrct)
         sza = solar_zenith # assume instantaneous measurement
         for l,wl in enumerate(wvls): # LOOP OVER WAVELENGTHS
-             phi = solar_azimuth - measData[l]['sensor_azimuth'][:] # HINT: might cause phi<-180 which GRASP technically doesn't like
-             nbvm = phi.shape[0] 
+             thtv = np.abs(measData[l]['sensor_zenith'][:])
+             nbvm = thtv.shape[0] 
              if graspInputs.upper()=='Ionly':
                  msTyp = np.r_[41]
-                 msrmnts = np.r_[measData[l]['I'][ind,:]]
+                 msrmnts = np.r_[measData[l]['I'][:,ind]]
              elif graspInputs.upper()=='DOLP':
                  msTyp = np.r_[41, 44]
-                 msrmnts = np.r_[measData[l]['I'][ind,:], measData[l]['DOLP'][ind,:]]
+                 msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['DOLP'][:,ind]]
              elif graspInputs.upper()=='IQU':
                  msTyp = np.r_[41, 42, 43]
-                 msrmnts = np.r_[measData[l]['I'][ind,:], measData[l]['Q'][ind,:], measData[l]['U'][ind,:]]
+                 msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['Q'][:,ind], measData[l]['U'][:,ind]]
 #                 msrmnts = np.r_[measData[l]['I'][ind,:], measData[l]['Q_scatplane'][ind,:], measData[l]['U_scatplane'][ind,:]]
              elif graspInputs.upper()=='IQU_SURF':
                  msTyp = np.r_[41, 42, 43]
-                 msrmnts = np.r_[measData[l]['I_surf'][ind,:], measData[l]['Q_surf'][ind,:], measData[l]['U_surf'][ind,:]]
+                 msrmnts = np.r_[measData[l]['I_surf'][:,ind], measData[l]['Q_surf'][:,ind], measData[l]['U_surf'][:,ind]]
              else:
                  assert False, '%s is unrecognized value for graspInputs [Ionly,DOLP,IQU]' % graspInputs
              msrmnts[np.abs(msrmnts) < GRASP_MIN] = GRASP_MIN # HINT: could change Q or U sign but still small absolute shift
              nip = msTyp.shape[0]
-             phi = np.tile(phi, nip) # ex. 11, 35, 55, 11, 35, 55...
-             thtv = np.abs(np.tile(measData[l]['sensor_zenith'][ind], nbvm*nip))
+             thtv = np.tile(thtv, nip) # ex. 11, 35, 55, 11, 35, 55...       
+             phi = np.abs(np.tile(solar_azimuth - measData[l]['sensor_azimuth'][ind], nbvm*nip)) # HINT: might cause phi<-180 which GRASP technically doesn't like
              nowPix.addMeas(wl, msTyp, np.repeat(nbvm, nip), sza, thtv, phi, msrmnts)                 
         gObj.addPix(nowPix)
     graspObjs.append(gObj)

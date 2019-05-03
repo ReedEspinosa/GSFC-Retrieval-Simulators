@@ -6,7 +6,7 @@ from datetime import datetime as dt
 import warnings
 from netCDF4 import Dataset
 
-def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101'):
+def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101', datSizeVar = 'sensor_zenith'):
     dayDtNm = dt.strptime(datStr, "%Y%m%d").toordinal()
     Nwvlth = len(wvls)
     measData = [{} for _ in range(Nwvlth)]
@@ -27,7 +27,7 @@ def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101'):
     for i in range(Nwvlth):
         for varName in np.setdiff1d(list(measData[i].keys()), 'sensor_zenith'):
             measData[i][varName] = np.delete(measData[i][varName], invldInd, axis=0)
-        measData[i]['dtNm'] = dayDtNm + np.r_[0:measData[0]['sensor_zenith'].shape[0]]/24
+        measData[i]['dtNm'] = dayDtNm + np.r_[0:measData[0][datSizeVar].shape[0]]/24
         measData[i]['DOLP'] = np.sqrt(measData[i]['Q']**2+measData[i]['U']**2)/measData[i]['I']
         measData[i]['I'] = measData[i]['I']*np.pi # GRASP "I"=R=L/FO*pi 
         measData[i]['Q'] = measData[i]['Q']*np.pi 

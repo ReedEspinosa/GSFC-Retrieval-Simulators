@@ -13,7 +13,7 @@ import numpy as np
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
 savePlotPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/')
 radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/rayleigh_bench_MS.pkl'
+rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/rayleigh_bench_MS_azmth.pkl'
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
 varNames = ['I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'surf_reflectance_Q_scatplane','surf_reflectance_U_scatplane', 'sensor_zenith', 'sensor_azimuth']
@@ -24,6 +24,9 @@ relDeltaI = False # relative (True) or absolute (False) I/Q/U difference (no eff
 
 gDB = graspDB()
 gDB.loadResults(rsltsFile)
+
+# custom tag to append to plot file names
+cstmTag = 'azmthMerd'
 
 # PLOTTING CODE
 wvls = np.atleast_1d(gDB.rslts[0]['lambda'])
@@ -53,7 +56,7 @@ for l in range(Nwvl):
         pltVarApnd = ''
     pltVarStr = pltVar+pltVarApnd    
     vildort = measData[l][pltVarStr]
-    if (pltVar in ['Q', 'U']) and (measData[l]['Q'+pltVarApnd].sum() > 0): # we probably need a 90 deg cord. sys. rotation
+    if (pltVar in ['Q', 'U']) and (measData[l]['Q'+pltVarApnd].sum() < 0): # we probably need a 90 deg cord. sys. rotation
             vildort = -vildort
             pltVarStr = '-'+pltVarStr
     print('Plotting netCDF variable %s' % pltVarStr)
@@ -61,11 +64,13 @@ for l in range(Nwvl):
     if pltVar in ['I', 'Q', 'U']:
         fitStr = 'fit_%s' % pltVar
         fit = np.array([rslt[fitStr][:,l] for rslt in gDB.rslts])
+        if fit.shape[::-1]==vildort.shape and np.diff(fit.shape)!=0: fit=fit.T # fix sloppy array dimensions, if matrix is not square
         delta = 200*(fit-vildort)/(fit+vildort) if relDeltaI else 1000*(fit-vildort)
     elif pltVar=='DOLP':
 #        fit = np.array([rslt['fit_PoI'][:,l] for rslt in gDB.rslts])
 #        fit = np.array([rslt['fit_P'][:,l]/rslt['fit_I'][:,l] for rslt in gDB.rslts])
         fit = np.array([np.sqrt(rslt['fit_Q'][:,l]**2 + rslt['fit_U'][:,l]**2)/rslt['fit_I'][:,l] for rslt in gDB.rslts])
+        if fit.shape[::-1]==vildort.shape and np.diff(fit.shape)!=0: fit=fit.T # fix sloppy array dimensions, if matrix is not square
 #        fit = np.array([np.sqrt(rslt['fit_Q'][:,l]**2 + rslt['fit_U'][:,l]**2) for rslt in gDB.rslts])
         delta = 100*(fit-vildort)
         lbl1 = '$DoLP_{VLIDORT}$ [absolute]' # these are differnt from I,Q,U labels
@@ -82,6 +87,7 @@ for l in range(Nwvl):
         clrMap = cmap=plt.cm.jet
     else:
         mag = np.abs(np.r_[vildort.min(),vildort.max(), fit.min(),fit.max()]).max()
+#        mag = np.abs(np.r_[vildort.min(),vildort.max()]).max()
         clrMin = -mag
         clrMax = mag
         clrMap = plt.cm.seismic
@@ -117,5 +123,5 @@ elif relDeltaI:
     C = '_relative'
 else:
     C = '_absolute'
-figFN =  A+B+'-'+pltVar+C+'.png'
+figFN =  A+B+'-'+pltVar+cstmTag+C+'.png'
 fig.savefig(os.path.join(savePlotPath, figFN), bbox_inches='tight')
