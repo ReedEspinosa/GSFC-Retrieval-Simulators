@@ -18,14 +18,14 @@ pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_setti
 radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
 #binPathGRASP = '/usr/local/bin/grasp' # path to grasp binary
 binPathGRASP = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/build/bin/grasp')
-savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/rayleigh_bench_MS_azmth.pkl')
+savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/rayleigh_bench_MS_azmthPP.pkl')
 
 # Constants
 wvls = [0.865] # wavelengths to read from levC files
 lndPrct = 100; # land cover amount (%)
-grspChnkSz = 25 # number of pixles in a single SDATA file
+grspChnkSz = 250 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
-GRASP_MIN = 1e-6 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
+GRASP_MIN = 1e-8 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
 graspInputs = 'IQU' # 'Ionly' (intensity), 'DOLP' (I & DOLP), 'IQU' (1st 3 stokes), IQU_SURF (IQU for surface only)
 maxCPUs = 3; # maximum number of simultaneous grasp run threads
 solar_zenith = 30
@@ -70,8 +70,8 @@ for strtInd in strtInds:
                  msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['DOLP'][:,ind]]
              elif graspInputs.upper()=='IQU':
                  msTyp = np.r_[41, 42, 43]
-                 msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['Q'][:,ind], measData[l]['U'][:,ind]]
-#                 msrmnts = np.r_[measData[l]['I'][ind,:], measData[l]['Q_scatplane'][ind,:], measData[l]['U_scatplane'][ind,:]]
+#                 msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['Q'][:,ind], measData[l]['U'][:,ind]]
+                 msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['Q_scatplane'][:,ind], -measData[l]['U_scatplane'][:,ind]] # HACK: neg sign on U fixes VLIDORT cord. sys. mismatch
              elif graspInputs.upper()=='IQU_SURF':
                  msTyp = np.r_[41, 42, 43]
                  msrmnts = np.r_[measData[l]['I_surf'][:,ind], measData[l]['Q_surf'][:,ind], measData[l]['U_surf'][:,ind]]
