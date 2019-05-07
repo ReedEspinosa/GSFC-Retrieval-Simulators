@@ -7,23 +7,23 @@ import sys
 #import matplotlib.pyplot as plt
 sys.path.append(os.path.join("..", "GRASP_scripts"))
 from runGRASP import graspDB, graspRun, pixel
-from MADCAP_functions import readVILDORTnetCDF
+from MADCAP_functions import readVILDORTnetCDF, hashFileSHA1
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-#basePath = '/home/respinosa/ReedWorking/' # Uranus
+rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig')
 dayStr = '20060901'
 dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
 pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_1lambda.yml') # path to GRASP YAML file
-radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-#binPathGRASP = '/usr/local/bin/grasp' # path to grasp binary
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+savePath = os.path.join(os.path.split(radianceFNfrmtStr)[0], 'rayleigh_bench_%dnm_YAML%s.pkl')
 binPathGRASP = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/build/bin/grasp')
-savePath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/rayleigh_bench_MS_azmthPP.pkl')
+
 
 # Constants
 wvls = [0.865] # wavelengths to read from levC files
 lndPrct = 100; # land cover amount (%)
-grspChnkSz = 250 # number of pixles in a single SDATA file
+grspChnkSz = 25 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
 GRASP_MIN = 1e-8 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
 graspInputs = 'IQU' # 'Ionly' (intensity), 'DOLP' (I & DOLP), 'IQU' (1st 3 stokes), IQU_SURF (IQU for surface only)
@@ -36,6 +36,8 @@ solar_azimuth = 0
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'toa_reflectance', 'sensor_zenith', 'sensor_azimuth']
 varNames = ['I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'ROT','surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'toa_reflectance', 'sensor_zenith', 'sensor_azimuth']
 
+# append firt wavelength to savePath
+savePath = savePath % (int(wvls[0]*1000),hashFileSHA1(pathYAML)[0:8])
 
 # Read in radiances, solar spectral irradiance and find reflectances
 measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datSizeVar = 'sensor_azimuth')
@@ -71,7 +73,7 @@ for strtInd in strtInds:
              elif graspInputs.upper()=='IQU':
                  msTyp = np.r_[41, 42, 43]
 #                 msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['Q'][:,ind], measData[l]['U'][:,ind]]
-                 msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['Q_scatplane'][:,ind], -measData[l]['U_scatplane'][:,ind]] # HACK: neg sign on U fixes VLIDORT cord. sys. mismatch
+                 msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['Q_scatplane'][:,ind], measData[l]['U_scatplane'][:,ind]] # HACK: neg sign on U fixes VLIDORT cord. sys. mismatch
              elif graspInputs.upper()=='IQU_SURF':
                  msTyp = np.r_[41, 42, 43]
                  msrmnts = np.r_[measData[l]['I_surf'][:,ind], measData[l]['Q_surf'][:,ind], measData[l]['U_surf'][:,ind]]
@@ -79,8 +81,10 @@ for strtInd in strtInds:
                  assert False, '%s is unrecognized value for graspInputs [Ionly,DOLP,IQU]' % graspInputs
              msrmnts[np.abs(msrmnts) < GRASP_MIN] = GRASP_MIN # HINT: could change Q or U sign but still small absolute shift
              nip = msTyp.shape[0]
-             thtv = np.tile(thtv, nip) # ex. 11, 35, 55, 11, 35, 55...       
-             phi = np.abs(np.tile(solar_azimuth - measData[l]['sensor_azimuth'][ind], nbvm*nip)) # HINT: might cause phi<-180 which GRASP technically doesn't like
+             thtv = np.tile(thtv, nip) # ex. 11, 35, 55, 11, 35, 55...
+             phiRaw = solar_azimuth - measData[l]['sensor_azimuth'][ind]
+             if phiRaw<-180: phiRaw = phiRaw + 360
+             phi = np.tile(phiRaw, nbvm*nip) # HINT: DOLP accuracy falls off if phi<-180
              nowPix.addMeas(wl, msTyp, np.repeat(nbvm, nip), sza, thtv, phi, msrmnts)                 
         gObj.addPix(nowPix)
     graspObjs.append(gObj)

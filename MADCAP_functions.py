@@ -5,6 +5,9 @@ import numpy as np
 from datetime import datetime as dt
 import warnings
 from netCDF4 import Dataset
+import hashlib
+import fnmatch
+import os
 
 def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101', datSizeVar = 'sensor_zenith'):
     dayDtNm = dt.strptime(datStr, "%Y%m%d").toordinal()
@@ -49,3 +52,29 @@ def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101', da
         if 'Q_scatplane' in varNames: measData[i]['Q_scatplane'] = measData[i]['Q_scatplane']*np.pi
         if 'U_scatplane' in varNames: measData[i]['U_scatplane'] = measData[i]['U_scatplane']*np.pi
     return measData
+
+def hashFileSHA1(filePath):
+    BLOCKSIZE = 65536
+    hasher = hashlib.sha1()
+    with open(filePath, 'rb') as afile:
+        buf = afile.read(BLOCKSIZE)
+        while len(buf) > 0:
+            hasher.update(buf)
+            buf = afile.read(BLOCKSIZE)
+    return hasher.hexdigest()
+
+def loadNewestMatch(directory, pattern='*'):
+    nwstTime = 0
+    for file in os.listdir(directory):
+        filePath = os.path.join(directory, file)
+        if fnmatch.fnmatch(file, pattern) and os.path.getmtime(filePath) > nwstTime:
+            nwstTime = os.path.getmtime(filePath)
+            newestFN = filePath 
+    if nwstTime > 0:
+        return newestFN
+    else:
+        return ''
+            
+        
+        
+        

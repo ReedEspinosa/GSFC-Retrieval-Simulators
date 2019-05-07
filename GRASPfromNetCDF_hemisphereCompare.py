@@ -6,27 +6,31 @@ import sys
 sys.path.append(os.path.join("..", "GRASP_scripts"))
 import matplotlib.pyplot as plt
 from runGRASP import graspDB
-from MADCAP_functions import readVILDORTnetCDF
+from MADCAP_functions import readVILDORTnetCDF, loadNewestMatch
 import numpy as np
+import re
+
 
 # Paths to files
+wvl = 0.865
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-savePlotPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/')
-radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_PP_SSCORR_OUTGOING/rayleigh_bench_MS_azmth.pkl'
+rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig')
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+rsltsFile = loadNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='rayleigh_bench_*.pkl')
+savePlotPath = os.path.split(radianceFNfrmtStr)[0]
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
 varNames = ['I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'surf_reflectance_Q_scatplane','surf_reflectance_U_scatplane', 'sensor_zenith', 'sensor_azimuth']
 
 pltVar = 'I'
 noRayleigh = False # only compare with surface reflectance
-relDeltaI = False # relative (True) or absolute (False) I/Q/U difference (no effect on DOLP)
+relDeltaI = True # relative (True) or absolute (False) I/Q/U difference (no effect on DOLP)
 
 gDB = graspDB()
 gDB.loadResults(rsltsFile)
 
 # custom tag to append to plot file names
-cstmTag = 'azmthMerd'
+cstmTag = re.search('^rayleigh_bench_([0-9]+nm_YAML[0-9a-e]+).pkl', os.path.split(rsltsFile)[1]).group(1)
 
 # PLOTTING CODE
 wvls = np.atleast_1d(gDB.rslts[0]['lambda'])
@@ -39,7 +43,7 @@ lbl3 = "$2(%s_{grasp} - %s_{vildort})/(%s_{grasp} + %s_{vildort})$ [%%]"  % (plt
 
 # Read in radiances, solar spectral irradiance and find reflectances
 #measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls)
-measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, [0.865])
+measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, [wvl])
 Nwvl = wvls.shape[0]
 if Nwvl == 1:
     fig, ax = plt.subplots(1,3, subplot_kw=dict(projection='polar'), figsize=(14,6))
@@ -56,7 +60,7 @@ for l in range(Nwvl):
         pltVarApnd = ''
     pltVarStr = pltVar+pltVarApnd    
     vildort = measData[l][pltVarStr]
-    if (pltVar in ['Q', 'U']) and (measData[l]['Q'+pltVarApnd].sum() < 0): # we probably need a 90 deg cord. sys. rotation
+    if (pltVar in ['Q', 'U']) and (measData[l]['Q'+pltVarApnd].sum() < 0): # we might need a 90 deg cord. sys. rotation
             vildort = -vildort
             pltVarStr = '-'+pltVarStr
     print('Plotting netCDF variable %s' % pltVarStr)
@@ -123,5 +127,5 @@ elif relDeltaI:
     C = '_relative'
 else:
     C = '_absolute'
-figFN =  A+B+'-'+pltVar+cstmTag+C+'.png'
+figFN =  A+B+'_'+cstmTag+'-'+pltVar+C+'.png'
 fig.savefig(os.path.join(savePlotPath, figFN), bbox_inches='tight')
