@@ -11,17 +11,16 @@ from MADCAP_functions import readVILDORTnetCDF, hashFileSHA1
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig')
+rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12')
 dayStr = '20060901'
 dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
-pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_1lambda.yml') # path to GRASP YAML file
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-savePath = os.path.join(os.path.split(radianceFNfrmtStr)[0], 'rayleigh_bench_%dnm_YAML%s.pkl')
+pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_2lambda.yml') # path to GRASP YAML file
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+aerosol_BRDF/calipso-g5nr.vlidort.vector.MODIS_BRDF.%dd00.nc4')
 binPathGRASP = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/build/bin/grasp')
-
+savePathTag = 'aerosol_bench_OneHexQuadExpnd' # preprend tag for save file, A-z and _ only
 
 # Constants
-wvls = [0.865] # wavelengths to read from levC files
+wvls = [0.470, 0.865] # wavelengths to read from levC files
 lndPrct = 100; # land cover amount (%)
 grspChnkSz = 25 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
@@ -37,7 +36,9 @@ solar_azimuth = 0
 varNames = ['I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'ROT','surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'toa_reflectance', 'sensor_zenith', 'sensor_azimuth']
 
 # append firt wavelength to savePath
-savePath = savePath % (int(wvls[0]*1000),hashFileSHA1(pathYAML)[0:8])
+waveTag = '_%dnm' % (wvls[0]*1000) if len(wvls)==1 else '_%dLambda' % len(wvls)
+yamlTag = '_YAML%s' % hashFileSHA1(pathYAML)[0:8]
+savePath = os.path.join(os.path.split(radianceFNfrmtStr)[0], savePathTag+waveTag+yamlTag+'.pkl')
 
 # Read in radiances, solar spectral irradiance and find reflectances
 measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datSizeVar = 'sensor_azimuth')
@@ -59,6 +60,7 @@ for strtInd in strtInds:
         lon = 0
         lat = 0
         masl = 1743.45 # ROT=0.01258532 @ 865nm; benchmark netCDF ROT=0.0125853186 => agreement to 0.000011%
+                       # ROT=0.15018514 @ 470nm; benchmark netCDF ROT=0.1501853764 => agreement to 0.000159%         
         nowPix = pixel(dtNm, 1, 1, lon, lat, masl, lndPrct)
         sza = solar_zenith # assume instantaneous measurement
         for l,wl in enumerate(wvls): # LOOP OVER WAVELENGTHS
@@ -73,7 +75,7 @@ for strtInd in strtInds:
              elif graspInputs.upper()=='IQU':
                  msTyp = np.r_[41, 42, 43]
 #                 msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['Q'][:,ind], measData[l]['U'][:,ind]]
-                 msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['Q_scatplane'][:,ind], measData[l]['U_scatplane'][:,ind]] # HACK: neg sign on U fixes VLIDORT cord. sys. mismatch
+                 msrmnts = np.r_[measData[l]['I'][:,ind], measData[l]['Q_scatplane'][:,ind], measData[l]['U_scatplane'][:,ind]]
              elif graspInputs.upper()=='IQU_SURF':
                  msTyp = np.r_[41, 42, 43]
                  msrmnts = np.r_[measData[l]['I_surf'][:,ind], measData[l]['Q_surf'][:,ind], measData[l]['U_surf'][:,ind]]
@@ -83,7 +85,7 @@ for strtInd in strtInds:
              nip = msTyp.shape[0]
              thtv = np.tile(thtv, nip) # ex. 11, 35, 55, 11, 35, 55...
              phiRaw = solar_azimuth - measData[l]['sensor_azimuth'][ind]
-             if phiRaw<-180: phiRaw = phiRaw + 360
+             if phiRaw<0: phiRaw = phiRaw + 360
              phi = np.tile(phiRaw, nbvm*nip) # HINT: DOLP accuracy falls off if phi<-180
              nowPix.addMeas(wl, msTyp, np.repeat(nbvm, nip), sza, thtv, phi, msrmnts)                 
         gObj.addPix(nowPix)

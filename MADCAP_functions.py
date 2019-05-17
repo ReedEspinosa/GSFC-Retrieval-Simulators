@@ -9,24 +9,30 @@ import hashlib
 import fnmatch
 import os
 
+def loadVARSnetCDF(filePath, varNames=None):
+    warnings.simplefilter('ignore') # ignore missing_value not cast warning
+    measData = dict()
+    netCDFobj = Dataset(filePath)
+    if varNames is None: varNames = netCDFobj.variables.keys()
+    for varName in varNames:
+        if varName in netCDFobj.variables.keys():
+            measData[varName] = np.array(netCDFobj.variables[varName])
+        else:
+            warnings.warn('Could not find %s variable in netCDF data' % varName)
+    netCDFobj.close()
+    warnings.simplefilter('always')
+    return measData 
+
 def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101', datSizeVar = 'sensor_zenith'):
     dayDtNm = dt.strptime(datStr, "%Y%m%d").toordinal()
     Nwvlth = len(wvls)
     measData = [{} for _ in range(Nwvlth)]
     invldInd = np.array([])
-    warnings.simplefilter('ignore') # ignore missing_value not cast warning
     for i,wvl in enumerate(wvls):
-        radianceFN = radianceFNfrmtStr % int(wvl*1000)
-        netCDFobj = Dataset(radianceFN)
-        for varName in varNames:
-            if varName in netCDFobj.variables.keys():
-                measData[i][varName] = np.array(netCDFobj.variables[varName])
-            else:
-                warnings.warn('Could not find %s variable in netCDF data' % varName)
+        radianceFN = radianceFNfrmtStr % (wvl*1000)
+        measData[i] = loadVARSnetCDF(radianceFN, varNames)
         invldInd = np.append(invldInd, np.nonzero((measData[i]['I']<0).any(axis=1))[0])
-        netCDFobj.close()
     invldInd = np.array(np.unique(invldInd), dtype='int') # only take points w/ I>0 at all wavelengths & angles    
-    warnings.simplefilter('always')
     for i in range(Nwvlth):
         for varName in np.setdiff1d(list(measData[i].keys()), 'sensor_zenith'):
             measData[i][varName] = np.delete(measData[i][varName], invldInd, axis=0)
@@ -63,7 +69,7 @@ def hashFileSHA1(filePath):
             buf = afile.read(BLOCKSIZE)
     return hasher.hexdigest()
 
-def loadNewestMatch(directory, pattern='*'):
+def findNewestMatch(directory, pattern='*'):
     nwstTime = 0
     for file in os.listdir(directory):
         filePath = os.path.join(directory, file)
