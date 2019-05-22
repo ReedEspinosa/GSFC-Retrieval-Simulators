@@ -15,16 +15,16 @@ import scipy.ndimage as ndimage
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
 rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12')
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+aerosol_BRDF/calipso-g5nr.vlidort.vector.MODIS_BRDF.%dd00.nc4')
-rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='aerosol_bench*.pkl')
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+aerosol_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='noSruf_bench_OneHexQuadExpnd*3ae92d3d.pkl')
 savePlotPath = os.path.split(radianceFNfrmtStr)[0]
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
 varNames = ['I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'surf_reflectance_Q_scatplane','surf_reflectance_U_scatplane', 'sensor_zenith', 'sensor_azimuth']
 
-pltVar = 'I'
+pltVar = 'DOLP'
 noRayleigh = False # only compare with surface reflectance
-relDeltaI = True # relative (True) or absolute (False) I/Q/U difference (no effect on DOLP)
+relDeltaI = False # relative (True) or absolute (False) I/Q/U difference (no effect on DOLP)
 
 print('Loading results from: ', os.path.split(rsltsFile)[1])
 gDB = graspDB()
@@ -50,7 +50,7 @@ measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls)
 Nwvl = wvls.shape[0]
 
 fig, ax = plt.subplots(Nwvl, 3, subplot_kw=dict(projection='polar'), figsize=(14,3+3*Nwvl))
-if Nwvl == 1: ax = ax[:,None]
+if Nwvl == 1: ax = ax[None,:]
 #else:
 #    fig, ax = plt.subplots(3,Nwvl, subplot_kw=dict(projection='polar'), figsize=(20,15))
 for l in range(Nwvl):
