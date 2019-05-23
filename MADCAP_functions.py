@@ -28,19 +28,23 @@ def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101', da
     Nwvlth = len(wvls)
     measData = [{} for _ in range(Nwvlth)]
     invldInd = np.array([])
+    varNames = np.union1d(varNames, datSizeVar)
     for i,wvl in enumerate(wvls):
         radianceFN = radianceFNfrmtStr % (wvl*1000)
         measData[i] = loadVARSnetCDF(radianceFN, varNames)
         invldInd = np.append(invldInd, np.nonzero((measData[i]['I']<0).any(axis=1))[0])
-    invldInd = np.array(np.unique(invldInd), dtype='int') # only take points w/ I>0 at all wavelengths & angles    
+    invldInd = np.array(np.unique(invldInd), dtype='int') # only take points w/ I>0 at all wavelengths & angles  
+    assert datSizeVar in measData[i].keys(), 'datSizeVar was not found in the netCDF file!'
     for i in range(Nwvlth):
         for varName in np.setdiff1d(list(measData[i].keys()), 'sensor_zenith'):
             measData[i][varName] = np.delete(measData[i][varName], invldInd, axis=0)
         measData[i]['dtNm'] = dayDtNm + np.r_[0:measData[0][datSizeVar].shape[0]]/24
-        measData[i]['DOLP'] = np.sqrt(measData[i]['Q']**2+measData[i]['U']**2)/measData[i]['I']
-        measData[i]['I'] = measData[i]['I']*np.pi # GRASP "I"=R=L/FO*pi 
-        measData[i]['Q'] = measData[i]['Q']*np.pi 
-        measData[i]['U'] = measData[i]['U']*np.pi
+        if 'I' in measData[i].keys():
+            measData[i]['I'] = measData[i]['I']*np.pi # GRASP "I"=R=L/FO*pi 
+            if 'Q' in measData[i].keys(): measData[i]['Q'] = measData[i]['Q']*np.pi 
+            if 'U' in measData[i].keys(): measData[i]['U'] = measData[i]['U']*np.pi
+            if 'Q' in measData[i].keys() and 'U' in measData[i].keys():
+                measData[i]['DOLP'] = np.sqrt(measData[i]['Q']**2+measData[i]['U']**2)/measData[i]['I']
         if 'surf_reflectance' in measData[i].keys():
             measData[i]['I_surf'] = measData[i]['surf_reflectance']*np.cos(30*np.pi/180)
             if 'surf_reflectance_Q_scatplane' in measData[i].keys():

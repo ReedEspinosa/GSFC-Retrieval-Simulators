@@ -12,7 +12,7 @@ from scipy import interpolate as intrp
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+aerosol_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_simple_aerosol_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
 
 rsltsFile = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+aerosol_nosurface/noSruf_bench_OneHexQuadExpnd_865nm_YAML216cbfed.pkl')
 
@@ -47,8 +47,8 @@ for i in range(Nwvlth):  # integrate over all layers
         elif not np.isscalar(measData[i][varName]) and measData[i][varName].shape[0]==Nlayer:
             measData[i][varName+'_all'] = np.sum(tauKrnl*measData[i][varName])
 
-#print('<> Wavelengths (LAMBDA):')
-#print(wvls)
+print('<> Wavelengths (LAMBDA):')
+print(wvls)
 #
 #if 'RISO' in measData[0]:
 #    print('<> RTLS BRDF (ISO;VOL;GEOM):')
@@ -89,13 +89,13 @@ print((np.array([md['ZE_all'] for md in measData])).tolist());
 
 
 
-plt.figure()
-plt.plot(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr'],gDB.rslts[0]['r'],gDB.rslts[0]['vol']*gDB.rslts[0]['dVdlnr'],'x')
-plt.xlim(0.04,0.6)
-plt.xscale('log')
-plt.xlabel('radius (μm)')
-plt.ylabel('dv/dlnr ($μm^3/μm^3$)')
-plt.legend(['netCDF', 'GRASP'])
+#plt.figure()
+#plt.plot(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr'],gDB.rslts[0]['r'],gDB.rslts[0]['vol']*gDB.rslts[0]['dVdlnr'],'x')
+#plt.xlim(0.04,0.6)
+#plt.xscale('log')
+#plt.xlabel('radius (μm)')
+#plt.ylabel('dv/dlnr ($μm^3/μm^3$)')
+#plt.legend(['netCDF', 'GRASP'])
 
 #totPSD = np.zeros(measData[0]['TOTdist'].shape[1])
 #for h in range(measData[0]['VOL'].shape[0]):

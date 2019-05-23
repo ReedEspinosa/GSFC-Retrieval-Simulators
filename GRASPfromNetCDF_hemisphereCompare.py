@@ -9,14 +9,14 @@ from runGRASP import graspDB
 from MADCAP_functions import readVILDORTnetCDF, findNewestMatch
 import numpy as np
 import re
-import scipy.ndimage as ndimage
+#import scipy.ndimage as ndimage
 
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
 rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12')
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+aerosol_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='noSruf_bench_OneHexQuadExpnd*3ae92d3d.pkl')
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='bench_hundredxAOD_sixteenQuadExpnd*.pkl')
 savePlotPath = os.path.split(radianceFNfrmtStr)[0]
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
@@ -31,7 +31,9 @@ gDB = graspDB()
 gDB.loadResults(rsltsFile)
 
 # custom tag to append to plot file names
-cstmTag = re.search('^[A-z_]+_([0-9]+[nmLambda]+_YAML[0-9a-f]+).pkl', os.path.split(rsltsFile)[1]).group(1)
+cstmTag = re.search('^[A-z_]+_([0-9]+[nmLambda]+_YAML[0-9a-f]+).pkl', os.path.split(rsltsFile)[1])
+assert not cstmTag is None, 'Numbers are not allowed in the initial tag of the PKL filename'
+cstmTag = cstmTag.group(1)
 
 maxZnth = 65; # difference plots scales will accommodate values beyond this zenith angle
 

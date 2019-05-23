@@ -14,13 +14,14 @@ basePath = '/Users/wrespino/Synced/' # NASA MacBook
 rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12')
 dayStr = '20060901'
 dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
-pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_2lambda.yml') # path to GRASP YAML file
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+aerosol_BRDF/calipso-g5nr.vlidort.vector.MODIS_BRDF.%dd00.nc4')
+pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_1lambdaTEST.yml') # path to GRASP YAML file
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
 binPathGRASP = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/build/bin/grasp')
-savePathTag = 'aerosol_bench_OneHexQuadExpnd' # preprend tag for save file, A-z and _ only
+savePathTag = 'bench_sixteenQuadExpnd' # preprend tag for save file, A-z and _ only
 
 # Constants
-wvls = [0.470, 0.865] # wavelengths to read from levC files
+#wvls = [0.470, 0.865] # wavelengths to read from levC files
+wvls = [0.865] # wavelengths to read from levC files
 lndPrct = 100; # land cover amount (%)
 grspChnkSz = 25 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
