@@ -61,7 +61,7 @@ def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101', da
                 measData[i]['DOLP_surf'] = np.full(measData[i]['I_surf'].shape, np.nan)
         if 'Q_scatplane' in varNames: measData[i]['Q_scatplane'] = measData[i]['Q_scatplane']*np.pi
         if 'U_scatplane' in varNames: measData[i]['U_scatplane'] = measData[i]['U_scatplane']*np.pi
-    return measData
+    return measData, invldInd # measData has relevent netCDF data, invldInd has times that were deemed invalid
 
 def hashFileSHA1(filePath):
     BLOCKSIZE = 65536

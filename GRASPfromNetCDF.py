@@ -4,10 +4,12 @@
 import numpy as np
 import os
 import sys
-#import matplotlib.pyplot as plt
+from netCDF4 import Dataset
+import re
+from datetime import datetime as dt
 sys.path.append(os.path.join("..", "GRASP_scripts"))
 from runGRASP import graspDB, graspRun, pixel
-from MADCAP_functions import readVILDORTnetCDF, hashFileSHA1
+from MADCAP_functions import readVILDORTnetCDF, hashFileSHA1, loadVARSnetCDF
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
@@ -50,15 +52,11 @@ savePath = os.path.join(os.path.split(radianceFNfrmtStr)[0], savePathTag+waveTag
 datStr = re.match(dateRegex, levBFN).group(1)
 dayDtNm = dt.strptime(datStr, "%Y%m%d").toordinal()
 Nwvlth = len(wvls)
-measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datSizeVar = 'sensor_azimuth')
+measData, invldInd = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datSizeVar = 'sensor_zenith')
 
-# TODO: we have a function now that will simplify this...
 # Read in levelB data to obtain pressure and then surface altitude
-netCDFobj = Dataset(levBFN)
-warnings.simplefilter('ignore') # ignore missing_value not cast warning
-surfPres = np.array(netCDFobj.variables['PS'])
-warnings.simplefilter('always')
-surfPres = np.delete(surfPres, invldInd) # BUG: we need invldInd, maybe return it from readVILDORTnetCDF()?
+levB_data = loadVARSnetCDF(levBFN, varNames=['PS'])
+surfPres = np.delete(levB_data['PS'], invldInd)
 maslTmp = [scaleHght*np.log(stndPres/PS) for PS in surfPres]
 for i in range(Nwvlth): measData[i]['masl'] = maslTmp
 
@@ -95,7 +93,8 @@ for strtInd in strtInds:
                  msrmnts = np.r_[measData[l]['I_surf'][ind,:], measData[l]['Q_surf'][ind,:], measData[l]['U_surf'][ind,:]]
              else:
                  assert False, '%s is unrecognized value for graspInputs [Ionly,DOLP,IQU,IQU_SURF]' % graspInputs
-             msrmnts[np.abs(msrmnts) < GRASP_MIN] = GRASP_MIN # HINT: could change Q or U sign but still small absolute shift
+             smInd = np.abs(msrmnts)<GRASP_MIN
+             msrmnts[smInd] = GRASP_MIN*(2*(msrmnts[smInd]>0).astype(int)-1) # this sets absolute minimum while preserving the sign
              nip = msTyp.shape[0]
              phi = np.tile(phi, nip) # ex. 11, 35, 55, 11, 35, 55...
              thtv = np.abs(np.tile(measData[l]['sensor_zenith'], nip))
