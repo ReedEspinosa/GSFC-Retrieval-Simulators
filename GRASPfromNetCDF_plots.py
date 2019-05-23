@@ -10,12 +10,20 @@ from runGRASP import graspDB
 
 pltInd = 1 # pixel index to plot
 polVar = 'U' #'P' (absolute) or 'PoI' (relative)
-titleStr = 'New RT, Rayleigh Benchmark Almucantar ($h_{surf}=1850$m,'
-#rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/sulfateBenchmark/rayleigh_bench_fit__Allfixed_noHot_altGT0.pkl'
+titleStr = 'PLOT TITLE'
 rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/benchmark_rayleigh_nosurface_BPDF_PP_neg/NOrayleigh_bench.pkl'
-viewZenith = np.r_[0:85:5];
-titleStr = titleStr + ' $\\theta_{v}=$%d)' % viewZenith[pltInd]
 
+# Scatter Plot Parameters
+yVarNm = 'n'
+xVarNm = 'k'
+yInd = [0]
+xInd = [0]
+#cVarNm = 'vol'
+cVarNm= False
+cInd = [0]
+
+
+# LOAD DATA
 gDB = graspDB()
 gDB.loadResults(rsltsFile)
 pltRslt = gDB.rslts[pltInd]
@@ -53,4 +61,10 @@ ax[1,1].set_ylabel("$DoLP_{grasp} - DoLP_{vildort}$ [%]")
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
+
+# MANUAL SCAT PLOT
+vldInd = slice(None)
+plt.figure(figsize=(6,5))
+gDB.scatterPlot(xVarNm, yVarNm, 1, 1, cVarNm, 1, one2oneScale=False, 
+                    logScl=False, customAx=plt.gca(), Rstats=False, rsltInds=vldInd, pltLabel=os.path.basename(rsltsFile))
 
