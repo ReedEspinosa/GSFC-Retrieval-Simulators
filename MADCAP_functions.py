@@ -39,28 +39,28 @@ def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101', da
         for varName in np.setdiff1d(list(measData[i].keys()), 'sensor_zenith'):
             measData[i][varName] = np.delete(measData[i][varName], invldInd, axis=0)
         measData[i]['dtNm'] = dayDtNm + np.r_[0:measData[0][datSizeVar].shape[0]]/24
-        if 'I' in measData[i].keys():
+        if 'I' in measData[i]:
             measData[i]['I'] = measData[i]['I']*np.pi # GRASP "I"=R=L/FO*pi 
             if 'Q' in measData[i].keys(): measData[i]['Q'] = measData[i]['Q']*np.pi 
             if 'U' in measData[i].keys(): measData[i]['U'] = measData[i]['U']*np.pi
             if 'Q' in measData[i].keys() and 'U' in measData[i].keys():
                 measData[i]['DOLP'] = np.sqrt(measData[i]['Q']**2+measData[i]['U']**2)/measData[i]['I']
-        if 'surf_reflectance' in measData[i].keys():
+        if 'surf_reflectance' in measData[i]:
             measData[i]['I_surf'] = measData[i]['surf_reflectance']*np.cos(30*np.pi/180)
-            if 'surf_reflectance_Q_scatplane' in measData[i].keys():
+            if 'surf_reflectance_Q_scatplane' in measData[i]:
                 measData[i]['Q_surf'] = measData[i]['surf_reflectance_Q_scatplane']*np.cos(30*np.pi/180)
                 measData[i]['U_surf'] = measData[i]['surf_reflectance_U_scatplane']*np.cos(30*np.pi/180)
-                print('Q[U]_surf derived from surf_reflectance_Q[U]_scatplane (scat. plane system)')
+                print('%4.2fμm Q[U]_surf derived from surf_reflectance_Q[U]_scatplane (scat. plane system)' % wvls[i])
             else:
                 measData[i]['Q_surf'] = measData[i]['surf_reflectance_Q']*np.cos(30*np.pi/180)
                 measData[i]['U_surf'] = measData[i]['surf_reflectance_U']*np.cos(30*np.pi/180)
-                print('Q[U]_surf derived from surf_reflectance_Q[U] (meridian system)')
+                print('%4.2fμm Q[U]_surf derived from surf_reflectance_Q[U] (meridian system)' % wvls[i])
             if (measData[i]['I_surf'] > 0).all(): # TODO: This will produce NaN in all DOLP if any I_surf<0
                 measData[i]['DOLP_surf'] = np.sqrt(measData[i]['Q_surf']**2+measData[i]['U_surf']**2)/measData[i]['I_surf']
             else:
                 measData[i]['DOLP_surf'] = np.full(measData[i]['I_surf'].shape, np.nan)
-        if 'Q_scatplane' in varNames: measData[i]['Q_scatplane'] = measData[i]['Q_scatplane']*np.pi
-        if 'U_scatplane' in varNames: measData[i]['U_scatplane'] = measData[i]['U_scatplane']*np.pi
+        if 'Q_scatplane' in measData[i]: measData[i]['Q_scatplane'] = measData[i]['Q_scatplane']*np.pi
+        if 'U_scatplane' in measData[i]: measData[i]['U_scatplane'] = measData[i]['U_scatplane']*np.pi
     return measData, invldInd # measData has relevent netCDF data, invldInd has times that were deemed invalid
 
 def hashFileSHA1(filePath):

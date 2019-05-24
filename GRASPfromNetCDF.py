@@ -4,7 +4,6 @@
 import numpy as np
 import os
 import sys
-from netCDF4 import Dataset
 import re
 from datetime import datetime as dt
 sys.path.append(os.path.join("..", "GRASP_scripts"))
@@ -12,35 +11,30 @@ from runGRASP import graspDB, graspRun, pixel
 from MADCAP_functions import readVILDORTnetCDF, hashFileSHA1, loadVARSnetCDF
 
 # Paths to files
-basePath = '/Users/wrespino/Synced/' # NASA MacBook
-rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12')
 dayStr = '20060901'
-dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
-pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_1lambdaTEST.yml') # path to GRASP YAML file
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+basePath = '/Users/wrespino/Synced/' # NASA MacBook
+rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase_regenerated')
+pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_6lambda.yml') # path to GRASP YAML file
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'calipso-g5nr.vlidort.vector.MCD43C_noBPDF.'+dayStr+'_00z_%dd00nm.nc4')
 binPathGRASP = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/build/bin/grasp')
-savePathTag = 'bench_sixteenQuadExpnd' # preprend tag for save file, A-z and _ only
-# TODO: below should be updated to use new path format
-levBFN = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/sept01_testCase/calipso-g5nr.lb2.aer_Nv.'+dayStr+'_00z.nc4')
+savePathTag = 'TEST' # preprend tag for save file, A-z and _ only
+levBFN = os.path.join(rmtPrjctPath, 'calipso-g5nr.lb2.aer_Nv.'+dayStr+'_00z.nc4')
+dirGRASPworking = False # Flase -> use sytem temp directories as path for GRASP SDATA & output files 
 
 # Constants
 #wvls = [0.410, 0.440, 0.470, 0.550, 0.670, 0.865, 1.020, 1.650, 2.100] # wavelengths to read from levC files
 wvls = [0.440, 0.550, 0.670, 0.865, 1.020, 2.100] # wavelengths to read from levC files
-wvlsLidar = [0.532, 1.064] # wavelengths to read from levC lidar files
 dateRegex = '.*([0-9]{8})_[0-9]+z.nc4$' # regex to pull date string from levBFN, should give 'YYYYMMDD'
-scaleHght = 7640 # atmosphere scale height (meters)
+scaleHght = 8000 # scale height (meters) for presure to alt. conversion, 8km is consistent w/ GRASP
 stndPres = 1.01e5 # standard pressure (Pa)
 lndPrct = 100; # land cover amount (%), land only for now
-grspChnkSz = 3 # number of pixles in a single SDATA file
+graspInputs = 'IQU' # 'Ionly' (intensity), 'DOLP' (I & DOLP), 'IQU' (1st 3 stokes), IQU_SURF (IQU for surface only); must match YAML
 orbHghtKM = 700 # sensor height (km)
-GRASP_MIN = 1e-8 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
-graspInputs = 'IQU' # 'Ionly' (intensity), 'DOLP' (I & DOLP), 'IQU' (1st 3 stokes), IQU_SURF (IQU for surface only)
+GRASP_MIN = 1e-8 # measurements <GRASP_MIN will be replaced by GRASP_MIN in SDATA file
+grspChnkSz = 2 # number of pixles in a single SDATA file
 maxCPUs = 3; # maximum number of simultaneous grasp run threads
-solar_zenith = 30
-solar_azimuth = 0
 
 # Variable to read in from radiance netCDF file, note that many variables are hard coded below
-# Also, this currently stores wavelength independent data Nwvlth times but the method is simple
 varNames = ['ROT', 'I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'toa_reflectance', 'solar_zenith', 'solar_azimuth', 'sensor_zenith', 'sensor_azimuth', 'time','trjLon','trjLat']
 
 # append firt wavelength to savePath
@@ -77,7 +71,7 @@ for strtInd in strtInds:
         sza = measData[0]['solar_zenith'][ind] # assume instantaneous measurement
         for l,wl in enumerate(wvls): # LOOP OVER WAVELENGTHS
              phi = measData[l]['solar_azimuth'][ind] - measData[l]['sensor_azimuth'][ind,:] 
-             if phi<0: phi = phi + 360 # GRASP accuracy degrades when phi<0
+             phi[phi<0] = phi[phi<0] + 360  # GRASP accuracy degrades when phi<0
              nbvm = phi.shape[0] 
              if graspInputs.upper()=='Ionly':
                  msTyp = np.r_[41]

@@ -1,10 +1,3 @@
-#  Comments:
-#   fast settings
-#   monomodal triangular bins
-#   monomodal spectral dependent refractive index
-#   exponential aerosol vertical profile with retrieved scale altitude
-#   both land and ocean surface
-#   characteristics, optics, refractive index, surface, residual and size distribution bimodal properties provided
 
 input:
     driver: sdata
@@ -22,7 +15,7 @@ retrieval:
 #        path_to_internal_files: "/opt/grasp-0.8/share/grasp/kernels/"
         
     convergence:
-        stop_before_performing_retrieval: true
+        stop_before_performing_retrieval: false
         minimization_convention: logarithm
         threshold_for_stopping: 1.0e-3
         maximum_iterations_for_stopping: 20
@@ -60,16 +53,18 @@ retrieval:
                 index_of_wavelength_involved: [ 1, 2, 3, 4, 5, 6  ]
 
     radiative_transfer:
-        number_of_layers: 100 #50 -> 100, no meaningful improvement
+        number_of_layers: 50 #50 -> 100, no meaningful improvement
         aerosol_profile_vertical_type:    exponential
         molecular_profile_vertical_type:   exponential 
-        absolute_error_rt_calculations: 0.000001 # this helps, at least once quadratures_for_fourier_expansion is sufficiently high
+#        molecular_profile_vertical_type:   no_rayleigh 
+        absolute_error_rt_calculations: 0.000001 # this helps, at least once quadratures_for_fourier_expansion is sufficiently high, max of default allowed range
+#        reference_plane_for_polarization:   meridian
         reference_plane_for_polarization:   principal_plane
         simulating_observation:
             order_of_scattering: multiple_scattering
-            number_of_gaussian_quadratures_for_expansion_coefficients:  4 # 41 is max, this should have no effect w/o aerosol
-            number_of_guassian_quadratures_for_fourier_expansion_coefficients:  100 # big diff here, diminishing returns after 20 though
-            number_of_fourier_expansion_coefficients:  4 # 20 makes almost no difference    
+            number_of_gaussian_quadratures_for_expansion_coefficients:  16 # 41 is max, this should have no effect w/o aerosol
+            number_of_guassian_quadratures_for_fourier_expansion_coefficients:  50 # big diff here, diminishing returns after 20 though
+            number_of_fourier_expansion_coefficients:  10 # 4->10 makes very little difference in BRDF+BPDF case, nothing after that
         simulating_derivatives:
             order_of_scattering: derivatives
             number_of_gaussian_quadratures_for_expansion_coefficients:  15
@@ -134,7 +129,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0
+                        lagrange_multiplier: 1.0e-4
                 multi_pixel:
                    smoothness_constraints:
                        derivative_order_of_X_variability:    0
@@ -153,7 +148,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0
+                        lagrange_multiplier: 10.0e-0
                 multi_pixel:
                    smoothness_constraints:
                        derivative_order_of_X_variability:    0
@@ -172,7 +167,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0
+                        lagrange_multiplier: 1.0e-0
                 multi_pixel:
                    smoothness_constraints:
                        derivative_order_of_X_variability:    0
@@ -184,18 +179,18 @@ retrieval:
 
         characteristic[2]: #1
             type: size_distribution_triangle_bins
-            retrieved: false
+            retrieved: true
             mode[1]: 
                 initial_guess:                         #1         #2        #3        #4        #5        #6        #7        #8        #9        #10       #11       #12       #13       #14       #15       #16       
 #                      value:                          [0.005,     0.05,     0.05,     0.05,     0.05,     0.05,     0.05,     0.05,     0.05,     0.05,     0.05,     0.05,     0.05,     0.05,     0.05,     0.05      ]
-                      value:                            [0.000000002,  0.000000002, 0.000000002, 0.000000002, 0.000000002, 0.000000002, 0.000000002, 0.000000002, 0.000000002, 0.000000002, 0.000000002, 0.000000002, 0.000000002, 0.000000002, 0.000000002, 0.000000002  ]
+                      value:                            [0.000002,  0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.000002  ]
                       min:                            [0.000000001,  0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001, 0.000000001  ]
-                      max:                            [5.0,       15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     5.0       ]
+                      max:                            [1.0,       15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     15.0,     1.0  ]
                       index_of_wavelength_involved:   [0,         0,        0,        0,        0,        0,        0,        0 ,       0,        0,        0,        0,        0,        0,        0,        0         ]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0
+                        lagrange_multiplier: 1.0e-2
                 multi_pixel:
                    smoothness_constraints:
                        derivative_order_of_X_variability:    1
@@ -207,7 +202,7 @@ retrieval:
                                                 
         characteristic[3]:
             type: real_part_of_refractive_index_spectral_dependent
-            retrieved: false
+            retrieved: true
             mode[1]:
                 initial_guess:                       #1         #2        #3        #4        #5        #6       
                     value:                          [1.3711057, 1.3643849, 1.3627266, 1.3598064, 1.3568921, 1.3414735]
@@ -217,7 +212,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0
+                        lagrange_multiplier: 1.0e-1
                 multi_pixel:
                    smoothness_constraints:
                        derivative_order_of_X_variability:    1
@@ -229,7 +224,7 @@ retrieval:
 
         characteristic[4]:
             type: imaginary_part_of_refractive_index_spectral_dependent
-            retrieved: false
+            retrieved: true
             mode[1]:
                 initial_guess:                       #1        #2        #3        #4        #5        #6    
                     value:                          [4.446029e-09, 4.561385e-09, 2.4803763e-08, 6.0075854e-07, 4.157956e-06, 0.00016495885]
@@ -239,7 +234,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0
+                        lagrange_multiplier: 1.0e-3
                 multi_pixel:
                    smoothness_constraints:
                        derivative_order_of_X_variability:    1
@@ -316,7 +311,7 @@ retrieval:
 #                       lagrange_multiplier_of_T_variability: 1.0e-0  
 #             
 #        characteristic[8]: #9
-#            type: surface_water_cox_munk_iso
+#            type: surface_water_CxMnk_iso_noPol
 #            retrieved: true
 #            mode[1]:    
 #                initial_guess:                       #1      #2      #3      #4      #5      #6       
