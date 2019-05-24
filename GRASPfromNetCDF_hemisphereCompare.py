@@ -9,14 +9,15 @@ from runGRASP import graspDB
 from MADCAP_functions import readVILDORTnetCDF, findNewestMatch
 import numpy as np
 import re
+#from scipy import interpolate as intrp
 #import scipy.ndimage as ndimage
 
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
 rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12')
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='bench_hundredxAOD_sixteenQuadExpnd*.pkl')
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_simple_aerosol_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='bench_sixteenQuadExpnd*.pkl')
 savePlotPath = os.path.split(radianceFNfrmtStr)[0]
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
@@ -103,6 +104,10 @@ for l in range(Nwvl):
 #        fit = ndimage.gaussian_filter(vildort,(0,0.3),order=0) # BIG HACK
 #        lbl2 = '$DoLP_{VLIDORTsmth}$'
 #        lbl3 = '$DoLP_{VLIDORT} - DoLP_{VLIDORTsmth}$ [%]'
+        # code to pull P11 and scale VLIDORT by it        
+#        p11 = intrp.interp1d(gDB.rslts[0]['angle'].squeeze(), gDB.rslts[0]['ph11osca'].squeeze())
+#        p11Val = np.array([p11(rslt['sca_ang'][:,l]) for rslt in gDB.rslts]).T
+#        vildort = vildort/p11Val
 
         delta = 100*(fit-vildort)
     
