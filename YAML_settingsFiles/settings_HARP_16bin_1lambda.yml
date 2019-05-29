@@ -27,7 +27,7 @@ retrieval:
         
     regime_of_measurement_fitting:
 #        polarization: polarized_reflectance # P
-#        polarization: linear_polarization # PoI
+#        polarization: degree_of_polarization # PoI [CHANGED FROM linear_polarization IN V0.8.1]
         polarization: absolute_polarization_components # Q, U
             
     regime_of_multipixel_constraints: 
