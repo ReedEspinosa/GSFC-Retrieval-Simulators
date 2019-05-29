@@ -27,7 +27,7 @@ retrieval:
         
     regime_of_measurement_fitting:
 #        polarization: polarized_reflectance # P
-#        polarization: linear_polarization # PoI
+#        polarization: degree_of_polarization # PoI [CHANGED FROM linear_polarization IN V0.8.1]
         polarization: absolute_polarization_components # Q, U
             
     regime_of_multipixel_constraints: 
@@ -55,14 +55,14 @@ retrieval:
     radiative_transfer:
         number_of_layers: 50 #50 -> 100, no meaningful improvement
         aerosol_profile_vertical_type:    exponential
-        molecular_profile_vertical_type:   exponential 
-#        molecular_profile_vertical_type:   no_rayleigh 
+#        molecular_profile_vertical_type:   exponential 
+        molecular_profile_vertical_type:   no_rayleigh 
         absolute_error_rt_calculations: 0.000001 # this helps, at least once quadratures_for_fourier_expansion is sufficiently high, max of default allowed range
 #        reference_plane_for_polarization:   meridian
         reference_plane_for_polarization:   principal_plane
         simulating_observation:
 #            order_of_scattering: single_scattering
-            order_of_scattering: multiple_scattering
+            order_of_scattering: single_scattering
             number_of_gaussian_quadratures_for_expansion_coefficients:  16 # 41 is max, this should have no effect w/o aerosol
             number_of_guassian_quadratures_for_fourier_expansion_coefficients:  50 # big diff here, diminishing returns after 20 though
             number_of_fourier_expansion_coefficients:  10 # 4->10 makes very little difference in BRDF+BPDF case, nothing after that
@@ -74,7 +74,7 @@ retrieval:
 
     phase_matrix:
         size_binning_method_for_triangle_bins: logarithm
-        number_of_elements: 4
+        number_of_elements: 6
         kernels_folder: "KERNELS_BASE/"
         radius:
             mode[1]:

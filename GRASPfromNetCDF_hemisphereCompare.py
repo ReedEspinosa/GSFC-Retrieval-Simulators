@@ -15,15 +15,15 @@ import re
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12')
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_simple_aerosol_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='bench_sixteenQuadExpnd*.pkl')
+rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/benchmark_simple_aerosol+grasp_nosurface')
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='SSbench_sixteenQuadExpnd*.pkl')
 savePlotPath = os.path.split(radianceFNfrmtStr)[0]
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
 varNames = ['I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'surf_reflectance_Q_scatplane','surf_reflectance_U_scatplane', 'sensor_zenith', 'sensor_azimuth']
 
-pltVar = 'DOLP'
+pltVar = 'I'
 noRayleigh = False # only compare with surface reflectance
 relDeltaI = False # relative (True) or absolute (False) I/Q/U difference (no effect on DOLP)
 
