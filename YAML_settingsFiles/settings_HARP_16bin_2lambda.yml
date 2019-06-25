@@ -74,7 +74,7 @@ retrieval:
 
     phase_matrix:
         size_binning_method_for_triangle_bins: logarithm
-        number_of_elements: 6
+        number_of_elements: 4 # >4 will print the corresponding PM elements but DOLP=0
         kernels_folder: "KERNELS_BASE/"
         radius:
             mode[1]:

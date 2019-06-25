@@ -74,6 +74,7 @@ intrpRadii = np.logspace(np.log10(0.05),np.log10(0.5),40) # this will match GRAS
 Nradii = len(intrpRadii)
 if 'radius' in measData[0]:
     dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr']) #dv/dlnr (um^3/um^2)
+#     dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr']*10.122997) #dv/dlnr (um^3/um^2)
     print('<> Size Distribution (Radii;dvdlnr;min;max;wvlngInvlv):')
     print(intrpRadii.tolist())
     print(np.maximum(dvdlnr(intrpRadii),1.1e-13).tolist())
