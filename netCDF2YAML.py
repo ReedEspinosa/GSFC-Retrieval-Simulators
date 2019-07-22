@@ -12,13 +12,13 @@ from scipy import interpolate as intrp
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_simple_aerosol_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+#radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_simple_aerosol+grasp_higher_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
 
 rsltsFile = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+aerosol_nosurface/noSruf_bench_OneHexQuadExpnd_865nm_YAML216cbfed.pkl')
 
 varNames = ['I', 'Q', 'U', 'sensor_zenith', 'RGEO', 'RISO', 'RVOL', 'TAU', 'VOL', 'radius', 'TOTdist', 'REFR', 'REFI', 'SSA', 'ZE', 'U10m', 'V10m', 'ROT', 'SUdist', 'AREA', 'REFF']
 #wvls = [0.410, 0.440, 0.550, 0.670, 1.020, 2.100] # wavelengths to read from levC files
-wvls = [0.865] # wavelengths to read from levC files
+wvls = [0.470, 0.865] # wavelengths to read from levC files
 
 extensiveVars = ['TAU', 'TOTdist', 'ROT', 'SUdist', 'AREA']
 
@@ -34,28 +34,29 @@ measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls)
 Nwvlth = len(wvls)
 Nlayer = measData[0]['ZE'].shape[0]-1
 for i in range(Nwvlth):  # integrate over all layers
-    tauKrnl = measData[i]['TAU']/np.sum(measData[i]['TAU']) # weight intensive parameters by layer optical depth
     measData[i]['ZE_edge'] = measData[i]['ZE']
     measData[i]['ZE'] = (measData[i]['ZE'][0:-1]+measData[i]['ZE'][1:])/2 # ZE now midpoint, ZE_all is AOD weighted average height 
-    measData[i]['TOT_COL_dvdlnr'] = np.sum(measData[i]['TOTdist'].T*np.diff(-measData[i]['ZE_edge']), axis=1) # dv/dlnr (um^3/um^2)
+    if 'TAU' in measData[i]: # Else there is no aerosol
+        measData[i]['TOT_COL_dvdlnr'] = np.sum(measData[i]['TOTdist'].T*np.diff(-measData[i]['ZE_edge']), axis=1) # dv/dlnr (um^3/um^2)
+        tauKrnl = measData[i]['TAU']/np.sum(measData[i]['TAU']) # weight intensive parameters by layer optical depth
     for varName in list(measData[i]):           
         if varName in extensiveVars:
             measData[i][varName+'_all'] = np.sum(measData[i][varName], axis=0)
-        elif measData[i][varName].ndim==2 and measData[i][varName].shape[0]==Nlayer:
+        elif measData[i][varName].ndim==2 and measData[i][varName].shape[0]==Nlayer and 'TAU' in measData[i]:
             Nflds = measData[i][varName].shape[1]
             measData[i][varName+'_all'] = np.sum(np.tile(tauKrnl,(Nflds,1)).T*measData[i][varName], axis=0)
-        elif not np.isscalar(measData[i][varName]) and measData[i][varName].shape[0]==Nlayer:
+        elif not np.isscalar(measData[i][varName]) and measData[i][varName].shape[0]==Nlayer and 'TAU' in measData[i]:
             measData[i][varName+'_all'] = np.sum(tauKrnl*measData[i][varName])
 
 print('<> Wavelengths (LAMBDA):')
 print(wvls)
 #
-#if 'RISO' in measData[0]:
-#    print('<> RTLS BRDF (ISO;VOL;GEOM):')
-#    riso = np.array([md['RISO'] for md in measData])[:,0]
-#    print(riso.tolist());
-#    print((np.array([md['RVOL'] for md in measData])[:,0]/riso).tolist());
-#    print((np.array([md['RGEO'] for md in measData])[:,0]/riso).tolist());
+if 'RISO' in measData[0]:
+    print('<> RTLS BRDF (ISO;VOL;GEOM):')
+    riso = np.array([md['RISO'] for md in measData])[:,0]
+    print(riso.tolist());
+    print((np.array([md['RVOL'] for md in measData])[:,0]/riso).tolist());
+    print((np.array([md['RGEO'] for md in measData])[:,0]/riso).tolist());
 #
 #if 'U10m' in measData[0]:
 #    print('<> Ocean Parameters (U10m;V10m):')
@@ -73,20 +74,22 @@ if 'SSA' in measData[0]:
 intrpRadii = np.logspace(np.log10(0.05),np.log10(0.5),40) # this will match GRASP to 8 digits
 Nradii = len(intrpRadii)
 if 'radius' in measData[0]:
-    dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr']) #dv/dlnr (um^3/um^2)
-#     dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr']*10.122997) #dv/dlnr (um^3/um^2)
+#    dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr']) #dv/dlnr (um^3/um^2)
+    dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr']*10.122997) #dv/dlnr (um^3/um^2)
     print('<> Size Distribution (Radii;dvdlnr;min;max;wvlngInvlv):')
     print(intrpRadii.tolist())
     print(np.maximum(dvdlnr(intrpRadii),1.1e-13).tolist())
     print((1.0e-13*np.ones(Nradii)).tolist())
     print((5.0*np.ones(Nradii)).tolist())
     print((np.zeros(Nradii,dtype=int)).tolist())
-#
-print('<> Rayleigh optical depth (ROT):')
-print((np.array([md['ROT_all'] for md in measData])).tolist());
 
-print('<> AOD weighted mean height [m]:')
-print((np.array([md['ZE_all'] for md in measData])).tolist());
+if 'ROT_all' in measData[0]:
+    print('<> Rayleigh optical depth (ROT):')
+    print((np.array([md['ROT_all'] for md in measData])).tolist());
+
+if 'ZE_all' in measData[0]:
+    print('<> AOD weighted mean height [m]:')
+    print((np.array([md['ZE_all'] for md in measData])).tolist());
 
 
 

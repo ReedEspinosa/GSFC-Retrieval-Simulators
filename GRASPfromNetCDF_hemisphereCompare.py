@@ -16,15 +16,15 @@ import scipy.integrate.quadrature
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/')
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_simple_aerosol+grasp_higher_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='SSbench_noGRASPnormBugPolFix*.pkl')
+rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/graspConfig_12_P11_P12_only/')
+#radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_simple_aerosol+grasp_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='*.pkl')
 savePlotPath = os.path.split(radianceFNfrmtStr)[0]
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
 varNames = ['TAU', 'I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'surf_reflectance_Q_scatplane','surf_reflectance_U_scatplane', 'sensor_zenith', 'sensor_azimuth']
 
-pltVar = 'I'
+pltVar = 'DOLP'
 noRayleigh = False # only compare with surface reflectance
 relDeltaI = True # relative (True) or absolute (False) I/Q/U difference (no effect on DOLP)
 singScat = False # plot single scattering aerosol (no surf or rayleigh) instead of GRASP
@@ -34,12 +34,13 @@ gDB = graspDB()
 gDB.loadResults(rsltsFile)
 
 # custom tag to append to plot file names
-cstmTag = re.search('^[A-z_]+_([0-9]+[nmLambda]+_YAML[0-9a-f]+).pkl', os.path.split(rsltsFile)[1])
-assert not cstmTag is None, 'Numbers are not allowed in the initial tag of the PKL filename'
+cstmTag = re.search('^[A-z_0-9]+_([0-9]+[nmLambda]+_YAML[0-9a-f]+).pkl', os.path.split(rsltsFile)[1])
+assert not cstmTag is None, 'Could not parse the PKL filename'
 cstmTag = cstmTag.group(1) + "_P11fixed"
 ttlStr = 'Pij fixed (GRASP e438668)'
 
-maxZnth = 65; # difference plots scales will accommodate values beyond this zenith angle
+maxZnth = 80; # difference plots scales will accommodate values beyond this zenith angle
+hemi = False
 
 # PLOTTING CODE
 wvls = np.atleast_1d(gDB.rslts[0]['lambda'])
@@ -70,9 +71,9 @@ for l in range(Nwvl):
         pltVarApnd = ''
     pltVarStr = pltVar+pltVarApnd    
     vildort = measData[l][pltVarStr]
-    if (pltVar in ['Q', 'U']) and (measData[l]['Q'+pltVarApnd].sum() < 0): # we might need a 90 deg cord. sys. rotation
-            vildort = -vildort
-            pltVarStr = '-'+pltVarStr
+#    if (pltVar in ['Q', 'U']) and (measData[l]['Q'+pltVarApnd].sum() < 0): # we might need a 90 deg cord. sys. rotation
+#            vildort = -vildort
+#            pltVarStr = '-'+pltVarStr
     print('Plotting netCDF variable %s at %dnm' % (pltVarStr, 1000*wvls[l]))
     # Get GRASP values and find delta
     if pltVar in ['I', 'Q', 'U']:
@@ -126,12 +127,13 @@ for l in range(Nwvl):
         delta = 100*(fit-vildort)
     
     print('Plotting GRASP variable %s at %dnm' % (fitStr, 1000*wvls[l]))
+    azMax = np.pi if hemi else 2*np.pi
     azimth=measData[l]['sensor_azimuth']*np.pi/180
     zenith=measData[l]['sensor_zenith']
-    r, theta = np.meshgrid(zenith, azimth)
+    r, theta = np.meshgrid(zenith, azimth[azimth<=azMax])
     if pltVar in ['I','DOLP']:
-        clrMin = 0.9*np.minimum(vildort.min(), fit.min())
-        clrMax = 1.1*np.array([vildort.max(), fit.max(), 1e-10]).max()
+        clrMin = 1*np.minimum(vildort.min(), fit.min())
+        clrMax = 1*np.array([vildort.max(), fit.max(), 1e-10]).max()
         if pltVar=='DOLP': clrMax = np.minimum(clrMax, 1)
         clrMap = cmap=plt.cm.jet
     else:
@@ -144,12 +146,12 @@ for l in range(Nwvl):
     ticks = np.linspace(clrMin, clrMax, 3, endpoint=True)
     for i in range(3):
         if i == 0: 
-            data=vildort.T
+            data=vildort.T[azimth<=azMax,:]
         elif i==1: 
-            data=fit.T
+            data=fit.T[azimth<=azMax,:]
         else: 
 #            data=np.log10(delta.T)
-            data=delta.T
+            data=delta.T[azimth<=azMax,:]
             mag = np.abs(np.r_[data[:,zenith<=maxZnth].min(),data[:,zenith<=maxZnth].max(), 1e-10]).max()
 #            mag = np.r_[np.abs(data.max())] # HACK
             v = np.linspace(-mag, mag, 256, endpoint=True)
@@ -158,6 +160,7 @@ for l in range(Nwvl):
         c = ax[l,i].contourf(theta, r, data, v, cmap=clrMap)        
         cb = plt.colorbar(c, orientation='horizontal', ax=ax[l,i], ticks=ticks)
         if Nwvl > 1: ax[l,i].set_yticks(range(0, 90, 20))
+        if hemi: ax[l,i].set_thetalim([0,np.pi])
     wvStr = ' ($%4.2f\\mu m$)' % wvls[l]
     ax[l,0].set_ylabel(lbl1 + wvStr, labelpad=30)
     ax[l,1].set_ylabel(lbl2 + wvStr, labelpad=30)
