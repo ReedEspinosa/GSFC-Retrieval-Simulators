@@ -6,15 +6,13 @@ import sys
 sys.path.append(os.path.join("..", "GRASP_scripts"))
 import matplotlib.pyplot as plt
 from runGRASP import graspDB
-from MADCAP_functions import readVILDORTnetCDF
+from MADCAP_functions import loadVARSnetCDF, readVILDORTnetCDF
 import numpy as np
 from scipy import interpolate as intrp
 
 # Paths to files
-basePath = '/Users/wrespino/Synced/' # NASA MacBook
-#radianceFNfrmtStr = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_simple_aerosol+grasp_higher_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-
-rsltsFile = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+aerosol_nosurface/noSruf_bench_OneHexQuadExpnd_865nm_YAML216cbfed.pkl')
+radianceFNfrmtStr = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/newOpticsTables/optics_SU.v1_5_gpmom_sizedist.nc'
+rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+aerosol_nosurface/noSruf_bench_OneHexQuadExpnd_865nm_YAML216cbfed.pkl'
 
 varNames = ['I', 'Q', 'U', 'sensor_zenith', 'RGEO', 'RISO', 'RVOL', 'TAU', 'VOL', 'radius', 'TOTdist', 'REFR', 'REFI', 'SSA', 'ZE', 'U10m', 'V10m', 'ROT', 'SUdist', 'AREA', 'REFF']
 #wvls = [0.410, 0.440, 0.550, 0.670, 1.020, 2.100] # wavelengths to read from levC files
@@ -26,27 +24,40 @@ intrpRadii = np.array([0.05, 0.059009, 0.06964, 0.082188, 0.096996, 0.11447, 0.1
 
 
 
-# Read in radiances, solar spectral irradiance and find reflectances
-measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls)
+# ---Single Scattering Optics Tables---
+wvInds = [2,5,9,13,15] #2->350nm, 5->500nm, 9->700nm, 13->1000nm, 15->1500nm
+varNames = ['r_dist', 'size_dist', 'refreal', 'refimag', 'lambda']
+rawData = loadVARSnetCDF(radianceFNfrmtStr, varNames)
+measData = np.array([dict()]).repeat(len(wvInds))
+wvls = np.zeros(len(wvInds))
+for i,wvInd in enumerate(wvInds):
+    measData[0]['radius'] = np.array([rawData['r_dist'][:,0,14]]).squeeze()
+    measData[i]['TOT_COL_dvdlnr'] = np.array([rawData['size_dist'][:,0,14]]).squeeze()*(measData[0]['radius']**4)
+    measData[i]['REFR_all'] = np.array([rawData['refreal'][0,14,wvInd]]).squeeze()
+    measData[i]['REFI_all'] = -np.array([rawData['refimag'][0,14,wvInd]]).squeeze()
+    measData[i]['SSA_all'] = np.array([np.nan])
+    measData[i]['TAU_all'] = np.array([np.nan])
+    wvls[i] = rawData['lambda'][wvInd]*1e6
 
+# ---OSSE VILDORT Full RT Outputs---
+#measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls)
+#Nwvlth = len(wvls)
+#Nlayer = measData[0]['ZE'].shape[0]-1
+#for i in range(Nwvlth):  # integrate over all layers
+#    measData[i]['ZE_edge'] = measData[i]['ZE']
+#    measData[i]['ZE'] = (measData[i]['ZE'][0:-1]+measData[i]['ZE'][1:])/2 # ZE now midpoint, ZE_all is AOD weighted average height 
+#    if 'TAU' in measData[i]: # Else there is no aerosol
+#        measData[i]['TOT_COL_dvdlnr'] = np.sum(measData[i]['TOTdist'].T*np.diff(-measData[i]['ZE_edge']), axis=1) # dv/dlnr (um^3/um^2)
+#        tauKrnl = measData[i]['TAU']/np.sum(measData[i]['TAU']) # weight intensive parameters by layer optical depth
+#    for varName in list(measData[i]):           
+#        if varName in extensiveVars:
+#            measData[i][varName+'_all'] = np.sum(measData[i][varName], axis=0)
+#        elif measData[i][varName].ndim==2 and measData[i][varName].shape[0]==Nlayer and 'TAU' in measData[i]:
+#            Nflds = measData[i][varName].shape[1]
+#            measData[i][varName+'_all'] = np.sum(np.tile(tauKrnl,(Nflds,1)).T*measData[i][varName], axis=0)
+#        elif not np.isscalar(measData[i][varName]) and measData[i][varName].shape[0]==Nlayer and 'TAU' in measData[i]:
+#            measData[i][varName+'_all'] = np.sum(tauKrnl*measData[i][varName])
 
-# Read in model "truth" from levC lidar file
-Nwvlth = len(wvls)
-Nlayer = measData[0]['ZE'].shape[0]-1
-for i in range(Nwvlth):  # integrate over all layers
-    measData[i]['ZE_edge'] = measData[i]['ZE']
-    measData[i]['ZE'] = (measData[i]['ZE'][0:-1]+measData[i]['ZE'][1:])/2 # ZE now midpoint, ZE_all is AOD weighted average height 
-    if 'TAU' in measData[i]: # Else there is no aerosol
-        measData[i]['TOT_COL_dvdlnr'] = np.sum(measData[i]['TOTdist'].T*np.diff(-measData[i]['ZE_edge']), axis=1) # dv/dlnr (um^3/um^2)
-        tauKrnl = measData[i]['TAU']/np.sum(measData[i]['TAU']) # weight intensive parameters by layer optical depth
-    for varName in list(measData[i]):           
-        if varName in extensiveVars:
-            measData[i][varName+'_all'] = np.sum(measData[i][varName], axis=0)
-        elif measData[i][varName].ndim==2 and measData[i][varName].shape[0]==Nlayer and 'TAU' in measData[i]:
-            Nflds = measData[i][varName].shape[1]
-            measData[i][varName+'_all'] = np.sum(np.tile(tauKrnl,(Nflds,1)).T*measData[i][varName], axis=0)
-        elif not np.isscalar(measData[i][varName]) and measData[i][varName].shape[0]==Nlayer and 'TAU' in measData[i]:
-            measData[i][varName+'_all'] = np.sum(tauKrnl*measData[i][varName])
 
 print('<> Wavelengths (LAMBDA):')
 print(wvls)
@@ -63,25 +74,41 @@ if 'RISO' in measData[0]:
 #    print(np.array([md['U10m'] for md in measData]).tolist());
 #    print((np.array([md['V10m'] for md in measData])).tolist());
 #    
-if 'SSA' in measData[0]:
+if 'SSA_all' in measData[0]:
     print('<> Spectral Aerosol Parameters (RRI;IRI;SSA;TAU):')
     print(np.array([md['REFR_all'] for md in measData]).tolist());
     print(np.array([md['REFI_all'] for md in measData]).tolist());
     print(np.array([md['SSA_all'] for md in measData]).tolist());
     print(np.array([md['TAU_all'] for md in measData]).tolist());
 #
-
-intrpRadii = np.logspace(np.log10(0.05),np.log10(0.5),40) # this will match GRASP to 8 digits
+Nbins = 40
+#minR = measData[0]['radius'].min()-np.diff(measData[0]['radius']).mean() # doesn't matter much, very little signal here
+#maxR = (measData[0]['radius'].max()+np.diff(measData[0]['radius']).mean()/2)/(minR**(1/Nbins))
+minR = 0.015 # play with min/max R to make triangles on right in plot roughly equal in area
+maxR = 0.482
+intrpRadii = np.logspace(np.log10(minR),np.log10(maxR),Nbins) # this will match GRASP to 8 digits
 Nradii = len(intrpRadii)
 if 'radius' in measData[0]:
 #    dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr']) #dv/dlnr (um^3/um^2)
-    dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr']*10.122997) #dv/dlnr (um^3/um^2)
+    dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr']/1e4, bounds_error=False, fill_value=0) 
     print('<> Size Distribution (Radii;dvdlnr;min;max;wvlngInvlv):')
     print(intrpRadii.tolist())
     print(np.maximum(dvdlnr(intrpRadii),1.1e-13).tolist())
     print((1.0e-13*np.ones(Nradii)).tolist())
     print((5.0*np.ones(Nradii)).tolist())
     print((np.zeros(Nradii,dtype=int)).tolist())
+    print('radiusMin = %6.4f, radiusMax = %6.4f' % (minR,maxR) )
+    plt.figure()
+    plt.plot(measData[0]['radius'],(measData[0]['TOT_COL_dvdlnr']/measData[0]['radius'])/(measData[0]['TOT_COL_dvdlnr']/measData[0]['radius']).max())
+    plt.plot(intrpRadii,(dvdlnr(intrpRadii)/intrpRadii)/(dvdlnr(intrpRadii)/intrpRadii).max(), '-o')
+    plt.legend('Optics Tables', 'GRASP', loc='upper left')
+    truncPoint = measData[0]['radius'].max()+0.5*np.diff(measData[0]['radius']).mean()
+    plt.plot([truncPoint, truncPoint], [0,1], 'k--')
+    plt.xscale('log')
+    plt.xlabel('radius (μm)')
+    plt.ylabel('dS/dlnr')
+    plt.legend(['netCDF', 'interpolated'])
+    plt.title('PSD fit for binSet01')
 
 if 'ROT_all' in measData[0]:
     print('<> Rayleigh optical depth (ROT):')
