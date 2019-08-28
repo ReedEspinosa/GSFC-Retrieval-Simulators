@@ -25,16 +25,17 @@ intrpRadii = np.array([0.05, 0.059009, 0.06964, 0.082188, 0.096996, 0.11447, 0.1
 
 
 # ---Single Scattering Optics Tables---
+rhInd = 14 #14->70%
 wvInds = [2,5,9,13,15] #2->350nm, 5->500nm, 9->700nm, 13->1000nm, 15->1500nm
 varNames = ['r_dist', 'size_dist', 'refreal', 'refimag', 'lambda']
 rawData = loadVARSnetCDF(radianceFNfrmtStr, varNames)
-measData = np.array([dict()]).repeat(len(wvInds))
+measData = np.array([dict() for _ in wvInds])
 wvls = np.zeros(len(wvInds))
 for i,wvInd in enumerate(wvInds):
-    measData[0]['radius'] = np.array([rawData['r_dist'][:,0,14]]).squeeze()
-    measData[i]['TOT_COL_dvdlnr'] = np.array([rawData['size_dist'][:,0,14]]).squeeze()*(measData[0]['radius']**4)
-    measData[i]['REFR_all'] = np.array([rawData['refreal'][0,14,wvInd]]).squeeze()
-    measData[i]['REFI_all'] = -np.array([rawData['refimag'][0,14,wvInd]]).squeeze()
+    measData[0]['radius'] = np.array([rawData['r_dist'][:,0,rhInd]]).squeeze()
+    measData[i]['TOT_COL_dvdlnr'] = np.array([rawData['size_dist'][:,0,rhInd]]).squeeze()*(measData[0]['radius']**4)
+    measData[i]['REFR_all'] = np.array([rawData['refreal'][0,rhInd,wvInd]]).squeeze()
+    measData[i]['REFI_all'] = -np.array([rawData['refimag'][0,rhInd,wvInd]]).squeeze()
     measData[i]['SSA_all'] = np.array([np.nan])
     measData[i]['TAU_all'] = np.array([np.nan])
     wvls[i] = rawData['lambda'][wvInd]*1e6
@@ -57,7 +58,6 @@ for i,wvInd in enumerate(wvInds):
 #            measData[i][varName+'_all'] = np.sum(np.tile(tauKrnl,(Nflds,1)).T*measData[i][varName], axis=0)
 #        elif not np.isscalar(measData[i][varName]) and measData[i][varName].shape[0]==Nlayer and 'TAU' in measData[i]:
 #            measData[i][varName+'_all'] = np.sum(tauKrnl*measData[i][varName])
-
 
 print('<> Wavelengths (LAMBDA):')
 print(wvls)
@@ -99,15 +99,14 @@ if 'radius' in measData[0]:
     print((np.zeros(Nradii,dtype=int)).tolist())
     print('radiusMin = %6.4f, radiusMax = %6.4f' % (minR,maxR) )
     plt.figure()
-    plt.plot(measData[0]['radius'],(measData[0]['TOT_COL_dvdlnr']/measData[0]['radius'])/(measData[0]['TOT_COL_dvdlnr']/measData[0]['radius']).max())
     plt.plot(intrpRadii,(dvdlnr(intrpRadii)/intrpRadii)/(dvdlnr(intrpRadii)/intrpRadii).max(), '-o')
-    plt.legend('Optics Tables', 'GRASP', loc='upper left')
+    plt.plot(measData[0]['radius'],(measData[0]['TOT_COL_dvdlnr']/measData[0]['radius'])/(measData[0]['TOT_COL_dvdlnr']/measData[0]['radius']).max())
     truncPoint = measData[0]['radius'].max()+0.5*np.diff(measData[0]['radius']).mean()
     plt.plot([truncPoint, truncPoint], [0,1], 'k--')
     plt.xscale('log')
     plt.xlabel('radius (μm)')
     plt.ylabel('dS/dlnr')
-    plt.legend(['netCDF', 'interpolated'])
+    plt.legend(['interpolated\n(GRASP)', 'netCDF'])
     plt.title('PSD fit for binSet01')
 
 if 'ROT_all' in measData[0]:
