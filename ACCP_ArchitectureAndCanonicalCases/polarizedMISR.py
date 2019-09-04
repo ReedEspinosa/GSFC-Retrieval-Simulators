@@ -10,9 +10,10 @@ import numpy as np
 import os
 import sys
 import copy
-sys.path.append(os.path.join("..", "GRASP_scripts"))
+sys.path.append(os.path.join(".."))
 import pickle
-from runGRASP import graspRun, pixel
+#from runGRASP import graspRun, pixel
+import GRASP_scripts.runGRASP as rg
 
 fwdModelYAMLpath = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/canonical_cases/settings_FWD_IQU_5lambda_Template.yml'
 bckYAMLpath = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/canonical_cases/settings_BCK_IQU_5lambda_Template.yml'
@@ -30,7 +31,7 @@ sza = 30
 thtv = np.tile([70.5, 60.0, 45.6, 26.1, 0, 26.1, 45.6, 60.0, 70.5], len(nbvm))
 phi = np.tile([0, 0, 0, 0, 0, 180, 180, 180, 180], len(nbvm))
 meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
-nowPix = pixel(730123.0, 1, 1, 0, 0, 0, 100)
+nowPix = rg.pixel(730123.0, 1, 1, 0, 0, 0, 100)
 nowPix.addMeas(0.350, msTyp, nbvm, sza, thtv, phi, meas)
 nowPix.addMeas(0.50, msTyp, nbvm, sza, thtv, phi, meas)
 nowPix.addMeas(0.70, msTyp, nbvm, sza, thtv, phi, meas)
@@ -48,13 +49,13 @@ def addError(meas, measNm):
         assert False, 'Unkown measurement string, can not add error!'
 
 # RUN THE FOWARD MODEL
-gObjFwd = graspRun(fwdModelYAMLpath)
+gObjFwd = rg.graspRun(fwdModelYAMLpath)
 gObjFwd.addPix(nowPix)
 gObjFwd.runGRASP()
 rsltFwd = gObjFwd.readOutput()
 
 # ADD NOISE AND PERFORM RETRIEVALS
-gObjBck = graspRun(bckYAMLpath)
+gObjBck = rg.graspRun(bckYAMLpath)
 for i in range(Nsims):
     nowPix.dtNm = copy.copy(nowPix.dtNm)
     for l, msDct in enumerate(nowPix.measVals):

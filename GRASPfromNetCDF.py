@@ -57,7 +57,7 @@ for i in range(Nwvlth): measData[i]['masl'] = maslTmp
 # Generate GRASPruns from cases
 graspObjs = []
 Npix = measData[0]['I'].shape[0]
-Npix = 6 # HACK to test with only 6 pixels
+#Npix = 6 # HACK to test with only 6 pixels
 strtInds = np.r_[0:Npix:grspChnkSz]
 for strtInd in strtInds:
     gObj = graspRun(pathYAML, orbHghtKM, dirGRASPworking)
