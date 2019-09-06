@@ -42,8 +42,8 @@ retrieval:
                 index_of_wavelength_involved: [ 1,2,3,4,5]
         noise[2]:
             standard_deviation_synthetic: 0.0
-            error_type:  absolute
-            standard_deviation:  0.005
+            error_type:  relative
+            standard_deviation:  0.01
             measurement_type[1]:
                 type: Q
                 index_of_wavelength_involved: [ 1, 2, 3, 4, 5]
@@ -129,7 +129,7 @@ retrieval:
                         lagrange_multiplier: 0.0
             mode[2]: 
                 initial_guess: 
-                    value:                        [0.05]
+                    value:                        [0.50] # only initial guess that differs from fwd model
                     min:                          [0.0015]
                     max:                          [2.000]
                     index_of_wavelength_involved: [0]
@@ -143,7 +143,7 @@ retrieval:
             retrieved: true
             mode[1]: 
                 initial_guess: 
-                    value:                        [0.2,       0.5]
+                    value:                        [0.544,   0.50]
                     min:                           [0.05,       0.3]
                     max:                          [1.00,       0.8]
                     index_of_wavelength_involved: [0,     0]
@@ -152,9 +152,9 @@ retrieval:
                         lagrange_multiplier:      [0,  0]
             mode[2]: 
                 initial_guess: 
-                    value:                        [3.0,   0.5]
+                    value:                        [4.37,  0.72]
                     min:                           [1.0,   0.3] 
-                    max:                          [6.0,  0.8]
+                    max:                          [6.0,  0.85]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
                     a_priori_estimates:
@@ -162,10 +162,10 @@ retrieval:
                         
         characteristic[3]:
             type: real_part_of_refractive_index_spectral_dependent
-            retrieved: true
+            retrieved: false
             mode[1]:
                 initial_guess:                       #1         #2        #3        #4        #5        #6       
-                    value:                         [1.4, 1.4, 1.4, 1.4, 1.4]
+                    value:                         [1.415, 1.415, 1.415, 1.415, 1.415]
                     min:                            [1.33,1.33,1.33,1.33,1.33]
                     max:                            [1.6,1.6,1.6,1.6,1.6]
                     index_of_wavelength_involved:   [1,2,3,4,5] 
@@ -175,7 +175,7 @@ retrieval:
                         lagrange_multiplier: 0
             mode[2]:
                 initial_guess:                       #1         #2        #3        #4        #5        #6       
-                    value:                         [1.4, 1.4, 1.4, 1.4, 1.4]
+                    value:                         [1.363, 1.363, 1.363, 1.363, 1.363]
                     min:                            [1.33,1.33,1.33,1.33,1.33]
                     max:                            [1.6,1.6,1.6,1.6,1.6]
                     index_of_wavelength_involved:   [1,2,3,4,5] 
@@ -186,10 +186,10 @@ retrieval:
                                                                        
         characteristic[4]:
             type: imaginary_part_of_refractive_index_spectral_dependent
-            retrieved: true
+            retrieved: false
             mode[1]:
                 initial_guess:                       #1        #2        #3        #4        #5        #6    
-                    value:                          1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5]
+                    value:                         [0.002, 0.002, 0.002, 0.002, 0.002]
                     min:                            [1e-10, 1e-10, 1e-10, 1e-10, 1e-10,]
                     max:                            [0.1, 0.1, 0.1, 0.1, 0.1]
                     index_of_wavelength_involved:   [1,2,3,4,5]
@@ -199,7 +199,7 @@ retrieval:
                         lagrange_multiplier: 0
             mode[2]:
                 initial_guess:                       #1        #2        #3        #4        #5        #6    
-                    value:                          1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5]
+                    value:                          [1.0e-9, 1.0e-9, 1.0e-9, 1.0e-9, 1.0e-9]
                     min:                            [1e-10, 1e-10, 1e-10, 1e-10, 1e-10,]
                     max:                            [0.1, 0.1, 0.1, 0.1, 0.1]
                     index_of_wavelength_involved:   [1,2,3,4,5]

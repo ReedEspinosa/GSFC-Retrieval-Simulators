@@ -113,10 +113,152 @@ retrieval:
         additional_information: false
         verbose: true
 
-    constraints:    
-        characteristic[1]: 
-            type: surface_land_brdf_ross_li # NEEDS TO GO ABOVE BPDF
+    constraints:                            
+        characteristic[1]: # FINE MODE FRACTION IS BY VOLUME
+            type: aerosol_concentration
             retrieved: true
+            mode[1]:  
+                initial_guess: 
+                    value:                        [0.05]
+                    min:                          [0.0015]
+                    max:                          [2.000]
+                    index_of_wavelength_involved: [0]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0.0
+            mode[2]: 
+                initial_guess: 
+                    value:                        [1.000]
+                    min:                          [0.000001]
+                    max:                          [1.800]
+                    index_of_wavelength_involved: [0]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0.0
+
+        characteristic[2]:  # THIS IS IN dV/dlnr
+            type: size_distribution_lognormal
+            retrieved: true
+            mode[1]: 
+                initial_guess: 
+                    value:                        [0.544,   0.50]
+                    min:                           [0.17,      0.3]
+                    max:                          [1.20,      0.8]
+                    index_of_wavelength_involved: [0,     0]
+                single_pixel:
+                    a_priori_estimates:
+                        lagrange_multiplier:      [0,  0]
+            mode[2]: 
+                initial_guess: 
+                    value:                        [4.37,  0.72]
+                    min:                           [2.5,    0.56] 
+                    max:                          [5.0,   0.82]
+                    index_of_wavelength_involved: [0,     0]
+                single_pixel:
+                    a_priori_estimates:
+                        lagrange_multiplier:      [0,  0]
+                        
+        characteristic[3]:
+            type: real_part_of_refractive_index_spectral_dependent
+            retrieved: true
+            mode[1]:
+                initial_guess:                       #1         #2        #3        #4        #5        #6       
+                    value:                         [1.415, 1.415, 1.415, 1.415, 1.415]
+                    min:                            [1.33,1.33,1.33,1.33,1.33]
+                    max:                            [1.6,1.6,1.6,1.6,1.6]
+                    index_of_wavelength_involved:   [1,2,3,4,5] 
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 0
+            mode[2]:
+                initial_guess:                       #1         #2        #3        #4        #5        #6       
+                    value:                         [1.363, 1.363, 1.363, 1.363, 1.363]
+                    min:                            [1.33,1.33,1.33,1.33,1.33]
+                    max:                            [1.6,1.6,1.6,1.6,1.6]
+                    index_of_wavelength_involved:   [1,2,3,4,5] 
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 0
+                                                                       
+        characteristic[4]:
+            type: imaginary_part_of_refractive_index_spectral_dependent
+            retrieved: true
+            mode[1]:
+                initial_guess:                       #1        #2        #3        #4        #5        #6    
+                    value:                         [0.002, 0.002, 0.002, 0.002, 0.002]
+                    min:                            [1e-10, 1e-10, 1e-10, 1e-10, 1e-10,]
+                    max:                            [0.1, 0.1, 0.1, 0.1, 0.1]
+                    index_of_wavelength_involved:   [1,2,3,4,5]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 0
+            mode[2]:
+                initial_guess:                       #1        #2        #3        #4        #5        #6    
+                    value:                          [7.0e-09, 3.0e-09, 3.0e-09, 2.0e-09, 9.0e-09] # basically zero
+                    min:                            [1e-10, 1e-10, 1e-10, 1e-10, 1e-10,]
+                    max:                            [0.1, 0.1, 0.1, 0.1, 0.1]
+                    index_of_wavelength_involved:   [1,2,3,4,5]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 0
+
+        characteristic[5]: 
+            type: sphere_fraction
+            retrieved: false
+            mode[1]:
+                initial_guess:                      #1      
+                    value:                          [0.99999998 ]
+                    min:                            [0.8999997 ]
+                    max:                            [0.99999999]
+                    index_of_wavelength_involved:   [0     ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0.0
+            mode[2]:
+                initial_guess:                      #1      
+                    value:                          [0.9999998 ]
+                    min:                            [0.9999997 ]
+                    max:                            [0.9999999]
+                    index_of_wavelength_involved:   [0     ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0.0
+
+        characteristic[6]: 
+            type: vertical_profile_parameter_height
+            retrieved: false
+            mode[1]:
+                initial_guess:                      #1          
+                    value:                          [1000.0 ]
+                    min:                            [10.0   ] 
+                    max:                            [10000.0 ]
+                    index_of_wavelength_involved:   [0      ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0
+            mode[2]:
+                initial_guess:                      #1          
+                    value:                          [1000.0 ]
+                    min:                            [10.0   ] 
+                    max:                            [10000.0 ]
+                    index_of_wavelength_involved:   [0      ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0
+        
+        characteristic[7]: 
+            type: surface_land_brdf_ross_li # NEEDS TO GO ABOVE BPDF
+            retrieved: false
             mode[1]:    #ISO
                 initial_guess:                       #1     #2     #3     #4     #5     #6 wvls = [0.410]
                     value:                          [0.000000000001, 0.000000000001, 0.000000000001, 0.000000000001, 0.000000000001]     
@@ -148,148 +290,6 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0
-                        
-        characteristic[2]: # FINE MODE FRACTION IS BY VOLUME
-            type: aerosol_concentration
-            retrieved: true
-            mode[1]:  
-                initial_guess: 
-                    value:                        [0.05]
-                    min:                          [0.0015]
-                    max:                          [2.000]
-                    index_of_wavelength_involved: [0]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 0
-                        lagrange_multiplier: 0.0
-            mode[2]: 
-                initial_guess: 
-                    value:                        [1.000]
-                    min:                          [0.000001]
-                    max:                          [1.800]
-                    index_of_wavelength_involved: [0]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 0
-                        lagrange_multiplier: 0.0
-
-        characteristic[3]:  # THIS IS IN dV/dlnr
-            type: size_distribution_lognormal
-            retrieved: true
-            mode[1]: 
-                initial_guess: 
-                    value:                        [0.544,   0.50]
-                    min:                           [0.17,      0.3]
-                    max:                          [1.20,      0.8]
-                    index_of_wavelength_involved: [0,     0]
-                single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier:      [0,  0]
-            mode[2]: 
-                initial_guess: 
-                    value:                        [4.37,  0.72]
-                    min:                           [2.5,    0.56] 
-                    max:                          [5.0,   0.82]
-                    index_of_wavelength_involved: [0,     0]
-                single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier:      [0,  0]
-                        
-        characteristic[4]:
-            type: real_part_of_refractive_index_spectral_dependent
-            retrieved: true
-            mode[1]:
-                initial_guess:                       #1         #2        #3        #4        #5        #6       
-                    value:                         [1.415, 1.415, 1.415, 1.415, 1.415]
-                    min:                            [1.33,1.33,1.33,1.33,1.33]
-                    max:                            [1.6,1.6,1.6,1.6,1.6]
-                    index_of_wavelength_involved:   [1,2,3,4,5] 
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 1
-                        lagrange_multiplier: 0
-            mode[2]:
-                initial_guess:                       #1         #2        #3        #4        #5        #6       
-                    value:                         [1.363, 1.363, 1.363, 1.363, 1.363]
-                    min:                            [1.33,1.33,1.33,1.33,1.33]
-                    max:                            [1.6,1.6,1.6,1.6,1.6]
-                    index_of_wavelength_involved:   [1,2,3,4,5] 
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 1
-                        lagrange_multiplier: 0
-                                                                       
-        characteristic[5]:
-            type: imaginary_part_of_refractive_index_spectral_dependent
-            retrieved: true
-            mode[1]:
-                initial_guess:                       #1        #2        #3        #4        #5        #6    
-                    value:                         0.002, 0.002, 0.002, 0.002, 0.002]
-                    min:                            [1e-10, 1e-10, 1e-10, 1e-10, 1e-10,]
-                    max:                            [0.1, 0.1, 0.1, 0.1, 0.1]
-                    index_of_wavelength_involved:   [1,2,3,4,5]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 1
-                        lagrange_multiplier: 0
-            mode[2]:
-                initial_guess:                       #1        #2        #3        #4        #5        #6    
-                    value:                          7.0e-09, 3.0e-09, 3.0e-09, 2.0e-09, 9.0e-09] # basically zero
-                    min:                            [1e-10, 1e-10, 1e-10, 1e-10, 1e-10,]
-                    max:                            [0.1, 0.1, 0.1, 0.1, 0.1]
-                    index_of_wavelength_involved:   [1,2,3,4,5]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 1
-                        lagrange_multiplier: 0
-
-        characteristic[6]: 
-            type: sphere_fraction
-            retrieved: false
-            mode[1]:
-                initial_guess:                      #1      
-                    value:                          [0.99999998 ]
-                    min:                            [0.8999997 ]
-                    max:                            [0.99999999]
-                    index_of_wavelength_involved:   [0     ]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 0
-                        lagrange_multiplier: 0.0
-            mode[2]:
-                initial_guess:                      #1      
-                    value:                          [0.9999998 ]
-                    min:                            [0.9999997 ]
-                    max:                            [0.9999999]
-                    index_of_wavelength_involved:   [0     ]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 0
-                        lagrange_multiplier: 0.0
-
-        characteristic[7]: 
-            type: vertical_profile_parameter_height
-            retrieved: false
-            mode[1]:
-                initial_guess:                      #1          
-                    value:                          [1000.0 ]
-                    min:                            [10.0   ] 
-                    max:                            [10000.0 ]
-                    index_of_wavelength_involved:   [0      ]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 0
-                        lagrange_multiplier: 0
-            mode[2]:
-                initial_guess:                      #1          
-                    value:                          [1000.0 ]
-                    min:                            [10.0   ] 
-                    max:                            [10000.0 ]
-                    index_of_wavelength_involved:   [0      ]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 0
                         lagrange_multiplier: 0
                          
 settings:
