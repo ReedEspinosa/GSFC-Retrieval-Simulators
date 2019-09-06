@@ -138,12 +138,12 @@ retrieval:
                         difference_order: 0
                         lagrange_multiplier: 0.0
 
-        characteristic[2]:  # THIS IS IN dV/dlnr
+        characteristic[2]:  #  dV/dr matches Sharon's rEff to 2-3 decimal places
             type: size_distribution_lognormal
             retrieved: true
             mode[1]: 
                 initial_guess: 
-                    value:                        [0.544,   0.50]
+                    value:                        [0.423,   0.50]
                     min:                           [0.17,      0.3]
                     max:                          [1.20,      0.8]
                     index_of_wavelength_involved: [0,     0]
@@ -152,8 +152,8 @@ retrieval:
                         lagrange_multiplier:      [0,  0]
             mode[2]: 
                 initial_guess: 
-                    value:                        [4.37,  0.72]
-                    min:                           [2.5,    0.56] 
+                    value:                        [2.605,  0.72]
+                    min:                           [1.0,    0.56] 
                     max:                          [5.0,   0.82]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
