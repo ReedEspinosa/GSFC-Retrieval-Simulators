@@ -1,7 +1,8 @@
 import numpy as np
 import os
 import sys
-sys.path.append(os.path.join(".."))
+MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GRASP_scripts is in parent of MADCAP_scripts
+sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import runGRASP as rg
 import functools        
 
@@ -10,7 +11,7 @@ import functools
 #  len(msrments)=len(thtv)=len(phi)=sum(nbvm); len(msTyp)=len(nbvm) \n\
 #  msrments=[meas[msTyp[0],thtv[0],phi[0]], meas[msTyp[0],thtv[1],phi[1]],...,meas[msTyp[0],thtv[nbvm[0]],phi[nbvm[0]]],meas[msTyp[1],thtv[nbvm[0]+1],phi[nbvm[0]+1]],...]'
 def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None): 
-    if not nowPix: nowPix = rg.pixel(730123.0, 1, 1, 0, 0, 0, landPrct)
+    if not nowPix: nowPix = rg.pixel(730123.0, 1, 1, 0, 0, 0, landPrct) # can be called for multiple instruments, BUT they must all have unqiue wavelengths
     assert nowPix.land_prct == landPrct, 'landPrct provided did not match land percentage in nowPix'
     if archName is 'polar07': # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
@@ -18,7 +19,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp))
         wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 1.650] # Nλ=7
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
-        phi = np.array([relPhi if tv>0 else relPhi+180 for tv in thtv]) # currently we assume all observations fall within a plane
+        phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas)
             nowPix.measVals[-1]['errorModel'] = functools.partial(addError, 'basePolar-7') # this must link to an error model in addError() below
