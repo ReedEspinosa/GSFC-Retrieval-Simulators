@@ -18,7 +18,7 @@ def conCaseDefinitions(caseStr, nwl):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = [[0.76],  [0.24]] # mode 1, 2,...
-        vals['vrtHght'] = [[1.0],  [1.0]] # mode 1, 2,... # THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
+        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # meters, THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
         vals['n'] = np.repeat(1.55, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.55, nwl)]) # mode 2
         vals['k'] = np.repeat(0.04, nwl) # mode 1
@@ -32,7 +32,7 @@ def conCaseDefinitions(caseStr, nwl):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = [[0.05],  [0.95]] # mode 1, 2,...
-        vals['vrtHght'] = [[1.0],  [1.0]] # mode 1, 2,... # THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
+        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # meters, THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
         vals['n'] = np.repeat(1.415, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
         vals['k'] = np.repeat(0.002, nwl) # mode 1
@@ -46,7 +46,7 @@ def conCaseDefinitions(caseStr, nwl):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = [[0.75],  [0.25]] # mode 1, 2,...
-        vals['vrtHght'] = [[1.0],  [1.0]] # mode 1, 2,... # THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
+        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # meters, THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
         vals['n'] = np.repeat(1.45, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.5, nwl)]) # mode 2
         vals['k'] = np.repeat(0.001, nwl) # mode 1
@@ -76,7 +76,7 @@ def setupConCaseYAML(caseStrs, nwl, baseYAML, caseLoadFctr=None, caseHeightKM=No
             if key=='vol' and caseLoadFctr:
                 valsTmp[key] = caseLoadFctr[i]*valsTmp[key]
             elif key=='vrtHght' and caseHeightKM:
-                valsTmp[key][:] = caseHeightKM[i]
+                valsTmp[key][:] = caseHeightKM[i]*1000
             if key in aeroKeys and key in vals:
                     vals[key] = np.vstack([vals[key], valsTmp[key]])
             else: # implies we take the surface parameters from the last case

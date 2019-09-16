@@ -8,11 +8,11 @@ sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import simulateRetrieval as rs
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_ArchitectureAndCanonicalCases'))
 from architectureMap import returnPixel
-from canoncialCaseMap import setupConCaseYAML
+from canonicalCaseMap import setupConCaseYAML
 
 
 # MacBook Air
-fwdModelYAMLpath = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_5lambda_CASE-6a-onlyMARINE_V0.yml'
+fwdModelYAMLpath = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_1lambda_general_V0.yml'
 bckYAMLpath = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_5lambda_Template.yml'
 saveStart = '/Users/wrespino/Desktop/testCase_' # end will be appended
 dirGRASP = None
@@ -30,16 +30,16 @@ maxCPU = 2
 #Nsims = 84
 #maxCPU = 28
 
-#N = sys.arg[1]
-N=4
+#n = sys.arg[1] # (0,1,2,...,N-1)
+n=0
 
 instruments = ['polar07'] #1
 conCases = ['Smoke','pollution','Marine-Smoke'] #3
 SZAs = [0, 30] # 2
-Phis = [0, 90] # 2 -> 12 Nodes, N=(0,1,..,11)
+Phis = [0, 90] # 2 -> N=12 Nodes
 
 sizeMat = [1,1,1, len(instruments), len(conCases), len(SZAs), len(Phis)]
-ind = [N//np.prod(sizeMat[i:i+3])%sizeMat[i+3] for i in range(4)]
+ind = [n//np.prod(sizeMat[i:i+3])%sizeMat[i+3] for i in range(4)]
 paramTple = (instruments[ind[0]], conCases[ind[1]], SZAs[ind[2]], Phis[ind[3]])
 savePath = saveStart + '%s_case-%s_sza%d_phi%d_V1.pkl' % paramTple
 print('-- Processing ' + os.path.basename(savePath) + ' --')
@@ -48,4 +48,5 @@ print('-- Processing ' + os.path.basename(savePath) + ' --')
 nowPix = returnPixel(paramTple[0], sza=paramTple[2], landPrct=100, relPhi=paramTple[3], nowPix=None)
 cstmFwdYAML, landPrct = setupConCaseYAML(conCases[ind[1]], nowPix.nwl, fwdModelYAMLpath)
 simA = rs.simulation(nowPix) # defines new instance for this architecture
-simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath) # runs the simulation for given set of conditions 
+# runs the simulation for given set of conditions, releaseYAML=True -> index of wavelength involved YAML fields MUST cover every wavelength BUT bckYAML Nλ does not have to match fwd calulcation
+simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True)
