@@ -11,7 +11,7 @@ import numpy as np
 from scipy import interpolate as intrp
 
 # Paths to files
-radianceFNfrmtStr = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/newOpticsTables/optics_SU.v1_5_gpmom_sizedist.nc'
+radianceFNfrmtStr = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/newOpticsTables/LUT-GSFun/optics_SU.v5_7.GSFun.nc'
 rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+aerosol_nosurface/noSruf_bench_OneHexQuadExpnd_865nm_YAML216cbfed.pkl'
 
 varNames = ['I', 'Q', 'U', 'sensor_zenith', 'RGEO', 'RISO', 'RVOL', 'TAU', 'VOL', 'radius', 'TOTdist', 'REFR', 'REFI', 'SSA', 'ZE', 'U10m', 'V10m', 'ROT', 'SUdist', 'AREA', 'REFF']
@@ -26,7 +26,7 @@ intrpRadii = np.array([0.05, 0.059009, 0.06964, 0.082188, 0.096996, 0.11447, 0.1
 
 # ---Single Scattering Optics Tables---
 rhInd = 14 #14->70%
-wvInds = [2,5,9,13,15] #2->350nm, 5->500nm, 9->700nm, 13->1000nm, 15->1500nm
+wvInds = [2,5,9,13,15] #2->350nm, 5->500nm, 9->700nm, 13->1000nm, 15->1500nm # WE SHOULD AUTOMATE TO USE wvls ABOVE
 varNames = ['r_dist', 'size_dist', 'refreal', 'refimag', 'lambda']
 rawData = loadVARSnetCDF(radianceFNfrmtStr, varNames)
 measData = np.array([dict() for _ in wvInds])

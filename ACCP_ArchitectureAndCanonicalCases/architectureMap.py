@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import sys
+import re
 MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GRASP_scripts is in parent of MADCAP_scripts
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import runGRASP as rg
@@ -22,23 +23,24 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas)
-            nowPix.measVals[-1]['errorModel'] = functools.partial(addError, 'basePolar-7') # this must link to an error model in addError() below
+            nowPix.measVals[-1]['errorModel'] = functools.partial(addError, archName) # this must link to an error model in addError() below
     return nowPix
 
 def addError(measNm, l, rsltFwd, edgInd):
     # if the following check ever becomes a problem see commit #6793cf7
     assert (np.diff(edgInd)[0]==np.diff(edgInd)).all(), 'Current error models assume that each measurement type has the same number of measurements at each wavelength!'
-    if measNm.split('-')[0] == 'basePolar': # measNm should be string w/ format 'basePolar-N', where N is polarimeter number
-        if measNm.split('-')[1] in ['4', '7', '8']: # S-Polar04 (a-d), S-Polar07, S-Polar08
+    mtch = re.match('^([A-z]+)([0-9]+)$', 'polar07')
+    if mtch.group(1).lower() == 'polar': # measNm should be string w/ format 'basePolar-N', where N is polarimeter number
+        if int(mtch.group(2)) in [4, 7, 8]: # S-Polar04 (a-d), S-Polar07, S-Polar08
             relErr = 0.03
             relDoLPErr = 0.005
-        elif measNm.split('-')[1] in ['1', '2', '3']: # S-Polar01, S-Polar2 (a-b), S-Polar3 [1st two state ΔI as "4% to 6%" in RFI]
+        elif int(mtch.group(2)) in [1, 2, 3]: # S-Polar01, S-Polar2 (a-b), S-Polar3 [1st two state ΔI as "4% to 6%" in RFI]
             relErr = 0.05
             relDoLPErr = 0.005
-        elif measNm.split('-')[1] in ['9']: # S-Polar09
+        elif int(mtch.group(2)) in [9]: # S-Polar09
             relErr = 0.03
             relDoLPErr = 0.003
-        elif measNm.split('-')[1] in ['5']: # S-Polar05
+        elif int(mtch.group(2)) in [5]: # S-Polar05
             relErr = 0.02
             relDoLPErr = 0.003
         else:

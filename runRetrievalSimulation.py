@@ -34,14 +34,14 @@ maxCPU = 2
 N=4
 
 instruments = ['polar07'] #1
-conCases = ['1','2','Marine'] #3
+conCases = ['Smoke','pollution','Marine-Smoke'] #3
 SZAs = [0, 30] # 2
 Phis = [0, 90] # 2 -> 12 Nodes, N=(0,1,..,11)
 
 sizeMat = [1,1,1, len(instruments), len(conCases), len(SZAs), len(Phis)]
 ind = [N//np.prod(sizeMat[i:i+3])%sizeMat[i+3] for i in range(4)]
 paramTple = (instruments[ind[0]], conCases[ind[1]], SZAs[ind[2]], Phis[ind[3]])
-savePath = saveStart + '%s_case%s_sza%d_phi%d_V1.pkl' % paramTple
+savePath = saveStart + '%s_case-%s_sza%d_phi%d_V1.pkl' % paramTple
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 
 # RUN SIMULATION
