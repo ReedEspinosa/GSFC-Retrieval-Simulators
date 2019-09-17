@@ -17,7 +17,7 @@ def conCaseDefinitions(caseStr, nwl):
         rv = [0.12, 0.35]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = [[0.76],  [0.24]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.76],  [0.24]])/100 # mode 1, 2,... (currently gives ~0.1 AOD)
         vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # meters, THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
         vals['n'] = np.repeat(1.55, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.55, nwl)]) # mode 2
@@ -31,7 +31,7 @@ def conCaseDefinitions(caseStr, nwl):
         rv = [0.2, 0.55]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = [[0.05],  [0.95]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.05],  [0.95]])/100 # mode 1, 2,... (currently gives ~0.1 AOD)
         vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # meters, THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
         vals['n'] = np.repeat(1.415, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
@@ -45,7 +45,7 @@ def conCaseDefinitions(caseStr, nwl):
         rv = [0.11, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = [[0.75],  [0.25]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.75],  [0.25]])/100 # mode 1, 2,... (currently gives ~0.1 AOD)
         vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # meters, THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
         vals['n'] = np.repeat(1.45, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.5, nwl)]) # mode 2

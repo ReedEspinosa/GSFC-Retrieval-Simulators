@@ -50,21 +50,38 @@ retrieval:
             measurement_type[2]:
                 type: U
                 index_of_wavelength_involved: [ 1 ]
+        noise[3]:
+            standard_deviation_synthetic: 0.0
+            error_type:   relative
+            standard_deviation:  0.03
+            measurement_type[1]:
+                type: VEXT
+                index_of_wavelength_involved: [ 1]
+            measurement_type[2]:
+                type: VBS
+                index_of_wavelength_involved: [1]
+        noise[4]:
+            standard_deviation_synthetic: 0.0
+            error_type:   absolute
+            standard_deviation:  0.01
+            measurement_type[1]:
+                type: DP
+                index_of_wavelength_involved: [ 1]
 
     radiative_transfer:
         number_of_layers: 50 #50 -> 100, no meaningful improvement
-        aerosol_profile_vertical_type:    exponential
-        molecular_profile_vertical_type:   exponential 
-#        molecular_profile_vertical_type:   no_rayleigh 
-        absolute_error_rt_calculations: 0.000001 # this helps, at least once quadratures_for_fourier_expansion is sufficiently high, max of default allowed range
+        aerosol_profile_vertical_type:    gaussian
+        molecular_profile_vertical_type:   exponential
+#        molecular_profile_vertical_type:   no_rayleigh
+        absolute_error_rt_calculations: 0.0005 # this helps, at least once quadratures_for_fourier_expansion is sufficiently high, max of default allowed range
 #        reference_plane_for_polarization:   meridian
         reference_plane_for_polarization:   principal_plane
         simulating_observation:
 #            order_of_scattering: single_scattering
             order_of_scattering: multiple_scattering
-            number_of_gaussian_quadratures_for_expansion_coefficients:  4 # 41 is max, this should have no effect w/o aerosol
-            number_of_guassian_quadratures_for_fourier_expansion_coefficients:  50 # big diff here, diminishing returns after 20 though
-            number_of_fourier_expansion_coefficients:  10 # 4->10 makes very little difference in BRDF+BPDF case, nothing after that
+            number_of_gaussian_quadratures_for_expansion_coefficients:  15 # 41 is max, this should have no effect w/o aerosol
+            number_of_guassian_quadratures_for_fourier_expansion_coefficients:  5 # big diff here, diminishing returns after 20 though
+            number_of_fourier_expansion_coefficients:  4 # 4->10 makes very little difference in BRDF+BPDF case, nothing after that
         simulating_derivatives:
             order_of_scattering: derivatives
             number_of_gaussian_quadratures_for_expansion_coefficients:  15
@@ -112,7 +129,7 @@ retrieval:
     constraints:                            
         characteristic[1]: 
             type: aerosol_concentration
-            retrieved: true
+            retrieved: false
             mode[1]:  
                 initial_guess: 
                     value:                        [0.000005]
@@ -122,7 +139,7 @@ retrieval:
 
         characteristic[2]: 
             type: size_distribution_lognormal
-            retrieved: true
+            retrieved: false
             mode[1]: 
                 initial_guess: 
                     value:                        [1.0,   0.50]
@@ -132,7 +149,7 @@ retrieval:
                         
         characteristic[3]:
             type: real_part_of_refractive_index_spectral_dependent
-            retrieved: true
+            retrieved: false
             mode[1]:
                 initial_guess:                       #1         #2        #3        #4        #5        #6       
                     value:                         [1.4]
@@ -142,7 +159,7 @@ retrieval:
                                                                        
         characteristic[4]:
             type: imaginary_part_of_refractive_index_spectral_dependent
-            retrieved: true
+            retrieved: false
             mode[1]:
                 initial_guess:                       #1        #2        #3        #4        #5        #6    
                     value:                         [0.002]
@@ -165,10 +182,26 @@ retrieval:
             retrieved: false
             mode[1]:
                 initial_guess:                      #1          
-                    value:                          [1000.0 ]
-                    min:                             [10.0   ] 
-                    max:                            [20000.0 ]
+                    value:                          [1000.0, 1000.0 ]
+                    min:                            [20.0 , 10.0  ] 
+                    max:                            [10000.0, 2000.0 ]
                     index_of_wavelength_involved:   [0      ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0
+#            type: vertical_profile_normalized
+#            retrieved: false
+#            mode[1]:
+#                initial_guess:                       #1         #2        #3        #4        #5        #6        #7        #8        #9        #10       #11       #12       #13       #14       #15       #16       #17       #18       #19       #20       #21       #22       #23       #24       #25       #26       #27       #28       #29       #30       #31       #32       #33       #34       #35       #36       #37       #38       #39       #40       #41       #42       #43       #44       #45
+#                    value:                          [ 0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01,     0.01]
+#                    min:                            [ 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001]
+#                    max:                            [ 2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0,      2.0]
+#                    index_of_wavelength_involved:   [ 0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0]
+#                single_pixel:
+#                    smoothness_constraints:
+#                        difference_order: 3
+#                        lagrange_multiplier: 0
         
         characteristic[7]: 
             type: surface_land_brdf_ross_li # NEEDS TO GO ABOVE BPDF

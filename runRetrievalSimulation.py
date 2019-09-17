@@ -12,13 +12,13 @@ from canonicalCaseMap import setupConCaseYAML
 
 
 # MacBook Air
-fwdModelYAMLpath = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_1lambda_general_V0.yml'
-bckYAMLpath = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_5lambda_Template.yml'
+fwdModelYAMLpath = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_1lambda_general_V0_fast.yml'
+bckYAMLpath = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_5lambda_Template_fast.yml'
 saveStart = '/Users/wrespino/Desktop/testCase_' # end will be appended
 dirGRASP = None
 krnlPath = None
-Nsims = 4
-maxCPU = 2
+Nsims = 3
+maxCPU = 3
 
 # DISCOVER
 #basePath = os.environ['NOBACKUP']
@@ -33,7 +33,7 @@ maxCPU = 2
 #n = sys.arg[1] # (0,1,2,...,N-1)
 n=0
 
-instruments = ['polar07'] #1
+instruments = ['polar07', 'lidar05'] #1
 conCases = ['Smoke','pollution','Marine-Smoke'] #3
 SZAs = [0, 30] # 2
 Phis = [0, 90] # 2 -> N=12 Nodes
