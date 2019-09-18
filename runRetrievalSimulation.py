@@ -31,10 +31,10 @@ maxCPU = 3
 #maxCPU = 28
 
 #n = sys.arg[1] # (0,1,2,...,N-1)
-n=0
+n=4
 
 instruments = ['polar07', 'lidar05'] #1
-conCases = ['Smoke','pollution','Marine-Smoke'] #3
+conCases = ['Smoke','pollution','Marine+Smoke'] #3
 SZAs = [0, 30] # 2
 Phis = [0, 90] # 2 -> N=12 Nodes
 

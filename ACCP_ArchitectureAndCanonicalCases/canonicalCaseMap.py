@@ -18,7 +18,8 @@ def conCaseDefinitions(caseStr, nwl):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = np.array([[0.76],  [0.24]])/100 # mode 1, 2,... (currently gives ~0.1 AOD)
-        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # meters, THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
+        vals['vrtHght'] = [[3000],  [3000]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.55, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.55, nwl)]) # mode 2
         vals['k'] = np.repeat(0.04, nwl) # mode 1
@@ -32,7 +33,8 @@ def conCaseDefinitions(caseStr, nwl):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = np.array([[0.05],  [0.95]])/100 # mode 1, 2,... (currently gives ~0.1 AOD)
-        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # meters, THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
+        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.415, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
         vals['k'] = np.repeat(0.002, nwl) # mode 1
@@ -46,7 +48,8 @@ def conCaseDefinitions(caseStr, nwl):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = np.array([[0.75],  [0.25]])/100 # mode 1, 2,... (currently gives ~0.1 AOD)
-        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # meters, THIS ASSUMES EXP PROFILE, NEED TO UPDATE TO DOUBLE PARAMETER
+        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.45, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.5, nwl)]) # mode 2
         vals['k'] = np.repeat(0.001, nwl) # mode 1
@@ -64,11 +67,12 @@ def setupConCaseYAML(caseStrs, nwl, baseYAML, caseLoadFctr=None, caseHeightKM=No
         'sph':'sphere_fraction',
         'vol':'aerosol_concentration',
         'vrtHght':'vertical_profile_parameter_height',
+        'vrtHghtStd':'vertical_profile_parameter_standard_deviation',
         'n':'real_part_of_refractive_index_spectral_dependent',
         'k':'imaginary_part_of_refractive_index_spectral_dependent',
         'brdf':'surface_land_brdf_ross_li',
         'cxMnk':'surface_water_cox_munk_iso'}
-    aeroKeys = ['lgrnm','sph','vol','vrtHght','n','k']
+    aeroKeys = ['lgrnm','sph','vol','vrtHght','vrtHghtStd','n','k']
     vals = dict()
     for i, caseStr in enumerate(caseStrs.split('+')): # loop over all cases and add them together
         valsTmp, landPrct = conCaseDefinitions(caseStr, nwl)

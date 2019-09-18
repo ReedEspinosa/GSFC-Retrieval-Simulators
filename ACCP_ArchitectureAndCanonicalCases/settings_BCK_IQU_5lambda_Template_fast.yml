@@ -230,9 +230,9 @@ retrieval:
             retrieved: true
             mode[1]:
                 initial_guess:                      #1          
-                    value:                          [1000.0, 1000.0 ]
-                    min:                            [20.0 , 10.0  ] 
-                    max:                            [10000.0, 2000.0 ]
+                    value:                          [1000.0 ]
+                    min:                             [200.0 ] 
+                    max:                            [4000.0] # too high will break RT; μ=5000, σ=400 start of instability 
                     index_of_wavelength_involved:   [0      ]
                 single_pixel:
                     smoothness_constraints:
@@ -240,14 +240,38 @@ retrieval:
                         lagrange_multiplier: 0
             mode[2]:
                 initial_guess:                      #1          
-                    value:                          [1000.0, 1000.0 ]
-                    min:                            [20.0, 10.0   ] 
-                    max:                            [10000.0, 2000.0 ]
+                    value:                          [1000.0 ]
+                    min:                             [200.0] 
+                    max:                            [4000.0 ]  # too high will break RT; μ=5000, σ=400 start of instability 
                     index_of_wavelength_involved:   [0      ]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0
+   
+        characteristic[6]: 
+            type: vertical_profile_parameter_standard_deviation
+            retrieved: false
+            mode[1]:
+                initial_guess:                      #1          
+                    value:                          [500.0 ]
+                    min:                             [450.0  ]  # too low will break RT; μ=5000, σ=400 start of instability 
+                    max:                            [2000.0 ]
+                    index_of_wavelength_involved:   [0      ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0
+            mode[2]:
+                initial_guess:                      #1          
+                    value:                          [500.0 ]
+                    min:                             [450.0  ]  # too low will break RT; μ=5000, σ=400 start of instability 
+                    max:                            [2000.0 ] 
+                    index_of_wavelength_involved:   [0      ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0                    
 #            type: vertical_profile_normalized
 #            retrieved: true
 #            mode[1]:
@@ -270,7 +294,7 @@ retrieval:
 #                    smoothness_constraints:
 #                        difference_order: 3
 #                        lagrange_multiplier: 0
-        characteristic[6]: 
+        characteristic[7]: 
             type: sphere_fraction
             retrieved: false
             mode[1]:
@@ -294,7 +318,7 @@ retrieval:
                         difference_order: 0
                         lagrange_multiplier: 0.0
   
-        characteristic[7]: 
+        characteristic[8]: 
             type: surface_land_brdf_ross_li # NEEDS TO GO ABOVE BPDF
             retrieved: false
             mode[1]:    #ISO
