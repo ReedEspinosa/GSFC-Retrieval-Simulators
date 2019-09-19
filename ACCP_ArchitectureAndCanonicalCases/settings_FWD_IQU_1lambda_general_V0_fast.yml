@@ -172,9 +172,9 @@ retrieval:
             retrieved: false
             mode[1]:
                 initial_guess:                      #1      
-                    value:                          [0.99999998 ]
+                    value:                          [0.999999998 ]
                     min:                             [0.00000001 ]
-                    max:                            [0.99999999]
+                    max:                            [0.999999999]
                     index_of_wavelength_involved:   [0     ]
 
         characteristic[6]: 

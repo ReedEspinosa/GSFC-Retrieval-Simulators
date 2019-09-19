@@ -136,9 +136,9 @@ retrieval:
             retrieved: true
             mode[1]: 
                 initial_guess: 
-                    value:                        [0.05]
-                    min:                          [0.0015]
-                    max:                          [2.000]
+                    value:                        [0.0005]
+                    min:                          [0.00005]
+                    max:                          [1.000]
                     index_of_wavelength_involved: [0]
                 single_pixel:
                     smoothness_constraints:
@@ -146,9 +146,9 @@ retrieval:
                         lagrange_multiplier: 0.0
             mode[2]: 
                 initial_guess: 
-                    value:                        [0.50] # only initial guess that differs from fwd model
-                    min:                          [0.0015]
-                    max:                          [2.000]
+                    value:                        [0.0095] # only initial guess that differs from fwd model
+                    min:                          [0.00005]
+                    max:                          [1.000]
                     index_of_wavelength_involved: [0]
                 single_pixel:
                     smoothness_constraints:
@@ -160,16 +160,16 @@ retrieval:
             retrieved: true
             mode[1]: 
                 initial_guess: 
-                    value:                        [0.423,   0.50]
-                    min:                           [0.17,      0.3]
-                    max:                          [1.20,      0.8]
+                    value:                        [0.20,    0.5]
+                    min:                           [0.10,      0.3]
+                    max:                          [1.00,      0.8]
                     index_of_wavelength_involved: [0,     0]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier:      [0,  0]
             mode[2]: 
                 initial_guess: 
-                    value:                        [2.605,  0.72]
+                    value:                        [2.0,   0.72]
                     min:                           [1.0,    0.36] 
                     max:                          [5.0,   0.82]
                     index_of_wavelength_involved: [0,     0]
@@ -182,28 +182,28 @@ retrieval:
             retrieved: true
             mode[1]:
                 initial_guess:                       #1         #2        #3        #4        #5        #6       
-                    value:                         [1.415, 1.415, 1.415, 1.415, 1.415]
+                    value:                         [1.4, 1.4, 1.4, 1.4, 1.4]
                     min:                            [1.33,1.33,1.33,1.33,1.33]
-                    max:                            [1.69,1.69,1.69,1.69,1.69]
+                    max:                            [1.6,1.6,1.6,1.6,1.6]
                     index_of_wavelength_involved:   [1,2,3,4,5] 
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0
+                        lagrange_multiplier: 100
             mode[2]:
                 initial_guess:                       #1         #2        #3        #4        #5        #6       
-                    value:                         [1.363, 1.363, 1.363, 1.363, 1.363]
+                    value:                         [1.35, 1.35, 1.35, 1.35, 1.35]
                     min:                            [1.33,1.33,1.33,1.33,1.33]
-                    max:                            [1.69,1.69,1.69,1.69,1.69]
+                    max:                            [1.6,1.6,1.6,1.6,1.6]
                     index_of_wavelength_involved:   [1,2,3,4,5] 
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0
+                        lagrange_multiplier: 100
                                                                        
         characteristic[4]:
             type: imaginary_part_of_refractive_index_spectral_dependent
-            retrieved: true
+            retrieved: false
             mode[1]:
                 initial_guess:                       #1        #2        #3        #4        #5        #6    
                     value:                         [0.002, 0.002, 0.002, 0.002, 0.002]
@@ -213,7 +213,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0
+                        lagrange_multiplier: 100
             mode[2]:
                 initial_guess:                       #1        #2        #3        #4        #5        #6    
                     value:                          [1.0e-9, 1.0e-9, 1.0e-9, 1.0e-9, 1.0e-9]
@@ -223,11 +223,11 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0
+                        lagrange_multiplier: 100
 
         characteristic[5]: 
             type: vertical_profile_parameter_height
-            retrieved: true
+            retrieved: false
             mode[1]:
                 initial_guess:                      #1          
                     value:                          [1000.0 ]
@@ -299,9 +299,9 @@ retrieval:
             retrieved: false
             mode[1]:
                 initial_guess:                      #1      
-                    value:                          [0.9999998 ]
-                    min:                            [0.9999997 ]
-                    max:                            [0.9999999]
+                    value:                          [0.99999998 ]
+                    min:                            [0.99999997 ]
+                    max:                            [0.99999999]
                     index_of_wavelength_involved:   [0     ]
                 single_pixel:
                     smoothness_constraints:
@@ -309,9 +309,9 @@ retrieval:
                         lagrange_multiplier: 0.0
             mode[2]:
                 initial_guess:                      #1      
-                    value:                          [0.9999998 ]
-                    min:                            [0.9999997 ]
-                    max:                            [0.9999999]
+                    value:                          [0.99999998 ]
+                    min:                            [0.99999997 ]
+                    max:                            [0.99999999]
                     index_of_wavelength_involved:   [0     ]
                 single_pixel:
                     smoothness_constraints:

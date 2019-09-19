@@ -31,11 +31,11 @@ maxCPU = 3
 #maxCPU = 28
 
 #n = sys.arg[1] # (0,1,2,...,N-1)
-n=4
+n=0
 
-instruments = ['polar07', 'lidar05'] #1
-conCases = ['Smoke','pollution','Marine+Smoke'] #3
-SZAs = [0, 30] # 2
+instruments = ['polar0700', 'lidar05'] #1
+conCases = ['marine', 'pollution','Smoke','Marine+Smoke'] #3
+SZAs = [60, 0] # 2
 Phis = [0, 90] # 2 -> N=12 Nodes
 
 sizeMat = [1,1,1, len(instruments), len(conCases), len(SZAs), len(Phis)]
