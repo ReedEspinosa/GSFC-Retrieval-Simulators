@@ -47,7 +47,7 @@ def addError(measNm, l, rsltFwd, edgInd):
         if int(mtch.group(2)) in [4, 7, 8]: # S-Polar04 (a-d), S-Polar07, S-Polar08
             relErr = 0.03
             relDoLPErr = 0.005
-        if int(mtch.group(2)) in [700]: # "perfect" version of polarimeter 7
+        elif int(mtch.group(2)) in [700]: # "perfect" version of polarimeter 7
             relErr = 0.000003
             relDoLPErr = 0.0000005
         elif int(mtch.group(2)) in [1, 2, 3]: # S-Polar01, S-Polar2 (a-b), S-Polar3 [1st two state ΔI as "4% to 6%" in RFI]
