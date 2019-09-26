@@ -9,22 +9,20 @@ sys.path.append(os.path.join("..", "GRASP_scripts"))
 from runGRASP import graspDB, graspRun, pixel
 from MADCAP_functions import readVILDORTnetCDF, hashFileSHA1
 
-# Paths to files/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/benchmark_simple_aerosol+grasp_higher_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.865d00.nc4
-basePath = '/Users/wrespino/Synced/' # NASA MacBook
-rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/graspConfig_12_P11_P12_P22_only/')
+# Paths to files
+rmtPrjctPath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/'
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
 dayStr = '20060901'
 dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
-pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_1lambdaTEST.yml') # path to GRASP YAML file
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_simple_aerosol+grasp_higher_nosurface/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-#binPathGRASP = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/build/bin/grasp')
+pathYAML = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry/calipso-g5nr.vlidort.vector.LAMBERTIAN.1Wvlsd00.yml'
 binPathGRASP = '/usr/local/bin/grasp'
-savePathTag = 'GRASP4fc8ba9' # preprend tag for save file, A-z and _ only
+savePathTag = 'GRASPd5c27d4' # preprend tag for save file, A-z and _ only
 
 # Constants
 wvls = [0.865] # wavelengths to read from levC files
 #wvls = [0.865] # wavelengths to read from levC files
 lndPrct = 100; # land cover amount (%)
-grspChnkSz = 20 # number of pixles in a single SDATA file
+grspChnkSz = 19 # number of pixles in a single SDATA file
 orbHghtKM = 700 # sensor height (km)
 GRASP_MIN = 1e-8 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
 graspInputs = 'IQU' # 'Ionly' (intensity), 'DOLP' (I & DOLP), 'IQU' (1st 3 stokes), IQU_SURF (IQU for surface only)

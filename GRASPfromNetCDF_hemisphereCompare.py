@@ -16,9 +16,9 @@ import scipy.integrate.quadrature
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig/')
+#rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig/')
 #radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh_BRDF/calipso-g5nr.vlidort.vector.MODIS_BRDF.%dd00.nc4')
-rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='GRASP4fc8ba9*.pkl')
+rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='GRASPd5c27d4*.pkl')
 savePlotPath = os.path.split(radianceFNfrmtStr)[0]
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
