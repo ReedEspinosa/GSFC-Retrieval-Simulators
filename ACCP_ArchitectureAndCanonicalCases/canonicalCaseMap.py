@@ -17,7 +17,7 @@ def conCaseDefinitions(caseStr, nwl):
         rv = [0.12, 0.35]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.76],  [0.24]])/100 # mode 1, 2,... (currently gives ~0.1 AOD)
+        vals['vol'] = np.array([[0.76],  [0.24]])/7.1508 # (currently gives AOD=1 but will change if intensive props. change!)
         vals['vrtHght'] = [[3000],  [3000]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.55, nwl) # mode 1 
@@ -32,7 +32,7 @@ def conCaseDefinitions(caseStr, nwl):
         rv = [0.2, 0.55]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.05],  [0.95]])/100 # mode 1, 2,... (currently gives ~0.1 AOD)
+        vals['vol'] = np.array([[0.05],  [0.95]])/1.1464 # (currently gives AOD=1 but will change if intensive props. change!)
         vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.415, nwl) # mode 1 
@@ -47,7 +47,7 @@ def conCaseDefinitions(caseStr, nwl):
         rv = [0.11, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.75],  [0.25]])/100 # mode 1, 2,... (currently gives ~0.1 AOD)
+        vals['vol'] = np.array([[0.75],  [0.25]])/4.2924 # (currently gives AOD=1 but will change if intensive props. change!)
         vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.45, nwl) # mode 1 
