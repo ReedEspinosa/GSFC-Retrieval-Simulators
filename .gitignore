@@ -5,3 +5,4 @@ ACCP_ArchitectureAndCanonicalCases/ACCP_canonical_case_OU_V16.xlsx
 ~$ACCP_canonical_case_OU_V16.xlsx
 ~$A-CCP S-Polarimeter RFI summary 190703.xlsx
 ~$A-CCP S-Lidar RFI Summary 190614 v3.xlsx
+*.DS_Store

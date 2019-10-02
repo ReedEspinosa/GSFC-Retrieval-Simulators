@@ -18,7 +18,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         msTyp = [41, 42, 43] # must be in ascending order
         nbvm = 10*np.ones(len(msTyp), np.int)
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp))
-        wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 940, 1230, 1380, 1550, 1.650] # Nλ=11
+        wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 0.940, 1.230, 1.380, 1.550, 1.650] # Nλ=11
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
