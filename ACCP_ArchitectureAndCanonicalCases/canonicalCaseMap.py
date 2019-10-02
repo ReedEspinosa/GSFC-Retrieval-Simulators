@@ -10,8 +10,9 @@ MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpa
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import runGRASP as rg
 
-def conCaseDefinitions(caseStr, nwl): 
+def conCaseDefinitions(caseStr, wvls): 
     vals = dict()
+    nwl = len(wvls)
     if caseStr.lower()=='smoke': # ALL VARIABLES WITH MODES MUST BE 2D (ie. var[mode,wl]) or [] (will not change these values)
         σ = [0.37, 0.4] # mode 1, 2,...
         rv = [0.12, 0.35]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -59,9 +60,16 @@ def conCaseDefinitions(caseStr, nwl):
         landPrct = 100
     else:
         assert False, 'No match for canonical case type!'
+    if not vals['brdf']: # if not set we will use defualt conical case
+        λ=[0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
+        R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.0000000000, 0.0000000000, 0.0000000000] # TODO: need to double check these units
+        lambR = np.interp(wvls, λ, R)
+        FresFrac = 0.9999*np.ones(nwl)
+        cxMnk = (7*0.00512+0.003)/2*np.ones(nwl)
+        vals['brdf'] = np.vstack([lambR, FresFrac, cxMnk])
     return vals, landPrct
 
-def setupConCaseYAML(caseStrs, nwl, baseYAML, caseLoadFctr=None, caseHeightKM=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
+def setupConCaseYAML(caseStrs, wvls, baseYAML, caseLoadFctr=None, caseHeightKM=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
     fldNms = {
         'lgrnm':'size_distribution_lognormal',
         'sph':'sphere_fraction',
@@ -75,7 +83,7 @@ def setupConCaseYAML(caseStrs, nwl, baseYAML, caseLoadFctr=None, caseHeightKM=No
     aeroKeys = ['lgrnm','sph','vol','vrtHght','vrtHghtStd','n','k']
     vals = dict()
     for i, caseStr in enumerate(caseStrs.split('+')): # loop over all cases and add them together
-        valsTmp, landPrct = conCaseDefinitions(caseStr, nwl)
+        valsTmp, landPrct = conCaseDefinitions(caseStr, wvls)
         for key in valsTmp.keys():
             if key=='vol' and caseLoadFctr:
                 valsTmp[key] = caseLoadFctr[i]*valsTmp[key]
@@ -86,6 +94,7 @@ def setupConCaseYAML(caseStrs, nwl, baseYAML, caseLoadFctr=None, caseHeightKM=No
             else: # implies we take the surface parameters from the last case
                 vals[key] = valsTmp[key]
     bsHsh = md5(baseYAML.encode()).hexdigest()[0:8]
+    nwl = len(wvls)
     newFn = 'settingsYAML_conCase%s_nwl%d_%s.yml' % (caseStrs, nwl, bsHsh)
     newPathYAML = os.path.join(tempfile.gettempdir(), newFn)
     yamlObj = rg.graspYAML(baseYAML, newPathYAML)
