@@ -21,9 +21,9 @@ import miscFunctions as mf
 # Paths to files
 #outFile = '/var/folders/lt/3kt1ddms7211cvcclg7yq3pc5f5bnm/T/tmp_db1lcdf/bench_inversionRslts.txt'
 #outFile = '/var/folders/lt/3kt1ddms7211cvcclg7yq3pc5f5bnm/T/tmp6fq7ekhf/bench_inversionRslts.txt.V0.8.2'
-outFile = '/var/folders/lt/3kt1ddms7211cvcclg7yq3pc5f5bnm/T/tmp6fq7ekhf/bench_inversionRslts_oskuCorrect.txt'
+outFile = '/Users/wrespino/Desktop/graspConfig_12_Osku_dry_outputGRASP_SulfateRH0.txt'
 rmtPrjctPath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/'
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry/calipso-g5nr.vlidort.vector.LAMBERTIAN.865d00.nc4')
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry_V2/calipso-g5nr.vlidort.vector.LAMBERTIAN.865d00.nc4')
 aeroMode = 0
 caseName = 'graspConfig_12_Osku_dry'
 
@@ -83,6 +83,8 @@ for l,n,k in zip(np.atleast_1d(rslt[0]['lambda']), np.atleast_1d(rslt[0]['n']), 
 plt.subplot(np.ceil(Nplts/2),2,1)
 #plt.legend(['λ = %4.2f μm' % l for l in np.atleast_1d(rslt[0]['lambda'])])
 #plt.suptitle(caseName + ': GRASP (solid) vs Optics Tables (dashed) vs PyMieScatt (dotted)')
-#plt.tight_layout(rect=[0.01, 0.01,0.98, 0.98])
+plt.legend(['GRASP', 'Optics Table', 'PyMieScat'])
+plt.suptitle(caseName + '_V2 Sulfate ' + '(λ = %4.2f μm)' % rslt[0]['lambda'])
+plt.tight_layout(rect=[0.01, 0.01,0.98, 0.98])
 
 

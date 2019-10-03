@@ -16,15 +16,15 @@ import scipy.integrate.quadrature
 
 # Paths to files
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-#rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig/')
-#radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh_BRDF/calipso-g5nr.vlidort.vector.MODIS_BRDF.%dd00.nc4')
-rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='GRASPd5c27d4*.pkl')
+rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12')
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry_V2/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='crctPMON*.pkl')
 savePlotPath = os.path.split(radianceFNfrmtStr)[0]
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
 varNames = ['TAU', 'I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'surf_reflectance_Q_scatplane','surf_reflectance_U_scatplane', 'sensor_zenith', 'sensor_azimuth']
 
-pltVar = 'I'
+pltVar = 'DOLP'
 noRayleigh = False # only compare with surface reflectance
 relDeltaI = True # relative (True) or absolute (False) I/Q/U difference (no effect on DOLP)
 singScat = False # plot single scattering aerosol (no surf or rayleigh) instead of GRASP
