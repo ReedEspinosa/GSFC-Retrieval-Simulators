@@ -12,15 +12,16 @@ from scipy import interpolate as intrp
 
 # Paths to files
 rmtPrjctPath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/'
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry_V2/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry_V3/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
 rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+aerosol_nosurface/noSruf_bench_OneHexQuadExpnd_865nm_YAML216cbfed.pkl'
-#baseYAML = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_1lambda.yml'
-baseYAML = None
+baseYAML = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry_V2/calipso-g5nr.vlidort.vector.LAMBERTIAN.1Wvlsd00.yml'
+#baseYAML = None
 
 varNames = ['I', 'Q', 'U', 'sensor_zenith', 'RGEO', 'RISO', 'RVOL', 'TAU', 'VOL', 'radius', 'TOTdist', 'colTOTdist', 'REFR', 'REFI', 'SSA', 'ZE', 'U10m', 'V10m', 'ROT', 'SUdist', 'AREA', 'REFF']
 #wvls = [0.410, 0.440, 0.550, 0.670, 1.020, 2.100] # wavelengths to read from levC files
 wvls = [0.865] # wavelengths to read from levC files
-tauFctr = 0.88409 # netCDF vol will be scaled by this before being set in YAML, set to unity to skip this hack
+#tauFctr = 1.0041052996873248 # netCDF vol will be scaled by this before being set in YAML, set to unity to skip this hack
+tauFctr = 1.0 # netCDF vol will be scaled by this before being set in YAML, set to unity to skip this hack
 
 extensiveVars = ['TAU', 'TOTdist', 'ROT', 'SUdist', 'AREA']
 
