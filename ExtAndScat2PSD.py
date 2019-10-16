@@ -10,7 +10,7 @@ YAMLpath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/newOptic
 netCDFpath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/newOpticsTables/LUT-DUST/optics_DU.v15_6.nc'
 savePath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/newOpticsTables/LUT-DUST/testCase_scatExtFit_BOUNDED_80nmTo20um.pkl'
 maxCPU = 3
-unbound = False # each bin has its own YAML (YAMLpath[:-4:]+'_mode%d' % (bn+1)+'.yml')
+unbound = False # if FALSE: each bin has its own YAML (YAMLpath[:-4:]+'_mode%d' % (bn+1)+'.yml')
 
 wvInds = [2,4,5,6,7,8,9,11,13] #2->354nm, 5->500nm, 7->870nm, 9->1250nm, 13->2500nm
 #wvls = [0.354, 0.55, 0.87, 1.23, 1.65] # Nλ=5 # WE NEED TO GET THESE FROM ABOVE
@@ -24,7 +24,7 @@ sza = 0
 thtv = np.zeros(len(msTyp))
 phi = np.zeros(len(msTyp)) # currently we assume all observations fall within a plane
 
-varNames = ['qext', 'qsca', 'lambda', 'refimag', 'refreal', 'rLow', 'rUp', 'g']
+varNames = ['qext', 'qsca', 'lambda', 'refimag', 'refreal', 'rLow', 'rUp', 'g', 'area', 'volume']
 optTbl = loadVARSnetCDF(netCDFpath, varNames)
 
 
@@ -35,13 +35,12 @@ wvls = optTbl['lambda'][wvInds]*1e6
 gspRun = rg.graspRun(YAMLpath) if unbound else []
 gspRun = []
 for bn in range(5):
-    if not unbound:
-        binYAML = YAMLpath[:-4:]+'_mode%d' % (bn+1)+'.yml'
-        gspRunNow = rg.graspRun(binYAML)    
+    binYAML = YAMLpath if unbound else YAMLpath[:-4:]+'_mode%d' % (bn+1)+'.yml'
+    gspRunNow = rg.graspRun(binYAML)    
     nowPix = rg.pixel(730123.0+bn, 1, 1, 0, 0, 0, 100)
     for wvl, wvInd in zip(wvls, wvInds): # This will be expanded for wavelength dependent measurement types/geometry
 #        meas = np.r_[optTbl['qext'][bn,0,wvInd], optTbl['qsca'][bn,0,wvInd]]
-        meas = np.r_[optTbl['qext'][bn,0,wvInd]]
+        meas = np.r_[optTbl['qext'][bn,0,wvInd]]*np.r_[optTbl['area'][bn,0]]/np.r_[optTbl['volume'][bn,0]]/1e6 # should give extinction coef. at volume concentration of unity/1000
         nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas)
     if unbound:
         gspRun.addPix(nowPix)
@@ -69,8 +68,9 @@ plt.tight_layout()
 
 pltMdInd = np.r_[0:5]
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(7, 3.5))
-ax[0].plot(optTbl['lambda']*1e6, optTbl['qext'][pltMdInd,0,:].T)
-ax[1].plot(optTbl['lambda']*1e6, optTbl['qsca'][pltMdInd,0,:].T)
+avRatio = np.r_[optTbl['area'][pltMdInd,0]]/np.r_[optTbl['volume'][pltMdInd,0]]/1e6
+ax[0].plot(optTbl['lambda']*1e6, avRatio*optTbl['qext'][pltMdInd,0,:].T)
+ax[1].plot(optTbl['lambda']*1e6, avRatio*optTbl['qsca'][pltMdInd,0,:].T)
 ax[0].set_prop_cycle(None)
 ax[1].set_prop_cycle(None)
 ax[0].plot(rslt[0]['lambda'], np.array([x['aod'] for x in rslt[pltMdInd]]).T, 'x')
