@@ -8,7 +8,7 @@ from MADCAP_functions import loadVARSnetCDF
 
 YAMLpath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/newOpticsTables/LUT-DUST/settings_BCK_ExtSca_9lambda.yml'
 netCDFpath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/newOpticsTables/LUT-DUST/optics_DU.v15_6.nc'
-savePath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/newOpticsTables/LUT-DUST/testCase_scatExtFit_BOUNDED_80nmTo20um.pkl'
+savePath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/newOpticsTables/LUT-DUST/testCase_scatExtFit_BOUNDED_80nmTo20um_RUN2TEST.pkl'
 maxCPU = 3
 unbound = False # if FALSE: each bin has its own YAML (YAMLpath[:-4:]+'_mode%d' % (bn+1)+'.yml')
 
@@ -24,7 +24,7 @@ sza = 0
 thtv = np.zeros(len(msTyp))
 phi = np.zeros(len(msTyp)) # currently we assume all observations fall within a plane
 
-varNames = ['qext', 'qsca', 'lambda', 'refimag', 'refreal', 'rLow', 'rUp', 'g', 'area', 'volume']
+varNames = ['qext', 'qsca', 'lambda', 'refimag', 'refreal', 'rLow', 'rUp', 'g', 'area', 'volume', 'rEff']
 optTbl = loadVARSnetCDF(netCDFpath, varNames)
 
 
@@ -40,7 +40,7 @@ for bn in range(5):
     nowPix = rg.pixel(730123.0+bn, 1, 1, 0, 0, 0, 100)
     for wvl, wvInd in zip(wvls, wvInds): # This will be expanded for wavelength dependent measurement types/geometry
 #        meas = np.r_[optTbl['qext'][bn,0,wvInd], optTbl['qsca'][bn,0,wvInd]]
-        meas = np.r_[optTbl['qext'][bn,0,wvInd]]*np.r_[optTbl['area'][bn,0]]/np.r_[optTbl['volume'][bn,0]]/1e6 # should give extinction coef. at volume concentration of unity/1000
+        meas = np.r_[optTbl['qext'][bn,0,wvInd]]*3/4/optTbl['rEff'][bn,0]/1e6 # should give extinction coef. at volume concentration of unity/1000 (kind of... see note by avRatio defintion below)
         nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas)
     if unbound:
         gspRun.addPix(nowPix)
@@ -68,7 +68,8 @@ plt.tight_layout()
 
 pltMdInd = np.r_[0:5]
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(7, 3.5))
-avRatio = np.r_[optTbl['area'][pltMdInd,0]]/np.r_[optTbl['volume'][pltMdInd,0]]/1e6
+#avRatio = np.r_[optTbl['area'][pltMdInd,0]]/np.r_[optTbl['volume'][pltMdInd,0]]/1e6
+avRatio = 3/4/optTbl['rEff'][pltMdInd,0]/1e6 # Above is exactly correct & this agrees, except in first bin. There Pete did mass weighted average of several sub-bins to find rEff but since we want to match past results we want to be consistent with Pete's technically incorrect method.
 ax[0].plot(optTbl['lambda']*1e6, avRatio*optTbl['qext'][pltMdInd,0,:].T)
 ax[1].plot(optTbl['lambda']*1e6, avRatio*optTbl['qsca'][pltMdInd,0,:].T)
 ax[0].set_prop_cycle(None)
