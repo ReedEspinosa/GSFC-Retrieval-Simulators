@@ -11,67 +11,70 @@ import numpy as np
 from scipy import interpolate as intrp
 
 # Paths to files
-rmtPrjctPath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/'
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry_V3/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-rsltsFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+aerosol_nosurface/noSruf_bench_OneHexQuadExpnd_865nm_YAML216cbfed.pkl'
-baseYAML = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry_V2/calipso-g5nr.vlidort.vector.LAMBERTIAN.1Wvlsd00.yml'
+baseYAML = '/Users/wrespino/Synced/Working/GRASP_PMgenerationRun/settings_BCK_ExtSca_9lambda.yml'
 #baseYAML = None
-
-varNames = ['I', 'Q', 'U', 'sensor_zenith', 'RGEO', 'RISO', 'RVOL', 'TAU', 'VOL', 'radius', 'TOTdist', 'colTOTdist', 'REFR', 'REFI', 'SSA', 'ZE', 'U10m', 'V10m', 'ROT', 'SUdist', 'AREA', 'REFF']
-#wvls = [0.410, 0.440, 0.550, 0.670, 1.020, 2.100] # wavelengths to read from levC files
-wvls = [0.865] # wavelengths to read from levC files
 #tauFctr = 1.0041052996873248 # netCDF vol will be scaled by this before being set in YAML, set to unity to skip this hack
 tauFctr = 1.0 # netCDF vol will be scaled by this before being set in YAML, set to unity to skip this hack
-
-extensiveVars = ['TAU', 'TOTdist', 'ROT', 'SUdist', 'AREA']
-
-intrpRadii = np.array([0.05, 0.059009, 0.06964, 0.082188, 0.096996, 0.11447, 0.1351, 0.15944, 0.18816, 0.22206, 0.26207, 0.30929, 0.36502, 0.43078, 0.5084, 0.6])
+#intrpRadii = np.array([0.05, 0.059009, 0.06964, 0.082188, 0.096996, 0.11447, 0.1351, 0.15944, 0.18816, 0.22206, 0.26207, 0.30929, 0.36502, 0.43078, 0.5084, 0.6])
 
 
 
 # ---Single Scattering Optics Tables---
-#rhInd = 14 #14->70%
-#wvInds = [2,5,9,13,15] #2->350nm, 5->500nm, 9->700nm, 13->1000nm, 15->1500nm
-#varNames = ['r_dist', 'size_dist', 'refreal', 'refimag', 'lambda']
-#rawData = loadVARSnetCDF(radianceFNfrmtStr, varNames)
-#measData = np.array([dict() for _ in wvInds])
-#wvls = np.zeros(len(wvInds))
-#for i,wvInd in enumerate(wvInds):
-#    measData[0]['radius'] = np.array([rawData['r_dist'][:,0,rhInd]]).squeeze()
-#    measData[i]['TOT_COL_dvdlnr'] = np.array([rawData['size_dist'][:,0,rhInd]]).squeeze()*(measData[0]['radius']**4)
-#    measData[i]['REFR_all'] = np.array([rawData['refreal'][0,rhInd,wvInd]]).squeeze()
-#    measData[i]['REFI_all'] = -np.array([rawData['refimag'][0,rhInd,wvInd]]).squeeze()
-#    measData[i]['SSA_all'] = np.array([np.nan])
-#    measData[i]['TAU_all'] = np.array([np.nan])
-#    wvls[i] = rawData['lambda'][wvInd]*1e6
+rhInd = 0 #14->70%
+wvInds = [1,2,4,6,8,11,13,15,17] #1->300nm, 2->350nm, 4->450nm, 6->550nm, 8->650nm, 11->800nm, 13->1000nm, 15->1500nm, 17->2000nm, 18->2500nm
+varNames = ['r_dist', 'size_dist', 'refreal', 'refimag', 'lambda', 'sigma', 'rMode']
+radianceFNfrmtStr = '/Users/wrespino/Synced/Working/GRASP_PMgenerationRun/optics_SU.v5_7.GSFun.nc'
+rawData = loadVARSnetCDF(radianceFNfrmtStr, varNames)
+measData = np.array([dict() for _ in wvInds])
+wvls = np.zeros(len(wvInds))
+for i,wvInd in enumerate(wvInds):
+    measData[i]['REFR_all'] = np.array([rawData['refreal'][0,rhInd,wvInd]]).squeeze()
+    measData[i]['REFI_all'] = -np.array([rawData['refimag'][0,rhInd,wvInd]]).squeeze()
+    measData[i]['SSA_all'] = np.array([np.nan])
+    measData[i]['TAU_all'] = np.array([np.nan])
+    wvls[i] = rawData['lambda'][wvInd]*1e6
+if 'r_dist' in rawData: # files with full logdistribution
+    measData[0]['radius'] = np.array([rawData['r_dist'][:,0,rhInd]]).squeeze()
+    measData[0]['TOT_COL_dvdlnr'] = np.array([rawData['size_dist'][:,0,rhInd]]).squeeze()*(measData[0]['radius']**4)
+else: # files with just lognormal
+    measData[0]['rMode'] = rawData['rMode'][0,rhInd]
+    measData[0]['sigma'] = rawData['sigma'][0]    
 
 # ---OSSE VILDORT Full RT Outputs---
-measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls)
-Nwvlth = len(wvls)
-Nlayer = measData[0]['ZE'].shape[0]-1
-for i in range(Nwvlth):  # integrate over all layers
-    measData[i]['ZE_edge'] = measData[i]['ZE']
-    measData[i]['ZE'] = (measData[i]['ZE'][0:-1]+measData[i]['ZE'][1:])/2 # ZE now midpoint, ZE_all is AOD weighted average height 
-    if 'TAU' in measData[i]: # Else there is no aerosol
-        measData[i]['TOT_COL_dvdlnr'] = np.sum(measData[i]['TOTdist'].T*np.diff(-measData[i]['ZE_edge']), axis=1) # dv/dlnr (um^3/um^2)
-        tauKrnl = measData[i]['TAU']/np.sum(measData[i]['TAU']) # weight intensive parameters by layer optical depth
-    for varName in list(measData[i]):           
-        if varName in extensiveVars:
-            measData[i][varName+'_all'] = np.sum(measData[i][varName], axis=0)
-        elif measData[i][varName].ndim==2 and measData[i][varName].shape[0]==Nlayer and 'TAU' in measData[i]:
-            Nflds = measData[i][varName].shape[1]
-            measData[i][varName+'_all'] = np.sum(np.tile(tauKrnl,(Nflds,1)).T*measData[i][varName], axis=0)
-        elif not np.isscalar(measData[i][varName]) and measData[i][varName].shape[0]==Nlayer and 'TAU' in measData[i]:
-            measData[i][varName+'_all'] = np.sum(tauKrnl*measData[i][varName])
+#rmtPrjctPath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/'
+#radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry_V3/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+#varNames = ['I', 'Q', 'U', 'sensor_zenith', 'RGEO', 'RISO', 'RVOL', 'TAU', 'VOL', 'radius', 'TOTdist', 'colTOTdist', 'REFR', 'REFI', 'SSA', 'ZE', 'U10m', 'V10m', 'ROT', 'SUdist', 'AREA', 'REFF']
+#extensiveVars = ['TAU', 'TOTdist', 'ROT', 'SUdist', 'AREA']
+#wvls = [0.410, 0.440, 0.550, 0.670, 1.020, 2.100] # wavelengths to read from levC files
+#wvls = [0.865] # wavelengths to read from levC files
+#measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls)
+#Nwvlth = len(wvls)
+#Nlayer = measData[0]['ZE'].shape[0]-1
+#for i in range(Nwvlth):  # integrate over all layers
+#    measData[i]['ZE_edge'] = measData[i]['ZE']
+#    measData[i]['ZE'] = (measData[i]['ZE'][0:-1]+measData[i]['ZE'][1:])/2 # ZE now midpoint, ZE_all is AOD weighted average height 
+#    if 'TAU' in measData[i]: # Else there is no aerosol
+#        measData[i]['TOT_COL_dvdlnr'] = np.sum(measData[i]['TOTdist'].T*np.diff(-measData[i]['ZE_edge']), axis=1) # dv/dlnr (um^3/um^2)
+#        tauKrnl = measData[i]['TAU']/np.sum(measData[i]['TAU']) # weight intensive parameters by layer optical depth
+#    for varName in list(measData[i]):           
+#        if varName in extensiveVars:
+#            measData[i][varName+'_all'] = np.sum(measData[i][varName], axis=0)
+#        elif measData[i][varName].ndim==2 and measData[i][varName].shape[0]==Nlayer and 'TAU' in measData[i]:
+#            Nflds = measData[i][varName].shape[1]
+#            measData[i][varName+'_all'] = np.sum(np.tile(tauKrnl,(Nflds,1)).T*measData[i][varName], axis=0)
+#        elif not np.isscalar(measData[i][varName]) and measData[i][varName].shape[0]==Nlayer and 'TAU' in measData[i]:
+#            measData[i][varName+'_all'] = np.sum(tauKrnl*measData[i][varName])
 
 print('<> Wavelengths (LAMBDA):')
 print(wvls)
 if baseYAML:
-    newYamlPath = radianceFNfrmtStr[:-3]+'yml'
+    apndStr = '_%s_RHind%d' % (os.path.basename(radianceFNfrmtStr),rhInd)
+    newYamlPath = radianceFNfrmtStr[:-3]+apndStr+'.yml'
     newYamlPath = newYamlPath.replace('%d','%dWvls' % len(wvls))
     gy = graspYAML(baseYAML, newYamlPath)
     gy.adjustLambda(len(wvls))
     gy.access('stop_before_performing_retrieval', True)
+    gy.access('output.segment.stream', 'bench_inversionRslts'+apndStr+'.txt')
 
 #
 if 'RISO' in measData[0]:
@@ -142,6 +145,14 @@ if 'radius' in measData[0]:
         gy.access('size_distribution_triangle_bins.1.index_of_wavelength_involved', psdWv)
         gy.access('retrieval.phase_matrix.radius.mode[1].min', newVal=minR)
         gy.access('retrieval.phase_matrix.radius.mode[1].max', newVal=maxR)
+
+if 'rMode' in measData[0]:
+    print('<> lognormal psd (rv;ln(σ)):')
+    sigma = np.log(measData[0]['sigma'])
+    rv = 1e6*measData[0]['rMode']*np.exp(3*sigma**2)
+    print('rv=%5.3f μm; ln(σ)=%5.3f' % (rv,sigma))
+    if baseYAML: gy.access('size_distribution_lognormal.1.value', [rv, sigma])
+    
 
 if 'ROT_all' in measData[0]:
     print('<> Rayleigh optical depth (ROT):')
