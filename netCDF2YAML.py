@@ -9,14 +9,15 @@ from runGRASP import graspDB, graspYAML
 from MADCAP_functions import loadVARSnetCDF, readVILDORTnetCDF
 import numpy as np
 from scipy import interpolate as intrp
+import miscFunctions as mf
 
 # Paths to files
-baseYAML = '/Users/wrespino/Synced/Working/GRASP_PMgenerationRun/settings_BCK_ExtSca_9lambda.yml'
-#baseYAML = None
+#baseYAML = '/Users/wrespino/Synced/Working/GRASP_PMgenerationRun/settings_BCK_ExtSca_9lambda.yml'
+baseYAML = '/Users/wrespino/Synced/Working/GRASP_PMgenerationRun/settings_optics_SU.v1_5_gpmom_sizedist.yml'
 #tauFctr = 1.0041052996873248 # netCDF vol will be scaled by this before being set in YAML, set to unity to skip this hack
 tauFctr = 1.0 # netCDF vol will be scaled by this before being set in YAML, set to unity to skip this hack
 #intrpRadii = np.array([0.05, 0.059009, 0.06964, 0.082188, 0.096996, 0.11447, 0.1351, 0.15944, 0.18816, 0.22206, 0.26207, 0.30929, 0.36502, 0.43078, 0.5084, 0.6])
-
+lnNC2binYAML = True # take lorgnormal values from netCDF and convert them to a binned YAML PSD
 
 
 # ---Single Scattering Optics Tables---
@@ -69,6 +70,7 @@ print('<> Wavelengths (LAMBDA):')
 print(wvls)
 if baseYAML:
     apndStr = '_%s_RHind%d' % (os.path.basename(radianceFNfrmtStr),rhInd)
+    if lnNC2binYAML: apndStr = apndStr + "_BINNED"
     newYamlPath = radianceFNfrmtStr[:-3]+apndStr+'.yml'
     newYamlPath = newYamlPath.replace('%d','%dWvls' % len(wvls))
     gy = graspYAML(baseYAML, newYamlPath)
@@ -107,21 +109,37 @@ if 'SSA_all' in measData[0]:
         gy.access('real_part_of_refractive_index_spectral_dependent', newVal=REFR_all)
         gy.access('imaginary_part_of_refractive_index_spectral_dependent', newVal=REFI_all)
         print('NOTE: THIS SCRIPT DOES NOT ADJUST VOL/TAU')
-#
+
+if 'rMode' in measData[0]:
+    print('<> lognormal psd (rv;ln(σ)):')
+    sigma = np.log(measData[0]['sigma'])
+    rv = 1e6*measData[0]['rMode']*np.exp(3*sigma**2)
+    print('rv=%5.3f μm; ln(σ)=%5.3f' % (rv,sigma))
+    if baseYAML and not lnNC2binYAML: gy.access('size_distribution_lognormal.1.value', [rv, sigma])
+        
 Nbins = 40
-#minR = measData[0]['radius'].min()-np.diff(measData[0]['radius']).mean() # doesn't matter much, very little signal here
-#maxR = (measData[0]['radius'].max()+np.diff(measData[0]['radius']).mean()/2)/(minR**(1/Nbins))
-minR = 0.015 # play with min/max R to make triangles on right in plot roughly equal in area
-maxR = 1.50
+minR = 0.03
+maxR = 7.0
 intrpRadii = np.logspace(np.log10(minR),np.log10(maxR),Nbins) # this will match GRASP to 8 digits
 Nradii = len(intrpRadii)
-if 'radius' in measData[0]:
-#    dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr']) #dv/dlnr (um^3/um^2)
-    dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr'], bounds_error=False, fill_value=0) 
+if 'radius' in measData[0] or lnNC2binYAML:
     print('<> Size Distribution (Radii;dvdlnr;min;max;wvlngInvlv):')
     print('radiusMin = %6.4f, radiusMax = %6.4f' % (minR,maxR) )
     print(intrpRadii.tolist())
-    psd = np.maximum(tauFctr*dvdlnr(intrpRadii),1.1e-13)
+    if lnNC2binYAML:
+        psd = mf.logNormal(rv*np.exp(sigma**2), sigma, r=intrpRadii)[0]
+    else:
+        dvdlnr = intrp.interp1d(measData[0]['radius'],measData[0]['TOT_COL_dvdlnr'], bounds_error=False, fill_value=0) #dv/dlnr (um^3/um^2)
+        psd = np.maximum(tauFctr*dvdlnr(intrpRadii),1.1e-13)
+        plt.figure()
+        plt.plot(intrpRadii,3*dvdlnr(intrpRadii)/intrpRadii, '-o')
+        plt.plot(measData[0]['radius'],3*measData[0]['TOT_COL_dvdlnr']/measData[0]['radius'])
+        plt.plot([minR, minR], [0,(3*dvdlnr(intrpRadii)/intrpRadii).max()], 'k--')
+        plt.plot([maxR, maxR], [0,(3*dvdlnr(intrpRadii)/intrpRadii).max()], 'k--')
+        plt.xscale('log')
+        plt.xlabel('radius (μm)')
+        plt.ylabel('dS/dlnr (μm^2/μm^2)')
+        plt.legend(['interpolated\n(GRASP)', 'netCDF'])        
     print(psd.tolist())
     psdMin = 1.0e-13*np.ones(Nradii)
     print(psdMin.tolist())
@@ -129,29 +147,13 @@ if 'radius' in measData[0]:
     print(psdMax.tolist())
     psdWv = np.zeros(Nradii,dtype=int)
     print(psdWv.tolist())
-    plt.figure()
-    plt.plot(intrpRadii,3*dvdlnr(intrpRadii)/intrpRadii, '-o')
-    plt.plot(measData[0]['radius'],3*measData[0]['TOT_COL_dvdlnr']/measData[0]['radius'])
-    plt.plot([minR, minR], [0,(3*dvdlnr(intrpRadii)/intrpRadii).max()], 'k--')
-    plt.plot([maxR, maxR], [0,(3*dvdlnr(intrpRadii)/intrpRadii).max()], 'k--')
-    plt.xscale('log')
-    plt.xlabel('radius (μm)')
-    plt.ylabel('dS/dlnr (μm^2/μm^2)')
-    plt.legend(['interpolated\n(GRASP)', 'netCDF'])
     if baseYAML:
         gy.access('size_distribution_triangle_bins.1.value', psd)
         gy.access('size_distribution_triangle_bins.1.min', psdMin)
         gy.access('size_distribution_triangle_bins.1.max', psdMax)
         gy.access('size_distribution_triangle_bins.1.index_of_wavelength_involved', psdWv)
         gy.access('retrieval.phase_matrix.radius.mode[1].min', newVal=minR)
-        gy.access('retrieval.phase_matrix.radius.mode[1].max', newVal=maxR)
-
-if 'rMode' in measData[0]:
-    print('<> lognormal psd (rv;ln(σ)):')
-    sigma = np.log(measData[0]['sigma'])
-    rv = 1e6*measData[0]['rMode']*np.exp(3*sigma**2)
-    print('rv=%5.3f μm; ln(σ)=%5.3f' % (rv,sigma))
-    if baseYAML: gy.access('size_distribution_lognormal.1.value', [rv, sigma])
+        gy.access('retrieval.phase_matrix.radius.mode[1].max', newVal=maxR)       
     
 
 if 'ROT_all' in measData[0]:
