@@ -16,9 +16,29 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
     assert nowPix.land_prct == landPrct, 'landPrct provided did not match land percentage in nowPix'
     if 'polar07' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
-        nbvm = 10*np.ones(len(msTyp), np.int)
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp))
         wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 0.940, 1.230, 1.380, 1.550, 1.650] # Nλ=11
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
+        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas)
+            nowPix.measVals[-1]['errorModel'] = functools.partial(addError, archName) # this must link to an error model in addError() below
+    if 'polar09' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
+        msTyp = [41, 42, 43] # must be in ascending order
+        thtv = np.tile([-60, 0, 60], len(msTyp))
+        wvls = [0.380, 0.410, 0.550, 0.670, 0.865] #
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
+        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas)
+            nowPix.measVals[-1]['errorModel'] = functools.partial(addError, archName) # this must link to an error model in addError() below
+    if 'modismisr' in archName.lower(): # MISR with MODIS spectral coverage (no polarization)
+        msTyp = [41] # must be in ascending order
+        thtv = np.tile([-70.5, -60.0, -45.6, -26.1, 0, 26.1, 45.6, 60.0, 70.5], len(msTyp))
+        wvls = [0.410, 0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
@@ -69,9 +89,11 @@ def addError(measNm, l, rsltFwd, edgInd):
         fwdSimQ = trueSimQ*noiseVctI # we scale Q and U too to keep q, u and DoLP inline with truth
         fwdSimU = trueSimU*noiseVctI
         dpRnd = np.random.normal(size=len(trueSimI))*relDoLPErr
-        dPol = dpRnd*trueSimI*np.sqrt((trueSimQ**2+trueSimU**2)/(trueSimQ**4+trueSimU**4)) # true is fine b/c noiceVctI factors cancel themselves out
-        fwdSimQ = fwdSimQ*(1+dPol)
-        fwdSimU = fwdSimU*(1+dPol) # Q and U errors are 100% correlated here
+        dPol = trueSimI*np.sqrt((trueSimQ**2+trueSimU**2)/(trueSimQ**4+trueSimU**4)) # true is fine b/c noiceVctI factors cancel themselves out
+        dpRnd = np.random.normal(size=len(trueSimI))*relDoLPErr
+        fwdSimQ = fwdSimQ*(1+dpRnd*dPol)
+        dpRnd = np.random.normal(size=len(trueSimI))*relDoLPErr # Q and U errors are NOT correlated here (this is what we want)
+        fwdSimU = fwdSimU*(1+dpRnd*dPol) 
         return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py 
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
         if int(mtch.group(2)) in [5]: # HSRL and depolarization 
@@ -85,6 +107,13 @@ def addError(measNm, l, rsltFwd, edgInd):
             fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=int(trueSimDPOL))
             return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
 #        elif int(mtch.group(2)) in [9]: # backscatter and depol
+    if mtch.group(1).lower() == 'modismisr':
+        relErr = 0.03
+        trueSimI = rsltFwd['fit_I'][:,l]
+        noiseVctI = np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimI))
+        fwdSimI = trueSimI*noiseVctI
+        fwdSimU = fwdSimU*(1+dpRnd*dPol) 
+        return np.r_[fwdSimI] # safe because of ascending order check in simulateRetrieval.py 
     assert False, 'No error model found for %s!' % measNm # S-Polar06 has DoLP dependent ΔDoLP
 
 

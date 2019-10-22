@@ -58,6 +58,96 @@ def conCaseDefinitions(caseStr, wvls):
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
+    elif caseStr.lower()=='case02' or caseStr.lower()=='case02a': # VERSION 20 (except vol & 2.1μm RI)
+        σ = [0.4, 0.4] # mode 1, 2,...
+        rv = [0.07, 0.25]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.9],  [0.1]])/4.0 # (currently gives AOD maybe close to 1?)
+        vals['vrtHght'] = [[3500],  [3500]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[750],  [750]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.45, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.035, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.00001, nwl)]) # mode 2
+        vals['brdf'] = [] # first dim mode (N=3), second lambda
+        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
+        landPrct = 0
+    elif caseStr.lower()=='case02b': # VERSION 20 (except vol & 2.1μm RI)
+        σ = [0.4, 0.4] # mode 1, 2,...
+        rv = [0.07, 0.25]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.45],  [0.05]])/4.0 # (currently gives AOD maybe close to 0.5?)
+        vals['vrtHght'] = [[3500],  [3500]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[750],  [750]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.45, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.035, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.00001, nwl)]) # mode 2
+        vals['brdf'] = [] # first dim mode (N=3), second lambda
+        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
+        landPrct = 0
+    elif caseStr.lower()=='case02c': # VERSION 20 (except vol & 2.1μm RI)
+        σ = [0.4, 0.4] # mode 1, 2,...
+        rv = [0.07, 0.25]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.45],  [0.05]])/4.0 # (currently gives AOD maybe close to 0.5?)
+        vals['vrtHght'] = [[3500],  [3500]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[750],  [750]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.45, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.00001, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.00001, nwl)]) # mode 2
+        vals['brdf'] = [] # first dim mode (N=3), second lambda
+        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
+        landPrct = 0
+    elif caseStr.lower()=='case03': # VERSION 20 (except vol & 2.1μm RI)
+        σ = [0.6, 0.6] # mode 1, 2,...
+        rv = [0.1, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.9],  [0.1]])/4.0 # (currently gives AOD maybe close to 1?)
+        vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.4, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.002, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.00001, nwl)]) # mode 2
+        vals['brdf'] = [] # first dim mode (N=3), second lambda
+        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
+        landPrct = 0
+    elif caseStr.lower()=='case07a': # VERSION 20 (except vol)
+        σ = [0.5, 0.7] # mode 1, 2,...
+        rv = [0.1, 0.55]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.9],  [0.1]])/4.0 # (currently gives AOD maybe close to 1?)
+        vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.415, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.002, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.00001, nwl)]) # mode 2
+        vals['brdf'] = [] # first dim mode (N=3), second lambda
+        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
+        landPrct = 0
+    elif caseStr.lower()=='case07b': # VERSION 20 (except vol and coarse img RI)
+        σ = [0.5, 0.7] # mode 1, 2,...
+        rv = [0.1, 0.55]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.9],  [0.1]])/4.0 # (currently gives AOD maybe close to 1?)
+        vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.42, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.52, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.002, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.002, nwl)]) # mode 2
+        vals['brdf'] = [] # first dim mode (N=3), second lambda
+        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
+        landPrct = 0
     else:
         assert False, 'No match for canonical case type!'
     if not vals['cxMnk']: # if not set we will use defualt conical case

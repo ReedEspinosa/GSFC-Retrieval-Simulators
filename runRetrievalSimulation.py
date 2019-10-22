@@ -26,18 +26,21 @@ dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
 krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
 fwdModelYAMLpath = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_1lambda_general_V0_fast.yml')
 bckYAMLpath = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_5lambda_Template.yml')
-saveStart = os.path.join(basePath, 'synced/Working/SIM3_')
-Nsims = 140
+saveStart = os.path.join(basePath, 'synced/Working/SIM4TEST_')
+#Nsims = 140
+Nsims = 28
 maxCPU = 28
 
 n = int(sys.argv[1]) # (0,1,2,...,N-1)
 #n=0
 
-instruments = ['polar07'] #1
-conCases = ['Smoke', 'marine', 'pollution','Marine+Smoke', 'marine+pollution', 'Smoke+pollution'] #6
-SZAs = [0, 30, 60] # 3
+instruments = ['polar07', 'polar09', 'modismisr'] #3
+conCases = ['Smoke', 'marine', 'pollution','case02a', 'case02b', 'case02c', 'case03', 'case07a', 'case07b'] #9
+#SZAs = [0, 30, 60] # 3
+SZAs = [0] # 1
 Phis = [0] # 1 
-τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=90 Nodes
+τFactor = [0.2] #1 N=81 Nodes
+#τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=
 
 sizeMat = [1,1,1,1, len(instruments), len(conCases), len(SZAs), len(Phis), len(τFactor)]
 ind = [n//np.prod(sizeMat[i:i+4])%sizeMat[i+4] for i in range(5)]
@@ -49,6 +52,7 @@ print('-- Processing ' + os.path.basename(savePath) + ' --')
 nowPix = returnPixel(paramTple[0], sza=paramTple[2], landPrct=100, relPhi=paramTple[3], nowPix=None)
 wvls = np.unique([mv['wl'] for mv in nowPix.measVals])
 cstmFwdYAML, landPrct = setupConCaseYAML(conCases[ind[1]], wvls, fwdModelYAMLpath, caseLoadFctr=paramTple[4])
+nowPix.land_prct = landPrct
 simA = rs.simulation(nowPix) # defines new instance for this architecture
 # runs the simulation for given set of conditions, releaseYAML=True -> auto adjust back yaml Nλ to match insturment
 simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True)
