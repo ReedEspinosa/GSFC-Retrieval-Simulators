@@ -26,18 +26,16 @@ dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
 krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
 fwdModelYAMLpath = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_1lambda_general_V0_fast.yml')
 bckYAMLpath = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_5lambda_Template.yml')
-saveStart = os.path.join(basePath, 'synced/Working/SIM4TEST_')
-#Nsims = 140
-Nsims = 28
+saveStart = os.path.join(basePath, 'synced/Working/SIM4_SPH_')
+Nsims = 280
 maxCPU = 28
 
 n = int(sys.argv[1]) # (0,1,2,...,N-1)
 #n=0
 
-instruments = ['polar07', 'polar09', 'modismisr'] #3
+instruments = ['polar07', 'polar09', 'modismisr01'] #3
 conCases = ['Smoke', 'marine', 'pollution','case02a', 'case02b', 'case02c', 'case03', 'case07a', 'case07b'] #9
-#SZAs = [0, 30, 60] # 3
-SZAs = [0] # 1
+SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
 τFactor = [0.2] #1 N=81 Nodes
 #τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=

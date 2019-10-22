@@ -26,7 +26,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
             nowPix.measVals[-1]['errorModel'] = functools.partial(addError, archName) # this must link to an error model in addError() below
     if 'polar09' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
-        thtv = np.tile([-60, 0, 60], len(msTyp))
+        thtv = np.tile([-60, 0.001, 60], len(msTyp))
         wvls = [0.380, 0.410, 0.550, 0.670, 0.865] #
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
@@ -34,12 +34,12 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas)
             nowPix.measVals[-1]['errorModel'] = functools.partial(addError, archName) # this must link to an error model in addError() below
-    if 'modismisr' in archName.lower(): # MISR with MODIS spectral coverage (no polarization)
+    if 'modismisr01' in archName.lower(): # MISR with MODIS spectral coverage (no polarization)
         msTyp = [41] # must be in ascending order
         thtv = np.tile([-70.5, -60.0, -45.6, -26.1, 0, 26.1, 45.6, 60.0, 70.5], len(msTyp))
         wvls = [0.410, 0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
-        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        meas = np.r_[np.repeat(0.1, nbvm[0])] 
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas)
@@ -112,7 +112,6 @@ def addError(measNm, l, rsltFwd, edgInd):
         trueSimI = rsltFwd['fit_I'][:,l]
         noiseVctI = np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimI))
         fwdSimI = trueSimI*noiseVctI
-        fwdSimU = fwdSimU*(1+dpRnd*dPol) 
         return np.r_[fwdSimI] # safe because of ascending order check in simulateRetrieval.py 
     assert False, 'No error model found for %s!' % measNm # S-Polar06 has DoLP dependent ΔDoLP
 

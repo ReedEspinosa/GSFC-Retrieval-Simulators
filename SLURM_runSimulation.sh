@@ -1,10 +1,10 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=SIM3polar07
+#SBATCH --job-name=SIM4_SPH
 #SBATCH --nodes=1 --constraint=hasw
-#SBATCH --time=0:55:00
+#SBATCH --time=3:00:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-90 
+#SBATCH --array=0-26 
 
 date
 hostname
