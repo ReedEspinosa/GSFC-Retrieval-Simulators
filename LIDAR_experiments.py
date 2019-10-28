@@ -18,10 +18,10 @@ from MADCAP_functions import hashFileSHA1, loadVARSnetCDF
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
 rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/LIDAR_tests')
 dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
-pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_LIDAR.yml') # path to GRASP YAML file
+pathYAML = os.path.join(basePath, 'Local_Code_MacBook/MADCAP_Analysis/YAML_settingsFiles/settings_HARP_16bin_LIDAR_Polar.yml') # path to GRASP YAML file
 FNfrmtStr = os.path.join(rmtPrjctPath, 'calipso-g5nr.lc2.ext.20060801_00z_%dd00nm.nc4')
-binPathGRASP = os.path.join(basePath, 'Local_Code_MacBook/grasp_open/build/bin/grasp')
-savePathTag = 'lidarTest' # preprend tag for save file, A-z and _ only
+binPathGRASP = '/usr/local/bin/grasp'
+savePathTag = 'lidarPolarTest' # preprend tag for save file, A-z and _ only
 
 
 # Constants
@@ -60,18 +60,26 @@ for ind in indRng:
          tauCDF.append(np.sum(measData['tau'][ind,-Nprofs:]))
          thtv = levHeigh[-Nprofs:]*1000 # km -> m
          nbvm = thtv.shape[0] 
-         msTyp = np.r_[36, 39] #Vertical Extinction profile
-         msrmnts = np.r_[measData['ext'][ind,-Nprofs:]/1000, measData['backscat'][ind,-Nprofs:]/1000] # 1/km -> 1/m
+         msTyp = np.r_[36] #Vertical Extinction profile
+         msrmnts = np.r_[measData['ext'][ind,-Nprofs:]/1000] # 1/km -> 1/m
 #         msTyp = np.r_[36] #Vertical Extinction profile
 #         msrmnts = measData['ext'][ind,-Nprofs:]/1000 # 1/km -> 1/m
          msrmnts[np.abs(msrmnts) < GRASP_MIN] = GRASP_MIN # HINT: could change Q or U sign but still small absolute shift
          nip = msTyp.shape[0]
          thtv = np.tile(thtv, nip) # ex. 11, 35, 55, 11, 35, 55...
          phi = np.tile(0, nbvm*nip) # this shouldn't matter for LIDAR
-         nowPix.addMeas(wl, msTyp, np.repeat(nbvm, nip), sza, thtv, phi, msrmnts)                 
+         nowPix.addMeas(wl, msTyp, np.repeat(nbvm, nip), sza, thtv, phi, msrmnts)
+     # polarimeter
+    thtv = 30 
+    nbvm = 1 
+    msTyp = np.r_[41] #Vertical Extinction profile
+    msrmnts = 0.1 # 1/km -> 1/m # HACK: made up measurement
+    nip = 1
+    thtv = np.tile(thtv, nip) # ex. 11, 35, 55, 11, 35, 55...
+    phi = np.tile(0, nbvm*nip) # this shouldn't matter for LIDAR
+    nowPix.addMeas(0.550, msTyp, np.repeat(nbvm, nip), sza, thtv, phi, msrmnts)             
     gObj[-1].addPix(nowPix)
-
-
+    gObj[-1].yamlObj.adjustLambda(3)
 gDB = graspDB(gObj)
 gDB.processData(maxCPUs, binPathGRASP, savePath)
 
