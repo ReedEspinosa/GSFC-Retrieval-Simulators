@@ -10,8 +10,9 @@ MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpa
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import runGRASP as rg
 
-def conCaseDefinitions(caseStr, wvls): 
+def conCaseDefinitions(caseStr, nowPix): 
     vals = dict()
+    wvls = np.unique([mv['wl'] for mv in nowPix.measVals])
     nwl = len(wvls)
     if caseStr.lower()=='smoke': # ALL VARIABLES WITH MODES MUST BE 2D (ie. var[mode,wl]) or [] (will not change these values)
         σ = [0.37, 0.4] # mode 1, 2,...
@@ -157,15 +158,27 @@ def conCaseDefinitions(caseStr, wvls):
         FresFrac = 0.9999*np.ones(nwl)
         cxMnk = (7*0.00512+0.003)/2*np.ones(nwl)
         vals['cxMnk'] = np.vstack([lambR, FresFrac, cxMnk])
+    lidarMeasLogical = np.isclose(34.5, sum([mv['meas_type'].tolist() for mv in nowPix.measVals],[]), atol=5) # measurement types 30-39 reserved for lidar 
+    if lidarMeasLogical.any(): 
+        lidarInd = lidarMeasLogical.nonzero()[0][0]
+        hValTrgt = np.array(nowPix.measVals[lidarInd]['thetav'][0:nowPix.measVals[lidarInd]['nbvm'][0]]) # HINT: this assumes all LIDAR measurement types have the same vertical range values
+        vals['vrtProf'] = np.empty([len(vals['vrtHght']), len(hValTrgt)])
+        for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
+            bot = mid[0]-2*rng[0]
+            top = mid[0]+2*rng[0]
+            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) < top)+2.0e-6
+        del vals['vrtHght']
+        del vals['vrtHghtStd']
     return vals, landPrct
 
-def setupConCaseYAML(caseStrs, wvls, baseYAML, caseLoadFctr=None, caseHeightKM=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
+def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
     fldNms = {
         'lgrnm':'size_distribution_lognormal',
         'sph':'sphere_fraction',
         'vol':'aerosol_concentration',
         'vrtHght':'vertical_profile_parameter_height',
         'vrtHghtStd':'vertical_profile_parameter_standard_deviation',
+        'vrtProf':'vertical_profile_normalized',
         'n':'real_part_of_refractive_index_spectral_dependent',
         'k':'imaginary_part_of_refractive_index_spectral_dependent',
         'brdf':'surface_land_brdf_ross_li',
@@ -173,7 +186,7 @@ def setupConCaseYAML(caseStrs, wvls, baseYAML, caseLoadFctr=None, caseHeightKM=N
     aeroKeys = ['lgrnm','sph','vol','vrtHght','vrtHghtStd','n','k']
     vals = dict()
     for i, caseStr in enumerate(caseStrs.split('+')): # loop over all cases and add them together
-        valsTmp, landPrct = conCaseDefinitions(caseStr, wvls)
+        valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix)
         for key in valsTmp.keys():
             if key=='vol' and caseLoadFctr:
                 valsTmp[key] = caseLoadFctr*valsTmp[key]
@@ -184,7 +197,7 @@ def setupConCaseYAML(caseStrs, wvls, baseYAML, caseLoadFctr=None, caseHeightKM=N
             else: # implies we take the surface parameters from the last case
                 vals[key] = valsTmp[key]
     bsHsh = md5(baseYAML.encode()).hexdigest()[0:8]
-    nwl = len(wvls)
+    nwl = len(np.unique([mv['wl'] for mv in nowPix.measVals]))
     newFn = 'settingsYAML_conCase%s_nwl%d_%s.yml' % (caseStrs, nwl, bsHsh)
     newPathYAML = os.path.join(tempfile.gettempdir(), newFn)
     yamlObj = rg.graspYAML(baseYAML, newPathYAML)

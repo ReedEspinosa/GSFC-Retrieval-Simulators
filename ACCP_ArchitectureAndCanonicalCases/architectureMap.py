@@ -48,9 +48,9 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         msTyp = [35, 36, 39] # must be in ascending order
         botLayer = 100 # bottom layer in meters
         topLayer = 20000
-        Nlayers = 45
+        Nlayers = 45 #TODO: ultimatly this should be read from (or even better define) the YAML file
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
-        thtv = np.tile(np.logspace(np.log10(botLayer),np.log10(topLayer),Nlayers), len(msTyp))
+        thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
         wvls = [0.532, 1.064] # Nλ=2
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
@@ -99,12 +99,12 @@ def addError(measNm, l, rsltFwd, edgInd):
         if int(mtch.group(2)) in [5]: # HSRL and depolarization 
             relErr = 0.03
             dpolErr = 1/250
-            trueSimβsca = rsltFwd['VBS'][:,l] # measurement type: 39
-            trueSimβext = rsltFwd['VEXT'][:,l] # 36
-            trueSimDPOL = rsltFwd['DP'][:,l] # 35
+            trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
+            trueSimβext = rsltFwd['fit_VExt'][:,l] # 36
+            trueSimDPOL = rsltFwd['fit_DP'][:,l] # 35
             fwdSimβsca = relErr*trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
             fwdSimβext = relErr*trueSimβext*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβext))
-            fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=int(trueSimDPOL))
+            fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=len(trueSimDPOL))
             return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
 #        elif int(mtch.group(2)) in [9]: # backscatter and depol
     if mtch.group(1).lower() == 'modismisr':
