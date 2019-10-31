@@ -45,14 +45,16 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas)
             nowPix.measVals[-1]['errorModel'] = functools.partial(addError, archName) # this must link to an error model in addError() below
     if 'lidar05' in archName.lower(): # TODO: this needs to be more complex, real lidar05 has backscatter at 1 wavelength
-        msTyp = [35, 36, 39] # must be in ascending order
+#        msTyp = [35, 36, 39] # must be in ascending order
+        msTyp = [36, 39] # must be in ascending order
         botLayer = 100 # bottom layer in meters
         topLayer = 20000
         Nlayers = 45 #TODO: ultimatly this should be read from (or even better define) the YAML file
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
         thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
         wvls = [0.532, 1.064] # Nλ=2
-        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+#        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        meas = np.r_[np.repeat(0.01, nbvm[0]), np.repeat(0.01, nbvm[1])] 
         phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             nowPix.addMeas(wvl, msTyp, nbvm, 0, thtv, phi, meas) # sza=sounding_angle=0=nadir
@@ -98,14 +100,15 @@ def addError(measNm, l, rsltFwd, edgInd):
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
         if int(mtch.group(2)) in [5]: # HSRL and depolarization 
             relErr = 0.03
-            dpolErr = 1/250
+#            dpolErr = 1/250
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
             trueSimβext = rsltFwd['fit_VExt'][:,l] # 36
-            trueSimDPOL = rsltFwd['fit_DP'][:,l] # 35
+#            trueSimDPOL = rsltFwd['fit_DP'][:,l] # 35
             fwdSimβsca = relErr*trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
             fwdSimβext = relErr*trueSimβext*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβext))
-            fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=len(trueSimDPOL))
-            return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
+#            fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=len(trueSimDPOL))
+#            return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
+            return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
 #        elif int(mtch.group(2)) in [9]: # backscatter and depol
     if mtch.group(1).lower() == 'modismisr':
         relErr = 0.03
