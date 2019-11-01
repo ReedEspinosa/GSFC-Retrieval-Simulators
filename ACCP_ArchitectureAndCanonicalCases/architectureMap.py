@@ -104,8 +104,8 @@ def addError(measNm, l, rsltFwd, edgInd):
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
             trueSimβext = rsltFwd['fit_VExt'][:,l] # 36
 #            trueSimDPOL = rsltFwd['fit_DP'][:,l] # 35
-            fwdSimβsca = relErr*trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
-            fwdSimβext = relErr*trueSimβext*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβext))
+            fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
+            fwdSimβext = trueSimβext*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβext))
 #            fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=len(trueSimDPOL))
 #            return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
             return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
