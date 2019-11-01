@@ -153,12 +153,12 @@ def conCaseDefinitions(caseStr, nowPix):
         assert False, 'No match for canonical case type!'
     if not vals['cxMnk']: # if not set we will use defualt conical case
         λ=[0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
-        R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.0000000001, 0.0000000001, 0.0000000001] # TODO: need to double check these units
+        R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.00000002, 0.00000002, 0.00000002] # TODO: need to double check these units
         lambR = np.interp(wvls, λ, R)
         FresFrac = 0.9999*np.ones(nwl)
         cxMnk = (7*0.00512+0.003)/2*np.ones(nwl)
         vals['cxMnk'] = np.vstack([lambR, FresFrac, cxMnk])
-    lidarMeasLogical = np.isclose(34.5, sum([mv['meas_type'].tolist() for mv in nowPix.measVals],[]), atol=5) # measurement types 30-39 reserved for lidar 
+    lidarMeasLogical = np.isclose(34.5, [mv['meas_type'][0] for mv in nowPix.measVals], atol=5) # measurement types 30-39 reserved for lidar; if first meas_type is LIDAR, they all should be 
     if lidarMeasLogical.any(): 
         lidarInd = lidarMeasLogical.nonzero()[0][0]
         hValTrgt = np.array(nowPix.measVals[lidarInd]['thetav'][0:nowPix.measVals[lidarInd]['nbvm'][0]]) # HINT: this assumes all LIDAR measurement types have the same vertical range values

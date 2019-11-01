@@ -39,7 +39,7 @@ n=0
 #Phis = [0] # 1 
 #τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=
 
-instruments = ['lidar05'] #3
+instruments = ['lidar05+polar07'] #3
 conCases = ['case02a'] #9
 SZAs = [30] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
