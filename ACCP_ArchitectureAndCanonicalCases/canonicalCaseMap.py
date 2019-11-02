@@ -21,9 +21,9 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.0001], [0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999], [0.99999]] # mode 1, 2,...
         if 'fine' in caseStr.lower():
-            vals['vol'] = np.array([[np.random.normal(1.0, 0.005)], [0]])/7.1508 # (currently gives AOD=1 but will change if intensive props. change!)
+            vals['vol'] = np.array([[np.random.normal(1.0, 0.005)], [0]])/3 # (currently gives AOD=1 but will change if intensive props. change!)
         else:
-            vals['vol'] = np.array([[np.random.normal(0.5,0.005)], [np.random.normal(0.5,0.005)]])/7.1508 # (currently gives AOD=1 but will change if intensive props. change!)
+            vals['vol'] = np.array([[np.random.normal(0.5,0.005)], [np.random.normal(0.5,0.005)]])/3 # (currently gives AOD=1 but will change if intensive props. change!)
         vals['vrtHght'] = [[2500],  [2500]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
         vals['vrtHghtStd'] = [[800],  [800]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.4+rnd.random()*0.02, nwl) # mode 1 

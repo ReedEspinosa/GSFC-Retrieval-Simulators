@@ -12,42 +12,45 @@ from canonicalCaseMap import setupConCaseYAML
 
 
 # MacBook Air
-fwdModelYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_LIDAR.yml'
-bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml'
-fwdModelYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml'
-bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml'
-saveStart = '/Users/wrespino/Desktop/testLIDAR_' # end will be appended
-dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
-#dirGRASP = '/usr/local/bin/grasp'
-krnlPath = None
-Nsims = 3
-maxCPU = 3
+#fwdModelYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_LIDAR.yml'
+#bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml'
+#fwdModelYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml'
+#bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml'
+#saveStart = '/Users/wrespino/Desktop/testLIDAR_' # end will be appended
+#dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
+##dirGRASP = '/usr/local/bin/grasp'
+#krnlPath = None
+#Nsims = 3
+#maxCPU = 3
 
 # DISCOVER
-#basePath = os.environ['NOBACKUP']
-#dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
-#krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
-#fwdModelYAMLpath = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_1lambda_general_V0_fast.yml')
-#bckYAMLpath = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_5lambda_Template.yml')
-#saveStart = os.path.join(basePath, 'synced/Working/SIM4_SPH_')
-#Nsims = 280
-#maxCPU = 28
+basePath = os.environ['NOBACKUP']
+dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
+krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
+fwdModelYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_LIDAR.yml')
+bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml')
+fwdModelYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml')
+bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml')
+saveStart = os.path.join(basePath, 'synced/Working/SIM5_')
+#Nsims = 420
+Nsims = 56
+maxCPU = 28
 
-#n = int(sys.argv[1]) # (0,1,2,...,N-1)
-n=0
+n = int(sys.argv[1]) # (0,1,2,...,N-1)
+#n=0
 
-#instruments = ['polar07', 'polar09', 'modismisr01'] #3
-#conCases = ['Smoke', 'marine', 'pollution','case02a', 'case02b', 'case02c', 'case03', 'case07a', 'case07b'] #9
-#SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
-#Phis = [0] # 1 
-#τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=
-
-instruments = ['lidar0900+img0200'] #3
-#instruments = ['img0200'] #3
-conCases = ['variable'] #9
-SZAs = [30] # 3 (GRASP doesn't seem to be wild about θs=0)
+instruments = ['lidar0900+img0200', 'lidar09+img02', 'img02', 'img01'] # 4
+conCases = ['variablenonsph', 'variablefine', 'variablefinenonsph', 'variable'] #4
+SZAs = [0.1, 10, 20, 30, 40, 50, 60] # 7 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
-τFactor = [0.2] #1 N=81 Nodes
+τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=
+
+#instruments = ['lidar0900+img0200'] #3
+##instruments = ['img0200'] #3
+#conCases = ['variable'] #9
+#SZAs = [30] # 3 (GRASP doesn't seem to be wild about θs=0)
+#Phis = [0] # 1 
+#τFactor = [0.2] #1 N=81 Nodes
 
 
 sizeMat = [1,1,1,1, len(instruments), len(conCases), len(SZAs), len(Phis), len(τFactor)]
