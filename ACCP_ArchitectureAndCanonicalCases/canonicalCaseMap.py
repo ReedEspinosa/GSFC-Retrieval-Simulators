@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import numpy.random as rnd
 import tempfile
 from hashlib import md5
 import os
@@ -14,7 +15,25 @@ def conCaseDefinitions(caseStr, nowPix):
     vals = dict()
     wvls = np.unique([mv['wl'] for mv in nowPix.measVals])
     nwl = len(wvls)
-    if caseStr.lower()=='smoke': # ALL VARIABLES WITH MODES MUST BE 2D (ie. var[mode,wl]) or [] (will not change these values)
+    if 'variable' in caseStr.lower():
+        σ = [0.5+rnd.random()*0.005, 0.5+rnd.random()*0.005] # mode 1, 2,...
+        rv = [0.1+rnd.random()*0.1, 2.5+rnd.random()*2] # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.0001], [0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999], [0.99999]] # mode 1, 2,...
+        if 'fine' in caseStr.lower():
+            vals['vol'] = np.array([[np.random.normal(1.0, 0.005)], [0]])/7.1508 # (currently gives AOD=1 but will change if intensive props. change!)
+        else:
+            vals['vol'] = np.array([[np.random.normal(0.5,0.005)], [np.random.normal(0.5,0.005)]])/7.1508 # (currently gives AOD=1 but will change if intensive props. change!)
+        vals['vrtHght'] = [[2500],  [2500]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+        vals['vrtHghtStd'] = [[800],  [800]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.4+rnd.random()*0.02, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.33+rnd.random()*0.14, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.00001+rnd.random()*0.0055, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.000001+rnd.random()*0.00095, nwl)]) # mode 2
+        vals['brdf'] = [] # first dim mode (N=3), second lambda
+        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
+        landPrct = 0        
+    elif caseStr.lower()=='smoke': # ALL VARIABLES WITH MODES MUST BE 2D (ie. var[mode,wl]) or [] (will not change these values)
         σ = [0.37, 0.4] # mode 1, 2,...
         rv = [0.12, 0.35]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
@@ -153,7 +172,8 @@ def conCaseDefinitions(caseStr, nowPix):
         assert False, 'No match for canonical case type!'
     if not vals['cxMnk']: # if not set we will use defualt conical case
         λ=[0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
-        R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.00000002, 0.00000002, 0.00000002] # TODO: need to double check these units
+        R=[0.00000002, 0.00000002, 0.00000002, 0.00000002,	0.00000002, 0.00000002, 0.00000002, 0.00000002] # TODO: need to double check these units
+#        R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.00000002, 0.00000002, 0.00000002] # TODO: need to double check these units
         lambR = np.interp(wvls, λ, R)
         FresFrac = 0.9999*np.ones(nwl)
         cxMnk = (7*0.00512+0.003)/2*np.ones(nwl)
@@ -166,7 +186,8 @@ def conCaseDefinitions(caseStr, nowPix):
         for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
             bot = mid[0]-2*rng[0]
             top = mid[0]+2*rng[0]
-            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) < top)+2.0e-6
+            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) < top)*0.1+0.01
+#            vals['vrtProf'][i,:] = 0.1
         del vals['vrtHght']
         del vals['vrtHghtStd']
     return vals, landPrct

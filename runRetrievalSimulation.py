@@ -12,10 +12,13 @@ from canonicalCaseMap import setupConCaseYAML
 
 
 # MacBook Air
-fwdModelYAMLpath = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_LIDAR.yml'
-bckYAMLpath = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml'
+fwdModelYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_LIDAR.yml'
+bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml'
+fwdModelYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml'
+bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml'
 saveStart = '/Users/wrespino/Desktop/testLIDAR_' # end will be appended
 dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
+#dirGRASP = '/usr/local/bin/grasp'
 krnlPath = None
 Nsims = 3
 maxCPU = 3
@@ -39,8 +42,9 @@ n=0
 #Phis = [0] # 1 
 #τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=
 
-instruments = ['lidar05+polar07'] #3
-conCases = ['case02a'] #9
+instruments = ['lidar0900+img0200'] #3
+#instruments = ['img0200'] #3
+conCases = ['variable'] #9
 SZAs = [30] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
 τFactor = [0.2] #1 N=81 Nodes
@@ -53,9 +57,16 @@ savePath = saveStart + '%s_case-%s_sza%d_phi%d_tFct%4.2f_V2.pkl' % paramTple
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 
 # RUN SIMULATION
+if 'lidar' in instruments[ind[0]].lower():
+    fwdModelYAMLpath = fwdModelYAMLpathLID
+    bckYAMLpath = bckYAMLpathLID
+else:
+    fwdModelYAMLpath = fwdModelYAMLpathPOL
+    bckYAMLpath = bckYAMLpathPOL
 nowPix = returnPixel(paramTple[0], sza=paramTple[2], landPrct=100, relPhi=paramTple[3], nowPix=None)
 cstmFwdYAML, landPrct = setupConCaseYAML(conCases[ind[1]], nowPix, fwdModelYAMLpath, caseLoadFctr=paramTple[4])
 nowPix.land_prct = landPrct
+print('n= %d, Nλ = %d' % (n,nowPix.nwl))
 simA = rs.simulation(nowPix) # defines new instance for this architecture
 # runs the simulation for given set of conditions, releaseYAML=True -> auto adjust back yaml Nλ to match insturment
 simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True)
