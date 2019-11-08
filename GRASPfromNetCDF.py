@@ -10,21 +10,18 @@ from runGRASP import graspDB, graspRun, pixel
 from MADCAP_functions import readVILDORTnetCDF, hashFileSHA1
 
 # Paths to files
-#rmtPrjctPath = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/'
-#binPathGRASP = '/usr/local/bin/grasp'
-#grspChnkSz = 19 # number of pixles in a single SDATA file
-#maxCPUs = 4; # maximum number of simultaneous grasp run threads
+#binPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
+binPathGRASP = '/usr/local/bin/grasp'
+grspChnkSz = 28 # number of pixles in a single SDATA file
+maxCPUs = 3; # maximum number of simultaneous grasp run threads
 
-rmtPrjctPath = '/discover/nobackup/wrespino/synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12'
-binPathGRASP = '/discover/nobackup/wrespino/grasp_open/build/bin/grasp'
-grspChnkSz = 3 # number of pixles in a single SDATA file
-maxCPUs = 28; # maximum number of simultaneous grasp run threads
-
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry_V3/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+radianceFNfrmtStr = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_GRASP_basedLUTs_V2/graspConfig_12_Osku_DU001_V4/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4'
 dayStr = '20060901'
 dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
-pathYAML = os.path.join(rmtPrjctPath, 'benchmark_rayleigh+simple_aerosol_nosurface_Osku_dry_V3/calipso-g5nr.vlidort.vector.LAMBERTIAN.1Wvlsd00.yml')
-savePathTag = 'crctPMON_nodalPoint' # preprend tag for save file, A-z and _ only
+pathYAML = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_GRASP_basedLUTs_V2/graspConfig_12_Osku_DU001_V4/settings_DustLUT_9lambda_mode1.yml'
+savePathTag = 'VLIDORTMatch_vB' # preprend tag for save file, A-z and _ only
+#vB = number_of_gaussian_quadratures_for_expansion_coefficients=15
+#vC = number_of_gaussian_quadratures_for_expansion_coefficients=30
 
 # Constants
 wvls = [0.800] # wavelengths to read from levC files

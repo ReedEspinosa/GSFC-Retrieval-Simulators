@@ -67,7 +67,7 @@ retrieval:
         reference_plane_for_polarization:   principal_plane
         simulating_observation:
             order_of_scattering: multiple_scattering
-            number_of_gaussian_quadratures_for_expansion_coefficients:  4 # 41 is max, this should have no effect w/o aerosol
+            number_of_gaussian_quadratures_for_expansion_coefficients:  20 # 41 is max, this should have no effect w/o aerosol
             number_of_guassian_quadratures_for_fourier_expansion_coefficients:  100 # big diff here, diminishing returns after 20 though
             number_of_fourier_expansion_coefficients:  4 # 20 makes almost no difference    
         simulating_derivatives:
