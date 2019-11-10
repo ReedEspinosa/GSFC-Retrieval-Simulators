@@ -194,7 +194,7 @@ retrieval:
             mode[1]: {max: 15.0, min: 0.05}
         size_binning_method_for_triangle_bins: logarithm
     products:
-        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: true, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}
+        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: false, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}
         error_estimation:
             aerosol: {lidar: false, optical_properties: false}
             parameters: false

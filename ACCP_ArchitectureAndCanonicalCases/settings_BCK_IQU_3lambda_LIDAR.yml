@@ -15,9 +15,9 @@ retrieval:
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [1.00001]
+                    max: [3.00001]
                     min: [0.00000001]
-                    value: [0.01]
+                    value: [0.1]
                 single_pixel:
                     smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
             retrieved: true
@@ -238,7 +238,7 @@ retrieval:
             mode[2]: {max: 15.0, min: 0.05}
         size_binning_method_for_triangle_bins: logarithm
     products:
-        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: true, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}
+        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: false, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}
         error_estimation:
             aerosol: {lidar: false, optical_properties: false}
             parameters: false

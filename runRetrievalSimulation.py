@@ -31,7 +31,7 @@ fwdModelYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAn
 bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml')
 fwdModelYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml')
-saveStart = os.path.join(basePath, 'synced/Working/SIM5_')
+saveStart = os.path.join(basePath, 'synced/Working/SIM6/SIM6_')
 #Nsims = 420
 Nsims = 56
 maxCPU = 28
@@ -39,9 +39,9 @@ maxCPU = 28
 n = int(sys.argv[1]) # (0,1,2,...,N-1)
 #n=0
 
-instruments = ['lidar0900+img0200', 'lidar09+img02', 'img02', 'img01'] # 4
-conCases = ['variablenonsph', 'variablefine', 'variablefinenonsph', 'variable'] #4
-SZAs = [0.1, 10, 20, 30, 40, 50, 60] # 7 (GRASP doesn't seem to be wild about θs=0)
+instruments = ['lidar0900+img0200', 'img02', 'img01'] # 4
+conCases = ['variablenonsph', 'variable'] #4
+SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
 τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=
 
