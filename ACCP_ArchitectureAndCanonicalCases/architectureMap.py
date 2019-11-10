@@ -33,7 +33,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         meas = np.r_[np.repeat(0.1, nbvm[0])] 
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
-            errModel = functools.partial(addError, 'modismisr') # this must link to an error model in addError() below
+            errModel = functools.partial(addError, 'modismisr01') # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
     if 'img02' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
