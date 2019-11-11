@@ -1,10 +1,10 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=SIM5
+#SBATCH --job-name=SIM6
 #SBATCH --nodes=1 --constraint=hasw
-#SBATCH --time=0:20:00
+#SBATCH --time=0:30:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-90 
+#SBATCH --array=0-30 
 
 date
 hostname

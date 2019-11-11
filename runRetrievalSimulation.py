@@ -39,8 +39,8 @@ maxCPU = 28
 n = int(sys.argv[1]) # (0,1,2,...,N-1)
 #n=0
 
-instruments = ['lidar0900+img0200', 'img02', 'img01'] # 4
-conCases = ['variablenonsph', 'variable'] #4
+instruments = ['lidar09+img02', 'img02'] # 4
+conCases = ['variable'] #4
 SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
 τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=
