@@ -199,7 +199,7 @@ retrieval:
             mode[1]: {max: 15.0, min: 0.05}
         size_binning_method_for_triangle_bins: logarithm
     products:
-        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: false, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}
+        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: true, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}
         error_estimation:
             aerosol: {lidar: false, optical_properties: false}
             parameters: false
@@ -213,7 +213,7 @@ retrieval:
         number_of_layers: 50
         reference_plane_for_polarization: principal_plane
         simulating_derivatives: {number_of_fourier_expansion_coefficients: 4, number_of_gaussian_quadratures_for_expansion_coefficients: 15, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 4, order_of_scattering: derivatives}
-        simulating_observation: {number_of_fourier_expansion_coefficients: 10, number_of_gaussian_quadratures_for_expansion_coefficients: 4, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: multiple_scattering}
+        simulating_observation: {number_of_fourier_expansion_coefficients: 10, number_of_gaussian_quadratures_for_expansion_coefficients: 15, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: multiple_scattering}
     regime_of_measurement_fitting: {polarization: absolute_polarization_components}
     regime_of_multipixel_constraints: {inversion_regime: single_pixel}
 settings: {strict: true}

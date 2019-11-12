@@ -24,9 +24,9 @@ def conCaseDefinitions(caseStr, nowPix):
             vals['vol'] = np.array([[np.random.normal(0.8, 0.04)], [0.000001]])/3 # (currently gives AOD=1 but will change if intensive props. change!)
         else:
             vals['vol'] = np.array([[np.random.normal(0.4,0.02)], [np.random.normal(2.5,0.10)]])/3 # (currently gives AOD=1 but will change if intensive props. change!)
-        vals['vrtHght'] = [[2500],  [2500]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
-        vals['vrtHghtStd'] = [[800],  [800]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.4+rnd.random()*0.02, nwl) # mode 1 
+        vals['vrtHght'] = [[1800],  [1800]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+        vals['vrtHghtStd'] = [[700],  [700]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.35+rnd.random()*0.1, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.33+rnd.random()*0.14, nwl)]) # mode 2
         vals['k'] = np.repeat(0.00001+rnd.random()*0.0055, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(0.000001+rnd.random()*0.00095, nwl)]) # mode 2
@@ -186,7 +186,8 @@ def conCaseDefinitions(caseStr, nowPix):
         for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
             bot = mid[0]-2*rng[0]
             top = mid[0]+2*rng[0]
-            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) < top)*0.1+0.01
+            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) < top)*0.1+0.0005
+            vals['vrtProf'][i,:] = np.convolve(vals['vrtProf'][i,:], np.ones(5)/5, mode='same')
 #            vals['vrtProf'][i,:] = 0.1
         del vals['vrtHght']
         del vals['vrtHghtStd']

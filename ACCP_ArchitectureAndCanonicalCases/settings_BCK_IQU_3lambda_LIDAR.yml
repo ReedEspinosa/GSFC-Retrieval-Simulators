@@ -7,17 +7,17 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [1.00001]
+                    max: [0.1]
                     min: [0.00000001]
-                    value: [0.01]
+                    value: [0.0005]
                 single_pixel:
                     smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [3.00001]
+                    max: [1.00001]
                     min: [0.00000001]
-                    value: [0.1]
+                    value: [0.005]
                 single_pixel:
                     smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
             retrieved: true
@@ -49,7 +49,7 @@ retrieval:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                     max: [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
                     min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
-                    value: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
+                    value: [1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05]
                 single_pixel:
                     smoothness_constraints: {difference_order: 3, lagrange_multiplier: 0}
             mode[2]:
@@ -57,7 +57,7 @@ retrieval:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                     max: [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
                     min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
-                    value: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
+                    value: [1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05,1.0e-05]
                 single_pixel:
                     smoothness_constraints: {difference_order: 3, lagrange_multiplier: 0}
             retrieved: true
@@ -66,8 +66,8 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1, 2, 3]
-                    max: [1.42, 1.42, 1.42]
-                    min: [1.4, 1.4, 1.4]
+                    max: [1.45, 1.45, 1.45]
+                    min: [1.35, 1.35, 1.35]
                     value: [1.41, 1.41, 1.41]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e3}
@@ -192,20 +192,6 @@ retrieval:
     debug: {additional_information: false, verbose: true}
     general: {path_to_internal_files: /usr/local/share/grasp/kernels/}
     noises:
-#        noise[1]:
-#            error_type: absolute
-#            measurement_type[1]:
-#                index_of_wavelength_involved: [1,2,3]
-#                type: VEXT
-#            standard_deviation: 0.001
-#            standard_deviation_synthetic: 0.0
-#        noise[2]:
-#            error_type: absolute
-#            measurement_type[1]:
-#                index_of_wavelength_involved: [1, 2, 3]
-#                type: VBS
-#            standard_deviation: 0.001
-#            standard_deviation_synthetic: 0.0
         noise[1]:
             error_type: relative
             measurement_type[1]:
@@ -228,8 +214,23 @@ retrieval:
             measurement_type[1]:
                 index_of_wavelength_involved: [1, 2, 3]
                 type: LS
-            standard_deviation: 0.05
-            standard_deviation_synthetic: 0.0            
+            standard_deviation: 0.0003
+            standard_deviation_synthetic: 0.0
+        noise[4]:
+            error_type: absolute
+            measurement_type[1]:
+                index_of_wavelength_involved: [1,2,3]
+                type: VEXT
+            standard_deviation: 0.00004
+            standard_deviation_synthetic: 0.0
+        noise[5]:
+            error_type: absolute
+            measurement_type[1]:
+                index_of_wavelength_involved: [1, 2, 3]
+                type: VBS
+            standard_deviation: 0.0000003
+            standard_deviation_synthetic: 0.0
+
     phase_matrix:
         kernels_folder: KERNELS_BASE/
         number_of_elements: 4
@@ -238,7 +239,7 @@ retrieval:
             mode[2]: {max: 15.0, min: 0.05}
         size_binning_method_for_triangle_bins: logarithm
     products:
-        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: false, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}
+        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: true, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}
         error_estimation:
             aerosol: {lidar: false, optical_properties: false}
             parameters: false
@@ -252,7 +253,7 @@ retrieval:
         number_of_layers: 50
         reference_plane_for_polarization: principal_plane
         simulating_derivatives: {number_of_fourier_expansion_coefficients: 10, number_of_gaussian_quadratures_for_expansion_coefficients: 15, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: derivatives}
-        simulating_observation: {number_of_fourier_expansion_coefficients: 10, number_of_gaussian_quadratures_for_expansion_coefficients: 4, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: multiple_scattering}
+        simulating_observation: {number_of_fourier_expansion_coefficients: 10, number_of_gaussian_quadratures_for_expansion_coefficients: 15, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: multiple_scattering}
     regime_of_measurement_fitting: {polarization: relative_polarization_components}
     regime_of_multipixel_constraints: {inversion_regime: single_pixel}
 settings: {strict: true}

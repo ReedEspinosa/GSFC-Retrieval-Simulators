@@ -80,8 +80,8 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
     if 'lidar05' in archName.lower(): # TODO: this needs to be more complex, real lidar05 has backscatter at 1 wavelength and DEPOL
 #        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
         msTyp = [36, 39] # must be in ascending order
-        botLayer = 100 # bottom layer in meters
-        topLayer = 20000
+        botLayer = 200 # bottom layer in meters
+        topLayer = 10000
         Nlayers = 45 #TODO: ultimatly this should be read from (or even better define) the YAML file
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
         thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
@@ -95,7 +95,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
     if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
 #        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
         msTyp = [31] # must be in ascending order
-        botLayer = 100 # bottom layer in meters
+        botLayer = 200 # bottom layer in meters
         topLayer = 10000
         Nlayers = 45 #TODO: ultimatly this should be read from (or even better define) the YAML file
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
@@ -148,19 +148,20 @@ def addError(measNm, l, rsltFwd, edgInd):
         return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py 
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
         if int(mtch.group(2)) in [5]: # HSRL and depolarization 
-#            relErr = 0.03
-            relErr = 0.000003
+            relErrβsca = 0.07 # these values pulled from slide 39 of Rich's HSRL talk at the aerosol TIM
+            relErrβext = 0.20 # they are prelimanary and need to be updated once simulations are complete!
+#            relErr = 0.000003
 #            dpolErr = 1/250
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
             trueSimβext = rsltFwd['fit_VExt'][:,l] # 36
 #            trueSimDPOL = rsltFwd['fit_DP'][:,l] # 35
-            fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
-            fwdSimβext = trueSimβext*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβext))
+            fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErrβsca), size=len(trueSimβsca))
+            fwdSimβext = trueSimβext*np.random.lognormal(sigma=np.log(1+relErrβext), size=len(trueSimβext))
 #            fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=len(trueSimDPOL))
 #            return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
             return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
         elif int(mtch.group(2)) in [9]: # backscatter and depol
-            relErr = 0.05
+            relErr = 0.07 # 5% calibration error from Gimmestad, G. et al. Sci. Rep. 7, 42337; (2017), random error so we also choose 5%, which, when added in quadrature give 7%
             trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
             return np.r_[fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
