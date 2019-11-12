@@ -81,7 +81,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
 #        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
         msTyp = [36, 39] # must be in ascending order
         botLayer = 200 # bottom layer in meters
-        topLayer = 10000
+        topLayer = 6000
         Nlayers = 45 #TODO: ultimatly this should be read from (or even better define) the YAML file
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
         thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
@@ -96,7 +96,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
 #        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
         msTyp = [31] # must be in ascending order
         botLayer = 200 # bottom layer in meters
-        topLayer = 10000
+        topLayer = 6000
         Nlayers = 45 #TODO: ultimatly this should be read from (or even better define) the YAML file
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
         thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))

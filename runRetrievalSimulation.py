@@ -33,7 +33,7 @@ fwdModelYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAn
 fwdModelYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml')
 bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml')
-saveStart = os.path.join(basePath, 'synced/Working/SIM7/SIM7_')
+saveStart = os.path.join(basePath, 'synced/Working/SIM8/SIM_')
 #bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR_oneRI.yml')
 #bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL_oneRI.yml')
 #saveStart = os.path.join(basePath, 'synced/Working/SIM7/SIM7_oneRI_')
@@ -44,17 +44,16 @@ n = int(sys.argv[1]) # (0,1,2,...,N-1)
 #n=0
 
 instruments = ['lidar09+img02', 'lidar05+img02', 'img02', 'img01'] # 4
-conCases = ['variablenonsph', 'variablefine', 'variablefinenonsph', 'variable'] #4
+#conCases = ['variablenonsph', 'variablefine', 'variablefinenonsph', 'variable'] #4
 SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
 τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=240
 
-#instruments = ['img02'] #3
-##instruments = ['img0200'] #3
-#conCases = ['variable'] #9
-#SZAs = [30] # 3 (GRASP doesn't seem to be wild about θs=0)
+#instruments = ['lidar05+img02'] #3
+conCases = ['variable'] #9
+#SZAs = [60] # 3 (GRASP doesn't seem to be wild about θs=0)
 #Phis = [0] # 1 
-#τFactor = [0.2] #1 N=81 Nodes
+#τFactor = [0.35] #1 N=81 Nodes
 
 
 sizeMat = [1,1,1,1, len(instruments), len(conCases), len(SZAs), len(Phis), len(τFactor)]

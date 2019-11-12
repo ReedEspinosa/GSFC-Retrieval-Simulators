@@ -24,7 +24,7 @@ def conCaseDefinitions(caseStr, nowPix):
             vals['vol'] = np.array([[np.random.normal(0.8, 0.04)], [0.000001]])/3 # (currently gives AOD=1 but will change if intensive props. change!)
         else:
             vals['vol'] = np.array([[np.random.normal(0.4,0.02)], [np.random.normal(2.5,0.10)]])/3 # (currently gives AOD=1 but will change if intensive props. change!)
-        vals['vrtHght'] = [[1800],  [1800]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+        vals['vrtHght'] = [[2500],  [2500]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
         vals['vrtHghtStd'] = [[700],  [700]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.35+rnd.random()*0.1, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.33+rnd.random()*0.14, nwl)]) # mode 2
