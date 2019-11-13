@@ -28,8 +28,10 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['vrtHghtStd'] = [[700],  [700]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.35+rnd.random()*0.1, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.33+rnd.random()*0.14, nwl)]) # mode 2
+        vals['n'][1,-2] = max(1.33, vals['n'][1,-2] - 0.02)
+        vals['n'][1,-1] = max(1.33, vals['n'][1,-1] - 0.04)
         vals['k'] = np.repeat(0.00001+rnd.random()*0.0055, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.000001+rnd.random()*0.00095, nwl)]) # mode 2
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.000001+rnd.random()*0.00095, nwl)/np.linspace(1,2,nwl)]) # mode 2
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0        
@@ -172,8 +174,11 @@ def conCaseDefinitions(caseStr, nowPix):
         assert False, 'No match for canonical case type!'
     if not vals['cxMnk']: # if not set we will use defualt conical case
         λ=[0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
-        R=[0.00000002, 0.00000002, 0.00000002, 0.00000002,	0.00000002, 0.00000002, 0.00000002, 0.00000002] # TODO: need to double check these units
-#        R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.00000002, 0.00000002, 0.00000002] # TODO: need to double check these units
+        if 'chl' in caseStr.lower():
+            #R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.00000002, 0.00000002, 0.00000002] # SIT-A canonical values, TODO: need to double check these units
+            R=[0.02, 0.02, 0.02, 0.02,  0.01, 0.0005, 0.00000002, 0.00000002] # Figure 8, Chowdhary et al, APPLIED OPTICS Vol. 45, No. 22 (2006), also need to check units...
+        else:
+            R=[0.00000002, 0.00000002, 0.00000002, 0.00000002,	0.00000002, 0.00000002, 0.00000002, 0.00000002] 
         lambR = np.interp(wvls, λ, R)
         FresFrac = 0.9999*np.ones(nwl)
         cxMnk = (7*0.00512+0.003)/2*np.ones(nwl)

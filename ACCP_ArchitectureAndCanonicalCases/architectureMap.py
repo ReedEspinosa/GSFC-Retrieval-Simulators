@@ -28,7 +28,10 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
     if 'img01' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41] # must be in ascending order
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp))
-        wvls = [0.441, 0.669, 0.865, 1.24, 2.2] # Nλ=11
+        if 'visnir'  in archName.lower():
+            wvls = [0.441, 0.669, 0.865, 1.24] # 
+        else:
+            wvls = [0.441, 0.669, 0.865, 1.24, 2.2] # Nλ=11
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0])] 
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
@@ -38,7 +41,10 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
     if 'img02' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp))
-        wvls = [0.441, 0.669, 0.865, 1.24, 2.2] # Nλ=11
+        if 'visnir'  in archName.lower():
+            wvls = [0.441, 0.669, 0.865, 1.24] # 
+        else:
+            wvls = [0.441, 0.669, 0.865, 1.24, 2.2] # Nλ=11
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane

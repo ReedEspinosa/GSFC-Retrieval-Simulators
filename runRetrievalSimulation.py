@@ -36,7 +36,6 @@ bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCano
 saveStart = os.path.join(basePath, 'synced/Working/SIM8/SIM_')
 #bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR_oneRI.yml')
 #bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL_oneRI.yml')
-#saveStart = os.path.join(basePath, 'synced/Working/SIM7/SIM7_oneRI_')
 Nsims = 140
 maxCPU = 28
 
@@ -44,7 +43,8 @@ n = int(sys.argv[1]) # (0,1,2,...,N-1)
 #n=0
 
 instruments = ['lidar09+img02', 'lidar05+img02', 'img02', 'img01'] # 4
-#conCases = ['variablenonsph', 'variablefine', 'variablefinenonsph', 'variable'] #4
+#instruments = ['lidar09+img02visnir', 'lidar05+img02visnir', 'img02visnir', 'img01visnir'] # 4
+#conCases = ['variablenonsph', 'variablefine', 'variablefinenonsph'] #4
 SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
 τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=240

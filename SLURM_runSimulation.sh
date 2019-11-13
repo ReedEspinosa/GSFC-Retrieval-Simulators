@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=SIM6
+#SBATCH --job-name=SIM8oneRI
 #SBATCH --nodes=1 --constraint=hasw
 #SBATCH --time=0:30:00
 #SBATCH -o log/output.%A-%a
