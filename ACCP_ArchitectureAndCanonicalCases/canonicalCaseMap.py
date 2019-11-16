@@ -35,42 +35,42 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0        
-    elif caseStr.lower()=='smoke': # ALL VARIABLES WITH MODES MUST BE 2D (ie. var[mode,wl]) or [] (will not change these values)
-        σ = [0.37, 0.4] # mode 1, 2,...
-        rv = [0.12, 0.35]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+    elif 'smoke' in caseStr.lower(): # ALL VARIABLES WITH MODES MUST BE 2D (ie. var[mode,wl]) or [] (will not change these values)
+        σ = [0.4, 0.45] # mode 1, 2,...
+        rv = [0.12, 0.36]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.76],  [0.24]])/7.1508 # (currently gives AOD=1 but will change if intensive props. change!)
-        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+        vals['vol'] = np.array([[0.02737365], [0.00880117]]) # gives AOD = [0.2165, 0.033499]
+        vals['vrtHght'] = [[3000],  [3000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.55, nwl) # mode 1 
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.55, nwl)]) # mode 2
+        vals['n'] = np.repeat(1.54, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
         vals['k'] = np.repeat(0.04, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
-    elif caseStr.lower()=='marine':
-        σ = [0.5, 0.72] # mode 1, 2,...
-        rv = [0.2, 0.55]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+    elif 'marine' in caseStr.lower():
+        σ = [0.45, 0.70] # mode 1, 2,...
+        rv = [0.2, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.05],  [0.95]])/1.1464 # (currently gives AOD=1 but will change if intensive props. change!)
+        vals['vol'] = np.array([[0.00477583], [0.07941207]]) # gives AOD=[0.0287, 0.0713]
         vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.415, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
         vals['k'] = np.repeat(0.002, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(3e-9, nwl)]) # mode 2
+        vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
-    elif caseStr.lower()=='pollution':
+    elif 'pollution' in caseStr.lower():
         σ = [0.36, 0.64] # mode 1, 2,...
         rv = [0.11, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.75],  [0.25]])/4.2924 # (currently gives AOD=1 but will change if intensive props. change!)
+        vals['vol'] = np.array([[0.01787314], [0.00465671]]) # gives AOD=[0.091801 , 0.0082001] but will change if intensive props. change!
         vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.45, nwl) # mode 1 
@@ -80,98 +80,86 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
-    elif caseStr.lower()=='case02' or caseStr.lower()=='case02a': # VERSION 20 (except vol & 2.1μm RI)
+    elif 'dust' in caseStr.lower():
+        σ = [0.36, 0.64] # mode 1, 2,...
+        rv = [0.11, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        if 'nonsph' in caseStr.lower():
+            vals['sph'] = [[0.00001], [0.00001]] # mode 1, 2,...
+        else:
+            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.01853733], [0.10044263]]) # gives AOD= [0.073, 0.177] but will change if intensive props. change!)
+        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.39, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
+        vals['k'] = np.repeat(1e-8, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.002, nwl)]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
+        vals['brdf'] = [] # first dim mode (N=3), second lambda
+        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
+        landPrct = 0
+    # case01 is blank in V22 of the canoncial case spreadsheet...
+    elif 'case02' in caseStr.lower(): # VERSION 22 (except vol & 2.1μm RI)
         σ = [0.4, 0.4] # mode 1, 2,...
         rv = [0.07, 0.25]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.9],  [0.1]])/4.0 # (currently gives AOD maybe close to 1?)
+        vals['vol'] = np.array([[0.07921839], [0.03682901]]) # gives AOD = [0.3046, 0.1954]
+        if 'case02b' in caseStr.lower() or 'case02c' in caseStr.lower():
+            vals['vol'] = vals['vol']/2.0 
         vals['vrtHght'] = [[3500],  [3500]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[750],  [750]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.45, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
-        vals['k'] = np.repeat(0.035, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.00001, nwl)]) # mode 2
+        vals['k'] = np.repeat(1e-8, nwl) if 'case02c' in caseStr.lower() else np.repeat(0.035, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
-    elif caseStr.lower()=='case02b': # VERSION 20 (except vol & 2.1μm RI)
-        σ = [0.4, 0.4] # mode 1, 2,...
-        rv = [0.07, 0.25]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.45],  [0.05]])/4.0 # (currently gives AOD maybe close to 0.5?)
-        vals['vrtHght'] = [[3500],  [3500]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[750],  [750]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.45, nwl) # mode 1 
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
-        vals['k'] = np.repeat(0.035, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.00001, nwl)]) # mode 2
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0
-    elif caseStr.lower()=='case02c': # VERSION 20 (except vol & 2.1μm RI)
-        σ = [0.4, 0.4] # mode 1, 2,...
-        rv = [0.07, 0.25]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.45],  [0.05]])/4.0 # (currently gives AOD maybe close to 0.5?)
-        vals['vrtHght'] = [[3500],  [3500]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[750],  [750]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.45, nwl) # mode 1 
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
-        vals['k'] = np.repeat(0.00001, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.00001, nwl)]) # mode 2
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0
-    elif caseStr.lower()=='case03': # VERSION 20 (except vol & 2.1μm RI)
+    elif caseStr.lower()=='case03': # VERSION 22 (2.1μm RRI)
         σ = [0.6, 0.6] # mode 1, 2,...
         rv = [0.1, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.9],  [0.1]])/4.0 # (currently gives AOD maybe close to 1?)
+        vals['vol'] = np.array([[0.01387783], [0.01277042]]) # gives AOD = [0.0732, 0.026801]
         vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.4, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
         vals['k'] = np.repeat(0.002, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.00001, nwl)]) # mode 2
+        vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
-    elif caseStr.lower()=='case07a': # VERSION 20 (except vol)
+    # case 04 is over land
+    # case 05 has a water cloud in the scene
+    elif 'case07' in caseStr.lower() or 'case08' in caseStr.lower(): # VERSION 22 (except spectral dep. of imag. in case 8)
         σ = [0.5, 0.7] # mode 1, 2,...
         rv = [0.1, 0.55]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.9],  [0.1]])/4.0 # (currently gives AOD maybe close to 1?)
         vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.415, nwl) # mode 1 
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
         vals['k'] = np.repeat(0.002, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.00001, nwl)]) # mode 2
+        if 'case07' in caseStr.lower():
+            vals['vol'] = np.array([[0.00580439], [0.00916563]]) # gives AOD = [0.0309, 0.0091]
+            vals['n'] = np.repeat(1.415, nwl) # mode 1 
+            vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
+            vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
+        else:
+            vals['vol'] = np.array([[0.01191013], [0.0159524]]) # gives AOD = [0.064499, 0.0155  ]
+            vals['n'] = np.repeat(1.42, nwl) # mode 1 
+            vals['n'] = np.vstack([vals['n'], np.repeat(1.52, nwl)]) # mode 2
+            vals['k'] = np.vstack([vals['k'], np.repeat(0.002, nwl)]) # mode 2
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0
-    elif caseStr.lower()=='case07b': # VERSION 20 (except vol and coarse img RI)
-        σ = [0.5, 0.7] # mode 1, 2,...
-        rv = [0.1, 0.55]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.9],  [0.1]])/4.0 # (currently gives AOD maybe close to 1?)
-        vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.42, nwl) # mode 1 
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.52, nwl)]) # mode 2
-        vals['k'] = np.repeat(0.002, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.002, nwl)]) # mode 2
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0
+        landPrct = 0 if 'case07' in caseStr.lower() else 100
     else:
-        assert False, 'No match for canonical case type!'
+        assert False, 'No match for caseStr: '+caseStr+'!'
+    if 'monomode' in caseStr.lower(): # keep only the large of the two (or more) modes
+        bigMode = np.argmax(vals['vol'])
+        for key in ['vol','n','k','sph','lgrnm','vrtHght','vrtHghtStd']:
+            vals[key] = np.atleast_2d(np.array(vals[key])[bigMode,:]) 
     if not vals['cxMnk']: # if not set we will use defualt conical case
         λ=[0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
         if 'chl' in caseStr.lower():
@@ -181,8 +169,10 @@ def conCaseDefinitions(caseStr, nowPix):
             R=[0.00000002, 0.00000002, 0.00000002, 0.00000002,	0.00000002, 0.00000002, 0.00000002, 0.00000002] 
         lambR = np.interp(wvls, λ, R)
         FresFrac = 0.9999*np.ones(nwl)
-        cxMnk = (7*0.00512+0.003)/2*np.ones(nwl)
+        cxMnk = (7*0.00512+0.003)/2*np.ones(nwl) # 7 m/s
         vals['cxMnk'] = np.vstack([lambR, FresFrac, cxMnk])
+    if not vals['brdf'] and landPrct>0: # we havn't programed these yet
+        assert False, caseStr.lower()+' used land surfrace reflectanct. Land BRDF parameters are not yet included!'
     lidarMeasLogical = np.isclose(34.5, [mv['meas_type'][0] for mv in nowPix.measVals], atol=5) # measurement types 30-39 reserved for lidar; if first meas_type is LIDAR, they all should be 
     if lidarMeasLogical.any(): 
         lidarInd = lidarMeasLogical.nonzero()[0][0]
@@ -198,6 +188,46 @@ def conCaseDefinitions(caseStr, nowPix):
         del vals['vrtHghtStd']
     return vals, landPrct
 
+def splitMultipleCases(caseStrs, caseLoadFct):
+    if caseLoadFct is None: caseLoadFct = 1
+    cases = []
+    loadings = []
+    for case in caseStrs.split('+'):
+        if 'case06a' in case.lower():
+            cases.append(case.replace('case06a','smoke'))
+            loadings.append(caseLoadFct)
+            cases.append(case.replace('case06a','marine'))
+            loadings.append(caseLoadFct)
+        elif 'case06b' in case.lower():
+            cases.append(case.replace('case06b','smoke'))
+            loadings.append(0.4*caseLoadFct)
+            cases.append(case.replace('case06b','marine'))
+            loadings.append(2.5*caseLoadFct)
+        elif 'case06c' in case.lower():
+            cases.append(case.replace('case06c','smoke'))
+            loadings.append(caseLoadFct)
+            cases.append(case.replace('case06c','pollution'))
+            loadings.append(caseLoadFct)
+        elif 'case06d' in case.lower():
+            cases.append(case.replace('case06d','smoke'))
+            loadings.append(0.4*caseLoadFct)
+            cases.append(case.replace('case06d','pollution'))
+            loadings.append(0.4*caseLoadFct)
+        elif 'case06e' in case.lower():
+            cases.append(case.replace('case06e','dust'))
+            loadings.append(caseLoadFct)
+            cases.append(case.replace('case06e','marine'))
+            loadings.append(caseLoadFct)
+        elif 'case06f' in case.lower():
+            cases.append(case.replace('case06f','dust'))
+            loadings.append(0.4*caseLoadFct)
+            cases.append(case.replace('case06f','marine'))
+            loadings.append(2.5*caseLoadFct)
+        else:
+            cases.append(case)
+            loadings.append(caseLoadFct)
+    return zip(cases, loadings)
+
 def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
     fldNms = {
         'lgrnm':'size_distribution_lognormal',
@@ -212,11 +242,11 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
         'cxMnk':'surface_water_cox_munk_iso'}
     aeroKeys = ['lgrnm','sph','vol','vrtHght','vrtHghtStd','n','k']
     vals = dict()
-    for i, caseStr in enumerate(caseStrs.split('+')): # loop over all cases and add them together
+    for caseStr,loading in splitMultipleCases(caseStrs, caseLoadFctr): # loop over all cases and add them together
         valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix)
         for key in valsTmp.keys():
-            if key=='vol' and caseLoadFctr:
-                valsTmp[key] = caseLoadFctr*valsTmp[key]
+            if key=='vol':
+                valsTmp[key] = loading*valsTmp[key]
             elif key=='vrtHght' and caseHeightKM:
                 valsTmp[key][:] = caseHeightKM*1000
             if key in aeroKeys and key in vals:

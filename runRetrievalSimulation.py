@@ -13,17 +13,17 @@ from canonicalCaseMap import setupConCaseYAML
 
 # MacBook Air
 #fwdModelYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_LIDAR.yml'
-##bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml'
-#bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR_oneRI.yml'
+#bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml'
+##bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR_oneRI.yml'
 #fwdModelYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml'
-##bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml'
-#bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL_oneRI.yml'
+#bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml'
+##bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL_oneRI.yml'
 #saveStart = '/Users/wrespino/Desktop/testLIDAR_' # end will be appended
 #dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
 ##dirGRASP = '/usr/local/bin/grasp'
 #krnlPath = None
-#Nsims = 2
-#maxCPU = 2
+#Nsims = 1
+#maxCPU = 1
 
 # DISCOVER
 basePath = os.environ['NOBACKUP']
@@ -33,27 +33,34 @@ fwdModelYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAn
 fwdModelYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml')
 bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml')
-saveStart = os.path.join(basePath, 'synced/Working/SIM8/SIM_')
+bckYAMLpathPOLnonSph = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL_nonsph.yml')
+saveStart = os.path.join(basePath, 'synced/Working/SIM9_conCasesV22_Pol07/SIM_')
 #bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR_oneRI.yml')
 #bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL_oneRI.yml')
-Nsims = 140
+Nsims = 560
 maxCPU = 28
 
 n = int(sys.argv[1]) # (0,1,2,...,N-1)
 #n=0
 
-instruments = ['lidar09+img02', 'lidar05+img02', 'img02', 'img01'] # 4
-#instruments = ['lidar09+img02visnir', 'lidar05+img02visnir', 'img02visnir', 'img01visnir'] # 4
-#conCases = ['variablenonsph', 'variablefine', 'variablefinenonsph'] #4
+#instruments = ['lidar09+img02', 'lidar05+img02', 'img02', 'img01'] # 4
+##instruments = ['lidar09+img02visnir', 'lidar05+img02visnir', 'img02visnir', 'img01visnir'] # 4
+##conCases = ['variablenonsph', 'variablefine', 'variablefinenonsph'] #4
+#SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
+#Phis = [0] # 1 
+#τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=240
+
+instruments = ['polar07'] #1
+conCases = ['case02a','case02b','case02c','case03','case07']
+for caseLet in ['a','b','c','d','e','f']:
+    conCases.append('case06'+caseLet)
+    conCases.append('case06'+caseLet+'monomode')
+    if caseLet in ['e','f']:
+        conCases.append('case06'+caseLet+'nonsph')
+        conCases.append('case06'+caseLet+'monomode'+'nonsph') #21 total
 SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
-τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=240
-
-#instruments = ['lidar05+img02'] #3
-conCases = ['variable'] #9
-#SZAs = [60] # 3 (GRASP doesn't seem to be wild about θs=0)
-#Phis = [0] # 1 
-#τFactor = [0.35] #1 N=81 Nodes
+τFactor = [0.3, 1.0, 3.0] #3 N=189 Nodes
 
 
 sizeMat = [1,1,1,1, len(instruments), len(conCases), len(SZAs), len(Phis), len(τFactor)]
@@ -68,7 +75,10 @@ if 'lidar' in instruments[ind[0]].lower():
     bckYAMLpath = bckYAMLpathLID
 else:
     fwdModelYAMLpath = fwdModelYAMLpathPOL
-    bckYAMLpath = bckYAMLpathPOL
+    if 'nonsph' in conCases[ind[1]].lower():
+        bckYAMLpath = bckYAMLpathPOLnonSph
+    else:
+        bckYAMLpath = bckYAMLpathPOL
 nowPix = returnPixel(paramTple[0], sza=paramTple[2], landPrct=100, relPhi=paramTple[3], nowPix=None)
 cstmFwdYAML, landPrct = setupConCaseYAML(conCases[ind[1]], nowPix, fwdModelYAMLpath, caseLoadFctr=paramTple[4])
 nowPix.land_prct = landPrct
