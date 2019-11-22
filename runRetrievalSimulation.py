@@ -62,6 +62,8 @@ SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
 τFactor = [0.3, 1.0, 3.0] #3 N=189 Nodes
 
+rndIntialGuess = True # randomly vary the intial guess of retrieved parameters
+
 
 sizeMat = [1,1,1,1, len(instruments), len(conCases), len(SZAs), len(Phis), len(τFactor)]
 ind = [n//np.prod(sizeMat[i:i+4])%sizeMat[i+4] for i in range(5)]
@@ -85,4 +87,4 @@ nowPix.land_prct = landPrct
 print('n= %d, Nλ = %d' % (n,nowPix.nwl))
 simA = rs.simulation(nowPix) # defines new instance for this architecture
 # runs the simulation for given set of conditions, releaseYAML=True -> auto adjust back yaml Nλ to match insturment
-simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True)
+simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, rndIntialGuess=rndIntialGuess)
