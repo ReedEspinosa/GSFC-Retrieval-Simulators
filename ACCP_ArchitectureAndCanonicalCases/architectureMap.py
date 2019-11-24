@@ -154,8 +154,8 @@ def addError(measNm, l, rsltFwd, edgInd):
         return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py 
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
         if int(mtch.group(2)) in [5]: # HSRL and depolarization 
-            relErrβsca = 0.07 # these values pulled from slide 39 of Rich's HSRL talk at the aerosol TIM
-            relErrβext = 0.20 # they are prelimanary and need to be updated once simulations are complete!
+            relErrβsca = 0.0358 # these values pulled from slide 39 of Rich's HSRL talk at the aerosol TIM
+            relErrβext = 0.1157 # see A-CCP/LIDAR Erorr in Endnote for more details
 #            relErr = 0.000003
 #            dpolErr = 1/250
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
@@ -167,7 +167,8 @@ def addError(measNm, l, rsltFwd, edgInd):
 #            return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
             return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
         elif int(mtch.group(2)) in [9]: # backscatter and depol
-            relErr = 0.07 # 5% calibration error from Gimmestad, G. et al. Sci. Rep. 7, 42337; (2017), random error so we also choose 5%, which, when added in quadrature give 7%
+#            relErr = 0.07 # 5% calibration error from Gimmestad, G. et al. Sci. Rep. 7, 42337; (2017), random error so we also choose 5%, which, when added in quadrature give 7%
+            relErr = 0.20 # taken from the master_joint_canoncical_5s.xlsx that Ed sent, corresponds to daytime ~1km
             trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
             return np.r_[fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py

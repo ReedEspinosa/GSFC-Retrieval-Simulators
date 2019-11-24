@@ -214,21 +214,21 @@ retrieval:
             measurement_type[1]:
                 index_of_wavelength_involved: [1, 2, 3]
                 type: LS
-            standard_deviation: 0.0004
+            standard_deviation: 0.0012
             standard_deviation_synthetic: 0.0
         noise[4]:
             error_type: absolute
             measurement_type[1]:
                 index_of_wavelength_involved: [1,2,3]
                 type: VEXT
-            standard_deviation: 0.00006
+            standard_deviation: 0.00004
             standard_deviation_synthetic: 0.0
         noise[5]:
             error_type: absolute
             measurement_type[1]:
                 index_of_wavelength_involved: [1, 2, 3]
                 type: VBS
-            standard_deviation: 0.0000004
+            standard_deviation: 0.0000002
             standard_deviation_synthetic: 0.0
 
     phase_matrix:
