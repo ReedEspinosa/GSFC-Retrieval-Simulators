@@ -86,11 +86,12 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
     if 'lidar05' in archName.lower(): # TODO: this needs to be more complex, real lidar05 has backscatter at 1 wavelength and DEPOL
 #        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
         msTyp = [36, 39] # must be in ascending order
-        botLayer = 200 # bottom layer in meters
-        topLayer = 6000
+        botLayer = 100 # bottom layer in meters
+        topLayer = 5500
         Nlayers = 45 #TODO: ultimatly this should be read from (or even better define) the YAML file
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
-        thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
+#        thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
+        thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
         wvls = [0.532, 1.064] # Nλ=2
 #        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         meas = np.r_[np.repeat(0.0532, nbvm[0]), np.repeat(0.01064, nbvm[1])]
@@ -101,11 +102,12 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
     if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
 #        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
         msTyp = [31] # must be in ascending order
-        botLayer = 200 # bottom layer in meters
-        topLayer = 6000
+        botLayer = 100 # bottom layer in meters
+        topLayer = 5500
         Nlayers = 45 #TODO: ultimatly this should be read from (or even better define) the YAML file
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
-        thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
+#        thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
+        thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
         wvls = [0.532, 1.064] # Nλ=2
 #        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         meas = np.r_[np.repeat(0.007, nbvm[0])]
@@ -168,7 +170,7 @@ def addError(measNm, l, rsltFwd, edgInd):
             return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
         elif int(mtch.group(2)) in [9]: # backscatter and depol
 #            relErr = 0.07 # 5% calibration error from Gimmestad, G. et al. Sci. Rep. 7, 42337; (2017), random error so we also choose 5%, which, when added in quadrature give 7%
-            relErr = 0.20 # taken from the master_joint_canoncical_5s.xlsx that Ed sent, corresponds to daytime ~1km
+            relErr = 0.19 # taken from the master_joint_canoncical_5s.xlsx that Ed sent, corresponds to daytime ~1km
             trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
             return np.r_[fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py

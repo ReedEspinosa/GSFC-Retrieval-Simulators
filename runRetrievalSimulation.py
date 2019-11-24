@@ -34,7 +34,7 @@ fwdModelYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAn
 bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml')
 bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml')
 bckYAMLpathPOLnonSph = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL_nonsph.yml')
-saveStart = os.path.join(basePath, 'synced/Working/SIM9_conCasesV22_Pol07/SIM_')
+saveStart = os.path.join(basePath, 'synced/Working/SIM13_lidarTest/SIM_')
 #bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR_oneRI.yml')
 #bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL_oneRI.yml')
 Nsims = 560
@@ -50,17 +50,19 @@ n = int(sys.argv[1]) # (0,1,2,...,N-1)
 #Phis = [0] # 1 
 #τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=240
 
-instruments = ['polar07'] #1
-conCases = ['case02a','case02b','case02c','case03','case07']
-for caseLet in ['a','b','c','d','e','f']:
-    conCases.append('case06'+caseLet)
-    conCases.append('case06'+caseLet+'monomode')
-    if caseLet in ['e','f']:
-        conCases.append('case06'+caseLet+'nonsph')
-        conCases.append('case06'+caseLet+'monomode'+'nonsph') #21 total
-SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
+instruments = ['lidar09+polar07', 'lidar05+polar07', 'polar07'] #2
+#conCases = ['case02a','case02b','case02c','case03','case07']
+#for caseLet in ['a','b','c','d','e','f']:
+#    conCases.append('case06'+caseLet)
+#    conCases.append('case06'+caseLet+'monomode') #17 total
+#    if caseLet in ['e','f']:
+#        conCases.append('case06'+caseLet+'nonsph')
+#        conCases.append('case06'+caseLet+'monomode'+'nonsph') #21 total
+conCases = 'case06a'
+#SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
+SZAs = [30]
 Phis = [0] # 1 
-τFactor = [0.3, 1.0, 3.0] #3 N=189 Nodes
+τFactor = [1.0] #3 N=189 Nodes
 
 rndIntialGuess = True # randomly vary the intial guess of retrieved parameters
 

@@ -182,7 +182,7 @@ def conCaseDefinitions(caseStr, nowPix):
             bot = mid[0]-2*rng[0]
             top = mid[0]+2*rng[0]
             vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) < top)*0.1+0.0005
-            vals['vrtProf'][i,:] = np.convolve(vals['vrtProf'][i,:], np.ones(5)/5, mode='same')
+#            vals['vrtProf'][i,:] = np.convolve(vals['vrtProf'][i,:], np.ones(5)/5, mode='same')
 #            vals['vrtProf'][i,:] = 0.1
         del vals['vrtHght']
         del vals['vrtHghtStd']
