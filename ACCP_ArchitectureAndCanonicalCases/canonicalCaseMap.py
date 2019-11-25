@@ -240,7 +240,7 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
         'k':'imaginary_part_of_refractive_index_spectral_dependent',
         'brdf':'surface_land_brdf_ross_li',
         'cxMnk':'surface_water_cox_munk_iso'}
-    aeroKeys = ['lgrnm','sph','vol','vrtHght','vrtHghtStd','n','k']
+    aeroKeys = ['lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k']
     vals = dict()
     for caseStr,loading in splitMultipleCases(caseStrs, caseLoadFctr): # loop over all cases and add them together
         valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix)
