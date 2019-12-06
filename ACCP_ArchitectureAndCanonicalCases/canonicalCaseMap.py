@@ -16,22 +16,22 @@ def conCaseDefinitions(caseStr, nowPix):
     wvls = np.unique([mv['wl'] for mv in nowPix.measVals])
     nwl = len(wvls)
     if 'variable' in caseStr.lower():
-        σ = [0.5+rnd.random()*0.005, 0.5+rnd.random()*0.005] # mode 1, 2,...
-        rv = [0.1+rnd.random()*0.1, 2.5+rnd.random()*2] # mode 1, 2,... (rv = rn*e^3σ)
+        σ = [0.3+rnd.random()*0.4, 0.3+rnd.random()*0.4] # mode 1, 2,...
+        rv = [0.15+rnd.random()*0.2, 0.6+rnd.random()*3] # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.0001], [0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999], [0.99999]] # mode 1, 2,...
         if 'fine' in caseStr.lower():
             vals['vol'] = np.array([[np.random.normal(0.8, 0.04)], [0.000001]])/3 # (currently gives AOD=1 but will change if intensive props. change!)
         else:
             vals['vol'] = np.array([[np.random.normal(0.4,0.02)], [np.random.normal(2.5,0.10)]])/3 # (currently gives AOD=1 but will change if intensive props. change!)
-        vals['vrtHght'] = [[2500],  [2500]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
-        vals['vrtHghtStd'] = [[700],  [700]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.35+rnd.random()*0.1, nwl) # mode 1 
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.33+rnd.random()*0.14, nwl)]) # mode 2
-        vals['n'][1,-2] = max(1.33, vals['n'][1,-2] - 0.02)
-        vals['n'][1,-1] = max(1.33, vals['n'][1,-1] - 0.04)
-        vals['k'] = np.repeat(0.00001+rnd.random()*0.0055, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.000001+rnd.random()*0.00095, nwl)/np.linspace(1,2,nwl)]) # mode 2
+        vals['vrtHght'] = [[3010],  [1010]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.34+rnd.random()*0.2, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.34+rnd.random()*0.2, nwl)]) # mode 2
+#         vals['n'][1,-2] = max(1.33, vals['n'][1,-2] - 0.02)
+#         vals['n'][1,-1] = max(1.33, vals['n'][1,-1] - 0.04)
+        vals['k'] = np.repeat(0.0001+rnd.random()*0.04, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.0001+rnd.random()*0.01, nwl)]) # mode 2
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0        
@@ -41,7 +41,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = np.array([[0.02737365], [0.00880117]]) # gives AOD = [0.2165, 0.033499]
-        vals['vrtHght'] = [[3000],  [3000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.54, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
@@ -56,7 +56,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = np.array([[0.00477583], [0.07941207]]) # gives AOD=[0.0287, 0.0713]
-        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.415, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
@@ -71,7 +71,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = np.array([[0.01787314], [0.00465671]]) # gives AOD=[0.091801 , 0.0082001] but will change if intensive props. change!
-        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.45, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.5, nwl)]) # mode 2
@@ -89,7 +89,7 @@ def conCaseDefinitions(caseStr, nowPix):
         else:
             vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = np.array([[0.01853733], [0.10044263]]) # gives AOD= [0.073, 0.177] but will change if intensive props. change!)
-        vals['vrtHght'] = [[1000],  [1000]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.39, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
@@ -179,9 +179,9 @@ def conCaseDefinitions(caseStr, nowPix):
         hValTrgt = np.array(nowPix.measVals[lidarInd]['thetav'][0:nowPix.measVals[lidarInd]['nbvm'][0]]) # HINT: this assumes all LIDAR measurement types have the same vertical range values
         vals['vrtProf'] = np.empty([len(vals['vrtHght']), len(hValTrgt)])
         for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
-            bot = mid[0]-2*rng[0]
+            bot = max(mid[0]-2*rng[0],115) # we want to bottom two bins to go to zero (GRASP bug)
             top = mid[0]+2*rng[0]
-            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) < top)*0.1+0.0005
+            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*0.2+0.0001
 #            vals['vrtProf'][i,:] = np.convolve(vals['vrtProf'][i,:], np.ones(5)/5, mode='same')
 #            vals['vrtProf'][i,:] = 0.1
         del vals['vrtHght']
