@@ -196,7 +196,7 @@ retrieval:
 #                    value: [2.0e-10, 2.0e-10, 2.0e-10]
 #            retrieved: false
 #            type: surface_land_polarized_maignan_breon
-    convergence: {maximum_iterations_for_stopping: 20, maximum_iterations_of_Levenberg-Marquardt: 20, minimization_convention: logarithm, normal_system_solver: sparse_matrix_solver, scale_for_finite_difference: 2.0e-03, shift_for_applying_logarithm_to_negative_values: 1.1, stop_before_performing_retrieval: false, threshold_for_stopping: 0.001, threshold_for_stopping_Q_iterations: 1.0e-06}
+    convergence: {maximum_iterations_for_stopping: 20, maximum_iterations_of_Levenberg-Marquardt: 20, minimization_convention: logarithm, normal_system_solver: sparse_matrix_solver, scale_for_finite_difference: 2.0e-05, shift_for_applying_logarithm_to_negative_values: 1.1, stop_before_performing_retrieval: false, threshold_for_stopping: 0.001, threshold_for_stopping_Q_iterations: 1.0e-06}
     debug: {additional_information: false, verbose: true}
     general: {path_to_internal_files: /usr/local/share/grasp/kernels/}
     noises:

@@ -108,7 +108,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, 'lidar05') # this must link to an error model in addError() below
-            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
+            nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
     if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
 #        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
         msTyp = [31] # must be in ascending order
@@ -124,7 +124,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, 'lidar09') # this must link to an error model in addError() below
-            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
+            nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
     return nowPix
 
 def addError(measNm, l, rsltFwd, edgInd):
