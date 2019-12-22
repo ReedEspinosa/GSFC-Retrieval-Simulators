@@ -15,10 +15,10 @@ binPathGRASP = '/usr/local/bin/grasp'
 grspChnkSz = 28 # number of pixles in a single SDATA file
 maxCPUs = 3; # maximum number of simultaneous grasp run threads
 
-radianceFNfrmtStr = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_GRASP_basedLUTs_V2/graspConfig_12_Osku_DU001_V4/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4'
+radianceFNfrmtStr = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+simple_aerosol_BRDF/calipso-g5nr.vlidort.vector.MODIS_BRDF.%dd00.nc4'
 dayStr = '20060901'
 dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
-pathYAML = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_GRASP_basedLUTs_V2/graspConfig_12_Osku_DU001_V4/settings_DustLUT_9lambda_mode1.yml'
+pathYAML = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+simple_aerosol_BRDF/calipso-g5nr.vlidort.vector.BRDF.1Wvlsd00.yml'
 savePathTag = 'VLIDORTMatch_vB' # preprend tag for save file, A-z and _ only
 #vB = number_of_gaussian_quadratures_for_expansion_coefficients=15
 #vC = number_of_gaussian_quadratures_for_expansion_coefficients=30
@@ -61,7 +61,9 @@ for strtInd in strtInds:
         dtNm = measData[0]['dtNm'][ind]
         lon = 0
         lat = 0
+#        masl = 21239.502 # ROT=0.0172484312 @ 400nm
         masl = 1743.45 # ROT=0.01258532 @ 865nm; benchmark netCDF ROT=0.0125853186 => agreement to 0.000011%
+                       # ROT=0.0172484312 @ 800nm
                        # ROT=0.15018514 @ 470nm; benchmark netCDF ROT=0.1501853764 => agreement to 0.000159%         
         nowPix = pixel(dtNm, 1, 1, lon, lat, masl, lndPrct)
         sza = solar_zenith # assume instantaneous measurement

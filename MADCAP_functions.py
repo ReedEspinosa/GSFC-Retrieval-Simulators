@@ -23,7 +23,7 @@ def loadVARSnetCDF(filePath, varNames=None):
     warnings.simplefilter('always')
     return measData 
 
-def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101', datSizeVar = 'sensor_zenith'):
+def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101', datSizeVar = 'sensor_zenith', verbose=False):
     dayDtNm = dt.strptime(datStr, "%Y%m%d").toordinal()
     Nwvlth = len(wvls)
     measData = [{} for _ in range(Nwvlth)]
@@ -32,6 +32,7 @@ def readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, datStr = '20000101', da
     for i,wvl in enumerate(wvls):
         radianceFN = radianceFNfrmtStr % (wvl*1000)
         measData[i] = loadVARSnetCDF(radianceFN, varNames)
+        if verbose: print('netCDF data loaded from: %s' % radianceFN)
         invldInd = np.append(invldInd, np.nonzero((measData[i]['I']<0).any(axis=1))[0])
     invldInd = np.array(np.unique(invldInd), dtype='int') # only take points w/ I>0 at all wavelengths & angles  
     assert datSizeVar in measData[i].keys(), 'datSizeVar was not found in the netCDF file!'

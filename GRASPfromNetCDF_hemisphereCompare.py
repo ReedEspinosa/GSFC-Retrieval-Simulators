@@ -16,15 +16,15 @@ import scipy.integrate.quadrature
 
 # Paths to files benchmark_GRASP_basedLUTs_V1/graspConfig_12_Osku_DrySU_V1
 basePath = '/Users/wrespino/Synced/' # NASA MacBook
-rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12')
-radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_GRASP_basedLUTs_V2/graspConfig_12_Osku_DU001_V4/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
+#rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12')
+#radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_GRASP_basedLUTs_V2/graspConfig_12_Osku_DU001_V4/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
 rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='VLIDORTMatch_vB*.pkl')
 savePlotPath = os.path.split(radianceFNfrmtStr)[0]
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
 varNames = ['ROT', 'TAU', 'I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'surf_reflectance_Q_scatplane','surf_reflectance_U_scatplane', 'sensor_zenith', 'sensor_azimuth']
 
-pltVar = 'I'
+pltVar = 'DOLP'
 noRayleigh = False # only compare with surface reflectance
 relDeltaI = True # relative (True) or absolute (False) I/Q/U difference (no effect on DOLP)
 singScat = False # plot single scattering aerosol (no surf or rayleigh) instead of GRASP
@@ -37,14 +37,14 @@ gDB.loadResults(rsltsFile)
 cstmTag = re.search('^[A-z_0-9]+_([0-9]+[nmLambda]+_YAML[0-9a-f]+).pkl', os.path.split(rsltsFile)[1])
 assert not cstmTag is None, 'Could not parse the PKL filename'
 cstmTag = cstmTag.group(1) + "_P11fixed"
-ttlStr = 'DUST'
+ttlStr = 'λ = 400 nm'
 
-maxZnth = 70; # difference plots scales will accommodate values beyond this zenith angle
+maxZnth = 60; # difference plots scales will accommodate values beyond this zenith angle
 hemi = False
 
 # PLOTTING CODE
 wvls = np.atleast_1d(gDB.rslts[0]['lambda'])
-
+#wvls = np.r_[0.4]
 lbl1 = '$%s_{VLIDORT}$' % pltVar
 if singScat:
     assert pltVar=='I', "only intensity is available in singScat mode"
@@ -56,7 +56,7 @@ else:
 
 
 # Read in radiances, solar spectral irradiance and find reflectances
-measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls)
+measData = readVILDORTnetCDF(varNames, radianceFNfrmtStr, wvls, verbose=True)
 Nwvl = wvls.shape[0]
 
 fig, ax = plt.subplots(Nwvl, 3, subplot_kw=dict(projection='polar'), figsize=(14,3+3*Nwvl))
@@ -89,10 +89,11 @@ for l in range(Nwvl):
             p11nrm = scipy.integrate.quadrature(p11wKrn,0,np.pi,maxiter=500)[0]
             p11Val = p11Val*2/p11nrm
             fit = np.pi*ssa*p11Val/(4*np.pi)*(mu0/(mu0+mu))*(1 - np.exp(-tau*(1/mu+1/mu0)))
+#            vildort = np.pi*ssa*p11Val/(4*np.pi)*(mu0/(mu0+mu))*(1 - np.exp(-tau*(1/mu+1/mu0)))
             fitStr = 'calculated single scattering (from renormalized GRASP P11)'
         else:
             fitStr = 'fit_%s' % pltVar
-            fit = np.array([rslt[fitStr][:,l] for rslt in gDB.rslts])            
+            fit = np.array([rslt[fitStr][:,l] for rslt in gDB.rslts])    
         if fit.shape[::-1]==vildort.shape and np.diff(fit.shape)!=0: fit=fit.T # fix sloppy array dimensions, if matrix is not square
         
 #        vildort = ndimage.gaussian_filter(fit,(0,0.3),order=0) # BIG HACK
