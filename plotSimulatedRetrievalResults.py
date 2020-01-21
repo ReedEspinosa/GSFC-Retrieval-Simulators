@@ -68,10 +68,10 @@ for tauInd, tau in enumerate(tauVals):
         rmse = simB.analyzeSim(lInd)[0]
         i=0
         print(farmers[-1])
-        print(simB.rsltFwd['aod'][3])
+#         print(simB.rsltFwd[0]['aod'][3])
         for vr in totVars+modVars:
             for t,tg in enumerate(trgt[vr]):
-                if vr in trgtRel.keys():
+                if vr in trgtRel.keys(): # TODO: we need to rethink this in the case where len(rsltFwd) > 1, maybe this should actually be done inside analyzeSim()?
                     if np.isscalar(simB.rsltFwd[vr]):
                         true = simB.rsltFwd[vr]
                     elif simB.rsltFwd[vr].ndim==1:
@@ -88,7 +88,7 @@ for tauInd, tau in enumerate(tauVals):
                 elif sigDef == 'score':
                     harvest[i,n] = S(sigNorm)
                 i+=1
-    print('Spectral variables for λ = %4.2f μm'% simB.rsltFwd['lambda'][lInd])
+    print('Spectral variables for λ = %4.2f μm' % simB.rsltFwd[0]['lambda'][lInd])
 #    plt.rcParams.update({'font.size': 10})
 #    fig, ax = plt.subplots(figsize=(15,6), frameon=False)
 #    im = ax.imshow(np.sqrt(harvest), 'seismic', vmin=0, vmax=2)

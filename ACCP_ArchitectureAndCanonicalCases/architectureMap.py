@@ -7,11 +7,12 @@ sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import runGRASP as rg
 import functools        
 
-# DUMMY MEASUREMENTS (determined by architecture, should ultimatly move to seperate scripts)
+# DUMMY MEASUREMENTS: (determined by architecture, should ultimatly move to seperate scripts)
 #  For more than one measurement type or viewing geometry pass msTyp, nbvm, thtv, phi and msrments as vectors: \n\
 #  len(msrments)=len(thtv)=len(phi)=sum(nbvm); len(msTyp)=len(nbvm) \n\
 #  msrments=[meas[msTyp[0],thtv[0],phi[0]], meas[msTyp[0],thtv[1],phi[1]],...,meas[msTyp[0],thtv[nbvm[0]],phi[nbvm[0]]],meas[msTyp[1],thtv[nbvm[0]+1],phi[nbvm[0]+1]],...]'
-def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None): 
+def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
+    """Multiple instruments by archName='arch1+arch2+arch3+...' OR multiple calls with nowPix argument (tacking on extra instrument each time)"""
     if not nowPix: nowPix = rg.pixel(730123.0, 1, 1, 0, 0, 0, landPrct) # can be called for multiple instruments, BUT they must all have unqiue wavelengths
     assert nowPix.land_prct == landPrct, 'landPrct provided did not match land percentage in nowPix'
     if 'harp02' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED

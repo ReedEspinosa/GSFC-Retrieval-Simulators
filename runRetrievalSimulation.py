@@ -84,9 +84,9 @@ print('-- Processing ' + os.path.basename(savePath) + ' --')
 # RUN SIMULATION
 if 'lidar' in paramTple[0].lower():
     fwdModelYAMLpath = fwdModelYAMLpathLID
-    if ('case06cmonomode' in conCases[ind[1]].lower()) or ('case06dmonomode' in conCases[ind[1]].lower()):
+    if ('case06cmonomode' in paramTple[1].lower()) or ('case06dmonomode' in paramTple[1].lower()):
         bckYAMLpath = bckYAMLpathLID[:-4]+'fine.yml'
-    elif ('case06emonomode' in conCases[ind[1]].lower()) or ('case06fmonomode' in conCases[ind[1]].lower()):
+    elif ('case06emonomode' in paramTple[1].lower()) or ('case06fmonomode' in paramTple[1].lower()):
         bckYAMLpath = bckYAMLpathLID[:-4]+'coarse.yml'
     else:
         bckYAMLpath = bckYAMLpathLID
@@ -94,9 +94,9 @@ else:
     fwdModelYAMLpath = fwdModelYAMLpathPOL
     if 'nonsph' in paramTple[1].lower():
         bckYAMLpath = bckYAMLpathPOLnonSph
-    if ('case06cmonomode' in conCases[ind[1]].lower()) or ('case06dmonomode' in conCases[ind[1]].lower()):
+    if ('case06cmonomode' in paramTple[1].lower()) or ('case06dmonomode' in paramTple[1].lower()):
         bckYAMLpath = bckYAMLpathPOL[:-4]+'fine.yml'
-    elif ('case06emonomode' in conCases[ind[1]].lower()) or ('case06fmonomode' in conCases[ind[1]].lower()):
+    elif ('case06emonomode' in paramTple[1].lower()) or ('case06fmonomode' in paramTple[1].lower()):
         bckYAMLpath = bckYAMLpathPOL[:-4]+'coarse.yml'
     else:
         bckYAMLpath = bckYAMLpathPOL
