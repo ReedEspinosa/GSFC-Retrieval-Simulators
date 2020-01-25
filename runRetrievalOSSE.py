@@ -34,7 +34,8 @@ print('-- Processing ' + os.path.basename(savePath) + ' --')
 
 nowPix = returnPixel(archName)
 
-fwdData = list() 
+fwdData = list()
+
 # TODO: a function/class to load variables from netCDF into above fwdData (list of dicts)
 #    standard format but see code starting at simulateRetrieval.py:44 for fields needed
 #    this would ultimatly produce a rslts dictionary so we might want to make it a method in graspRun?
