@@ -7,10 +7,11 @@ MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) #
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_ArchitectureAndCanonicalCases'))
 import simulateRetrieval as rs
+from readOSSEnetCDF import osseData
 from miscFunctions import checkDiscover
 from architectureMap import returnPixel
 
-archName = 'polar07+lidar09'
+archName = 'polar07'
 rndIntialGuess = True # randomize initial guess before retrieving
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
@@ -32,16 +33,20 @@ YAMLpth = bckYAMLpathLID if 'lidar' in archName.lower() else bckYAMLpathPOL
 savePath = saveStart + '_case-%s_V1.pkl' % archName
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 
-nowPix = returnPixel(archName)
+fpDict = {
+    'polarNc4FP':'/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-polar07-g5nr.lc.vlidort.20060101_0100z_%dd00nm.nc4',
+    'asmNc4FP':  '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-g5nr.lb2.asm_Nx.20060101_0100z.nc4',
+    'metNc4FP':  '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-g5nr.lb2.met_Nv.20060101_0100z.nc4',
+    'verbose':   True,
+        }
 
-fwdData = list()
-
-# TODO: a function/class to load variables from netCDF into above fwdData (list of dicts)
-#    standard format but see code starting at simulateRetrieval.py:44 for fields needed
-#    this would ultimatly produce a rslts dictionary so we might want to make it a method in graspRun?
-
-simA = rs.simulation(nowPix) # defines new instance for this architecture
-# runs the simulation for given set of conditions, releaseYAML=True -> auto adjust back yaml Nλ to match insturment
+od = osseData(fpDict)
+fwdData = od.osse2graspRslts(1)
+simA = rs.simulation(returnPixel(archName)) # defines new instance for this architecture
 simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, rndIntialGuess=rndIntialGuess)
-# TODO: anaylze simulation results currently can't handle more than one fwd observation set...
-    # I think it might even break with just one set now too due to changes in simulateRetrieval.py
+
+""" TODO:
+    - we need to add code to osseData to read LIDAR measurments
+    - anaylze simulation results currently can't handle more than one fwd observation set...
+        I think it might even break with just one set now too due to changes in simulateRetrieval.py
+"""
