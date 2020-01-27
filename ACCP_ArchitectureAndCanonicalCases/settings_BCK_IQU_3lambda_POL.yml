@@ -137,7 +137,47 @@ retrieval:
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0                        
-        characteristic[7]:
+        characteristic[7]: 
+            type: vertical_profile_parameter_standard_deviation
+            retrieved: false
+            mode[1]:
+                initial_guess:                      #1          
+                    value:                          [800.0 ]
+                    min:                             [200.0  ] 
+                    max:                            [2000.0 ]
+                    index_of_wavelength_involved:   [0      ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 0
+                        lagrange_multiplier: 0                                  
+        characteristic[8]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    max: [1.0, 1.0, 1.0]
+                    min: [0.001, 0.001, 0.001]
+                    value: [0.09, 0.09, 0.1]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    max: [1.9, 1.9, 1.9]
+                    min: [0.001, 0.001, 0.001]
+                    value: [0.43884894251823425, 0.5107452273368835, 0.5107452273368835]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    max: [0.5, 0.5, 0.5]
+                    min: [0.001, 0.001, 0.001]
+                    value: [0.1366906464099884, 0.12526914477348328, 0.12526914477348328]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
+            retrieved: true
+            type: surface_land_brdf_ross_li
+        characteristic[8]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
@@ -155,47 +195,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
             retrieved: false
-            type: sphere_fraction 
-        characteristic[8]: 
-            type: vertical_profile_parameter_standard_deviation
-            retrieved: false
-            mode[1]:
-                initial_guess:                      #1          
-                    value:                          [800.0 ]
-                    min:                             [200.0  ] 
-                    max:                            [2000.0 ]
-                    index_of_wavelength_involved:   [0      ]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 0
-                        lagrange_multiplier: 0                                  
-#        characteristic[8]:
-#            mode[1]:
-#                initial_guess:
-#                    index_of_wavelength_involved: [1, 2, 3]
-#                    max: [0.3383572, 0.5, 0.5]
-#                    min: [0.338357, 0.1, 0.1]
-#                    value: [0.338357150554657, 0.3, 0.3]
-#                single_pixel:
-#                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
-#            mode[2]:
-#                initial_guess:
-#                    index_of_wavelength_involved: [1, 2, 3]
-#                    max: [0.9, 0.9, 0.9]
-#                    min: [0.0001, 0.0001, 0.0001]
-#                    value: [0.43884894251823425, 0.5107452273368835, 0.5107452273368835]
-#                single_pixel:
-#                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
-#            mode[3]:
-#                initial_guess:
-#                    index_of_wavelength_involved: [1, 2, 3]
-#                    max: [0.9, 0.9, 0.9]
-#                    min: [0.0001, 0.0001, 0.0001]
-#                    value: [0.1366906464099884, 0.12526914477348328, 0.12526914477348328]
-#                single_pixel:
-#                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
-#            retrieved: false
-#            type: surface_land_brdf_ross_li
+            type: sphere_fraction             
 #        characteristic[9]:
 #            mode[1]:
 #                initial_guess:

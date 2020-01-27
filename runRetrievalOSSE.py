@@ -24,25 +24,26 @@ if checkDiscover(): # DISCOVER
 else: # MacBook Air
     bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml'
     bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml'
-    dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
+    dirGRASP = '/usr/local/bin/grasp'
     krnlPath = None
     saveStart = '/Users/wrespino/Desktop/OSSE_NR_20060101' # end will be appended
     maxCPU = 1
+    fpDict = {
+        'polarNc4FP':'/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-polar07-g5nr.lc.vlidort.20060101_0100z_%dd00nm.nc4',
+        'asmNc4FP':  '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-g5nr.lb2.asm_Nx.20060101_0100z.nc4',
+        'metNc4FP':  '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-g5nr.lb2.met_Nv.20060101_0100z.nc4',
+        'verbose':   True,
+            }
 
 YAMLpth = bckYAMLpathLID if 'lidar' in archName.lower() else bckYAMLpathPOL
 savePath = saveStart + '_case-%s_V1.pkl' % archName
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 
-fpDict = {
-    'polarNc4FP':'/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-polar07-g5nr.lc.vlidort.20060101_0100z_%dd00nm.nc4',
-    'asmNc4FP':  '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-g5nr.lb2.asm_Nx.20060101_0100z.nc4',
-    'metNc4FP':  '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-g5nr.lb2.met_Nv.20060101_0100z.nc4',
-    'verbose':   True,
-        }
-
+nowPix = returnPixel(archName)
+fpDict['wvls'] = [mv['wl'] for mv in nowPix.measVals]
+simA = rs.simulation(nowPix) # defines new instance corresponding to this architecture
 od = osseData(fpDict)
 fwdData = od.osse2graspRslts(1)
-simA = rs.simulation(returnPixel(archName)) # defines new instance for this architecture
 simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, rndIntialGuess=rndIntialGuess)
 
 """ TODO:
