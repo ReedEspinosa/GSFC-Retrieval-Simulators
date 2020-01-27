@@ -10,6 +10,7 @@ import simulateRetrieval as rs
 from readOSSEnetCDF import osseData
 from miscFunctions import checkDiscover
 from architectureMap import returnPixel
+from MADCAP_functions import hashFileSHA1
 
 archName = 'polar07'
 rndIntialGuess = True # randomize initial guess before retrieving
@@ -27,7 +28,7 @@ else: # MacBook Air
     dirGRASP = '/usr/local/bin/grasp'
     krnlPath = None
     saveStart = '/Users/wrespino/Desktop/OSSE_NR_20060101' # end will be appended
-    maxCPU = 1
+    maxCPU = 2
     fpDict = {
         'polarNc4FP':'/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-polar07-g5nr.lc.vlidort.20060101_0100z_%dd00nm.nc4',
         'asmNc4FP':  '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-g5nr.lb2.asm_Nx.20060101_0100z.nc4',
@@ -36,14 +37,16 @@ else: # MacBook Air
             }
 
 YAMLpth = bckYAMLpathLID if 'lidar' in archName.lower() else bckYAMLpathPOL
-savePath = saveStart + '_case-%s_V1.pkl' % archName
-print('-- Processing ' + os.path.basename(savePath) + ' --')
 
+# derive save file path then setup and run retrievals
+yamlTag = '_YAML%s_' % hashFileSHA1(YAMLpth)[0:8]
+savePath = saveStart + yamlTag + archName + '_V1.pkl'
+print('-- Processing ' + os.path.basename(savePath) + ' --')
 nowPix = returnPixel(archName)
 fpDict['wvls'] = [mv['wl'] for mv in nowPix.measVals]
 simA = rs.simulation(nowPix) # defines new instance corresponding to this architecture
 od = osseData(fpDict)
-fwdData = od.osse2graspRslts(1)
+fwdData = od.osse2graspRslts(4)
 simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, rndIntialGuess=rndIntialGuess)
 
 """ TODO:

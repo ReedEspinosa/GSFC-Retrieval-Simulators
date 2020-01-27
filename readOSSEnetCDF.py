@@ -6,8 +6,8 @@ import glob
 import re
 import warnings
 import copy
-from datetime import datetime as dt
-from MADCAP_functions import loadVARSnetCDF, ordinal2datetime
+import datetime as dt
+from MADCAP_functions import loadVARSnetCDF
 
 class osseData(object): # TODO: we still need to add function(s) to microphysics, AOD, etc.
     def __init__(self, fpDict=None):
@@ -59,8 +59,8 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
         rsltVars = ['fit_I','fit_Q','fit_U','fit_VBS','fit_VExt','fit_DP','fit_LS',          'vis','fis',         'sza']
         mdVars   = [    'I',    'Q',    'U',    'VBS',    'VExt',    'DP',    'LS','sensor_zenith','fis','solar_zenith']        
         measData = self.convertPolar2GRASP() # we can chain existing measData when we add LIDAR
-        Npix = len(measData[0]['dtNm']) # this assumes all λ have the same # of pixels
-        if NpixMax: Npix = max(Npix, NpixMax)
+        Npix = len(measData[0]['dtObj']) # this assumes all λ have the same # of pixels
+        if NpixMax: Npix = min(Npix, NpixMax)
         Nλ = len(self.measData)
         rslts = [] 
         for k in range(Npix): # loop over pixels
@@ -73,16 +73,17 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
                         if l==0 and k==0 and self.verbose: print('%s found in OSSE data' % mv)
                     elif l==0 and k==0 and self.verbose: print('%s NOT found in OSSE data' % mv)
             rslt['lambda'] = self.wvls
-            rslt['datetime'] = ordinal2datetime(md['dtNm'][k]) # we keep using md b/c all λ should be the same for these vars
-#            rslt['sza'] = self.checkReturnField(md, 'solar_zenith', k) # 
+            rslt['datetime'] = md['dtObj'][k] # we keep using md b/c all λ should be the same for these vars
             rslt['latitude'] = self.checkReturnField(md, 'trjLat', k)
             rslt['longitude'] = self.checkReturnField(md, 'trjLon', k)
             rslt['land_prct'] = self.checkReturnField(md, 'land_prct', k, 100)
             rslts.append(rslt)
             if self.verbose:
-                frmStr = 'Converted pixel #%d (%s), [%6.2f°, %6.2f°], θs=%4.1f, %d%% land'
+                frmStr = 'Converted pixel #%d (%s), [%6.2f°, %6.2f°], θs=%4.1f (±%4.1f), %d%% land'
                 ds = rslt['datetime'].strftime("%d/%m/%Y %H:%M:%S")
-                print(frmStr % (k, ds, rslt['latitude'], rslt['longitude'], rslt['sza'][0,0], rslt['land_prct']))
+                sza = np.mean(rslt['sza'])
+                Δsza = np.abs(rslt['sza']-sza).max()
+                print(frmStr % (k, ds, rslt['latitude'], rslt['longitude'], sza, Δsza, rslt['land_prct']))
         return rslts
 
     def checkReturnField(self, dictObj, field, ind, defualtVal=0):
@@ -100,10 +101,9 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
         stndPres = 1.01e5 # standard pressure (Pa)
         minAlt = -100 # defualt GRASP build complains below -100m
         levB_data = loadVARSnetCDF(levBFN, varNames=['PS', 'PBLH'])
-        surfPres = np.delete(levB_data['PS'], self.invldInd)
-        maslTmp = [max(scaleHght*np.log(stndPres/PS), minAlt) for PS in surfPres]
+        maslTmp = [max(scaleHght*np.log(stndPres/PS), minAlt) for PS in levB_data['PS']]
         for md in self.measData: md['masl'] = maslTmp
-        for md in self.measData: md['PBLH'] = np.delete(levB_data['PBLH'], self.invldInd) # PBL height in m -- looks a little fishy, should double check w/ patricia
+        for md in self.measData: md['PBLH'] = levB_data['PBLH'] # PBL height in m -- looks a little fishy, should double check w/ patricia
     
     def readLevBasmData(self, levBFN):
         """ Read in levelB data to obtain pressure and then surface altitude along w/ PBL height"""
@@ -122,18 +122,18 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
         if not dateTime:
             try:
                 dateStrMtch = re.search('[0-9]{8}_[0-9]{4}z', radianceFNfrmtStr)
-                dateTime = dt.strptime(dateStrMtch.group(0), "%Y%m%d_%H%Mz")
+                dateTime = dt.datetime.strptime(dateStrMtch.group(0), "%Y%m%d_%H%Mz")
             except:
                 warnings.warn('Using Jan 01, 2000 as date, could not parse polarimeter filename format string (radianceFNfrmtStr = %s)' % radianceFNfrmtStr)
-                dateTime = dt.strptime('20000101', "%Y%m%d")
-        dayDtNm = dateTime.toordinal()
+                dateTime = dt.datetime.strptime('20000101', "%Y%m%d")
         self.measData = [{} for _ in range(len(self.wvls))]
         for i,wvl in enumerate(self.wvls):
             # load data and check for valid indices (I>=0)
             radianceFN = radianceFNfrmtStr % (wvl*1000)
             if self.verbose: print('Processing data from %s' % radianceFN)
             self.measData[i] = loadVARSnetCDF(radianceFN, varNames)
-            self.measData[i]['dtNm'] = dayDtNm + self.measData[i]['time']/86400 if 'time' in self.measData[i] else dayDtNm
+            tShft = self.measData[i]['time'] if 'time' in self.measData[i] else 0
+            self.measData[i]['dtObj'] = [dateTime + dt.timedelta(seconds=int(ts)) for ts in tShft]
             invldIndλ = np.nonzero((self.measData[i]['I']<0).any(axis=1))[0]
             self.invldInd = np.append(self.invldInd, invldIndλ).astype(int) # only take points w/ I>0 at all wavelengths & angles 
         
@@ -192,4 +192,6 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
         for md in self.measData:
             for varName in np.setdiff1d(list(md.keys()), ['x', 'y', 'lev']):
                 md[varName] = np.delete(md[varName], self.invldInd, axis=0)
-        self.invldIndPurged = True        
+        self.invldIndPurged = True
+        if self.verbose: 
+            print('%d pixels with negative or bad-data-flag reflectances were purged.' % len(self.invldInd))
