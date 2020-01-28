@@ -81,8 +81,8 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
     elif 'dust' in caseStr.lower():
-        σ = [0.36, 0.64] # mode 1, 2,...
-        rv = [0.11, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        σ = [0.4, 0.68] # mode 1, 2,...
+        rv = [0.1, 0.84]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         if 'nonsph' in caseStr.lower():
             vals['sph'] = [[0.00001], [0.00001]] # mode 1, 2,...
