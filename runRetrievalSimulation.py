@@ -12,45 +12,28 @@ from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
 
 
-n = int(sys.argv[1]) # (0,1,2,...,N-1)
-#n=0
+#n = int(sys.argv[1]) # (0,1,2,...,N-1)
+n=0
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
+    saveStart = os.path.join(basePath, 'synced/Working/SIM14_lidarPolACCP/SIM100_')
+    ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
-    fwdModelYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml')
-    fwdModelYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_LIDAR.yml')
-    bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml')
-    bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml')
-    bckYAMLpathPOLnonSph = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL_nonsph.yml')
-    #if n<2:
-    saveStart = os.path.join(basePath, 'synced/Working/SIM13_lidarTest/SIM42_')
-    bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml')
-    #elif n<4:
-    #    saveStart = os.path.join(basePath, 'synced/Working/SIM13_lidarTest/SIM26_')
-    #    bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR2.yml')
-    #else:
-    #    saveStart = os.path.join(basePath, 'synced/Working/SIM13_lidarTest/SIM27_')
-    #    bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR3.yml')
-    #bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR_oneRI.yml')
-    #bckYAMLpathPOL = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL_oneRI.yml')
     Nsims = 56
     maxCPU = 28
 else: # MacBook Air
-    fwdModelYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_LIDAR.yml'
-    bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml'
-    #bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR_oneRI.yml'
-    fwdModelYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml'
-    bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL.yml'
-    #bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_POL_oneRI.yml'
     saveStart = '/Users/wrespino/Desktop/testLIDAR_' # end will be appended
-    dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
-    #dirGRASP = '/usr/local/bin/grasp'
+    ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
+    dirGRASP = '/usr/local/bin/grasp'
     krnlPath = None
-    Nsims = 1
+    Nsims = 2
     maxCPU = 1
-
+fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
+bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_1lambda.yml')
+fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
+bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
 
 
 #instruments = ['lidar09+img02', 'lidar05+img02', 'img02', 'img01'] # 4
@@ -61,12 +44,12 @@ else: # MacBook Air
 #τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=240
 
 #instruments = ['lidar05+polar07', 'lidar09+polar07'] #2
-instruments = ['lidar05']
+instruments = ['lidar05+polar07']
 #conCases = ['case02a','case02b','case02c','case03','case07']
 conCases = []
 for caseLet in ['a','b','c','d','e','f']:
-#    conCases.append('case06'+caseLet)
-    conCases.append('case06'+caseLet+'monomode') #17 total
+    conCases.append('case06'+caseLet)
+#    conCases.append('case06'+caseLet+'monomode') #17 total
 #    if caseLet in ['e','f']:
 #        conCases.append('case06'+caseLet+'nonsph')
 #        conCases.append('case06'+caseLet+'monomode'+'nonsph') #21 total
@@ -83,23 +66,12 @@ print('-- Processing ' + os.path.basename(savePath) + ' --')
 # RUN SIMULATION
 if 'lidar' in paramTple[0].lower():
     fwdModelYAMLpath = fwdModelYAMLpathLID
-    if ('case06cmonomode' in paramTple[1].lower()) or ('case06dmonomode' in paramTple[1].lower()):
-        bckYAMLpath = bckYAMLpathLID[:-4]+'fine.yml'
-    elif ('case06emonomode' in paramTple[1].lower()) or ('case06fmonomode' in paramTple[1].lower()):
-        bckYAMLpath = bckYAMLpathLID[:-4]+'coarse.yml'
-    else:
-        bckYAMLpath = bckYAMLpathLID
+    bckYAMLpath = bckYAMLpathLID
 else:
     fwdModelYAMLpath = fwdModelYAMLpathPOL
-    if 'nonsph' in paramTple[1].lower():
-        bckYAMLpath = bckYAMLpathPOLnonSph
-    if ('case06cmonomode' in paramTple[1].lower()) or ('case06dmonomode' in paramTple[1].lower()):
-        bckYAMLpath = bckYAMLpathPOL[:-4]+'fine.yml'
-    elif ('case06emonomode' in paramTple[1].lower()) or ('case06fmonomode' in paramTple[1].lower()):
-        bckYAMLpath = bckYAMLpathPOL[:-4]+'coarse.yml'
-    else:
-        bckYAMLpath = bckYAMLpathPOL
-nowPix = returnPixel(paramTple[0], sza=paramTple[2], landPrct=100, relPhi=paramTple[3], nowPix=None)
+    bckYAMLpath = bckYAMLpathPOL
+    
+nowPix = returnPixel(paramTple[0], sza=paramTple[2], relPhi=paramTple[3], nowPix=None)
 cstmFwdYAML, landPrct = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath, caseLoadFctr=paramTple[4])
 nowPix.land_prct = landPrct
 print('n= %d, Nλ = %d' % (n,nowPix.nwl))

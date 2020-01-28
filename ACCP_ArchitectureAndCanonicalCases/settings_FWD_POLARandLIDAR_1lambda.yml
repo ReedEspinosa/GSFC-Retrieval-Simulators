@@ -28,7 +28,7 @@ retrieval:
             type: size_distribution_lognormal
         characteristic[3]:
             mode[1]:
-                initial_guess:
+                initial_guess: # 45 vertical bins
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                     max: [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
                     min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
@@ -42,10 +42,10 @@ retrieval:
         characteristic[4]:
             mode[1]:
                 initial_guess:
-                    index_of_wavelength_involved: [1, 2, 3]
-                    max: [1.65, 1.65, 1.65]
-                    min: [1.33, 1.33, 1.33]
-                    value: [1.36387, 1.35939, 1.35939]
+                    index_of_wavelength_involved: [1]
+                    max: [1.65]
+                    min: [1.33]
+                    value: [1.36387]
                 multi_pixel:
                     smoothness_constraints: {derivative_order_of_T_variability: 1, derivative_order_of_X_variability: 1, derivative_order_of_Y_variability: 1, lagrange_multiplier_of_T_variability: 0.02, lagrange_multiplier_of_X_variability: 0.1, lagrange_multiplier_of_Y_variability: 0.1}
                 single_pixel:
@@ -55,10 +55,10 @@ retrieval:
         characteristic[5]:
             mode[1]:
                 initial_guess:
-                    index_of_wavelength_involved: [1, 2, 3]
-                    max: [0.1, 0.1, 0.1]
-                    min: [1e-10, 1e-10, 1e-10]
-                    value: [0.035, 0.035, 0.035]
+                    index_of_wavelength_involved: [1]
+                    max: [0.1]
+                    min: [1e-10]
+                    value: [0.035]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             retrieved: false
@@ -68,30 +68,30 @@ retrieval:
             retrieved: false
             mode[1]:    
                 initial_guess:                       #1      #2      #3      
-                    value:                          [0.02,    0.013,   0.002  ]
-                    min:                            [0.00000001,   0.00000001,  0.00000001 ]
-                    max:                            [0.045,   0.035,   0.025 ]
-                    index_of_wavelength_involved:   [1,      2,      3     ]
+                    value:                          [0.02]
+                    min:                            [0.00000001]
+                    max:                            [0.045]
+                    index_of_wavelength_involved:   [1]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
                         lagrange_multiplier: 5.0e-2
             mode[2]:
                 initial_guess:                       #1      #2      #3 
-                    value:                          [0.999,   0.999,   0.999]
-                    min:                             [0.998,   0.998,   0.998  ]
-                    max:                            [1.0000, 1.0000, 1.0000 ]
-                    index_of_wavelength_involved:   [1,      2,      3,]
+                    value:                          [0.999]
+                    min:                             [0.998]
+                    max:                            [1.0000]
+                    index_of_wavelength_involved:   [1]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
                         lagrange_multiplier: 10.0e-0
             mode[3]:
                 initial_guess:                       #1      #2      #3             
-                    value:                          [0.033,    0.033,   0.033 ]  
-                    min:                            [0.0015, 0.0015, 0.0015 ]
-                    max:                            [0.1,    0.1,    0.1 ]
-                    index_of_wavelength_involved:   [ 1,      2,      3 ]
+                    value:                          [0.033]  
+                    min:                            [0.0015]
+                    max:                            [0.1]
+                    index_of_wavelength_involved:   [ 1]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
@@ -110,26 +110,26 @@ retrieval:
         characteristic[8]:
             mode[1]:
                 initial_guess:
-                    index_of_wavelength_involved: [1, 2, 3]
-                    max: [0.3383572, 0.5, 0.5]
-                    min: [0.338357, 0.1, 0.1]
-                    value: [0.338357150554657, 0.3, 0.3]
+                    index_of_wavelength_involved: [1]
+                    max: [0.3383572]
+                    min: [0.338357]
+                    value: [0.338357150554657]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             mode[2]:
                 initial_guess:
-                    index_of_wavelength_involved: [1, 2, 3]
-                    max: [0.9, 0.9, 0.9]
-                    min: [0.0001, 0.0001, 0.0001]
-                    value: [0.43884894251823425, 0.5107452273368835, 0.5107452273368835]
+                    index_of_wavelength_involved: [1]
+                    max: [0.9]
+                    min: [0.0001]
+                    value: [0.43884894251823425]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             mode[3]:
                 initial_guess:
-                    index_of_wavelength_involved: [1, 2, 3]
-                    max: [0.9, 0.9, 0.9]
-                    min: [0.0001, 0.0001, 0.0001]
-                    value: [0.1366906464099884, 0.12526914477348328, 0.12526914477348328]
+                    index_of_wavelength_involved: [1]
+                    max: [0.9]
+                    min: [0.0001]
+                    value: [0.1366906464099884]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             retrieved: false
@@ -137,10 +137,10 @@ retrieval:
 #        characteristic[9]:
 #            mode[1]:
 #                initial_guess:
-#                    index_of_wavelength_involved: [1, 2, 3]
-#                    max: [8.0, 8.0, 8.0]
-#                    min: [1.0e-10, 1.0e-10, 1.0e-10]
-#                    value: [2.0e-10, 2.0e-10, 2.0e-10]
+#                    index_of_wavelength_involved: [1]
+#                    max: [8.0]
+#                    min: [1.0e-10]
+#                    value: [2.0e-10]
 #            retrieved: false
 #            type: surface_land_polarized_maignan_breon            
     convergence: {maximum_iterations_for_stopping: 20, maximum_iterations_of_Levenberg-Marquardt: 20, minimization_convention: logarithm, normal_system_solver: sparse_matrix_solver, scale_for_finite_difference: 1.0e-06, shift_for_applying_logarithm_to_negative_values: 1.1, stop_before_performing_retrieval: true, threshold_for_stopping: 0.001, threshold_for_stopping_Q_iterations: 1.0e-05}
@@ -150,45 +150,45 @@ retrieval:
         noise[1]:
             error_type: absolute
             measurement_type[1]:
-                index_of_wavelength_involved: [1, 2, 3]
+                index_of_wavelength_involved: [1]
                 type: DP
             standard_deviation: 0.01
             standard_deviation_synthetic: 0.0
         noise[2]:
             error_type: relative
             measurement_type[1]:
-                index_of_wavelength_involved: [1,2,3]
+                index_of_wavelength_involved: [1]
                 type: VEXT
             standard_deviation: 0.03
             standard_deviation_synthetic: 0.0
         noise[3]:
             error_type: relative
             measurement_type[1]:
-                index_of_wavelength_involved: [1, 2, 3]
+                index_of_wavelength_involved: [1]
                 type: VBS
             standard_deviation: 0.03
             standard_deviation_synthetic: 0.0
         noise[4]:
             error_type: relative
             measurement_type[1]:
-                index_of_wavelength_involved: [1, 2, 3]
+                index_of_wavelength_involved: [1]
                 type: I
             standard_deviation: 0.03
             standard_deviation_synthetic: 0.0
         noise[5]:
             error_type: absolute
             measurement_type[1]:
-                index_of_wavelength_involved: [1, 2, 3]
+                index_of_wavelength_involved: [1]
                 type: Q
             measurement_type[2]:
-                index_of_wavelength_involved: [1, 2, 3]
+                index_of_wavelength_involved: [1]
                 type: U
             standard_deviation: 0.005
             standard_deviation_synthetic: 0.0
         noise[6]:
             error_type: absolute
             measurement_type[1]:
-                index_of_wavelength_involved: [1, 2, 3]
+                index_of_wavelength_involved: [1]
                 type: LS
             standard_deviation: 0.001
             standard_deviation_synthetic: 0.0                 

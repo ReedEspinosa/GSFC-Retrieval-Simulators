@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import datetime as dt
 sys.path.append("/Users/wrespino/Synced/Local_Code_MacBook/GRASP_scripts")
 import runGRASP as rg
 import miscFunctions as mf
@@ -36,8 +37,9 @@ gspRun = rg.graspRun(YAMLpath) if unbound else []
 gspRun = []
 for bn in range(5):
     binYAML = YAMLpath if unbound else YAMLpath[:-4:]+'_mode%d' % (bn+1)+'.yml'
-    gspRunNow = rg.graspRun(binYAML)    
-    nowPix = rg.pixel(730123.0+bn, 1, 1, 0, 0, 0, 100)
+    gspRunNow = rg.graspRun(binYAML)   
+    dtObj = dt.datetime.now + dt.timedelta(hours=bn)
+    nowPix = rg.pixel(dtObj, 1, 1, 0, 0, 0, 100)
     for wvl, wvInd in zip(wvls, wvInds): # This will be expanded for wavelength dependent measurement types/geometry
 #        meas = np.r_[optTbl['qext'][bn,0,wvInd], optTbl['qsca'][bn,0,wvInd]]
         meas = np.r_[optTbl['qext'][bn,0,wvInd]]*3/4/optTbl['rEff'][bn,0]/1e6 # should give extinction coef. at volume concentration of unity/1000 (kind of... see note by avRatio defintion below)
