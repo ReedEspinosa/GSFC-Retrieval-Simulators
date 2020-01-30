@@ -7,60 +7,106 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                    max: [2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-06] # bottom
+                    max: [2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06] # top fine
                     min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
-                    value: [1.5e-06, 1.5e-06,1.5e-06, 1.5e-06, 1.5e-06, 0.001, 0.001, 0.001, 0.001, 1.5e-06]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-3}
-#                    a_priori_estimates:
-#                            lagrange_multiplier:      [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
+                    value: [1.5e-06, 0.001, 0.001, 0.001, 0.001, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06]
+#                single_pixel:
+#                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-3}
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                    max: [2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06] # top
+                    max: [2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06] # top coarse
                     min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
                     value: [1.5e-06, 0.001, 0.001, 0.001, 0.001, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-3}
-#                    a_priori_estimates:
-#                            lagrange_multiplier:      [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
+#                single_pixel:
+#                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-3}
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                    max: [2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-06] # bottom fine
+                    min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
+                    value: [1.5e-06, 1.5e-06,1.5e-06, 1.5e-06, 1.5e-06, 0.001, 0.001, 0.001, 0.001, 1.5e-06]
+#                single_pixel:
+#                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-3}
+            mode[4]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                    max: [2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-06] # bottom coarse
+                    min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
+                    value: [1.5e-06, 1.5e-06,1.5e-06, 1.5e-06, 1.5e-06, 0.001, 0.001, 0.001, 0.001, 1.5e-06]
+#                single_pixel:
+#                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-3}
             retrieved: true
             type: vertical_profile_normalized
         characteristic[2]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [1.00001]
-                    min: [1.0e-08]
-                    value: [0.0002737365]
+                    max: [0.25]
+                    min: [0.00001]
+                    value: [0.0002]
                 single_pixel:
                     smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [1.00001]
-                    min: [1.0e-08]
-                    value: [0.0007941207]
+                    max: [0.25]
+                    min: [0.00001]
+                    value: [0.02]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [0.25]
+                    min: [0.00001]
+                    value: [0.0002]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
+            mode[4]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [0.25]
+                    min: [0.00001]
+                    value: [0.02]
                 single_pixel:
                     smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
             retrieved: true
-            type: aerosol_concentration    
+            type: aerosol_concentration   
         characteristic[3]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max: [3.71, 0.77]
-                    min: [0.15, 0.3]
-                    value: [0.5, 0.5]
+                    max: [0.6, 0.75]
+                    min: [0.15, 0.3] # case2 goes down to ~0.11 but this covers smoke, marine, pol, dust 
+                    value: [0.17, 0.5]
                 single_pixel:
                     a_priori_estimates:
-                        lagrange_multiplier: [0, 0]
+                        lagrange_multiplier: [0, 0]                        
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max: [0.5, 0.75]
-                    min: [0.15, 0.3]
-                    value: [0.5, 0.5]
+                    max: [3.71, 0.77]
+                    min: [0.7, 0.3]
+                    value: [1.5, 0.5]
+                single_pixel:
+                    a_priori_estimates:
+                        lagrange_multiplier: [0, 0]
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0]
+                    max: [0.6, 0.75]
+                    min: [0.15, 0.3] # case2 goes down to ~0.11 but this covers smoke, marine, pol, dust 
+                    value: [0.17, 0.5]
+                single_pixel:
+                    a_priori_estimates:
+                        lagrange_multiplier: [0, 0]                        
+            mode[4]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0]
+                    max: [3.71, 0.77]
+                    min: [0.7, 0.3] 
+                    value: [1.5, 0.5]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier: [0, 0]
@@ -71,18 +117,34 @@ retrieval:
                 initial_guess:
                     index_of_wavelength_involved: [1]
                     max: [1.65]
-                    min: [1.33]
+                    min: [1.35]
                     value: [1.363]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e4}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e5}
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [1.65]
-                    min: [1.33]
+                    max: [1.52]
+                    min: [1.35]
                     value: [1.363]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e4}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e5}
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max: [1.65]
+                    min: [1.35]
+                    value: [1.363]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e5}
+            mode[4]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max: [1.52]
+                    min: [1.35]
+                    value: [1.363]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e5}
             retrieved: true
             type: real_part_of_refractive_index_spectral_dependent
         characteristic[5]:
@@ -90,20 +152,36 @@ retrieval:
                 initial_guess:
                     index_of_wavelength_involved: [1]
                     max: [0.05]
-                    min: [1e-10]
+                    min: [1e-5]
                     value: [0.001]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e4}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e5}
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [0.05]
-                    min: [1e-10]
+                    max: [0.03]
+                    min: [1e-5]
                     value: [0.001]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e4}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e5}
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max: [0.05]
+                    min: [1e-5]
+                    value: [0.001]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e5}
+            mode[4]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max: [0.03]
+                    min: [1e-5]
+                    value: [0.001]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e5}
             retrieved: true
-            type: imaginary_part_of_refractive_index_spectral_dependent
+            type: imaginary_part_of_refractive_index_spectral_dependent            
         characteristic[6]:
             type: surface_water_cox_munk_iso
             retrieved: true
@@ -136,7 +214,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 10.0e4
+                        lagrange_multiplier: 10.0e5
         characteristic[7]:
             mode[1]:
                 initial_guess:
@@ -147,6 +225,22 @@ retrieval:
                 single_pixel:
                     smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
             mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [0.9999999]
+                    min:    [0.0000001]
+                    value: [0.9999998]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [0.9999999]
+                    min:    [0.0000001]
+                    value: [0.9999998]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
+            mode[4]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
                     max:   [0.9999999]
@@ -192,7 +286,7 @@ retrieval:
 #                    value: [2.0e-10]
 #            retrieved: false
 #            type: surface_land_polarized_maignan_breon
-    convergence: {maximum_iterations_for_stopping: 20, maximum_iterations_of_Levenberg-Marquardt: 20, minimization_convention: logarithm, normal_system_solver: sparse_matrix_solver, scale_for_finite_difference: 2.0e-05, shift_for_applying_logarithm_to_negative_values: 1.1, stop_before_performing_retrieval: false, threshold_for_stopping: 0.001, threshold_for_stopping_Q_iterations: 1.0e-06}
+    convergence: {maximum_iterations_for_stopping: 20, maximum_iterations_of_Levenberg-Marquardt: 20, minimization_convention: logarithm, normal_system_solver: sparse_matrix_solver, scale_for_finite_difference: 1.0e-03, shift_for_applying_logarithm_to_negative_values: 1.1, stop_before_performing_retrieval: false, threshold_for_stopping: 0.001, threshold_for_stopping_Q_iterations: 1.0e-12}
     debug: {additional_information: false, verbose: true}
     general: {path_to_internal_files: /usr/local/share/grasp/kernels/}
     noises:
@@ -221,13 +315,12 @@ retrieval:
             standard_deviation: 0.19
             standard_deviation_synthetic: 0.0
         noise[4]:
-            error_type: relative
+            error_type: absolute
             measurement_type[1]:
                 index_of_wavelength_involved: [1]
                 type: VEXT
-            standard_deviation: 0.05
-#            standard_deviation: 0.015
-#            standard_deviation: 0.23614e-04
+#            standard_deviation: 0.05
+            standard_deviation: 0.017e-03
             standard_deviation_synthetic: 0.0
         noise[5]:
             error_type: relative
@@ -245,6 +338,8 @@ retrieval:
         radius:
             mode[1]: {max: 15.0, min: 0.05}
             mode[2]: {max: 15.0, min: 0.05}
+            mode[3]: {max: 15.0, min: 0.05}
+            mode[4]: {max: 15.0, min: 0.05}
         size_binning_method_for_triangle_bins: logarithm
     products:
         aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: true, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}

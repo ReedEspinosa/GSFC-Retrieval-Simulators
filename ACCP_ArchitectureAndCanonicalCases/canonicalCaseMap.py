@@ -76,7 +76,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['n'] = np.repeat(1.45, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.5, nwl)]) # mode 2
         vals['k'] = np.repeat(0.001, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.01, nwl)]) # mode 2
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.005, nwl)]) # mode 2 # NOTE: we cut this in half from XLSX
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0

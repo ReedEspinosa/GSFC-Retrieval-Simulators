@@ -12,16 +12,15 @@ from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
 
 
-#n = int(sys.argv[1]) # (0,1,2,...,N-1)
-n=0
+n = int(sys.argv[1]) # (0,1,2,...,N-1)
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM14_lidarPolACCP/SIM100_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM14_lidarPolACCP/SIM207_4mode_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
-    Nsims = 56
+    Nsims = 28
     maxCPU = 28
 else: # MacBook Air
     saveStart = '/Users/wrespino/Desktop/testLIDAR_' # end will be appended
@@ -31,7 +30,7 @@ else: # MacBook Air
     Nsims = 2
     maxCPU = 1
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
-bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_1lambda.yml')
+bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_4modes.yml')
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
 
@@ -43,8 +42,7 @@ bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
 #Phis = [0] # 1 
 #τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=240
 
-#instruments = ['lidar05+polar07', 'lidar09+polar07'] #2
-instruments = ['lidar05+polar07']
+instruments = ['lidar05+polar07', 'lidar09+polar07'] #2
 #conCases = ['case02a','case02b','case02c','case03','case07']
 conCases = []
 for caseLet in ['a','b','c','d','e','f']:
@@ -53,7 +51,8 @@ for caseLet in ['a','b','c','d','e','f']:
 #    if caseLet in ['e','f']:
 #        conCases.append('case06'+caseLet+'nonsph')
 #        conCases.append('case06'+caseLet+'monomode'+'nonsph') #21 total
-SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
+# SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
+SZAs = [30] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
 τFactor = [1.0] #3 N=189 Nodes
 
