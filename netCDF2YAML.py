@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+""" This script will read in data from a NetCDF file, print out the results and, if provided, write the result to a YAML file """
 
 import os
 import sys
