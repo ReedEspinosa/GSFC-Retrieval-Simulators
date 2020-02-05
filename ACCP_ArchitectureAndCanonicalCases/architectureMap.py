@@ -67,7 +67,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
     if 'polar07' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp))
-        wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 0.940, 1.230, 1.380, 1.550, 1.650] # Nλ=11
+        wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 1.550, 1.650] # Nλ=8
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
@@ -114,7 +114,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
     if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
 #        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
         msTyp = [31] # must be in ascending order
-        botLayer = 100 # bottom layer in meters
+        botLayer = 10 # bottom layer in meters
         topLayer = 4510
         Nlayers = 10 #TODO: ultimatly this should be read from (or even better define) the YAML file
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
@@ -169,14 +169,18 @@ def addError(measNm, l, rsltFwd, edgInd):
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
         if int(mtch.group(2)) in [5]: # HSRL and depolarization 
             relErrβsca = 0.05 #
-            relErrβext = 0.12 # 
+#             relErrβext = 0.12 # 
+            absErrβext = 17/1e6 # m-1
+            βextLowLim = 0.01/1e6
 #            relErrβsca = 0.000358 # these values pulled from slide 39 of Rich's HSRL talk at the aerosol TIM
 #            relErrβext = 0.001157 # see A-CCP/LIDAR Erorr in Endnote for more details
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
             trueSimβext = rsltFwd['fit_VExt'][:,l] # 36
 #            trueSimDPOL = rsltFwd['fit_DP'][:,l] # 35
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErrβsca), size=len(trueSimβsca))
-            fwdSimβext = trueSimβext*np.random.lognormal(sigma=np.log(1+relErrβext), size=len(trueSimβext))
+            fwdSimβext = trueSimβext + absErrβext*np.random.normal(size=len(trueSimβext))
+            fwdSimβext[fwdSimβext<βextLowLim] = βextLowLim
+#             fwdSimβext = trueSimβext*np.random.lognormal(sigma=np.log(1+relErrβext), size=len(trueSimβext))
 #            fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=len(trueSimDPOL))
 #            return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
             return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
