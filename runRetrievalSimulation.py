@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+""" This script will run a retrieval simulation using the A-CCP canonical cases and corresponding architectures defined in the ACCP_ArchitectureAndCanonicalCases directory within this repo """
+
 import os
 import sys
 import itertools
@@ -13,7 +15,7 @@ from canonicalCaseMap import setupConCaseYAML
 
 
 #n = int(sys.argv[1]) # (0,1,2,...,N-1)
-n=0
+n=1
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
@@ -31,7 +33,7 @@ else: # MacBook Air
     Nsims = 2
     maxCPU = 1
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
-bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_1lambda.yml')
+bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes.yml')
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
 

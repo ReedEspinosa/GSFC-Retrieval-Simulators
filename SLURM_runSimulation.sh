@@ -1,5 +1,5 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=SIM42conCase
+#SBATCH --job-name=GRASP_Sim
 #SBATCH --nodes=1 --constraint=hasw
 #SBATCH --time=2:00:00
 #SBATCH -o log/output.%A-%a

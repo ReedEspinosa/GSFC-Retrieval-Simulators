@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+""" This script will run a retrieval simulation using OSSE results and the osseData class """
 
 import os
 import sys
