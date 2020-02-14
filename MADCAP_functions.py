@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import scipy.stats as st
 from datetime import datetime as dt
 from datetime import timedelta
 import warnings
 from netCDF4 import Dataset
+from matplotlib import pyplot as plt
 import hashlib
 import fnmatch
 import os
@@ -51,3 +53,30 @@ def ordinal2datetime(ordinal):
     dtObjTime = timedelta(seconds=np.remainder(ordinal, 1)*86400)
     dtObj = dtObjDay + dtObjTime
     return dtObj
+
+def KDEhist2D(x,y, axHnd=None, res=100, xrng=None, yrng=None, sclPow=1, cmap = 'BuGn', clbl='Probability Density (a.u.)'):
+    # set plot range
+    xmin = xrng[0] if xrng else x.min()
+    xmax = xrng[1] if xrng else x.max()
+    ymin = yrng[0] if yrng else y.min()
+    ymax = yrng[1] if yrng else y.max()
+    # Peform the kernel density estimate
+    xx, yy = np.mgrid[xmin:xmax:complex(0,res), ymin:ymax:complex(0,res)]
+    positions = np.vstack([xx.ravel(), yy.ravel()])
+    values = np.vstack([x, y])
+    kernel = st.gaussian_kde(values)
+    f = np.reshape(kernel(positions).T, xx.shape)
+    # Plot results
+    if not axHnd:
+        fig = plt.figure()
+        axHnd = fig.gca()
+    axHnd.set_xlim(xmin, xmax)
+    axHnd.set_ylim(ymin, ymax)
+    # Contourf plot
+    objHnd = axHnd.contourf(xx, yy, f**sclPow, 256, cmap=cmap)
+    clrHnd = plt.colorbar(objHnd, ax=axHnd)
+#    objHnd.set_clim(vmin=0)
+    tckVals = clrHnd.get_ticks()**(1/sclPow)/np.max(clrHnd.get_ticks()**(1/sclPow))
+    clrHnd.set_ticklabels(['%4.1f' % x for x in 100*tckVals])
+    clrHnd.set_label(clbl)
+    return axHnd
