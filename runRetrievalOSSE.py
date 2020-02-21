@@ -52,6 +52,4 @@ simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dir
 
 """ TODO:
     - we need to add code to osseData to read LIDAR measurments
-    - anaylze simulation results currently can't handle more than one fwd observation set...
-        I think it might even break with just one set now too due to changes in simulateRetrieval.py
 """

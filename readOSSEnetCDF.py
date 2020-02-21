@@ -6,6 +6,7 @@ import numpy as np
 import glob
 import re
 import warnings
+import os
 import copy
 import datetime as dt
 from MADCAP_functions import loadVARSnetCDF
@@ -31,10 +32,9 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
             self.wvls = fpDict['wvls']
         if 'dateTime' not in fpDict: fpDict['dateTime'] = None
         self.readPolarimeterNetCDF(fpDict['polarNc4FP'], dateTime=fpDict['dateTime'])
-        if 'asmNc4FP' in fpDict:
-            self.readLevBasmData(fpDict['asmNc4FP'])
-        if 'metNc4FP' in fpDict:
-            self.readLevBmetData(fpDict['metNc4FP'])
+        if 'asmNc4FP' in fpDict: self.readLevBasmData(fpDict['asmNc4FP'])
+        if 'metNc4FP' in fpDict: self.readLevBmetData(fpDict['metNc4FP'])
+        if not ('lcExt' in fpDict: self.convertStateVars2GRASP(fpDict['lcExt'])): # TODO: create the method
         self.purgeInvldInd()
         
     def λSearch(self, levCFN):
@@ -60,32 +60,54 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
         rsltVars = ['fit_I','fit_Q','fit_U','fit_VBS','fit_VExt','fit_DP','fit_LS',          'vis','fis',         'sza']
         mdVars   = [    'I',    'Q',    'U',    'VBS',    'VExt',    'DP',    'LS','sensor_zenith','fis','solar_zenith']        
         measData = self.convertPolar2GRASP() # we can chain existing measData when we add LIDAR
-        Npix = len(measData[0]['dtObj']) # this assumes all λ have the same # of pixels
-        if NpixMax: Npix = min(Npix, NpixMax)
+        assert len(self.rtrvdData) == self.Npix, 'OSSE observable and state variable date structures contain a differnt number of pixels!' # TODO: Should Npix above be set as self.Npix and this check performed in convertStateVars2GRASP()?
+        if NpixMax: Npix = min(self.Npix, NpixMax)
         Nλ = len(self.measData)
         rslts = [] 
-        for k in range(Npix): # loop over pixels
+        for k,rd in enumerate(self.rtrvdData[0:Npix]): # loop over pixels
             rslt = dict()
-            for l, md in enumerate(measData): # loop over λ -- HINT: we assume all λ have the same # of measurements for each msType
-                for rv,mv in zip(rsltVars,mdVars): # loop over potential variables
-                    if mv in md:
-                        if l==0: rslt[rv] = np.empty([len(md[mv][k,:]), Nλ])*np.nan # len(md[mv][k,:]) will change between imagers(Nang) & LIDAR(Nhght)
+            for rv,mv in zip(rsltVars,mdVars): # loop over potential variables
+                for l, md in enumerate(measData): # loop over λ -- HINT: we assume all λ have the same # of measurements for each msType
+                    if mv in md: # this is an observable
+                        if rv not in rslt: rslt[rv] = np.empty([len(md[mv][k,:]), Nλ])*np.nan # len(md[mv][k,:]) will change between imagers(Nang) & LIDAR(Nhght)
                         rslt[rv][:,l] = md[mv][k,:]
-                        if l==0 and k==0 and self.verbose: print('%s found in OSSE data' % mv)
-                    elif l==0 and k==0 and self.verbose: print('%s NOT found in OSSE data' % mv)
+                        if k==0 and self.verbose: print('%s at %4.2f found in OSSE observables' % (mv, self.wvls[l]))
+                if rv not in rslt and self.verbose: print('%s at %4.2f NOT found in OSSE data' % (mv, self.wvls[l]))
             rslt['lambda'] = self.wvls
             rslt['datetime'] = md['dtObj'][k] # we keep using md b/c all λ should be the same for these vars
             rslt['latitude'] = self.checkReturnField(md, 'trjLat', k)
             rslt['longitude'] = self.checkReturnField(md, 'trjLon', k)
             rslt['land_prct'] = self.checkReturnField(md, 'land_prct', k, 100)
+            if k==0 and self.verbose: 
+                for mv in rd.keys(): print('%s found in OSSE state variables' % mv)
+            rslt = {**rslt , **rd}
             rslts.append(rslt)
             if self.verbose:
-                frmStr = 'Converted pixel #%d (%s), [%6.2f°, %6.2f°], θs=%4.1f (±%4.1f), %d%% land'
+                frmStr = 'Converted pixel #%d (%s), [LAT:%6.2f°, LON:%6.2f°], θs=%4.1f (±%4.1f), %d%% land'
                 ds = rslt['datetime'].strftime("%d/%m/%Y %H:%M:%S")
                 sza = np.mean(rslt['sza'])
                 Δsza = np.abs(rslt['sza']-sza).max()
                 print(frmStr % (k, ds, rslt['latitude'], rslt['longitude'], sza, Δsza, rslt['land_prct']))
         return rslts
+
+    def convertStateVars2GRASP(self, levBFN):
+        """ osse2graspRslts will read OSSE state variable file(s) and convert to the format used to store GRASP's output
+                IN: fileName of lidar lcExt file TODO: add other files w/ more than τ and ω0
+                OUT: a list of Npixels dicts - rtrvdData[nPix][var][mode, λ] 
+                NOTE: None yet... """
+        loadErr = self.loadingChecks(filename=levBFN)
+        if loadErr is not 1: self.rtrvdData = np.repeat(dict(), self.Npix)
+        if loadErr > 0:
+            if loadErr == 2:        
+                warnings.warn('State variables could not be loaded!')
+            return False            
+        for t in range(self.Npix):
+        #TODO: integrate AOD and ssa at each pixel and dump them in self.rtrvdData
+        #TODO: does self.Npix get set in polarimeter observable loading?
+        #TODO: these state variables need to be purged (current method won't do it)
+        #TODO: how to map PBLH -> level for PBL aod and SSA? Sent email to Pete and Patricia...
+        #        self.measData[0]['PBLH']
+        return True
 
     def checkReturnField(self, dictObj, field, ind, defualtVal=0):
         if field in dictObj: 
@@ -136,13 +158,14 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
             tShft = self.measData[i]['time'] if 'time' in self.measData[i] else 0
             self.measData[i]['dtObj'] = [dateTime + dt.timedelta(seconds=int(ts)) for ts in tShft]
             invldIndλ = np.nonzero((self.measData[i]['I']<0).any(axis=1))[0]
-            self.invldInd = np.append(self.invldInd, invldIndλ).astype(int) # only take points w/ I>0 at all wavelengths & angles 
+            self.invldInd = np.append(self.invldInd, invldIndλ).astype(int) # only take points w/ I>0 at all wavelengths & angles
+        self.Npix = len(self.measData[0]['dtObj']) # this assumes all λ have the same # of pixels
         
     def convertPolar2GRASP(self, measData=None):
         """ convert OSSE "measDdata" to a GRASP friendly format 
             IN: if measData argument is provided we work with that, else we use self.measData (this allows chaining with other converters)
             OUT: the converted measData list is returned, self.measData will remain unchanged """
-        if not measData: measData = copy.deepcopy(self.measData)
+        if not measData: measData = copy.deepcopy(self.measData) # We will return a measData in GRASP format, self.measData will remain unchanged.
         if 'solar_azimuth' not in measData[0]: 
             warnings.warn('solar_azimuth field not found in measData. Was polarimeter data loaded propertly?')
         for wvl,md in zip(self.wvls, measData):            
@@ -174,15 +197,20 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
     
     def loadingChecks(self, inPolarimeterNetCDF=False, filename=None):
         """ Internal method to check if data has been loaded with readPolarimeterNetCDF """
-        assert self.wvls, 'Wavelengths must be set in order to load data!'
-        if (self.measData or inPolarimeterNetCDF) and not self.invldIndPurged:
+        errCode = 2 #
+        if filename and not os.path.exists(filename): 
+          warnings.warn('Could not find the file %s' % filename)  
+        elif not self.wvls: '
+            warnings.warn('Wavelengths must be set in order to load data!')
+        elif (self.measData or inPolarimeterNetCDF) and not self.invldIndPurged:
             if self.verbose and filename: print('Processing data from %s' % filename)
-            return True
+            errCode 0
         elif not self.invldIndPurged:
             warnings.warn('You must first load polarimeter data with readPolarimeterNetCDF()!')
         else:
             warnings.warn('You can not load any more data after purging invalid indices once. If you really force loading set invldIndPurged=False.')
-        return False
+            errCode = 1
+        return errCode
       
     def purgeInvldInd(self):
         """ The method will remove all invldInd from measData """

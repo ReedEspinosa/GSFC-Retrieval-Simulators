@@ -12,7 +12,7 @@ from miscFunctions import matplotlibX11
 matplotlibX11()
 import matplotlib.pyplot as plt
 
-simRsltFile = '/Users/wrespino/synced/Working/SIM14_lidarPolACCP/SIM43V30_2mode_lidar05+polar07_case-case06c_sza30_phi0_tFct1.00_V2.pkl'
+simRsltFile = '/Users/wrespino/Desktop/OSSE_NR_20060101_YAMLddc43512_polar07_V1.pkl'
 #simRsltFile = '/Users/wrespino/Synced/Working/SIM13_lidarTest/SIM43_lidar05+polar07_case-case06cmonomode_sza30_phi0_tFct1.00_V2.pkl'
 lIndL = 3 # LIDAR λ to plot (3,7)
 lIndP = 4 # polarimeter λ to plot
