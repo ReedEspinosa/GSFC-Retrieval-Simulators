@@ -12,7 +12,7 @@ import hashlib
 import fnmatch
 import os
 
-def loadVARSnetCDF(filePath, varNames=None):
+def loadVARSnetCDF(filePath, varNames=None, verbose=False):
     warnings.simplefilter('ignore') # ignore missing_value not cast warning
     measData = dict()
     netCDFobj = Dataset(filePath)
@@ -20,8 +20,8 @@ def loadVARSnetCDF(filePath, varNames=None):
     for varName in varNames:
         if varName in netCDFobj.variables.keys():
             measData[varName] = np.array(netCDFobj.variables[varName])
-        else:
-            warnings.warn('Could not find %s variable in netCDF data' % varName)
+        elif verbose:
+            print("\x1b[1;35m Could not find \x1b[1;31m%s\x1b[1;35m variable in netCDF file: %s\x1b[0m" % (varName,filePath))
     netCDFobj.close()
     warnings.simplefilter('always')
     return measData 

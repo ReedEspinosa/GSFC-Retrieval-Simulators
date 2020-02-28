@@ -8,18 +8,20 @@ import re
 import warnings
 import os
 import copy
+import inspect
 import datetime as dt
 from MADCAP_functions import loadVARSnetCDF
 
-class osseData(object): # TODO: we still need to add function(s) to microphysics, AOD, etc.
-    def __init__(self, fpDict=None):
+class osseData(object):
+    def __init__(self, fpDict=None, verbose=False):
         """
         fpDict has fields (* -> optional): 
             'polarNc4FP' (string) - full file path of polarimeter data with λ (in nm) replaced w/ %d
             'wvls'* (list of floats) - wavelengths to process in μm, not present or None -> determine them from polarNc4FP
             'dateTime'* (datetime obj.) - day and hour of measurement (min. & sec. loaded from file)
-            'asmNc4FP'* (string) - gpm-g5nr.lb2.asm_Nx.YYYYMMDD_HH00z.nc4 file path (has FRLAND for land percentage)
-            'metNc4FP'* (string) - gpm-g5nr.lb2.met_Nx.YYYYMMDD_HH00z.nc4 file path (has PS for surface alt.)
+            'asmNc4FP'* (string) - gpm-g5nr.lb2.asm_Nx.YYYYMMDD_HH00z.nc4 file path (FRLAND for land percentage)
+            'metNc4FP'* (string) - gpm-g5nr.lb2.met_Nv.YYYYMMDD_HH00z.nc4 file path (PS for surface alt.)
+            'aerNc4FP'* (string) - gpm-g5nr.lb2.aer_Nv.YYYYMMDD_HH00z.nc4 file path (DELP/AIRDEN for level heights)
             'lcExt'* (string) - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ and SSA)
             'lc2Lidar'* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
             'stateVar'* (string) - file with state variable truth, NOT YET DEVELOPED (may ultimatly be multiple files)
@@ -29,8 +31,8 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
         self.invldInd = np.array([])
         self.invldIndPurged = False
         self.loadingCalls = []
+        self.pblTopInd = False
         if not fpDict: return
-        self.verbose = True if 'verbose' in fpDict and fpDict['verbose'] else False
         if ('wvls' not in fpDict) or (not fpDict['wvls']): 
             self.wvls = self.λSearch(fpDict['polarNc4FP'])
         else: 
@@ -39,9 +41,9 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
         self.readPolarimeterNetCDF(fpDict['polarNc4FP'], dateTime=fpDict['dateTime'])
         if 'asmNc4FP' in fpDict: self.readasmData(fpDict['asmNc4FP'])
         if 'metNc4FP' in fpDict: self.readmetData(fpDict['metNc4FP'])
+        if 'aerNc4FP' in fpDict: self.readaerData(fpDict['aerNc4FP'])
         if 'lcExt' in fpDict: self.readStateVars(fpDict)
         if 'lc2Lidar' in fpDict: self.readlidarData(fpDict['lc2Lidar'])
-        if 'stateVar' in fpDict: self.readstateVars(fpDict['stateVar']) # HINT: argument may change
         self.purgeInvldInd()
         
     def λSearch(self, fpDict):
@@ -66,7 +68,7 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
                 IN: NpixMax -> no more than this many pixels will be returned in rslts list (primarly for testing)
                 OUT: a list of Npixels dicts with all the keys mapping measData as rslts[nPix][var][nAng, λ] 
                 NOTE: GRASP can only use one SZA value & simulator just takes 1st value. Maybe just make them all equal to the average? """
-        if not self.loadingChecks(prereqCalls=readPolarimeterNetCDF, filename=None): return
+        if not self.loadingChecks(prereqCalls='readPolarimeterNetCDF', filename=None): return
         rsltVars = ['fit_I','fit_Q','fit_U','fit_VBS','fit_VExt','fit_DP','fit_LS',          'vis','fis',         'sza']
         mdVars   = [    'I',    'Q',    'U',    'VBS',    'VExt',    'DP',    'LS','sensor_zenith','fis','solar_zenith']        
         measData = self.convertPolar2GRASP() # we can chain existing measData when we add LIDAR
@@ -101,27 +103,6 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
                 print(frmStr % (k, ds, rslt['latitude'], rslt['longitude'], sza, Δsza, rslt['land_prct']))
         return rslts
 
-    def convertStateVars2GRASP(self, levBFN):
-        """ osse2graspRslts will read OSSE state variable file(s) and convert to the format used to store GRASP's output
-                IN: fileName of lidar lcExt file TODO: add other files w/ more than τ and ω0
-                OUT: a list of Npixels dicts - rtrvdData[nPix][var][mode, λ] 
-                NOTE: None yet... """
-        loadErr = self.loadingChecks(prereqCalls='readPolarimeterNetCDF', filename=levBFN)
-        if loadErr ==0: # TODO: rethink this logic...
-            self.rtrvdData = np.repeat(dict(), self.Npix)
-        else:
-            if loadErr > 2: # 1 & 2 -> we could load them but won't for some reason       
-                warnings.warn('State variables could not be loaded!')
-            return False            
-        for t in range(self.Npix):
-        #TODO: integrate AOD and ssa at each pixel and dump them in self.rtrvdData
-        #TODO: does self.Npix get set in polarimeter observable loading?
-        #TODO: these state variables need to be purged (current method won't do it)
-        #TODO: we need to deal with λ, we only have lc.ext at lidar λ (they aren't even included currently)        
-        #TODO: how to map PBLH -> level for PBL aod and SSA? See email from Patricia...
-        #        self.measData[0]['PBLH']
-        return True
-
     def checkReturnField(self, dictObj, field, ind, defualtVal=0):
         if field in dictObj: 
             return dictObj[field][ind] 
@@ -138,7 +119,7 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
         minAlt = -100 # defualt GRASP build complains below -100m
         levB_data = loadVARSnetCDF(levBFN, varNames=['PS', 'PBLH'])
         maslTmp = [max(scaleHght*np.log(stndPres/PS), minAlt) for PS in levB_data['PS']]
-        for md in self.measData: md['masl'] = maslTmp
+        for md in self.measData: md['masl'] = maslTmp # suface height [m], we use GRASP atmosphere to get better agreement w/ ROT that ze below
         for md in self.measData: md['PBLH'] = levB_data['PBLH'] # PBL height in m -- looks a little fishy, should double check w/ patricia
     
     def readasmData(self, levBFN):
@@ -154,19 +135,74 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
         assert False, 'This function is under development'
 
     def readStateVars(self, stateVarFNs):
-        if self.loadingChecks(prereqCalls='readPolarimeterNetCDF')>0: return
+        """ readStateVars will read OSSE state variable file(s) and convert to the format used to store GRASP's output
+            IN: dictionary stateVarFNs containing key 'lcExt' with path to lidar "truth" file
+            RESULT: sets self.rtrvdData, numpy array of Npixels dicts -> rtrvdData[nPix][varKey][mode, λ]"""
+        netCDFvarNames = ['tau','ssa','refr','refi','reff','vol','g','ext2Back'] # Order is important! (see for loop in rtrvdDataSetPixels())
+        if self.loadingChecks(prereqCalls=['readPolarimeterNetCDF','readaerData'])>0: return
         assert 'lcExt' in stateVarFNs, 'This method requires an lcExt file path to be present'
-        self.measData = [{} for _ in range(len(self.wvls))]
-        for i,wvl in enumerate(self.wvls): # THIS ISN'T GOING TO WORK! We need to assume lcExt λ don't overlap with wvls
+        self.rtrvdData = np.array([{} for _ in range(self.Npix)])
+        for λ,wvl in enumerate(self.wvls): # NOTE: will only use data corresponding to λ values in measData
             lcExtFN = stateVarFNs['lcExt'] % (wvl*1000)
             if os.path.exists(lcExtFN):
                 if self.verbose: print('Processing data from %s' % lcExtFN)        
-                lcExt_data = loadVARSnetCDF(lcExtFN, varNames=['tau','ssa','reff','refi','refr'])
-                # THIS DATA WILL NEED TO BE INTERPOLATED TO MEASDATA WAVELENGTHS...
-            elif verbose:
+                lcD = loadVARSnetCDF(lcExtFN, varNames=netCDFvarNames)
+                timeLoopVars = [lcD[k] for k in netCDFvarNames]
+                timeLoopVars.append(self.rtrvdData)
+                for rd in self.rtrvdData: 
+                    self.rtrvdDataSetPixels(rd, timeLoopVars, λ) # rd is a dict, which is mutable
+                    hghtInd = np.r_[[np.zeros(self.Npix)], [self.pblTopInd]].T
+                    self.rtrvdDataSetPixels(rd, timeLoopVars, λ, hghtInd, '_PBL')
+            elif self.verbose:
                 print('No lcExt profile data found at %4.2f μm' % wvl)
-            if 'stateVar' in fpDict:
-                assert False, 'We can not handle stateVar path yet!'            
+            if 'stateVar' in stateVarFNs:
+                assert False, 'We can not handle stateVar path yet!'   
+    
+    def readaerData(self, levBFN):
+        """ Read in levelB data to obtain vertical layer heights """
+        grav = 9.80616 # m/s^2
+        if not self.loadingChecks(prereqCalls=['readPolarimeterNetCDF','readmetData'], filename=levBFN): return
+        levB_data = loadVARSnetCDF(levBFN, varNames=['AIRDEN', 'DELP']) # air density [kg/m^3], pressure thickness [Pa]
+        self.pblTopInd = np.full(self.Npix, np.nan)
+        for k,(airdens,delp) in enumerate(zip(levB_data['AIRDEN'], levB_data['DELP'])):
+            ze = (delp[::-1]/airdens[::-1]*grav).cumsum()[::-1] # profiles run top down so we reverse order for cumsum
+            rng = (np.r_[ze[1::],0] + ze)/2
+            if not np.isclose(self.measData[0]['masl'][k], ze[-1], atol=500):
+                msg = 'At pixel k=%d exp. atmosphere derived masl (%dm) was more than 500m off lower level edge (%dm).'
+                warnings.warn(msg % (k, self.measData[0]['masl'][k], ze[-1]))
+            self.pblTopInd = np.argmin(np.abs(self.measData[0]['PBL'][k] - rng))
+            for md in self.measData: # i.e. k==0
+                if 'range' not in md:
+                    md['range'] = np.full([self.Npix, len(delp)], np.nan)
+                md['range'][k,:] = rng
+
+    def rtrvdDataSetPixels(self, rd, timeLoopVars, λ, hghtInd=None, km=''):
+        hghtSlice = []
+        for h in hghtInd: # hghtInd (Npixels x 2) vector denoating top, bottom (lev=0 is TOA in G5NR) lev index of PBL
+            hghtSlice.append(slice(h[0],h[1]+1) if hghtInd else slice(None))
+        timeLoopVars.append(hghtSlice)
+        firstλ = 'aod'+km in rd
+        if firstλ:     
+            for k in ['aod'+km,'ssa'+km,'n'+km,'k'+km,'g'+km, 'LidarRatio'+km]: # spectrally dependent vars only, reff doesn't need allocation
+                rd[k] = np.full(len(self.wvls), np.nan)
+        for τ,ω,n,k,rEff,V,g,S,rd,hSlc in zip(*timeLoopVars): # loop over each pixel and vertically average
+            rd['aod'+km][λ] = τ[hSlc].sum()
+            rd['ssa'+km][λ] = np.sum(τ[hSlc]*ω[hSlc])/rd['aod'+km][λ] # ω=Σβh/Σαh & ωh*αh=βh => ω=Σωh*αh/Σαh
+            rd['n'+km][λ] = np.sum(τ[hSlc]*n[hSlc])/rd['aod'+km][λ] # n is weighted by τ (this is a non-physical quantity)
+            rd['k'+km][λ] = np.sum(τ[hSlc]*k[hSlc])/rd['aod'+km][λ] # k is weighted by τ (this is a non-physical quantity)
+            rEffTot = np.sum(V[hSlc])/np.sum(V[hSlc]/rEff[hSlc]) # see bottom of this method for derivation
+            if firstλ:
+                rd['rEff'+km] = rEffTot
+            elif not np.isclose(rd['rEff'+km], rEffTot):
+                warnings.warn('The current rEff (%8.5fμm) differs from the first rEff (%8.5fμm) derived.' % (rEffTot, rd['rEff'+km][λ]))
+            rd['g'+km][λ] = np.sum(τ[hSlc]*ω[hSlc]*g[hSlc])/np.sum(τ[hSlc]*ω[hSlc]) # see bottom of this method for derivation
+            rd['LidarRatio'+km][λ] = np.sum(τ[hSlc])/np.sum(τ[hSlc]/S[hSlc]) # S=τ/F11[180] & F11h[180]=τh/Sh => S=Στh/Σ(τh/Sh)
+        """ --- reff vertical averaging (reff_h=Rh, # conc.=Nh, vol_conc.=Vh, height_ind=h) --- 
+            reff = ∫ ΣNh*r^3*dr/∫ ΣNh*r^2*dr = 3/4/π*ΣVh/∫ Σnh*r^2*dr
+            Rh = (3/4/π*Vh)/∫ nh*r^2*dr -> reff = 3/4/π*ΣVh/(Σ(3/4/π*Vh)/Rh) = ΣVh/Σ(Vh/Rh)
+            --- g vertical averaging (normalized PF = P11[θ], absolute PF = F11[θ]) --- 
+            P11[θ] = F11[θ]/β = Σ(τh*ωh*P11h[θ])/Στh*ωh -> g = ∫ P11[θ]...dθ = ∫ Σ(τh*ωh*P11h[θ])/Στh*ωh...dθ
+            g = Σ(τh*ωh*∫P11h[θ]...dθ)/Στh*ωh = Σ(τh*ωh*gh)/Σ(τh*ωh) """
             
     def readPolarimeterNetCDF(self, radianceFNfrmtStr, varNames=None, dateTime=None):
         """ readPolarimeterNetCDF will read a simulated polarimeter data from VLIDORT OSSE
@@ -184,7 +220,7 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
         self.measData = [{} for _ in range(len(self.wvls))]
         for i,wvl in enumerate(self.wvls):
             radianceFN = radianceFNfrmtStr % (wvl*1000)
-            if os.path.exists(radianceFN) # load data and check for valid indices (I>=0)
+            if os.path.exists(radianceFN): # load data and check for valid indices (I>=0)
                 if self.verbose: print('Processing data from %s' % radianceFN)
                 self.measData[i] = loadVARSnetCDF(radianceFN, varNames)
                 tShft = self.measData[i]['time'] if 'time' in self.measData[i] else 0
@@ -232,12 +268,12 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
     def loadingChecks(self, prereqCalls=False, filename=None):
         """ Internal method to check if data has been loaded with readPolarimeterNetCDF """
         if type(prereqCalls)==str: prereqCalls = [prereqCalls] # a string was passed, make it a list
-        callingFun = inspect.getouterframes(curframe, 2)
+        callingFun = inspect.getouterframes(inspect.currentframe(), 2)
         self.loadingCalls.append(callingFun)
         if filename and not os.path.exists(filename): 
             warnings.warn('Could not find the file %s' % filename)
             return 3
-        if not self.wvls: '
+        if not self.wvls:
             warnings.warn('Wavelengths must be set in order to load data!')
             return 4
         if self.invldIndPurged:
@@ -259,6 +295,8 @@ class osseData(object): # TODO: we still need to add function(s) to microphysics
         for md in self.measData:
             for varName in np.setdiff1d(list(md.keys()), ['x', 'y', 'lev']):
                 md[varName] = np.delete(md[varName], self.invldInd, axis=0)
+        if self.pblTopInd: self.pblTopInd = np.delete(self.pblTopInd, self.invldInd)
+        if self.rtrvdData: self.rtrvdData = np.delete(self.rtrvdData, self.invldInd)
         self.invldIndPurged = True
         if self.verbose: 
             print('%d pixels with negative or bad-data-flag reflectances were purged.' % len(self.invldInd))
