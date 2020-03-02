@@ -24,15 +24,16 @@ class osseData(object):
             'lcExt'* (string) - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ and SSA)
             'lc2Lidar'* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
             'stateVar'* (string) - file with state variable truth, NOT YET DEVELOPED (may ultimatly be multiple files)
+            'verbose'* (logical) - verbose output from all methods of the class
             - All of the above files should contain noise free data, except lc2Lidar -
         """
-        self.verbose = verbose
+        self.verbose = fpDict['verbose'] if 'verbose' in fpDict else False
         self.measData = None # measData has observational netCDF data
         self.rtrvdData = None # rtrvdData has state variables from netCDF data
         self.invldInd = np.array([])
         self.invldIndPurged = False
         self.loadingCalls = []
-        self.pblTopInd = False
+        self.pblTopInd = None
         if not fpDict: return
         if ('wvls' not in fpDict) or (not fpDict['wvls']): 
             self.wvls = self.λSearch(fpDict['polarNc4FP'])
@@ -100,14 +101,14 @@ class osseData(object):
             rslt = {**rslt , **rd}
             rslts.append(rslt)
             if self.verbose:
-                frmStr = 'Converted pixel #%05d (%s), [LAT:%6.2f°, LON:%6.2f°], %3.0f%% land'
+                frmStr = 'Converted pixel #%05d (%s), [LAT:%6.2f°, LON:%6.2f°], %3.0f%% land, asl=%4.0f m'
                 ds = rslt['datetime'].strftime("%d/%m/%Y %H:%M:%S")
                 sza, Δsza = self.angleVals(rslt['sza'])
                 vφa, Δvφa = self.angleVals(rslt['fis'])
                 vza, Δvza = self.angleVals(rslt['vis']*(1-2*(rslt['fis']>180)))
                 frmStr = frmStr + ', θs=%4.1f° (±%4.1f°), φ=%4.1f° (±%4.1f°), θv=%4.1f° (±%4.1f°)'
                 print(frmStr % (k, ds, rslt['latitude'], rslt['longitude'], 100*rslt['land_prct'], \
-                                sza, Δsza, vφa, Δvφa, vza, Δvza))
+                                measData[0]['masl'][k], sza, Δsza, vφa, Δvφa, vza, Δvza))
         return rslts
     
     def angleVals(self, keyVal):
@@ -129,7 +130,7 @@ class osseData(object):
         scaleHght = 8000 # scale height (meters) for presure to alt. conversion, 8km is consistent w/ GRASP
         stndPres = 1.01e5 # standard pressure (Pa)
         minAlt = -100 # defualt GRASP build complains below -100m
-        levB_data = loadVARSnetCDF(levBFN, varNames=['PS', 'PBLH'])
+        levB_data = loadVARSnetCDF(levBFN, varNames=['PS', 'PBLH'], verbose=self.verbose)
         maslTmp = np.array([max(scaleHght*np.log(stndPres/PS), minAlt) for PS in levB_data['PS']])
         for md in self.measData: md['masl'] = maslTmp # suface height [m], we use GRASP atmosphere to get better agreement w/ ROT that ze below
         for md in self.measData: md['PBLH'] = levB_data['PBLH'] # PBL height in m -- looks a little fishy, should double check w/ patricia
@@ -137,7 +138,7 @@ class osseData(object):
     def readasmData(self, levBFN):
         """ Read in levelB data to obtain pressure and then surface altitude along w/ PBL height"""
         self.loadingChecks(prereqCalls='readPolarimeterNetCDF', filename=levBFN, functionName='readasmData')
-        levB_data = loadVARSnetCDF(levBFN, varNames=['FRLAND', 'FRLANDICE'])
+        levB_data = loadVARSnetCDF(levBFN, varNames=['FRLAND', 'FRLANDICE'], verbose=self.verbose)
         icePix = np.nonzero(levB_data['FRLANDICE'] > 1e-5)[0]
         self.invldInd = np.append(self.invldInd, icePix).astype(int)
         for md in self.measData: md['land_prct'] = levB_data['FRLAND'] # PBL height in m
@@ -155,19 +156,18 @@ class osseData(object):
             assert 'stateVar' not in stateVarFNs, 'stateVar file can not be read without an lcExt file!'
             if self.verbose: print('lcExt filename not provided, no state variable data read.')
             return False
-        netCDFvarNames = ['tau','ssa','refr','refi','reff','vol','g','ext2Back'] # Order is important! (see for loop in rtrvdDataSetPixels())
+        netCDFvarNames = ['tau','ssa','refr','refi','reff','vol','g','ext2back'] # Order is important! (see for loop in rtrvdDataSetPixels())
         self.loadingChecks(prereqCalls=['readPolarimeterNetCDF','readaerData'], functionName='readStateVars')
         for λ,wvl in enumerate(self.wvls): # NOTE: will only use data corresponding to λ values in measData
             lcExtFN = stateVarFNs['lcExt'] % (wvl*1000)
             if os.path.exists(lcExtFN):
                 if self.verbose: print('Processing data from %s' % lcExtFN)        
-                lcD = loadVARSnetCDF(lcExtFN, varNames=netCDFvarNames)
-                timeLoopVars = [lcD[k] for k in netCDFvarNames]
+                lcD = loadVARSnetCDF(lcExtFN, varNames=netCDFvarNames, verbose=self.verbose)
+                timeLoopVars = [lcD[key] for key in netCDFvarNames]
                 timeLoopVars.append(self.rtrvdData)
-                for rd in self.rtrvdData: 
-                    self.rtrvdDataSetPixels(rd, timeLoopVars, λ) # rd is a dict, which is mutable
-                    hghtInd = np.r_[[np.zeros(self.Npix)], [self.pblTopInd]].T
-                    self.rtrvdDataSetPixels(rd, timeLoopVars, λ, hghtInd, '_PBL')
+                self.rtrvdDataSetPixels(timeLoopVars, λ) # rtrvdData [out] is a dict, which is mutable
+                hghtInd = np.r_[[np.zeros(self.Npix)], [self.pblTopInd]].T
+                self.rtrvdDataSetPixels(timeLoopVars, λ, hghtInd, '_PBL')
             elif self.verbose:
                 print('No lcExt profile data found at %4.2f μm' % wvl)
             if 'stateVar' in stateVarFNs:
@@ -178,41 +178,39 @@ class osseData(object):
         grav = 9.80616 # m/s^2
         preReqs = ['readPolarimeterNetCDF','readmetData']
         self.loadingChecks(prereqCalls=preReqs, filename=levBFN, functionName='readaerData')
-        levB_data = loadVARSnetCDF(levBFN, varNames=['AIRDEN', 'DELP']) # air density [kg/m^3], pressure thickness [Pa]
+        levB_data = loadVARSnetCDF(levBFN, varNames=['AIRDENS', 'DELP'], verbose=self.verbose) # air density [kg/m^3], pressure thickness [Pa]
         self.pblTopInd = np.full(self.Npix, np.nan)
-        for k,(airdens,delp) in enumerate(zip(levB_data['AIRDEN'], levB_data['DELP'])):
-            ze = (delp[::-1]/airdens[::-1]*grav).cumsum()[::-1] # profiles run top down so we reverse order for cumsum
+        for k,(airdens,delp) in enumerate(zip(levB_data['AIRDENS'], levB_data['DELP'])):
+            ze = (delp[::-1]/airdens[::-1]/grav).cumsum()[::-1] # profiles run top down so we reverse order for cumsum
             rng = (np.r_[ze[1::],0] + ze)/2
-            if not np.isclose(self.measData[0]['masl'][k], ze[-1], atol=500):
-                msg = 'At pixel k=%d exp. atmosphere derived masl (%dm) was more than 500m off lower level edge (%dm).'
-                warnings.warn(msg % (k, self.measData[0]['masl'][k], ze[-1]))
-            self.pblTopInd = np.argmin(np.abs(self.measData[0]['PBL'][k] - rng))
-            for md in self.measData: # i.e. k==0
-                if 'range' not in md:
+            self.pblTopInd[k] = np.argmin(np.abs(self.measData[0]['PBLH'][k] - rng))
+            for md in self.measData: 
+                if 'range' not in md: # i.e. k==0
                     md['range'] = np.full([self.Npix, len(delp)], np.nan)
                 md['range'][k,:] = rng
 
-    def rtrvdDataSetPixels(self, rd, timeLoopVars, λ, hghtInd=None, km=''):
-        hghtSlice = []
-        for h in hghtInd: # hghtInd (Npixels x 2) vector denoating top, bottom (lev=0 is TOA in G5NR) lev index of PBL
-            hghtSlice.append(slice(h[0],h[1]+1) if hghtInd else slice(None))
-        timeLoopVars.append(hghtSlice)
-        firstλ = 'aod'+km in rd
-        if firstλ:     
-            for k in ['aod'+km,'ssa'+km,'n'+km,'k'+km,'g'+km, 'LidarRatio'+km]: # spectrally dependent vars only, reff doesn't need allocation
-                rd[k] = np.full(len(self.wvls), np.nan)
-        for τ,ω,n,k,rEff,V,g,S,rd,hSlc in zip(*timeLoopVars): # loop over each pixel and vertically average
-            rd['aod'+km][λ] = τ[hSlc].sum()
-            rd['ssa'+km][λ] = np.sum(τ[hSlc]*ω[hSlc])/rd['aod'+km][λ] # ω=Σβh/Σαh & ωh*αh=βh => ω=Σωh*αh/Σαh
-            rd['n'+km][λ] = np.sum(τ[hSlc]*n[hSlc])/rd['aod'+km][λ] # n is weighted by τ (this is a non-physical quantity)
-            rd['k'+km][λ] = np.sum(τ[hSlc]*k[hSlc])/rd['aod'+km][λ] # k is weighted by τ (this is a non-physical quantity)
-            rEffTot = np.sum(V[hSlc])/np.sum(V[hSlc]/rEff[hSlc]) # see bottom of this method for derivation
-            if firstλ:
-                rd['rEff'+km] = rEffTot
-            elif not np.isclose(rd['rEff'+km], rEffTot):
-                warnings.warn('The current rEff (%8.5fμm) differs from the first rEff (%8.5fμm) derived.' % (rEffTot, rd['rEff'+km][λ]))
-            rd['g'+km][λ] = np.sum(τ[hSlc]*ω[hSlc]*g[hSlc])/np.sum(τ[hSlc]*ω[hSlc]) # see bottom of this method for derivation
-            rd['LidarRatio'+km][λ] = np.sum(τ[hSlc])/np.sum(τ[hSlc]/S[hSlc]) # S=τ/F11[180] & F11h[180]=τh/Sh => S=Στh/Σ(τh/Sh)
+    def rtrvdDataSetPixels(self, timeLoopVars, λ, hghtInd=None, km=''):
+        """ hghtInd (Npixels x 2) vector denoating top, bottom (lev=0 is TOA in G5NR) lev index of PBL """
+        if hghtInd is None: hghtInd = np.repeat(slice(None), self.Npix)
+        firstλ = 'aod'+km not in timeLoopVars[-1][0]
+        for τ,ω,n,k,rEff,V,g,S,rd,hSlc in zip(*timeLoopVars, hghtInd): # loop over each pixel and vertically average
+            if not type(hSlc) is slice: hSlc = slice(int(hSlc[0]), int(hSlc[1]+1))
+            if firstλ:     
+                for varKey in ['aod'+km,'ssa'+km,'n'+km,'k'+km,'g'+km, 'LidarRatio'+km]: # spectrally dependent vars only, reff doesn't need allocation
+                    rd[varKey] = np.full(len(self.wvls), np.nan)
+            if np.all(~np.isnan(rEff)):
+                rd['aod'+km][λ] = τ[hSlc].sum()
+                rd['ssa'+km][λ] = np.sum(τ[hSlc]*ω[hSlc])/rd['aod'+km][λ] # ω=Σβh/Σαh & ωh*αh=βh => ω=Σωh*αh/Σαh
+                rd['n'+km][λ] = np.sum(τ[hSlc]*n[hSlc])/rd['aod'+km][λ] # n is weighted by τ (this is a non-physical quantity)
+                rd['k'+km][λ] = np.sum(τ[hSlc]*k[hSlc])/rd['aod'+km][λ] # k is weighted by τ (this is a non-physical quantity)
+                rEff[rEff < 1e-12] = 1e-12
+                rEffTot = np.sum(V[hSlc])/np.sum(V[hSlc]/rEff[hSlc]) # see bottom of this method for derivation
+                if firstλ:
+                    rd['rEff'+km] = rEffTot
+                elif not np.isclose(rd['rEff'+km], rEffTot):
+                    warnings.warn('The current rEff (%8.5f μm) differs from the first rEff (%8.5f μm) derived.' % (rEffTot, rd['rEff'+km]))
+                rd['g'+km][λ] = np.sum(τ[hSlc]*ω[hSlc]*g[hSlc])/np.sum(τ[hSlc]*ω[hSlc]) # see bottom of this method for derivation
+                rd['LidarRatio'+km][λ] = np.sum(τ[hSlc])/np.sum(τ[hSlc]/S[hSlc]) # S=τ/F11[180] & F11h[180]=τh/Sh => S=Στh/Σ(τh/Sh)
         """ --- reff vertical averaging (reff_h=Rh, # conc.=Nh, vol_conc.=Vh, height_ind=h) --- 
             reff = ∫ ΣNh*r^3*dr/∫ ΣNh*r^2*dr = 3/4/π*ΣVh/∫ Σnh*r^2*dr
             Rh = (3/4/π*Vh)/∫ nh*r^2*dr -> reff = 3/4/π*ΣVh/(Σ(3/4/π*Vh)/Rh) = ΣVh/Σ(Vh/Rh)
@@ -238,7 +236,7 @@ class osseData(object):
             radianceFN = radianceFNfrmtStr % (wvl*1000)
             if os.path.exists(radianceFN): # load data and check for valid indices (I>=0)
                 if self.verbose: print('Processing data from %s' % radianceFN)
-                self.measData[i] = loadVARSnetCDF(radianceFN, varNames)
+                self.measData[i] = loadVARSnetCDF(radianceFN, varNames, verbose=self.verbose)
                 tShft = self.measData[i]['time'] if 'time' in self.measData[i] else 0
                 self.measData[i]['dtObj'] = np.array([dateTime + dt.timedelta(seconds=int(ts)) for ts in tShft])
                 with np.errstate(invalid='ignore'): # we need this b/c we will be comaring against NaNs
@@ -318,7 +316,7 @@ class osseData(object):
                 if self.verbose and λ==0: 
                     strArgs.append(md[varName].shape)
                     print('Purging %s -- original shape: %s -> new shape:%s' % tuple(strArgs))
-        if self.pblTopInd: self.pblTopInd = np.delete(self.pblTopInd, self.invldInd)
+        if not self.pblTopInd is None: self.pblTopInd = np.delete(self.pblTopInd, self.invldInd)
         if not self.rtrvdData is None: # we loaded state variable data that needs purging
             if self.verbose: startShape = self.rtrvdData.shape
             self.rtrvdData = np.delete(self.rtrvdData, self.invldInd)

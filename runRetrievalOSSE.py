@@ -13,8 +13,6 @@ from miscFunctions import checkDiscover
 from architectureMap import returnPixel
 from MADCAP_functions import hashFileSHA1
 
-archName = 'polar07'
-rndIntialGuess = True # randomize initial guess before retrieving
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
     bckYAMLpathLID = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml')
@@ -22,6 +20,7 @@ if checkDiscover(): # DISCOVER
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     saveStart = os.path.join(basePath, 'synced/Working/OSSE_NR_20060101')
+    osseDataPath = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/')
     maxCPU = 28
 else: # MacBook Air
     bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_IQU_3lambda_LIDAR.yml'
@@ -30,23 +29,28 @@ else: # MacBook Air
     krnlPath = None
     saveStart = '/Users/wrespino/Desktop/OSSE_NR_20060101' # end will be appended
     maxCPU = 2
-    fpDict = {
-        'polarNc4FP':'/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-polar07-g5nr.lc.vlidort.20060101_0100z_%dd00nm.nc4',
-        'asmNc4FP':  '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-g5nr.lb2.asm_Nx.20060101_0100z.nc4',
-        'metNc4FP':  '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/gpm-g5nr.lb2.met_Nv.20060101_0100z.nc4',
-        'verbose':   True,
-            }
+    osseDataPath = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/OSSE_NR_20060101_0100z_V1/'
+rndIntialGuess = True # randomize initial guess before retrieving
+fpDict = {
+    'polarNc4FP': osseDataPath + 'gpm-polar07-g5nr.lc.vlidort.20060101_0100z_%dd00nm.nc4',
+    'asmNc4FP': osseDataPath + 'gpm-g5nr.lb2.asm_Nx.20060101_0100z.nc4',
+    'metNc4FP': osseDataPath + 'gpm-g5nr.lb2.met_Nv.20060101_0100z.nc4',
+    'aerNc4FP': osseDataPath + 'gpm-g5nr.lb2.aer_Nv.20060101_0100z.nc4',
+    'lcExt': osseDataPath + 'gpm-g5nr.lc.ext.20060101_0100z.%dnm.nc4',
+#    'lc2Lidar':* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
+    'verbose':   True,
+        }
+archName = 'polar07'
 
+# choose YAML flavor, derive save file path and setup/run retrievals
 YAMLpth = bckYAMLpathLID if 'lidar' in archName.lower() else bckYAMLpathPOL
-
-# derive save file path then setup and run retrievals
 yamlTag = '_YAML%s_' % hashFileSHA1(YAMLpth)[0:8]
 savePath = saveStart + yamlTag + archName + '_V1.pkl'
 print('-- Generating ' + os.path.basename(savePath) + ' --')
 nowPix = returnPixel(archName)
 fpDict['wvls'] = [mv['wl'] for mv in nowPix.measVals]
 simA = rs.simulation(nowPix) # defines new instance corresponding to this architecture
-od = osseData(fpDict, verbose=True)
+od = osseData(fpDict)
 fwdData = od.osse2graspRslts()
 #simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, rndIntialGuess=rndIntialGuess)
 
