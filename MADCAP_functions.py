@@ -13,6 +13,7 @@ import fnmatch
 import os
 
 def loadVARSnetCDF(filePath, varNames=None, verbose=False):
+    badDataCuttoff = 1e12 # values larger than this will be replaced with NaNs
     warnings.simplefilter('ignore') # ignore missing_value not cast warning
     measData = dict()
     netCDFobj = Dataset(filePath)
@@ -20,6 +21,10 @@ def loadVARSnetCDF(filePath, varNames=None, verbose=False):
     for varName in varNames:
         if varName in netCDFobj.variables.keys():
             measData[varName] = np.array(netCDFobj.variables[varName])
+            if np.any(measData[varName] > badDataCuttoff):
+                if np.issubdtype(measData[varName].dtype, np.integer): # numpy ints can't be NaN
+                    measData[varName] = measData[varName].astype(np.float32)
+                measData[varName][measData[varName] > badDataCuttoff] = np.nan
         elif verbose:
             print("\x1b[1;35m Could not find \x1b[1;31m%s\x1b[1;35m variable in netCDF file: %s\x1b[0m" % (varName,filePath))
     netCDFobj.close()

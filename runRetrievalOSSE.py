@@ -42,13 +42,13 @@ YAMLpth = bckYAMLpathLID if 'lidar' in archName.lower() else bckYAMLpathPOL
 # derive save file path then setup and run retrievals
 yamlTag = '_YAML%s_' % hashFileSHA1(YAMLpth)[0:8]
 savePath = saveStart + yamlTag + archName + '_V1.pkl'
-print('-- Processing ' + os.path.basename(savePath) + ' --')
+print('-- Generating ' + os.path.basename(savePath) + ' --')
 nowPix = returnPixel(archName)
 fpDict['wvls'] = [mv['wl'] for mv in nowPix.measVals]
 simA = rs.simulation(nowPix) # defines new instance corresponding to this architecture
-od = osseData(fpDict)
-fwdData = od.osse2graspRslts(4)
-simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, rndIntialGuess=rndIntialGuess)
+od = osseData(fpDict, verbose=True)
+fwdData = od.osse2graspRslts()
+#simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, rndIntialGuess=rndIntialGuess)
 
 """ TODO:
     - we need to add code to osseData to read LIDAR measurments
