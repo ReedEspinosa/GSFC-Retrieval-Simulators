@@ -163,6 +163,10 @@ class osseData(object):
             if os.path.exists(lcExtFN):
                 if self.verbose: print('Processing data from %s' % lcExtFN)        
                 lcD = loadVARSnetCDF(lcExtFN, varNames=netCDFvarNames, verbose=self.verbose)
+                for t in range(lcD['reff'].shape[0]): # HACK (next 4 lines) until we better understand zeros and NaNs in OSSE output
+                    for lev in range(lcD['reff'].shape[1]):
+                        if np.isnan(lcD['reff'][t,lev]) or lcD['reff'][t,lev] < 1e-12:
+                           lcD['reff'][t,lev] = 1e-7 if lev==0 else lcD['reff'][t,lev-1]
                 timeLoopVars = [lcD[key] for key in netCDFvarNames]
                 timeLoopVars.append(self.rtrvdData)
                 self.rtrvdDataSetPixels(timeLoopVars, λ) # rtrvdData [out] is a dict, which is mutable
@@ -211,6 +215,8 @@ class osseData(object):
                     warnings.warn('The current rEff (%8.5f μm) differs from the first rEff (%8.5f μm) derived.' % (rEffTot, rd['rEff'+km]))
                 rd['g'+km][λ] = np.sum(τ[hSlc]*ω[hSlc]*g[hSlc])/np.sum(τ[hSlc]*ω[hSlc]) # see bottom of this method for derivation
                 rd['LidarRatio'+km][λ] = np.sum(τ[hSlc])/np.sum(τ[hSlc]/S[hSlc]) # S=τ/F11[180] & F11h[180]=τh/Sh => S=Στh/Σ(τh/Sh)
+            else:
+                print('¡¡¡¡NANS IN REFF!!!!')
         """ --- reff vertical averaging (reff_h=Rh, # conc.=Nh, vol_conc.=Vh, height_ind=h) --- 
             reff = ∫ ΣNh*r^3*dr/∫ ΣNh*r^2*dr = 3/4/π*ΣVh/∫ Σnh*r^2*dr
             Rh = (3/4/π*Vh)/∫ nh*r^2*dr -> reff = 3/4/π*ΣVh/(Σ(3/4/π*Vh)/Rh) = ΣVh/Σ(Vh/Rh)
