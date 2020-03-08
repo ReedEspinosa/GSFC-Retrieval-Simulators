@@ -35,6 +35,25 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0        
+    elif 'clean' in caseStr.lower():
+        σ = [0.4, 0.68] # mode 1, 2,...
+        rv = [0.1, 0.84]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        if 'nonsph' in caseStr.lower():
+            vals['sph'] = [[0.00001], [0.00001]] # mode 1, 2,...
+        else:
+            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.000001], [0.000001]]) # gives AOD= [0.073, 0.177] but will change if intensive props. change!)
+        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.39, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
+        vals['k'] = np.repeat(1e-8, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.002, nwl)]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
+        vals['brdf'] = [] # first dim mode (N=3), second lambda
+        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
+        vals['bpdf'] = [] # first dim mode (N=3), second lambda
+        landPrct = 0
     elif 'smoke' in caseStr.lower(): # ALL VARIABLES WITH MODES MUST BE 2D (ie. var[mode,wl]) or [] (will not change these values)
         σ = [0.4, 0.45] # mode 1, 2,...
         rv = [0.12, 0.36]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -160,7 +179,7 @@ def conCaseDefinitions(caseStr, nowPix):
         bigMode = np.argmax(vals['vol'])
         for key in ['vol','n','k','sph','lgrnm','vrtHght','vrtHghtStd']:
             vals[key] = np.atleast_2d(np.array(vals[key])[bigMode,:]) 
-    if not vals['cxMnk']: # if not set we will use defualt conical case
+    if not vals['cxMnk'] and landPrct<100: # if not set we will use defualt conical case
         λ=[0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
         if 'chl' in caseStr.lower():
             #R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.00000002, 0.00000002, 0.00000002] # SIT-A canonical values, TODO: need to double check these units
@@ -171,8 +190,29 @@ def conCaseDefinitions(caseStr, nowPix):
         FresFrac = 0.9999*np.ones(nwl)
         cxMnk = (7*0.00512+0.003)/2*np.ones(nwl) # 7 m/s
         vals['cxMnk'] = np.vstack([lambR, FresFrac, cxMnk])
-    if not vals['brdf'] and landPrct>0: # we havn't programed these yet
-        assert False, caseStr.lower()+' used land surfrace reflectanct. Land BRDF parameters are not yet included!'
+    if not vals['brdf']  and landPrct>0: # we havn't programed these yet
+        λ=[0.415, 0.470, 0.555, 0.659, 0.865, 1.24, 1.64, 2.13] # this should be ordered (interp behavoir is unexpected otherwise)
+        if 'desert' in caseStr.lower(): # mean of July 1st 2019 Sahara MIAIC MODIS RTLS (MCD19A3.A2019177.h18v06.006.2019186034811.hdf)
+            iso = [0.085, 0.144, 0.236, 0.379, 0.456, 0.569, 0.621, 0.605]
+            vol = [0.644, 0.576, 0.462, 0.306, 0.213, 0.167, 0.159, 0.116] # MAIAC_vol/MAIAC_iso
+            geo = [0.012, 0.151, 0.083, 0.096, 0.087, 0.103, 0.082, 0.092] # MAIAC_geo/MAIAC_iso
+        elif 'vegetation' in caseStr.lower(): # mean of July 1st 2019 SEUS MIAIC MODIS RTLS (MCD19A3.A2019177.h11v05.006.2019186033524.hdf)
+            iso = [0.02,  0.04,  0.07, 0.06,  0.42,  0.41,  0.25,  0.11] 
+            vol = [0.55, 0.325, 0.61428571, 0.41666667, 0.52619048, 0.48292683, 0.392, 0.24545455] # MAIAC_vol/MAIAC_iso
+            geo = [0.1, 0.35, 0.22857143, 0.23333333, 0.15952381, 0.1804878, 0.22, 0.27272727] # MAIAC_geo/MAIAC_iso
+        else:
+            assert False, 'Land surface type not recognized!'
+        lambISO = np.interp(wvls, λ, iso)
+        lambVOL = np.interp(wvls, λ, vol)
+        lambGEO = np.interp(wvls, λ, geo)
+        vals['brdf'] = np.vstack([lambISO, lambVOL, lambGEO])
+    if 'bpdf' in vals and not vals['bpdf'] and landPrct>0: # if not set we will use defualt conical case
+        if 'desert' in caseStr.lower(): # OSSE original sept. 1st test case over Sahara, BPDFCoef=7.3, NDVI=0.1
+            vals['bpdf'] = 2.8*np.ones([nwl,1]) # exp(-VLIDORT_NDVI*VLIDORT_C)
+        elif 'vegetation' in caseStr.lower(): # OSSE original sept. 1st test case over SEUS, BPDFCoef=6.9, NDVI=0.9
+            vals['bpdf'] = 6.6*np.ones([nwl,1]) # exp(-VLIDORT_NDVI*VLIDORT_C)
+        else:
+            assert False, 'Land surface type not recognized!'
     lidarMeasLogical = np.isclose(34.5, [mv['meas_type'][0] for mv in nowPix.measVals], atol=5) # measurement types 30-39 reserved for lidar; if first meas_type is LIDAR, they all should be 
     if lidarMeasLogical.any(): 
         lidarInd = lidarMeasLogical.nonzero()[0][0]
@@ -240,6 +280,7 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
         'n':'real_part_of_refractive_index_spectral_dependent',
         'k':'imaginary_part_of_refractive_index_spectral_dependent',
         'brdf':'surface_land_brdf_ross_li',
+        'bpdf':'surface_land_polarized_maignan_breon',
         'cxMnk':'surface_water_cox_munk_iso'}
     aeroKeys = ['lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k']
     vals = dict()
