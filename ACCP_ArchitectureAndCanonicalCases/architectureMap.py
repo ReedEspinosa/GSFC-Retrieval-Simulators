@@ -64,6 +64,18 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, 'modismisr01') # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
+    if 'polarhemi' in archName.lower():
+        msTyp = [41, 42, 43] # must be in ascending order
+        thtv = np.tile([57.0,  44.0,  32.0 ,  19.0 ,  6.0 ,  -6.0,  -19.0,  -32.0,  -44.0,  -57.0], len(msTyp*5))
+        phi = np.r_[np.repeat(0, 10), np.repeat(20, 10), np.repeat(40, 10), np.repeat(60, 10), np.repeat(80, 10)] 
+        phi = np.tile(phi, len(msTyp))
+        wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 1.550, 1.650] # Nλ=8
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        errStr = 'polar07'
+        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
+            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
     if 'polar07' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp))
@@ -130,6 +142,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
+    assert nowPix.measVals, 'archName did not match any instruments!'
     return nowPix
 
 def addError(measNm, l, rsltFwd, edgInd):

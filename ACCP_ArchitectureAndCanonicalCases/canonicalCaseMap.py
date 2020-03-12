@@ -43,7 +43,7 @@ def conCaseDefinitions(caseStr, nowPix):
             vals['sph'] = [[0.00001], [0.00001]] # mode 1, 2,...
         else:
             vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.000001], [0.000001]]) # gives AOD= [0.073, 0.177] but will change if intensive props. change!)
+        vals['vol'] = np.array([[0.0000001], [0.0000001]]) # gives AOD= [0.073, 0.177] but will change if intensive props. change!)
         vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.39, nwl) # mode 1 
@@ -53,7 +53,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         vals['bpdf'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0
+        landPrct = 0 if 'ocean' in caseStr.lower() else 100
     elif 'smoke' in caseStr.lower(): # ALL VARIABLES WITH MODES MUST BE 2D (ie. var[mode,wl]) or [] (will not change these values)
         σ = [0.4, 0.45] # mode 1, 2,...
         rv = [0.12, 0.36]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -208,9 +208,9 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['brdf'] = np.vstack([lambISO, lambVOL, lambGEO])
     if 'bpdf' in vals and not vals['bpdf'] and landPrct>0: # if not set we will use defualt conical case
         if 'desert' in caseStr.lower(): # OSSE original sept. 1st test case over Sahara, BPDFCoef=7.3, NDVI=0.1
-            vals['bpdf'] = 2.8*np.ones([nwl,1]) # exp(-VLIDORT_NDVI*VLIDORT_C)
+            vals['bpdf'] = 6.6*np.ones([1,nwl]) # exp(-VLIDORT_NDVI)*VLIDORT_C)
         elif 'vegetation' in caseStr.lower(): # OSSE original sept. 1st test case over SEUS, BPDFCoef=6.9, NDVI=0.9
-            vals['bpdf'] = 6.6*np.ones([nwl,1]) # exp(-VLIDORT_NDVI*VLIDORT_C)
+            vals['bpdf'] = 2.8*np.ones([1,nwl]) # exp(-VLIDORT_NDVI)*VLIDORT_C)
         else:
             assert False, 'Land surface type not recognized!'
     lidarMeasLogical = np.isclose(34.5, [mv['meas_type'][0] for mv in nowPix.measVals], atol=5) # measurement types 30-39 reserved for lidar; if first meas_type is LIDAR, they all should be 
