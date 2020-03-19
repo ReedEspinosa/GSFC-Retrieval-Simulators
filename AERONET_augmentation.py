@@ -52,8 +52,8 @@ def main():
     k = 0
     curTag = primeTag
     while k < len(typeKeys): # loop over species
-        rslt = parseFile(basePathAERO % (curTag, almTag, typeKeys[k])) # read almacanter
-        rslt = np.r_[rslt, parseFile(basePathAERO % (curTag, hybTag, typeKeys[k]))] # read hybrid
+        rslt = parseFile(basePathAERO % (curTag, almTag, typeKeys[k]), typeKeys[k]) # read almacanter
+        rslt = np.r_[rslt, parseFile(basePathAERO % (curTag, hybTag, typeKeys[k]), typeKeys[k])] # read hybrid
         if len(rslt['day']) < thrshLen and curTag==primeTag: # prime tag had too few cases
             curTag = secondTag
         elif len(rslt['day']) >= thrshLen: # we will work with and then write this data 
@@ -64,9 +64,11 @@ def main():
         else:
             assert False, 'No cases were found with tags %s or %s' % (primeTag, secondTag)
 
-def parseFile(filePath):
-    data = loadVARSnetCDF(filePath)
-    findRefInd(rslt, typeKey, 'Refractive_Index_Real', 'refreal')
+def parseFile(filePath, typeKey):
+    rslt = loadVARSnetCDF(filePath)
+    rri = findRefInd(rslt, typeKey, 'Refractive_Index_Real', 'refreal')
+#    nowWeStore it
+    
     
     for k,v in data.items():
         print('%s %d' % (k,v))
@@ -79,6 +81,7 @@ def findRefInd(rslt, typeKey, aeroNC4name, lutNC4name):
     λaeroStr = [y for y in rslt.keys() if aeroNC4name in y] 
     λaero = np.sort([int(re.search(r'\d+$', y).group()) for y in λaeroStr]) # nm
     RIaero = np.array([rslt['%s_%d' % (aeroNC4name,λ)] for λ in λaero]).T # RI[t,λ]
+    RI = np.zeros(len(RIaero), len(wvlsOut))
     for t,ri in enumerate(RIaero):
         LUTlowScl = ri[0]/np.interp(λaero[0], LUT['lambda'], LUTri)
         LUTupScl = ri[-1]/np.interp(λaero[-1], LUT['lambda'], LUTri)
@@ -88,7 +91,8 @@ def findRefInd(rslt, typeKey, aeroNC4name, lutNC4name):
         LUTup = ri[upI]*LUTupScl
         RIfull = np.r_[LUTlow, RIaero, LUTup]
         λfull = np.r_[LUT['lambda'][lowI], λaero, LUT['lambda'][lowI]]
-        # now we interp λfull, RIfull TO above wavelengths
+        RI = np.interp(λfull, RIfull, wvlsOut)
+    return RI
         
 def writeNewData():
     assert False, "Not built"

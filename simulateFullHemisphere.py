@@ -20,6 +20,7 @@ baseYAML = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_Archi
 binPathGRASP = '/usr/local/bin/grasp'
 intrnlFileGRASP = None
 outFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/Polar07_reflectanceTOA_cleanAtmosphere_landSurface_V2.nc4'
+seaLevel = True # True -> ROD (corresponding to masl = 0 m) & rayleigh depol. saved to nc4 file
 
 nowPix = returnPixel(archName)
 rslts = []
@@ -30,4 +31,4 @@ for caseStr in caseStrs:
     gObjFwd.addPix(nowPix)
     gObjFwd.runGRASP(binPathGRASP=binPathGRASP, krnlPathGRASP=intrnlFileGRASP)
     rslts.append(np.take(gObjFwd.readOutput(),0)) # we need take because readOutput returns list, even if just one element
-gObjFwd.output2netCDF(outFile, rsltDict=rslts)
+gObjFwd.output2netCDF(outFile, rsltDict=rslts, seaLevel=True)
