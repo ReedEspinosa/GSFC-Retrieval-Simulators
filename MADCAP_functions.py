@@ -14,6 +14,7 @@ import os
 
 def loadVARSnetCDF(filePath, varNames=None, verbose=False):
     badDataCuttoff = 1e12 # values larger than this will be replaced with NaNs
+    if varNames: assert isinstance(varNames, (list, np.ndarray)), 'varNames must be a list or numpy array!'
     warnings.simplefilter('ignore') # ignore missing_value not cast warning
     measData = dict()
     netCDFobj = Dataset(filePath)

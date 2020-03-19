@@ -66,8 +66,9 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
     if 'polarhemi' in archName.lower():
         msTyp = [41, 42, 43] # must be in ascending order
-        thtv = np.tile([57.0,  44.0,  32.0 ,  19.0 ,  6.0 ,  -6.0,  -19.0,  -32.0,  -44.0,  -57.0], len(msTyp*5))
-        phi = np.r_[np.repeat(0, 10), np.repeat(20, 10), np.repeat(40, 10), np.repeat(60, 10), np.repeat(80, 10)] 
+        azmthΑng = np.r_[0:180:10] # 0,10,...,170 
+        thtv = np.tile([57.0,  44.0,  32.0 ,  19.0 ,  6.0 ,  -6.0,  -19.0,  -32.0,  -44.0,  -57.0], len(msTyp)*len(azmthΑng))
+        phi = np.concatenate([np.repeat(φ, 10) for φ in azmthΑng]) # 0,10,...,90 
         phi = np.tile(phi, len(msTyp))
         wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 1.550, 1.650] # Nλ=8
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)

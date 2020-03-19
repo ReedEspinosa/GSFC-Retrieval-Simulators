@@ -43,7 +43,7 @@ def conCaseDefinitions(caseStr, nowPix):
             vals['sph'] = [[0.00001], [0.00001]] # mode 1, 2,...
         else:
             vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.0000001], [0.0000001]]) # gives AOD= [0.073, 0.177] but will change if intensive props. change!)
+        vals['vol'] = np.array([[0.00000001], [0.00000001]])
         vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.39, nwl) # mode 1 
