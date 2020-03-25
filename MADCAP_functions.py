@@ -15,22 +15,22 @@ import os
 def loadVARSnetCDF(filePath, varNames=None, verbose=False):
     badDataCuttoff = 1e12 # values larger than this will be replaced with NaNs
     if varNames: assert isinstance(varNames, (list, np.ndarray)), 'varNames must be a list or numpy array!'
-    warnings.simplefilter('ignore') # ignore missing_value not cast warning
     measData = dict()
     netCDFobj = Dataset(filePath)
     if varNames is None: varNames = netCDFobj.variables.keys()
     for varName in varNames:
         if varName in netCDFobj.variables.keys():
-            measData[varName] = np.array(netCDFobj.variables[varName])
-            if np.any(measData[varName] > badDataCuttoff):
+            with warnings.catch_warnings(): 
+                warnings.simplefilter('ignore', category=UserWarning) # ignore missing_value not cast warning
+                measData[varName] = np.array(netCDFobj.variables[varName])
+            if 'float' in measData[varName].dtype.name and np.any(measData[varName] > badDataCuttoff):
                 if np.issubdtype(measData[varName].dtype, np.integer): # numpy ints can't be NaN
                     measData[varName] = measData[varName].astype(np.float32)
                 measData[varName][measData[varName] > badDataCuttoff] = np.nan
         elif verbose:
             print("\x1b[1;35m Could not find \x1b[1;31m%s\x1b[1;35m variable in netCDF file: %s\x1b[0m" % (varName,filePath))
     netCDFobj.close()
-    warnings.simplefilter('always')
-    return measData 
+    return measData
 
 def hashFileSHA1(filePath):
     BLOCKSIZE = 65536
