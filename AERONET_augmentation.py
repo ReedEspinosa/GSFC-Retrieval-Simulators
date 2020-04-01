@@ -60,14 +60,18 @@ def main():
     k = 0
     curTag = primeTag
     while k < len(typeKeys): # loop over species (also, we make second pass if lev2 is not at thrshLen)
-        rslt = parseFile(basePathAERO % (curTag, almTag, typeKeys[k]), typeKeys[k]) # read almacanter
-        rslt = np.r_[rslt, parseFile(basePathAERO % (curTag, hybTag, typeKeys[k]), typeKeys[k])] # read hybrid
+        rsltALM = parseFile(basePathAERO % (curTag, almTag, typeKeys[k]), typeKeys[k]) # read almacanter
+        rsltHYB = parseFile(basePathAERO % (curTag, hybTag, typeKeys[k]), typeKeys[k]) # read hybrid
+        rslt = dict()
+        for key in rsltALM.keys(): rslt[key] = np.r_[rsltALM[key], rsltHYB[key]]
         if len(rslt['day']) < thrshLen and curTag==primeTag: # lev2.0 had too few cases: loop again, loading 1.5
             curTag = secondTag
         elif len(rslt['day']) >= thrshLen: # we will work with and then write this data 
-            outFilePath = basePathAERO % (curTag, 'allScans', typeKeys[k])
+            outFilePath = (basePathAERO[:-4]+'_augmented.nc4') % (curTag, 'allScans', typeKeys[k])
+            outFilePath = re.sub("-clean[0-9]", "", outFilePath)
+            if os.path.exists(outFilePath): os.remove(outFilePath) # overwrite any existing file & start from scratch (netCDF alone can't do this)
             with Dataset(outFilePath, 'w', format='NETCDF4') as root_grp:
-                writeNewData(rslt, root_grp)
+                writeNewData(rslt, root_grp, typeKeys[k])
             curTag = primeTag
             k = k+1
         else:
@@ -77,7 +81,7 @@ def parseFile(filePath, typeKey):
     rslt = loadVARSnetCDF(filePath)
     rslt['rri'] = findRefInd(rslt, typeKey, 'Refractive_Index_Real', 'refreal')
     rslt['iri'] = findRefInd(rslt, typeKey, 'Refractive_Index_Imag', 'refimag')
-    rslt['ssa'] = findRefInd(rslt, typeKey, 'Single_Scatting_Albedo', 'ssa')
+    rslt['ssa'] = findRefInd(rslt, typeKey, 'Single_Scattering_Albedo', 'ssa')
     return rslt
     
 def findRefInd(rslt, typeKey, aeroNC4name, lutNC4name):
@@ -87,6 +91,7 @@ def findRefInd(rslt, typeKey, aeroNC4name, lutNC4name):
     LUT = loadVARSnetCDF(basePathLUT[typeKey], ['lambda', 'rh'] + LUTvars)
     rhInd = np.argmin(np.abs(LUT['rh'] - rhTrgt))
     if lutNC4name=='ssa': LUT['ssa'] = LUT['bsca']/LUT['bext'] # TODO: Why does this differ from qsca/qext? See bottom of 
+    if lutNC4name=='refimage': LUT[lutNC4name] = -lutNC4name # LUT convention is negative imaginary part, AERONET is positive
     LUTri = LUT[lutNC4name][:,rhInd,:].mean(axis=0) # we average over all size modes
     LUTλ = LUT['lambda']*1e9 # m -> nm
     λaeroStr = [y for y in rslt.keys() if aeroNC4name in y] 
@@ -105,28 +110,31 @@ def findRefInd(rslt, typeKey, aeroNC4name, lutNC4name):
         RI[t,:] = np.interp(wvlsOut, λfull, RIfull)
     return RI
         
-def writeNewData(rslt, root_grp):
-    root_grp.description = 'Collection of AERONET/MERRA2 state parameters'
+def writeNewData(rslt, root_grp, typeKey):
+    nc4Vars = dict()
+    root_grp.description = 'Collection of AERONET/MERRA2 %s state parameters' % typeKey
     # dimensions
-    λVar = 'lambda'
+    λVar = 'wavelenth'
     root_grp.createDimension(λVar, len(wvlsOut))
+    nc4Vars[λVar] = root_grp.createVariable(λVar, 'f4', (λVar))
+    nc4Vars[λVar][:] = np.array(wvlsOut)/1e3
+    nc4Vars[λVar].units = 'μm'
+    nc4Vars[λVar].long_name = 'wavelenth for which parameter specified' 
     indVar = 'index'
     root_grp.createDimension(indVar, len(rslt['day']))
     # create and write pass through variables
     forbdnStrngs = ['Refractive_Index','Single_Scattering'] # if a key has this string anywhere it will be thrown out
     keepKeys = [s for s in rslt.keys() if np.all([s1 not in s for s1 in forbdnStrngs])]
-    keepKeys = [s.replace('Extinction_Angstrom_Exponent_440_870_Total', 'AE_T') for s in keepKeys] # default variable name is too long
-    newKeys = ['rri', 'iri', 'ssa']
-    nc4Vars = dict()
-    for key in keepKeys+newKeys:
-        if key in newKeys: # spectrally dependent variable
-            nc4Vars[key] = root_grp.createVariable(key, 'f4', (indVar, λVar))
-            nc4Vars[key][:,:] = rslt[key]            
+    for key in keepKeys:
+        outKey = key.replace('Extinction_Angstrom_Exponent_440_870_Total', 'AE_T') # default variable name is too long
+        if rslt[key].ndim==2: # spectrally dependent variable
+            nc4Vars[outKey] = root_grp.createVariable(outKey, 'f4', (indVar, λVar))
+            nc4Vars[outKey][:,:] = rslt[key]            
         else: # spectrally invariant variable
-            nc4Vars[key] = root_grp.createVariable(key, 'f4', (indVar))
-            nc4Vars[key][:] = rslt[key]    
-        nc4Vars[key].units = getUnits(key)
-        nc4Vars[key].long_name = getFullName(key)
+            nc4Vars[outKey] = root_grp.createVariable(outKey, 'f4', (indVar))
+            nc4Vars[outKey][:] = rslt[key]    
+        nc4Vars[outKey].units = getUnits(outKey)
+        nc4Vars[outKey].long_name = getFullName(outKey)
 
 def getFullName(key):
     modeStr = {'F':'fine mode', 'C':'coarse mode', 'T':'total'}
