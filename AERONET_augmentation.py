@@ -113,6 +113,8 @@ def findRefInd(rslt, typeKey, aeroNC4name, lutNC4name):
 def writeNewData(rslt, root_grp, typeKey):
     nc4Vars = dict()
     root_grp.description = 'Collection of AERONET/MERRA2 %s state parameters' % typeKey
+    root_grp.contact = "Reed Espinosa <reed.espinosa@nasa.gov>"
+    root_grp.source = "AERONET Version 3 retrieval products; MERRA-2"    
     # dimensions
     λVar = 'wavelenth'
     root_grp.createDimension(λVar, len(wvlsOut))

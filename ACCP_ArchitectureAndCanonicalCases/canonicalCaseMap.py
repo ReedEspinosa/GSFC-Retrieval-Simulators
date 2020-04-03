@@ -99,21 +99,24 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
-    elif 'dust' in caseStr.lower():
-        σ = [0.4, 0.68] # mode 1, 2,...
-        rv = [0.1, 0.84]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+    elif 'dust' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
+        σ = [0.5, 0.75] # mode 1, 2,...
+        rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         if 'nonsph' in caseStr.lower():
             vals['sph'] = [[0.00001], [0.00001]] # mode 1, 2,...
         else:
             vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.01853733], [0.10044263]]) # gives AOD= [0.073, 0.177] but will change if intensive props. change!)
+        vals['vol'] = np.array([[0.02164019385230769], [0.3166795960377663]]) # gives AOD= [0.13279, 0.11721] but will change if intensive props. change!)
         vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.39, nwl) # mode 1 
+        vals['n'] = np.repeat(1.46, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
         vals['k'] = np.repeat(1e-8, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.002, nwl)]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
+        mode2λ = [0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
+        mode2k = [0.0025, 0.0025, 0.0024, 0.0021, 0.0019, 0.0011, 0.0010, 0.0010]
+        mode2Intrp = np.interp(wvls, mode2λ, mode2k)
+        vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
