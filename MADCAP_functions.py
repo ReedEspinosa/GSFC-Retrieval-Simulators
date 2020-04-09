@@ -90,7 +90,7 @@ def KDEhist2D(x,y, axHnd=None, res=100, xrng=None, yrng=None, sclPow=1, cmap = '
 def MAIAC_BRDF_stats(fileName, normByIso=False, fltrPrct=100, λout=None):
     from pyhdf.SD import SD, SDC
     from sklearn.decomposition.pca import PCA
-    print('--- MAIAC_BRDF_stats <> V6 ---')
+    print('--- MAIAC_BRDF_stats <> V9 ---')
     λHDF = np.r_[0.645, 0.8585, 0.469, 0.555, 1.24, 1.64, 2.13, 0.412]
     λOrder = λHDF.argsort()
     if λout is None: λout = np.r_[0.360	,0.380,0.410,0.550,0.670,0.870,1.550,1.650]
@@ -125,15 +125,23 @@ def MAIAC_BRDF_stats(fileName, normByIso=False, fltrPrct=100, λout=None):
     x = np.vstack([shiftWave(y) for y in vals.values()])
     print('kiso(x%d), kvol(x%d), kgeo(x%d)' % (len(λout),len(λout),len(λout)))
     print('wavelengths:' + ','.join(map(str, λout)))
-    print('means:' + ','.join(map(str, x.mean(axis=1))))
-    print('std. dev.:' + ','.join(map(str, x.std(axis=1))))
+    print('means:')
+    [print(y) for y in (map(str, x.mean(axis=1)))]
+    print('std. dev.:')
+    [print(y) for y in (map(str, x.std(axis=1)))]
+    print('-----')
+    print('NDVI [(Kiso[5]-Kiso[4])/(Kiso[5]+Kiso[4])]')
+    NDVIs = (x[5,:]-x[4,:])/(x[5,:]+x[4,:])
+    print('mean = %7.4f' % NDVIs.mean())
+    print('std. dev. = %7.4f' % NDVIs.std())
+    print('-----')
     #PCA
     pca = PCA(n_components=24)
     xStnrd = (x-x.mean(axis=1)[:,None])/x.std(axis=1)[:,None] # standardize x
     pca.fit(xStnrd.T)
     varExpln = np.sum(pca.explained_variance_ratio_[0:5]*100)
-    print('Percent of variance explained by first five components %5.2f%%' % varExpln) 
+    print('Percent of variance explained by first five principle components %5.2f%%' % varExpln) 
     varExpln = np.sum(pca.explained_variance_ratio_[0:(len(λout)+2)]*100)
-    print('Percent of variance explained by first Nλ+2=%d components %5.2f%%' % (len(λout)+2, varExpln)) 
+    print('Percent of variance explained by first Nλ+2=%d principle components %5.2f%%' % (len(λout)+2, varExpln)) 
     return x
     
