@@ -86,3 +86,62 @@ def KDEhist2D(x,y, axHnd=None, res=100, xrng=None, yrng=None, sclPow=1, cmap = '
     clrHnd.set_ticklabels(['%4.1f' % x for x in 100*tckVals])
     clrHnd.set_label(clbl)
     return axHnd
+    
+def MAIAC_BRDF_stats(fileName, normByIso=False, fltrPrct=100, λout=None):
+    from pyhdf.SD import SD, SDC
+    from sklearn.decomposition.pca import PCA
+    print('--- MAIAC_BRDF_stats <> V9 ---')
+    λHDF = np.r_[0.645, 0.8585, 0.469, 0.555, 1.24, 1.64, 2.13, 0.412]
+    λOrder = λHDF.argsort()
+    if λout is None: λout = np.r_[0.360	,0.380,0.410,0.550,0.670,0.870,1.550,1.650]
+    hdf = SD(fileName, SDC.READ)
+    vals = dict()
+    badInd = []
+    Nλ = len(λHDF)
+    keys = ['Kiso', 'Kvol', 'Kgeo']
+    for key in keys:
+        hdfStrct = hdf.select(key)
+        vals[key] = hdfStrct[:,:,:].reshape([Nλ,-1])
+        badInd.append(np.any(vals[key]==hdfStrct.attributes()['_FillValue'], axis=0))
+        vals[key] = vals[key][λOrder,:]*hdfStrct.attributes()['scale_factor']
+        if normByIso and key is not 'Kiso':
+            with np.errstate(divide='ignore'): # Kiso may be zero
+                with np.errstate(invalid='ignore'): # apparently numpy gives two warnings for divide by zero? 
+                    vals[key] = vals[key]/vals['Kiso'] 
+    badInds = np.any(badInd, axis=0)
+    for key in keys: vals[key] = vals[key][:, ~badInds]
+    print('%d/%d remaining pixels had at least one fill value' % (np.sum(badInds), len(badInds)))
+    if fltrPrct < 100:
+        badInd = []
+        for key in keys:
+            upBnds = np.atleast_2d(np.percentile(vals[key],fltrPrct, axis=1)).T
+            badInd.append(np.any(vals[key] > upBnds, axis=0))
+            lowBnds = np.atleast_2d(np.percentile(vals[key],100-fltrPrct, axis=1)).T
+            badInd.append(np.any(vals[key] < lowBnds, axis=0))
+        badInds = np.any(badInd, axis=0)
+        for key in keys: vals[key] = vals[key][:, ~badInds]
+        print('%d/%d pixels had at least one outlier' % (np.sum(badInds), len(badInds)))
+    shiftWave = lambda a: np.array([np.interp(λout, λHDF[λOrder], b) for b in a.T]).T
+    x = np.vstack([shiftWave(y) for y in vals.values()])
+    print('kiso(x%d), kvol(x%d), kgeo(x%d)' % (len(λout),len(λout),len(λout)))
+    print('wavelengths:' + ','.join(map(str, λout)))
+    print('means:')
+    [print(y) for y in (map(str, x.mean(axis=1)))]
+    print('std. dev.:')
+    [print(y) for y in (map(str, x.std(axis=1)))]
+    print('-----')
+    print('NDVI [(Kiso[5]-Kiso[4])/(Kiso[5]+Kiso[4])]')
+    NDVIs = (x[5,:]-x[4,:])/(x[5,:]+x[4,:])
+    print('mean = %7.4f' % NDVIs.mean())
+    print('std. dev. = %7.4f' % NDVIs.std())
+    print('-----')
+    #PCA
+    pca = PCA(n_components=24)
+    xStnrd = (x-x.mean(axis=1)[:,None])/x.std(axis=1)[:,None] # standardize x
+    pca.fit(xStnrd.T)
+    varExpln = np.sum(pca.explained_variance_ratio_[0:5]*100)
+    print('Percent of variance explained by first five principle components %5.2f%%' % varExpln) 
+    varExpln = np.sum(pca.explained_variance_ratio_[0:(len(λout)+2)]*100)
+    print('Percent of variance explained by first Nλ+2=%d principle components %5.2f%%' % (len(λout)+2, varExpln)) 
+    return x
+    
