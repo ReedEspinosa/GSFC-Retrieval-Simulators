@@ -130,7 +130,7 @@ retrieval:
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0                                 
-        characteristic[8]:
+        characteristic[9]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1, 2, 3]
@@ -203,7 +203,7 @@ retrieval:
         surface: true
     radiative_transfer:
         absolute_error_rt_calculations: 1.0e-06
-        aerosol_profile_vertical_type: exponential
+        aerosol_profile_vertical_type: gaussian
         molecular_profile_vertical_type: exponential
         number_of_layers: 50
         reference_plane_for_polarization: principal_plane

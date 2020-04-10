@@ -18,8 +18,8 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
     assert nowPix.land_prct == landPrct, 'landPrct provided did not match land percentage in nowPix'
     if 'harp02' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
-        thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp))
-        wvls = [0.441, 0.549, 0.669, 0.873] # Nλ=11
+        thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
+        wvls = [0.441, 0.549, 0.669, 0.873] 
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
@@ -27,42 +27,23 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
             errStr = 'polar0700' if 'harp0200' in archName.lower() else 'polar07'
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
-    if 'img01' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
-        msTyp = [41] # must be in ascending order
-        thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp))
-        if 'visnir'  in archName.lower():
-            wvls = [0.441, 0.669, 0.865, 1.24] # 
-        else:
-            wvls = [0.441, 0.669, 0.865, 1.24, 2.2] # Nλ=11
+    if 'modis' in archName.lower() or 'misr' in archName.lower(): # -- ModisMisrPolar --
+        msTyp = [41, 42, 43] if 'polar' in archName.lower() else [41] # must be in ascending order 
+        if 'misr' in archName.lower():
+            thtv = np.tile([-70.5,  -60.0,  -45.6 ,  -26.1 ,  0.1,  26.1,  45.6,  60.0,  70.5], len(msTyp))
+        else: # we only use modis viewing angle
+            thtv = np.tile([0.1], len(msTyp))
+        if 'modis' in archName.lower():
+            wvls = [0.41, 0.47, 0.55, 0.65, 0.87, 1.64, 2.13] # Nλ=7
+        else: # we only use misr wavelengths
+            wvls = [0.446, 0.558, 0.672, 0.867] # Nλ=7
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0])] 
+        if 'polar' in archName.lower(): meas = np.r_[meas, np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
-            errModel = functools.partial(addError, 'modismisr01') # this must link to an error model in addError() below
-            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
-    if 'img02' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
-        msTyp = [41, 42, 43] # must be in ascending order
-        thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp))
-        if 'visnir'  in archName.lower():
-            wvls = [0.441, 0.669, 0.865, 1.24] # 
-        else:
-            wvls = [0.441, 0.669, 0.865, 1.24, 2.2] # Nλ=11
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
-        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
-        phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
-        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
-            errStr = 'polar0700' if 'img0200' in archName.lower() else 'polar07'
+            errStr = 'polar07' if 'polar' in archName.lower() else 'modismisr01'
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
-            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
-    if 'img03' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
-        msTyp = [41] # must be in ascending order
-        thtv = np.tile([0], len(msTyp))
-        wvls = [0.47, 0.55, 0.65, 0.87, 1.24, 1.64, 2.13] # Nλ=11
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
-        meas = np.r_[np.repeat(0.1, nbvm[0])] 
-        phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
-        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
-            errModel = functools.partial(addError, 'modismisr01') # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
     if 'polarhemi' in archName.lower():
         msTyp = [41, 42, 43] # must be in ascending order
@@ -79,7 +60,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
     if 'polar07' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
-        thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp))
+        thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
         wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 1.550, 1.650] # Nλ=8
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
@@ -98,16 +79,6 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         errStr = [y for y in archName.lower().split('+') if 'polar09' in y][0]
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
-            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
-    if 'modismisr01' in archName.lower(): # MISR with MODIS spectral coverage (no polarization)
-        msTyp = [41] # must be in ascending order
-        thtv = np.tile([-70.5, -60.0, -45.6, -26.1, 0, 26.1, 45.6, 60.0, 70.5], len(msTyp))
-        wvls = [0.410, 0.469, 0.555, 0.645, 0.8585, 1.24, 1.64, 2.13]
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
-        meas = np.r_[np.repeat(0.1, nbvm[0])] 
-        phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
-        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
-            errModel = functools.partial(addError, 'modismisr01') # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
     if 'lidar05' in archName.lower(): # TODO: this needs to be more complex, real lidar05 has backscatter at 1 wavelength and DEPOL
 #        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)

@@ -12,26 +12,28 @@ sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import runGRASP as rg
 
 def conCaseDefinitions(caseStr, nowPix): 
+    """ '+' is used to seperate multiple cases (implemented in splitMultipleCases below) """
     vals = dict()
     wvls = np.unique([mv['wl'] for mv in nowPix.measVals])
     nwl = len(wvls)
-    if 'variable' in caseStr.lower():
-        σ = [0.3+rnd.random()*0.4, 0.3+rnd.random()*0.4] # mode 1, 2,...
-        rv = [0.15+rnd.random()*0.1, 0.6+rnd.random()*3] # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.0001], [0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999], [0.99999]] # mode 1, 2,...
+    """ variable type appended options: 'fine'/'coarse', 'nonsph' and 'lofted' """
+    if 'variable' in caseStr.lower(): # dimensions are [mode, λ or (rv,sigma)];
+        σ = 0.3+rnd.random()*0.4
         if 'fine' in caseStr.lower():
-            vals['vol'] = np.array([[np.random.normal(0.8, 0.04)], [0.000001]])/3 # (currently gives AOD=1 but will change if intensive props. change!)
+            rv = 0.12+rnd.random()*0.1 
+            vals['vol'] = np.array([[np.random.normal(0.8, 0.2)]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
+        elif 'coarse' in caseStr.lower():
+            rv = 0.6+rnd.random()*3
+            vals['vol'] = np.array([[np.random.normal(2.5, 0.5)]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
         else:
-            vals['vol'] = np.array([[np.random.normal(0.4,0.02)], [np.random.normal(2.5,0.10)]])/3 # (currently gives AOD=1 but will change if intensive props. change!)
-        vals['vrtHght'] = [[1010],  [3010]] if 'swap' in caseStr.lower() else  [[3010],  [1010]]  # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+            assert False, 'variable aerosol case must be appended with either fine or coarse'
+        vals['vol'][vals['vol']<0.001] = 0.001 # just in case random normal drops below zero
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999]] # mode 1, 2,...
+        vals['vrtHght'] = [[3010]] if 'lofted' in caseStr.lower() else  [[1010]]  # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.34+rnd.random()*0.2, nwl) # mode 1 
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.34+rnd.random()*0.2, nwl)]) # mode 2
-#         vals['n'][1,-2] = max(1.33, vals['n'][1,-2] - 0.02)
-#         vals['n'][1,-1] = max(1.33, vals['n'][1,-1] - 0.04)
-        vals['k'] = np.repeat(0.0001+rnd.random()*0.02, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.0001+rnd.random()*0.01, nwl)]) # mode 2
+        vals['n'] = np.repeat(1.34+rnd.random()*0.2, nwl)[None,:] # mode 1 
+        vals['k'] = np.repeat(0.0001+rnd.random()*0.01, nwl)[None,:] # mode 1 
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0        
@@ -225,8 +227,7 @@ def conCaseDefinitions(caseStr, nowPix):
             bot = max(mid[0]-2*rng[0],115) # we want to bottom two bins to go to zero (GRASP bug)
             top = mid[0]+2*rng[0]
             vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*0.2+0.0001
-#            vals['vrtProf'][i,:] = np.convolve(vals['vrtProf'][i,:], np.ones(5)/5, mode='same')
-#            vals['vrtProf'][i,:] = 0.1
+            vals['vrtProf'][i,2:] = np.convolve(vals['vrtProf'][i,:], np.ones(2)/2, mode='full')[3:] # smooth it, preserving zeros at ends and high concentration at bottom
         del vals['vrtHght']
         del vals['vrtHghtStd']
     return vals, landPrct
@@ -269,7 +270,7 @@ def splitMultipleCases(caseStrs, caseLoadFct):
         else:
             cases.append(case)
             loadings.append(caseLoadFct)
-        print(cases)
+        # print(cases)
     return zip(cases, loadings)
 
 def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
