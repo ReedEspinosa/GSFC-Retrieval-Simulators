@@ -208,7 +208,7 @@ retrieval:
         surface: true
     radiative_transfer:
         absolute_error_rt_calculations: 1.0e-06
-        aerosol_profile_vertical_type: exponential
+        aerosol_profile_vertical_type: gaussian
         molecular_profile_vertical_type: exponential
         number_of_layers: 50
         reference_plane_for_polarization: principal_plane
