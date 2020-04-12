@@ -19,7 +19,7 @@ n = int(sys.argv[1]) # (0,1,2,...,N-1)
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/BASECASE01_2mode_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/ONERI01_2mode_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
