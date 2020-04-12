@@ -5,6 +5,7 @@ import numpy as np
 import numpy.random as rnd
 import tempfile
 from hashlib import md5
+import json
 import os
 import sys
 MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GRASP_scripts is in parent of MADCAP_scripts
@@ -299,10 +300,14 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
                     vals[key] = np.vstack([vals[key], valsTmp[key]])
             else: # implies we take the surface parameters from the last case
                 vals[key] = valsTmp[key]
-    bsHsh = md5(baseYAML.encode()).hexdigest()[0:8]
+    bsHsh = md5(open(baseYAML,'rb').read()).hexdigest()[0:8] # unique ID from contents of original user created YAML file
+    valList = json.dumps([(y.tolist() if 'numpy' in str(type(y)) else y) for y in vals.values()])
+    valHsh = md5(json.dumps(valList).encode()).hexdigest()[0:8] # unique ID from this case's values
     nwl = len(np.unique([mv['wl'] for mv in nowPix.measVals]))
-    newFn = 'settingsYAML_conCase%s_nwl%d_%s.yml' % (caseStrs, nwl, bsHsh)
+    newFn = 'settingsYAML_conCase%s_nwl%d_%s_%s.yml' % (caseStrs, nwl, bsHsh, valHsh)
     newPathYAML = os.path.join(tempfile.gettempdir(), newFn)
+    if os.path.exists(newPathYAML): return newPathYAML, landPrct # reuse existing YAML file from this exact base YAML, con. case values and NWL
+    print(newPathYAML)
     yamlObj = rg.graspYAML(baseYAML, newPathYAML)
     yamlObj.adjustLambda(nwl)
     for key in vals.keys():
@@ -318,4 +323,3 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
                     yamlObj.access(fldNm, newVal=2*np.ones(len(vals[key][m])), write2disk=False)
     yamlObj.access('stop_before_performing_retrieval', True, write2disk=True)    
     return newPathYAML, landPrct 
-
