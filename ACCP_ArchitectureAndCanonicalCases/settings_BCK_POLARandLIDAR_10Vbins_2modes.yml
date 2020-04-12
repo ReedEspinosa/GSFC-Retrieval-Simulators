@@ -11,7 +11,7 @@ retrieval:
                     min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
                     value: [1.5e-06, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 1.5e-06]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-1}
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-3}
 #                    a_priori_estimates:
 #                            lagrange_multiplier:      [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
             mode[2]: # COARSE
@@ -21,7 +21,7 @@ retrieval:
                     min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
                     value: [1.5e-06, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 1.5e-06]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-1}
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-3}
 #                    a_priori_estimates:
 #                            lagrange_multiplier:      [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
             retrieved: true

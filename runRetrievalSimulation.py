@@ -13,12 +13,13 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_
 from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
 
-# n = int(sys.argv[1]) # (0,1,2,...,N-1)
-n=2
+n = int(sys.argv[1]) # (0,1,2,...,N-1)
+# x = int(sys.argv[1]) # (0,1,2,...,N-1)
+# n=4
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM14_lidarPolACCP/SIM43V2_2mode_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/Test00_2mode_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -33,6 +34,7 @@ else: # MacBook Air
     maxCPU = 1
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
 bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes.yml')
+# bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes%d.yml' % x)
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
 
@@ -48,6 +50,7 @@ rndIntialGuess = True # randomly vary the intial guess of retrieved parameters
 
 paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,τFactor]))[n] 
 savePath = saveStart + '%s_case-%s_sza%d_phi%d_tFct%4.2f_V2.pkl' % paramTple
+# savePath = saveStart + 'TEST_%s_V2_YAML%d.pkl' % (instruments[n], x)
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 
 # RUN SIMULATION

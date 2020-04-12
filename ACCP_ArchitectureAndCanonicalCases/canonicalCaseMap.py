@@ -226,7 +226,7 @@ def conCaseDefinitions(caseStr, nowPix):
         for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
             bot = max(mid[0]-2*rng[0],115) # we want to bottom two bins to go to zero (GRASP bug)
             top = mid[0]+2*rng[0]
-            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*0.2+0.0001
+            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.0001
             vals['vrtProf'][i,2:] = np.convolve(vals['vrtProf'][i,:], np.ones(2)/2, mode='full')[3:] # smooth it, preserving zeros at ends and high concentration at bottom
         del vals['vrtHght']
         del vals['vrtHghtStd']
@@ -309,6 +309,13 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
         for m in range(np.array(vals[key]).shape[0]): # loop over aerosol modes
                 fldNm = '%s.%d.value' % (fldNms[key], m+1)
                 yamlObj.access(fldNm, newVal=vals[key][m], write2disk=False, verbose=False) # verbose=False -> no wanrnings about creating a new mode
+                if key=='vrtProf':
+                    fldNm = '%s.%d.index_of_wavelength_involved' % (fldNms[key], m+1)
+                    yamlObj.access(fldNm, newVal=np.zeros(len(vals[key][m]), dtype=int), write2disk=False) 
+                    fldNm = '%s.%d.min' % (fldNms[key], m+1)
+                    yamlObj.access(fldNm, newVal=1e-9*np.ones(len(vals[key][m])), write2disk=False)
+                    fldNm = '%s.%d.max' % (fldNms[key], m+1)
+                    yamlObj.access(fldNm, newVal=2*np.ones(len(vals[key][m])), write2disk=False)
     yamlObj.access('stop_before_performing_retrieval', True, write2disk=True)    
     return newPathYAML, landPrct 
 
