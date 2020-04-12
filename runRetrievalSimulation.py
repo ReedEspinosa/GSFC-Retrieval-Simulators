@@ -19,7 +19,7 @@ n = int(sys.argv[1]) # (0,1,2,...,N-1)
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/COMBO01_2mode_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/COMBO02_2mode_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -54,7 +54,8 @@ conCases = ['variableFineLofted+variableCoarse',
             ] #12
 SZAs = [0.1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60] # 13 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
-τFactor = [0.04, 0.08, 0.10, 0.12, 0.14, 0.18, 0.35] #7 
+#τFactor = [0.04, 0.08, 0.10, 0.12, 0.14, 0.18, 0.35] #7 
+τFactor = [0.02 , 0.04 , 0.05 , 0.06 , 0.07 , 0.09 , 0.175] #7 (cut in half because we generally are using two modes)
 instruments = ['misr', 'modisMisr', 'modisMisrPolar'] #3 N=546x6
 rndIntialGuess = True # randomly vary the intial guess of retrieved parameters
 
