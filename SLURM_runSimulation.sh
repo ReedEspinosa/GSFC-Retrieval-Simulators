@@ -4,7 +4,7 @@
 #SBATCH --time=0:10:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=1
+#SBATCH --array=1500
 
 date
 hostname

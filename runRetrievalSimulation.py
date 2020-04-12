@@ -19,7 +19,7 @@ n = int(sys.argv[1]) # (0,1,2,...,N-1)
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/Test00_2mode_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/BASECASE01_2mode_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -39,17 +39,15 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
 
 
-conCases = ['variableFineLofted+variableCoarse'] #4
-# SZAs = [0.1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60] # 13 (GRASP doesn't seem to be wild about θs=0)
-SZAs = [30] # 13 (GRASP doesn't seem to be wild about θs=0)
+conCases = ['variableFineLofted+variableCoarse'+'variableFine+variableCoarseLofted'] #2
+SZAs = [0.1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60] # 13 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
-# τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=240
-τFactor = [0.18] #5 N=240
-instruments = ['modis', 'misr', 'modisMisr', 'modisMisrPolar', 'lidar05+modisMisrPolar', 'lidar09+modisMisrPolar'] #6
+τFactor = [0.04, 0.08, 0.10, 0.12, 0.14, 0.18, 0.35] #7 
+instruments = ['misr', 'modisMisr', 'modisMisrPolar'] #3 N=546
 rndIntialGuess = True # randomly vary the intial guess of retrieved parameters
 
 paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,τFactor]))[n] 
-savePath = saveStart + '%s_case-%s_sza%d_phi%d_tFct%4.2f_V2.pkl' % paramTple
+savePath = saveStart + '%s_case-%s_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple
 # savePath = saveStart + 'TEST_%s_V2_YAML%d.pkl' % (instruments[n], x)
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 
