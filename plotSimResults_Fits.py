@@ -13,11 +13,9 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 n=0
-simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/TEST01_2mode_n%d_modisMisrPolar_case-variableFineLofted+variableCoarse_sza30_phi0_tFct0.10_V0_YAML%d.pkl' % (n,n)
-lIndP = 2 # polarimeter λ to plot
-# simRsltFile = '/Users/wrespino/Desktop/testLIDAR_modisMisrPolar_case-marine_sza30_phi50_tFct0.00_V2.pkl'
-# lIndP = 6 # polarimeter λ to plot
-lIndL = 3 # LIDAR λ to plot (3,7)
+simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/TEST01_2mode_n%d_Lidar05+modisMisrPolar_case-variableFineLofted+variableCoarseLofted+variableFine+variableCoarse_sza30_phi0_tFct0.10_V0_YAML%d.pkl' % (n,n)
+lIndP = 3 # polarimeter λ to plot
+lIndL = 2 # LIDAR λ to plot (3,7)
 
 simA = simulation(picklePath=simRsltFile)
 if not type(simA.rsltFwd) is dict: simA.rsltFwd = simA.rsltFwd[0] # HACK [VERY BAD] -- remove when we fix this to work with lists 
@@ -62,7 +60,7 @@ for rb in simA.rsltBck:
         frstPass = False
         for i,mt in enumerate(measTypesL): # Lidar retrieval meas & fit
             axL[i+1].plot(1e6*rb['meas_'+mt][:,lIndL], rb[rngVar][:,lIndL]/1e3, color=color1[0], alpha=alphVal)
-        axL[i+1].plot(1e6*rb['fit_'+mt][:,lIndL], rb[rngVar][:,lIndL]/1e3, color=color1[1], alpha=alphVal)
+            axL[i+1].plot(1e6*rb['fit_'+mt][:,lIndL], rb[rngVar][:,lIndL]/1e3, color=color1[1], alpha=alphVal)
     if POLARpresent:
         for i,mt in enumerate(measTypesP): # Polarimeter retrieval meas & fit
             axP[i].plot(θfun(lIndP,rb), rb['meas_'+mt][:,lIndP], color=color1[0], alpha=alphVal)
