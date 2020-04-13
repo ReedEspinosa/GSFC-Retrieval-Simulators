@@ -31,7 +31,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999]] # mode 1, 2,...
         vals['vrtHght'] = [[3010]] if 'lofted' in caseStr.lower() else  [[1010]]  # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['vrtHghtStd'] = [[500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.34+rnd.random()*0.2, nwl)[None,:] # mode 1 
         vals['k'] = np.repeat(0.0001+rnd.random()*0.01, nwl)[None,:] # mode 1 
         vals['brdf'] = [] # first dim mode (N=3), second lambda
