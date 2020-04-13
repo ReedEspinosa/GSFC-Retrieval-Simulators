@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-""" This script will plot the Lidar profile and polarimeter I,Q, U fits """
+""" 
+This script will plot the Lidar profile and polarimeter I, Q, U fits 
+It will produce unexpected behavoir if len(rsltFwd)>1 (always uses the zeroth index of rsltFwd)
+"""
 
 import numpy as np
 import os
@@ -13,12 +16,12 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 n=0
-simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/TEST01_2mode_n%d_Lidar05+modisMisrPolar_case-variableFineLofted+variableCoarseLofted+variableFine+variableCoarse_sza30_phi0_tFct0.10_V0_YAML%d.pkl' % (n,n)
+simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/COMBO04_n1327_Lidar09+modisMisrPolar_case-variableFine+variableCoarseLofted_sza60_phi0_tFct0.07_V1.pkl'
 lIndP = 3 # polarimeter λ to plot
 lIndL = 2 # LIDAR λ to plot (3,7)
 
 simA = simulation(picklePath=simRsltFile)
-if not type(simA.rsltFwd) is dict: simA.rsltFwd = simA.rsltFwd[0] # HACK [VERY BAD] -- remove when we fix this to work with lists 
+simA.conerganceFilter(χthresh=1.5, verbose=True)
 
 alphVal = 1/np.sqrt(len(simA.rsltBck))
 color1 = np.array([
@@ -27,13 +30,13 @@ color1 = np.array([
         [0, 1, 0],
         [1, 1, 0]])
 # LIDAR Prep
-measTypesL = [x for x in ['VExt', 'VBS', 'LS'] if 'fit_'+x in simA.rsltFwd]
+measTypesL = [x for x in ['VExt', 'VBS', 'LS'] if 'fit_'+x in simA.rsltFwd[0]]
 LIDARpresent = False if len(measTypesL)==0 else True
 if LIDARpresent:
     rngVar = 'RangeLidar'
     profExtNm = 'βext'
     βfun = lambda i,l,d: d['aodMode'][i,l]*d[profExtNm][i,:]/np.mean(d[profExtNm][i,:])
-    assert not np.isnan(simA.rsltFwd['fit_'+measTypesL[0]][0,lIndL]), 'Nans found in LIDAR data at this wavelength! Is the value of lIndL valid?'
+    assert not np.isnan(simA.rsltFwd[0]['fit_'+measTypesL[0]][0,lIndL]), 'Nans found in LIDAR data at this wavelength! Is the value of lIndL valid?'
     figL, axL = plt.subplots(1,len(measTypesL)+1,figsize=(12,6))
 # Polar Prep
 if 'fit_QoI' in simA.rsltBck[0]:
@@ -42,15 +45,19 @@ if 'fit_QoI' in simA.rsltBck[0]:
 elif 'fit_QoI' in simA.rsltBck[0]: 
     measTypesP = ['I', 'Q', 'U']
     POLARpresent = True
+elif 'fit_I' in simA.rsltBck[0]: 
+    measTypesP = ['I']
+    POLARpresent = True
 else:
     POLARpresent = False
 if POLARpresent:
-    [x for x in measTypesP if 'fit_'+x in simA.rsltFwd]
+    [x for x in measTypesP if 'fit_'+x in simA.rsltFwd[0]]
     θfun = lambda l,d: [θ if φ<180 else -θ for θ,φ in zip(d['vis'][:,l], d['fis'][:,l])]
     assert not np.isnan(simA.rsltBck[0]['fit_'+measTypesP[0]][0,lIndP]), 'Nans found in Polarimeter data at this wavelength! Is the value of lIndP valid?'
 figP, axP = plt.subplots(1,len(measTypesP),figsize=(12,6))
+if not type(axP)==np.ndarray: axP=[axP]
 # Plot LIDAR and Polar measurements and fits
-NfwdModes = simA.rsltFwd['aodMode'].shape[0]
+NfwdModes = simA.rsltFwd[0]['aodMode'].shape[0]
 NbckModes = simA.rsltBck[0]['aodMode'].shape[0]
 frstPass = True
 for rb in simA.rsltBck:
@@ -69,19 +76,19 @@ if LIDARpresent:
     mdHnd = []
     lgTxt = []
     for i in range(NfwdModes):
-        mdHnd.append(axL[0].plot(βfun(i,lIndL,simA.rsltFwd), simA.rsltFwd['range'][i,:]/1e3, 'o-', color=color1[i]/2))
+        mdHnd.append(axL[0].plot(βfun(i,lIndL,simA.rsltFwd[0]), simA.rsltFwd[0]['range'][i,:]/1e3, 'o-', color=color1[i]/2))
         lgTxt.append('Mode %d' % i)
     for i,mt in enumerate(measTypesL): # Lidar fwd fit
-        axL[i+1].plot(1e6*simA.rsltFwd['fit_'+mt][:,lIndL], simA.rsltFwd[rngVar][:,lIndL]/1e3, 'ko-')
+        axL[i+1].plot(1e6*simA.rsltFwd[0]['fit_'+mt][:,lIndL], simA.rsltFwd[0][rngVar][:,lIndL]/1e3, 'ko-')
         axL[i+1].legend(['Measured', 'Retrieved']) # there are many lines but the first two should be these
-    axL[i+1].set_xlim([0,2*1e6*simA.rsltFwd['fit_'+mt][:,lIndL].max()])
+    axL[i+1].set_xlim([0,2*1e6*simA.rsltFwd[0]['fit_'+mt][:,lIndL].max()])
 if POLARpresent:
     for i,mt in enumerate(measTypesP): # Polarimeter fwd fit
-        if 'fit_'+mt not in simA.rsltFwd and 'oI' in mt: # fwd calculation performed with aboslute Q and U
-            fwdData = simA.rsltFwd['fit_'+mt[0]][:,lIndP]/simA.rsltFwd['fit_I'][:,lIndP]
+        if 'fit_'+mt not in simA.rsltFwd[0] and 'oI' in mt: # fwd calculation performed with aboslute Q and U
+            fwdData = simA.rsltFwd[0]['fit_'+mt[0]][:,lIndP]/simA.rsltFwd[0]['fit_I'][:,lIndP]
         else:
-            fwdData = simA.rsltFwd['fit_'+mt][:,lIndP]
-        axP[i].plot(θfun(lIndP,simA.rsltFwd), fwdData, 'ko-')
+            fwdData = simA.rsltFwd[0]['fit_'+mt][:,lIndP]
+        axP[i].plot(θfun(lIndP,simA.rsltFwd[0]), fwdData, 'ko-')
         axP[i].legend(['Measured', 'Retrieved']) # there are many lines but the first two should be these
         axP[i].set_xlabel('viewing zenith (°)')
         axP[i].set_title(mt.replace('o','/'))
@@ -101,12 +108,12 @@ if LIDARpresent: # touch up LIDAR plots
         else:
             lblStr = mt
         axL[i+1].set_xlabel(lblStr)
-    ttlTxt = '%s [%5.3f μm]' % (fn, simA.rsltFwd['lambda'][lIndL])
+    ttlTxt = '%s [%5.3f μm]' % (fn, simA.rsltFwd[0]['lambda'][lIndL])
     figL.suptitle(ttlTxt)
     figL.tight_layout(rect=[0, 0.03, 1, 0.95])
 if POLARpresent: # touch up Polarimeter plots
     axP[0].set_ylabel('Reflectance')
-    ttlTxt = '%s [%5.3f μm]' % (fn, simA.rsltFwd['lambda'][lIndP])
+    ttlTxt = '%s [%5.3f μm]' % (fn, simA.rsltFwd[0]['lambda'][lIndP])
     figP.suptitle(ttlTxt)
     figP.tight_layout(rect=[0, 0.03, 1, 0.95])
 
