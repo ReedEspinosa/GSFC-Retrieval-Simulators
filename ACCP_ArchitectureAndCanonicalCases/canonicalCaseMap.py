@@ -32,9 +32,9 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999]] # mode 1, 2,...
         vals['vrtHght'] = [[3010]] if 'lofted' in caseStr.lower() else  [[1010]]  # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.34+rnd.random()*0.2, nwl)[None,:] # mode 1 
-        vals['k'] = np.repeat(0.0001+rnd.random()*0.01, nwl)[None,:] # mode 1 
+        vals['vrtHghtStd'] = [[500]] # Gaussian sigma in meters
+        vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.34+rnd.random(2)*0.20)[None,:] # mode 1 # linear w/ λ
+        vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.01)[None,:] # mode 1 # linear w/ λ
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0        
@@ -307,7 +307,6 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
     newFn = 'settingsYAML_conCase%s_nwl%d_%s_%s.yml' % (caseStrs, nwl, bsHsh, valHsh)
     newPathYAML = os.path.join(tempfile.gettempdir(), newFn)
     if os.path.exists(newPathYAML): return newPathYAML, landPrct # reuse existing YAML file from this exact base YAML, con. case values and NWL
-    print(newPathYAML)
     yamlObj = rg.graspYAML(baseYAML, newPathYAML)
     yamlObj.adjustLambda(nwl)
     for key in vals.keys():

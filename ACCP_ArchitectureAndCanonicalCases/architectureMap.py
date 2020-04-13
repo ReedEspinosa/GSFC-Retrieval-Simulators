@@ -120,6 +120,8 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
 def addError(measNm, l, rsltFwd, edgInd):
     # if the following check ever becomes a problem see commit #6793cf7
     assert (np.diff(edgInd)[0]==np.diff(edgInd)).all(), 'Current error models assume that each measurement type has the same number of measurements at each wavelength!'
+    βextLowLim = 0.01/1e6
+    βscaLowLim = 2.0e-10
     mtch = re.match('^([A-z]+)([0-9]+)$', measNm)
     if mtch.group(1).lower() == 'polar': # measNm should be string w/ format 'polarN', where N is polarimeter number
         if int(mtch.group(2)) in [4, 7, 8]: # S-Polar04 (a-d), S-Polar07, S-Polar08
@@ -163,7 +165,6 @@ def addError(measNm, l, rsltFwd, edgInd):
             else:
                 relErrβsca = 0.05 #
                 absErrβext = 17/1e6 # m-1
-            βextLowLim = 0.01/1e6
 #            relErrβsca = 0.000358 # these values pulled from slide 39 of Rich's HSRL talk at the aerosol TIM
 #            relErrβext = 0.001157 # see A-CCP/LIDAR Erorr in Endnote for more details
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
@@ -172,6 +173,7 @@ def addError(measNm, l, rsltFwd, edgInd):
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErrβsca), size=len(trueSimβsca))
             fwdSimβext = trueSimβext + absErrβext*np.random.normal(size=len(trueSimβext))
             fwdSimβext[fwdSimβext<βextLowLim] = βextLowLim
+            fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
 #             fwdSimβext = trueSimβext*np.random.lognormal(sigma=np.log(1+relErrβext), size=len(trueSimβext))
 #            fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=len(trueSimDPOL))
 #            return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
@@ -182,6 +184,7 @@ def addError(measNm, l, rsltFwd, edgInd):
             if int(mtch.group(2)) == 900: print('Using 1/1000 standard noise in Lidar09')
             trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
+            fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
             return np.r_[fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
     if mtch.group(1).lower() == 'modismisr':
         relErr = 0.03
