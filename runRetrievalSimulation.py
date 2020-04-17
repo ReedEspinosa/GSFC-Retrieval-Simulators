@@ -14,8 +14,9 @@ from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
 
 n = int(sys.argv[1]) # (0,1,2,...,N-1)
-# missingCases=[2014,2015]
-# n=missingCases[x]
+# missingCases=[660, 804, 829, 969, 976, 979, 1076, 1131, 1152, 1168, 1419, 1467, 1571]
+# n=missingCases[n]
+if n>=180: sys.exit()
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
@@ -40,23 +41,19 @@ bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
 
 conCases = ['variableFineLofted+variableCoarse',
             'variableFine+variableCoarseLofted',
-            'variableFineLofted+variableCoarseNonsph',
-            'variableFine+variableCoarseLoftedNonsph',
-            'variableFineLoftedNonsph+variableCoarse',
-            'variableFineNonsph+variableCoarseLofted',
-            'variableFineLoftedChl+variableCoarseChl',
-            'variableFineChl+variableCoarseLoftedChl',
             'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
-            ] # 9
+            ] # 3
 SZAs = [0.1, 10, 22, 40, 60] # 5 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1 
 #τFactor = [0.04, 0.08, 0.10, 0.12, 0.14, 0.18, 0.35] #7 
-τFactor = [0.02 , 0.04 , 0.05 , 0.06 , 0.07 , 0.09 , 0.175] #7 (cut in half because we generally are using two modes)
-instruments = ['misr', 'modisMisr', 'modisMisrPolar','Lidar05+modisMisrPolar','Lidar09+modisMisrPolar'] #5 N=1575
+τFactor = [0.12, 0.14, 0.35] #3
+# τFactor = [0.01  , 0.02  , 0.025 , 0.03  , 0.035 , 0.045 , 0.0875] #7 (cut by a quarter because we are using four modes)
+# instruments = ['misr', 'modisMisr', 'modisMisrPolar','Lidar05+modisMisrPolar','Lidar09+modisMisrPolar','modis','Lidar05','Lidar09'] #8 N=1575
+instruments = ['Lidar05+modisMisrPolar','Lidar09+modisMisrPolar','Lidar05','Lidar09'] #4 N=180
 rndIntialGuess = True # randomly vary the intial guess of retrieved parameters
 
 paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,τFactor]))[n] 
-savePath = saveStart + '%s_case-%s_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple
+savePath = saveStart + '%s_case-%sAOD_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple
 
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 
