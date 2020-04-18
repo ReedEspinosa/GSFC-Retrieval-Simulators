@@ -91,9 +91,26 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
         wvls = [0.532, 1.064] # Nλ=2
 #        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
-        meas = np.r_[np.repeat(0.0532, nbvm[0]), np.repeat(0.01064, nbvm[1])] # Note these are just dummy measurement, correspondance with wavelength is just for human reference
+        meas = np.r_[np.repeat(0.05, nbvm[0]), np.repeat(0.01, nbvm[1])] # Note these are just dummy measurement, correspondance with wavelength is just for human reference
         phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
         errStr = [y for y in archName.lower().split('+') if 'lidar05' in y][0]
+        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
+            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+            nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
+    if 'lidar06' in archName.lower(): # TODO: this needs to be more complex, real lidar05 has backscatter at 1 wavelength and DEPOL
+#        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
+        msTyp = [36, 39] # must be in ascending order
+        botLayer = 10 # bottom layer in meters
+        topLayer = 4510
+        Nlayers = 10 #TODO: ultimatly this should be read from (or even better define) the YAML file
+        nbvm = Nlayers*np.ones(len(msTyp), np.int)
+#        thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
+        thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
+        wvls = [0.355, 0.532, 1.064] # Nλ=2
+#        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        meas = np.r_[np.repeat(0.05, nbvm[0]), np.repeat(0.01, nbvm[1])] # Note these are just dummy measurement, correspondance with wavelength is just for human reference
+        phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
+        errStr = [y for y in archName.lower().split('+') if 'lidar05' in y][0] # right now, lidar05 and lidar06 have the same errors
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)

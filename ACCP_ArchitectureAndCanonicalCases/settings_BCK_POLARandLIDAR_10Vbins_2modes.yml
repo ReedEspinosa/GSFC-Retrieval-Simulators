@@ -26,7 +26,7 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [0.5] # τfactor should not exceed unity
+                    max: [1.5] 
                     min: [0.00000001]
                     value: [0.0005]
                 single_pixel:
@@ -34,7 +34,7 @@ retrieval:
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [1.5] # τfactor should not exceed unity
+                    max: [3.5]
                     min: [0.00000001]
                     value: [0.005]
                 single_pixel:

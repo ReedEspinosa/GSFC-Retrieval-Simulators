@@ -14,18 +14,15 @@ from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
 
 n = int(sys.argv[1]) # (0,1,2,...,N-1)
-# missingCases=[660, 804, 829, 969, 976, 979, 1076, 1131, 1152, 1168, 1419, 1467, 1571]
-# n=missingCases[n]
-if n>=180: sys.exit()
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/COMBO04_n%d_' % n)
+    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASE01_n%d_' % n)
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
-    Nsims = 40
-    maxCPU = 4
+    Nsims = 28
+    maxCPU = 14
 else: # MacBook Air
     saveStart = '/Users/wrespino/Desktop/testLIDAR_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
@@ -39,17 +36,14 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
 
 
-conCases = ['variableFineLofted+variableCoarse',
-            'variableFine+variableCoarseLofted',
-            'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
-            ] # 3
-SZAs = [0.1, 10, 22, 40, 60] # 5 (GRASP doesn't seem to be wild about θs=0)
-Phis = [0] # 1 
-#τFactor = [0.04, 0.08, 0.10, 0.12, 0.14, 0.18, 0.35] #7 
-τFactor = [0.12, 0.14, 0.35] #3
-# τFactor = [0.01  , 0.02  , 0.025 , 0.03  , 0.035 , 0.045 , 0.0875] #7 (cut by a quarter because we are using four modes)
-# instruments = ['misr', 'modisMisr', 'modisMisrPolar','Lidar05+modisMisrPolar','Lidar09+modisMisrPolar','modis','Lidar05','Lidar09'] #8 N=1575
-instruments = ['Lidar05+modisMisrPolar','Lidar09+modisMisrPolar','Lidar05','Lidar09'] #4 N=180
+conCases = []
+for caseLet in ['a','b','c','d','e','f']:
+    conCases.append('case06'+caseLet)
+    conCases.append('case06'+caseLet+'monomode') #12 total
+SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
+Phis = [0] # 1
+τFactor = [4] #3
+instruments = ['Lidar05+polar07','Lidar06+polar07','Lidar09+polar07','Lidar05','Lidar09'] #4 N=432
 rndIntialGuess = True # randomly vary the intial guess of retrieved parameters
 
 paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,τFactor]))[n] 
