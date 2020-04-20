@@ -110,7 +110,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
 #        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         meas = np.r_[np.repeat(0.05, nbvm[0]), np.repeat(0.01, nbvm[1])] # Note these are just dummy measurement, correspondance with wavelength is just for human reference
         phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
-        errStr = [y for y in archName.lower().split('+') if 'lidar05' in y][0] # right now, lidar05 and lidar06 have the same errors
+        errStr = ['lidar05' for y in archName.lower().split('+') if 'lidar06' in y][0] # right now, lidar05 and lidar06 have the same errors
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)

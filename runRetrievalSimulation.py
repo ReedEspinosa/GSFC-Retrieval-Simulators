@@ -17,7 +17,7 @@ n = int(sys.argv[1]) # (0,1,2,...,N-1)
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASE01_n%d_' % n)
+    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASE02_n%d_' % n)
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -42,8 +42,9 @@ for caseLet in ['a','b','c','d','e','f']:
     conCases.append('case06'+caseLet+'monomode') #12 total
 SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1
-τFactor = [4] #3
-instruments = ['Lidar05+polar07','Lidar06+polar07','Lidar09+polar07','Lidar05','Lidar09'] #4 N=432
+τFactor = [1, 4] #2
+instruments = ['Lidar05+polar07','Lidar06+polar07','Lidar09+polar07','Lidar05','Lidar09'] #5 N=360
+# instruments = ['Lidar06+polar07'] #5 N=360
 rndIntialGuess = True # randomly vary the intial guess of retrieved parameters
 
 paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,τFactor]))[n] 
