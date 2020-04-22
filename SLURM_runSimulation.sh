@@ -1,7 +1,7 @@
 #!/usr/local/bin/bash
 #SBATCH --job-name=G_Sim
 #SBATCH --nodes=1 --constraint=hasw
-#SBATCH --time=0:19:00
+#SBATCH --time=0:39:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
 #SBATCH --array=0-360:2
