@@ -51,7 +51,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         thtv = np.tile([57.0,  44.0,  32.0 ,  19.0 ,  6.0 ,  -6.0,  -19.0,  -32.0,  -44.0,  -57.0], len(msTyp)*len(azmthΑng))
         phi = np.concatenate([np.repeat(φ, 10) for φ in azmthΑng]) # 0,10,...,90 
         phi = np.tile(phi, len(msTyp))
-        wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 1.550, 1.650] # Nλ=8
+        wvls = [0.355, 0.360, 0.380, 0.410, 0.532, 0.550, 0.670, 0.870, 1.064, 1.550, 1.650] # Nλ=8
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         errStr = 'polar07'

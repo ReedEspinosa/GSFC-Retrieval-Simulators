@@ -13,13 +13,16 @@ from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
 import runGRASP as rg
 
-archName = 'polarHemi'
-#caseStrs = 'cleanDesert'
-caseStrs = ['cleanDesert', 'cleanVegetation'] # seperate pixels for each of these scenes
+caseStrs = ['DustNonsph'] # seperate pixels for each of these scenes (CSV will only be written for first case)
+hemiNetCDF = None
+singleScatCSV = '/Users/wrespino/Desktop/dustPM_nonsph.csv'
+# caseStrs = ['cleanDesert', 'cleanVegetation'] # seperate pixels for each of these scenes
+# hemiNetCDF = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/Polar07_reflectanceTOA_cleanAtmosphere_landSurface_V2.nc4'
+# singleScatCSV = None
 baseYAML = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml'
+archName = 'polarHemi'
 binPathGRASP = '/usr/local/bin/grasp'
 intrnlFileGRASP = None
-outFile = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/Polar07_reflectanceTOA_cleanAtmosphere_landSurface_V2.nc4'
 seaLevel = True # True -> ROD (corresponding to masl = 0 m) & rayleigh depol. saved to nc4 file
 
 nowPix = returnPixel(archName)
@@ -31,4 +34,7 @@ for caseStr in caseStrs:
     gObjFwd.addPix(nowPix)
     gObjFwd.runGRASP(binPathGRASP=binPathGRASP, krnlPathGRASP=intrnlFileGRASP)
     rslts.append(np.take(gObjFwd.readOutput(),0)) # we need take because readOutput returns list, even if just one element
-gObjFwd.output2netCDF(outFile, rsltDict=rslts, seaLevel=True)
+if hemiNetCDF:
+    gObjFwd.output2netCDF(hemiNetCDF, rsltDict=rslts, seaLevel=True)
+if singleScatCSV:
+    gObjFwd.singleScat2CSV(singleScatCSV)
