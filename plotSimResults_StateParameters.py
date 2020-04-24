@@ -18,35 +18,31 @@ from simulateRetrieval import simulation
 import miscFunctions as mf
 import ACCP_functions as af
 
-# instruments = ['misr', 'modisMisr', 'modisMisrPolar','Lidar05+modisMisrPolar','Lidar09+modisMisrPolar'] #1
-instruments = ['modisMisr'] #1
-conCases = [
-            ['variableFine+variableCoarseLofted', 'variableFineLofted+variableCoarse'],
-            ['variableFine+variableCoarseLoftedNonsph', 'variableFineLofted+variableCoarseNonsph'],
-            ['variableFineNonsph+variableCoarseLofted', 'variableFineLoftedNonsph+variableCoarse'],
-            ['variableFineLoftedChl+variableCoarseChl','variableFineChl+variableCoarseLoftedChl'],
-            ['variableFineLofted+variableCoarseLofted+variableFine+variableCoarse']
-            ] # 9
-SZAs = [0.1, 10, 22, 40, 60] # 3
-# SZAs = [22] # 3
+instruments = ['Lidar06+polar07', 'Lidar05+polar07','Lidar09+polar07','Lidar05','Lidar09'] #5 N=360
+conCases = []
+for caseLet in ['a','b','c','d','e','f']:
+    conCases.append('case06'+caseLet)
+    # conCases.append('case06'+caseLet+'monomode') #12 total
+SZAs = [0.1, 30, 60] # 3
 Phis = [0] # 1 -> N=18 Nodes
-tauVals = [0.02 , 0.04 , 0.05 , 0.06 , 0.07 , 0.09 , 0.175] # NEED TO MAKE THIS CHANGE FILE NAME
-# tauVals = [0.02 , 0.04 , 0.05] # NEED TO MAKE THIS CHANGE FILE NAME
-#N = len(SZAs)*len(conCases)*len(Phis)*len(tauVals)
-N = len(SZAs)*len(Phis)*len(instruments)*len(tauVals)
-barVals = conCases # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
+tauVals = [4.0] # NEED TO MAKE THIS CHANGE FILE NAME
+N = len(SZAs)*len(conCases)*len(Phis)*len(tauVals)
+# N = len(SZAs)*len(Phis)*len(instruments)*len(tauVals)
+barVals = instruments # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
 
 trgtλ = 0.532
 χthresh=1.0 # χ^2 threshold on points
 
 def lgTxtTransform(lgTxt):
-    if re.match('.*Coarse[A-z]*Nonsph', lgTxt):
+    if re.match('.*Coarse[A-z]*Nonsph', lgTxt): # conCase in leg
         return 'Fine[Sphere]\nCoarse[Nonsph]'
-    if re.match('.*Fine[A-z]*Nonsph', lgTxt):
+    if re.match('.*Fine[A-z]*Nonsph', lgTxt): # conCase in leg
         return 'Fine[Nonsph]\nCoarse[Sphere]'
-    if 'misr' in lgTxt.lower():
+    if 'misr' in lgTxt.lower(): # instrument in leg
         return lgTxt.replace('Misr','+misr').replace('Polar','+polar').upper()
-    return 'Fine[Sphere]\nCoarse[Sphere]'
+    if 'lidar' in lgTxt.lower(): # instrument in leg
+        return lgTxt
+    return 'Fine[Sphere]\nCoarse[Sphere]' # conCase in leg
 
     
 #totVars = ['aod', 'ssa', 'n', 'aodMode_fine', 'ssaMode_fine', 'n_fine', 'rEffCalc','g','height'] # must match to keys in rmse dict
@@ -56,7 +52,7 @@ totBiasVars = ['aod', 'ssa','aodMode_fine','n','rEffCalc'] # only used in Plot 4
 
 plotD = False # PDFs of errors as a fuction of different variables
 
-saveStart = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/COMBO04_n*_'
+saveStart = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE02_n*_'
 
 cm = pylab.get_cmap('viridis')
 
@@ -68,15 +64,16 @@ Nvars = len(gvNames)
 barLeg = []
 totBias = dict([]) # only valid for last of whatever we itterate through on the next line
 Nbar = len(barVals)
+barVals = [y if type(y) is list else [y] for y in barVals] # barVals should be a list of lists
 for barInd, barVal in enumerate(barVals):
     harvest = np.zeros([Nvars, N*len(barVal)])
     runNames = []    
     for n in range(N*len(barVal)):
         # paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,tauVals]))[n]
-        paramTple = list(itertools.product(*[instruments,barVal,SZAs,Phis,tauVals]))[n]
-        savePath = saveStart + '%s_case-%s_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple #SIM3_polar07_case-Smoke+pollution_sza30_phi0_tFct0.04_V2.pkl
-        savePath = glob.glob(savePath)
-        if not len(savePath)==1: assert False, 'Wrong number of files found (i.e. not one)'
+        paramTple = list(itertools.product(*[barVal,conCases,SZAs,Phis,tauVals]))[n]
+        savePtrn = saveStart + '%s_case-%sAOD_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple #SIM3_polar07_case-Smoke+pollution_sza30_phi0_tFct0.04_V2.pkl
+        savePath = glob.glob(savePtrn)
+        if not len(savePath)==1: assert False, 'Wrong number of files found (i.e. not one) for search string %s!' % savePath
         runNames.append('%s($θ_s=%d,φ=%d$)' % paramTple[1:4])
         runNames[-1] = runNames[-1].replace('pollution','POLL').replace('smoke','BB').replace('marine','MRN')
         simB = simulation(picklePath=savePath[0])
@@ -84,7 +81,9 @@ for barInd, barVal in enumerate(barVals):
         lInd = np.argmin(np.abs(simB.rsltFwd[0]['lambda']-trgtλ))
         simB.conerganceFilter(χthresh=χthresh, verbose=True)
         Nsims = len(simB.rsltBck)
-        fineIndFwd = np.nonzero(['fine' in typ.lower() for typ in paramTple[1].split('+')])[0]
+        fineIndFwd = np.nonzero(['fine' in typ.lower() for typ in paramTple[1].split('+')])[0] 
+        if len(fineIndFwd)==0: fineIndFwd = np.nonzero(simB.rsltFwd[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
+        assert len(fineIndFwd)>0, 'No obvious fine mode could be found in fwd data!'
         fineIndBck = [0]
         rmse, bias = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck) 
         harvest[:,n], harvestQ, rmseVal = af.normalizeError(simB.rsltFwd[0], rmse, lInd, totVars, bias)
@@ -113,8 +112,8 @@ axB.set_xlim([0.08,11])
 axB.set_ylim([-0.8, Nbar*Nvars-1.5])
 plt.sca(axB)
 plt.yticks(Nbar*(np.r_[0:Nvars]+0.1*Nbar-0.2), gvNames)
-# lgTxt = [lgTxtTransform('%s' % τ) for τ in np.array(barVals)[:,0]]
-lgTxt = ['Perfect Model','Coarse Nonsph','Fine Nonsph', 'Unmodeled WLR','2 extra modes']
+lgTxt = [lgTxtTransform('%s' % τ) for τ in np.array(barVals)[:,0]]
+# lgTxt = ['Perfect Model','Coarse Nonsph','Fine Nonsph', 'Unmodeled WLR','2 extra modes']
 lgHnd = axB.legend(barLeg[::-1], ['%s' % τ for τ in lgTxt[::-1]], loc='center left', prop={'size': 9, 'weight':'bold'})
 lgHnd.draggable()
 axB.yaxis.set_tick_params(length=0)
