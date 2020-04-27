@@ -60,7 +60,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
     if 'polar07' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
-        thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
+        thtv = np.tile([-63.88,  -48.42,  -34.19 ,  -20.4 ,  -6.78 ,  6.78,  20.4,  34.19,  48.42,  63.88], len(msTyp)) # corresponds to 450 km orbit
         wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 1.550, 1.650] # Nλ=8
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
@@ -80,39 +80,25 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
-    if 'lidar05' in archName.lower(): # TODO: this needs to be more complex, real lidar05 has backscatter at 1 wavelength and DEPOL
-#        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
-        msTyp = [36, 39] # must be in ascending order
-        botLayer = 10 # bottom layer in meters
-        topLayer = 4510
-        Nlayers = 10 #TODO: ultimatly this should be read from (or even better define) the YAML file
-        nbvm = Nlayers*np.ones(len(msTyp), np.int)
-#        thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
-        thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
+    if 'lidar05' in archName.lower() or 'lidar06' in archName.lower(): 
+        msTyp = [[36, 39],[31]] # TODO: still missing depol (msTyp=35); also, must be in ascending order
         wvls = [0.532, 1.064] # Nλ=2
-#        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
-        meas = np.r_[np.repeat(0.05, nbvm[0]), np.repeat(0.01, nbvm[1])] # Note these are just dummy measurement, correspondance with wavelength is just for human reference
-        phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
-        errStr = [y for y in archName.lower().split('+') if 'lidar05' in y][0]
-        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
-            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
-            nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
-    if 'lidar06' in archName.lower(): # TODO: this needs to be more complex, real lidar05 has backscatter at 1 wavelength and DEPOL
-#        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
-        msTyp = [36, 39] # must be in ascending order
+        if 'lidar06' in archName.lower():
+            msTyp.insert(0,[36, 39])
+            wvls.insert(0,355)            
         botLayer = 10 # bottom layer in meters
         topLayer = 4510
-        Nlayers = 10 #TODO: ultimatly this should be read from (or even better define) the YAML file
-        nbvm = Nlayers*np.ones(len(msTyp), np.int)
-#        thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
-        thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
-        wvls = [0.355, 0.532, 1.064] # Nλ=2
-#        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
-        meas = np.r_[np.repeat(0.05, nbvm[0]), np.repeat(0.01, nbvm[1])] # Note these are just dummy measurement, correspondance with wavelength is just for human reference
-        phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
-        errStr = ['lidar05' for y in archName.lower().split('+') if 'lidar06' in y][0] # right now, lidar05 and lidar06 have the same errors
-        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
-            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+        Nlayers = 10 #TODO: ultimatly this should be read from (or even better define) the fwd/bck YAML file
+        errStr = [y for y in archName.lower().split('+') if 'lidar05' in y][0] # this must link to an error model in addError() below
+        for wvl, msTyp in zip(wvls, msTyp): # This will be expanded for wavelength dependent measurement types/geometry
+            nbvm = Nlayers*np.ones(len(msTyp), np.int)
+            thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
+            meas = np.r_[np.repeat(0.05, nbvm[0]), np.repeat(0.01, nbvm[1])] # Note these are just dummy measurement, correspondance with wavelength is just for human reference
+            phi = np.repeat(0, len(thtv))
+            if msTyp == [31]:
+                errModel = functools.partial(addError, errStr.replace('05','09').replace('06','09')) # We take LIDAR09 error in backscatter only channel
+            else:
+                errModel = functools.partial(addError, errStr) # HSRL (LIDAR05/06)
             nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
     if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
 #        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
