@@ -4,195 +4,129 @@
 
 import os
 import sys
+import glob
+import re
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as st
 import copy
 import pylab
 import itertools
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../GRASP_scripts'))
 from simulateRetrieval import simulation
 import miscFunctions as mf
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases'))
 import ACCP_functions as af
 
-#simB.analyzeSim()
-instruments = ['lidar09+polar07'] #1
-#instruments = ['lidar05+polar07', 'lidar09+polar07'] #1
-#instruments = ['lidar05+polar07'] #1
-#instruments = ['PolOnly_lidar05+polar07', 'lidar09+polar07','lidar05+polar07', 'lidar05'] #1
-#conCases = ['marine', 'pollution','smoke','marine+pollution','marine+smoke','Smoke+pollution'] #6
-#conCases = ['variablefinenonsph','variablefinenonsph','variablefinenonsph','variablefinenonsph'] #6
-#conCases = ['case02a','case02b','case02c','case03','case07']
-conCases = ['variable']
-#for caseLet in ['a','b','c','d','e','f']:
-##    conCases.append('case06'+caseLet)
-#    conCases.append('case06'+caseLet+'monomode')
-#    if caseLet in ['e','f']:
-#        conCases.append('case06'+caseLet+'nonsph')
-#        conCases.append('case06'+caseLet+'monomode'+'nonsph') #21 total
-#conCases = ['case06amonomode', 'case06bmonomode']
-#SZAs = [0.1, 15, 30, 45, 60] # 3
-SZAs = [0.1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60] # 3
+instruments = ['Lidar06+polar07', 'Lidar05+polar07','Lidar09+polar07','Lidar05','Lidar09'] #5 N=360
+conCases = []
+for caseLet in ['a','b','c','d','e','f']:
+    conCases.append('case06'+caseLet)
+    # conCases.append('case06'+caseLet+'monomode') #12 total
+SZAs = [0.1, 30, 60] # 3
 Phis = [0] # 1 -> N=18 Nodes
-#tauVals = [1.0] #
-#tauVals = [0.03, 0.05, 0.08, 0.1, 0.12, 0.16, 0.2, 0.25, 0.3, 0.35]
-tauVals = [0.04, 0.08, 0.12, 0.18, 0.35] # NEED TO MAKE THIS CHANGE FILE NAME
-#N = len(SZAs)*len(conCases)*len(Phis)*len(instruments)
+tauVals = [4.0] # NEED TO MAKE THIS CHANGE FILE NAME
 N = len(SZAs)*len(conCases)*len(Phis)*len(tauVals)
-N=36
+# N = len(SZAs)*len(Phis)*len(instruments)*len(tauVals)
+barVals = instruments # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
 
-gridPlots = False
-#l = 3
-#lVals = [0,3,5,10]
-wavInd = 4
+trgtλ = 0.532
+χthresh=1.0 # χ^2 threshold on points
 
-tag = 'Figure'
+def lgTxtTransform(lgTxt):
+    if re.match('.*Coarse[A-z]*Nonsph', lgTxt): # conCase in leg
+        return 'Fine[Sphere]\nCoarse[Nonsph]'
+    if re.match('.*Fine[A-z]*Nonsph', lgTxt): # conCase in leg
+        return 'Fine[Nonsph]\nCoarse[Sphere]'
+    if 'misr' in lgTxt.lower(): # instrument in leg
+        return lgTxt.replace('Misr','+misr').replace('Polar','+polar').upper()
+    if 'lidar' in lgTxt.lower(): # instrument in leg
+        return lgTxt
+    return 'Fine[Sphere]\nCoarse[Sphere]' # conCase in leg
 
-totBiasVars = ['aod', 'ssa', 'g','aodMode','n','rEffCalc'] # only used in Plot 4, if it is a multi dim array we take first index (aodmode and n)
-#totVars = ['aod', 'ssa', 'rEffCalc','g','height']
-totVars = ['aod', 'ssa', 'g', 'LidarRatio']
-modVars = ['n', 'aodMode', 'ssaMode']  # reff should be profile
+    
+#totVars = ['aod', 'ssa', 'n', 'aodMode_fine', 'ssaMode_fine', 'n_fine', 'rEffCalc','g','height'] # must match to keys in rmse dict
+totVars = np.flipud(['aod', 'ssa', 'n', 'rEffCalc', 'aodMode_fine', 'ssaMode_fine', 'n_fine'])
+totVars = np.flipud(['aod', 'ssa', 'n', 'rEffCalc'])
+totBiasVars = ['aod', 'ssa','aodMode_fine','n','rEffCalc'] # only used in Plot 4, if it is a multi dim array we take first index (aodmode and n)
 
-#trgt = {'aod':[0.02], 'ssa':[0.03], 'g':[0.02], 'height':[500], 'rEffCalc':[0.0], 'aodMode':[0.02,0.02], 'ssaMode':[0.03,0.03], 'n':[0.025,0.025,0.025]} # look at total and fine/coarse 
-trgt = {'aod':[0.02], 'ssa':[0.04], 'g':[0.02], 'aodMode':[0.02,0.02], 'ssaMode':[0.04,0.04], 'n':[0.025,0.025,0.025], 'LidarRatio':[0.0]} # look at total and fine/coarse 
-#trgt = {'aod':[0.02], 'ssa':[0.03], 'g':[0.02], 'height':[1000], 'rEffCalc':[0.0], 'aodMode':[0.02,0.02], 'ssaMode':[0.03,0.03], 'n':[0.025]} # only look at one mode (code below will work even if RMSE is calculated for fine/coarse too as long as n is listed under totVars)
-#trgtRel = {'aod':0.05, 'rEffCalc':0.20, 'aodMode':0.05} # this part must be same for every mode but absolute component above can change
-trgtRel = {'aod':0.05, 'aodMode':0.05, 'LidarRatio':[0.25]} # this part must be same for every mode but absolute component above can change
-#trgt = {'aod':0.025, 'ssa':0.04, 'aodMode':[0.02,0.02], 'n':[0.025,0.025,0.025], 'ssaMode':[0.05,0.05], 'rEffCalc':0.05}
-#aod fine Mode: 0.02+/-0.05AOD (same for total AOD)
-# n: 0.025 (total)
-# g is also in SATM...
-# rEffCalc and it should be 20%
-# ssa total 0.03
+plotD = False # PDFs of errors as a fuction of different variables
 
-swapModes = False
-printRslt = True
-
-#simRsltFile = '/Users/wrespino/Synced/Working/SIM13_lidarTest/SIM43_lidar05+polar07_case-case06cmonomode_sza30_phi0_tFct1.00_V2.pkl'
-saveStart = '/Users/wrespino/Synced/Working/SIM14_lidarPolACCP/SIM43V2_2mode_'
+saveStart = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE02_n*_'
 
 cm = pylab.get_cmap('viridis')
 
 # def getGVlabels(totVars, modVars)
 gvNames = copy.copy(totVars)
-for mv in modVars:
-    for i,nm in enumerate(['', '_{fine}','_{coarse}']): # HINT: this will need to change for >2 modes
-        if i>0 or mv in ['n','k']: # n and k are formated differently, the first value is total, then fine and coarse
-            gvNames.append(mv+nm)
-gvNames = ['$'+mv.replace('Mode','').replace('rEffCalc','r_{eff}').replace('ssa', 'SSA').replace('aod','AOD')+'$' for mv in gvNames]
+gvNames = ['$'+mv.replace('Mode','').replace('_fine','_{fine}').replace('rEffCalc','r_{eff}').replace('ssa', 'SSA').replace('aod','AOD')+'$' for mv in gvNames]
 
 Nvars = len(gvNames)
 barLeg = []
 totBias = dict([]) # only valid for last of whatever we itterate through on the next line
-Nbar = len(instruments)
-for barInd, barVal in enumerate(instruments):
-    lInd = 0 if barVal == 'lidar05' else wavInd
-    figC, axC = plt.subplots(figsize=(10,6))
-    axC.set_prop_cycle('color', plt.cm.Dark2(np.linspace(0,1,6)))
-    harvest = np.zeros([Nvars, N])
+Nbar = len(barVals)
+barVals = [y if type(y) is list else [y] for y in barVals] # barVals should be a list of lists
+for barInd, barVal in enumerate(barVals):
+    harvest = np.zeros([Nvars, N*len(barVal)])
     runNames = []    
-    for n in range(N):
-        paramTple = list(itertools.product(*[[barVal],conCases,SZAs,Phis,tauVals]))[n]
-        if barVal == 'PolOnly_lidar05+polar07': 
-            savePath = '/Users/wrespino/Synced/Working/SIM13_lidarTest/SIM42_%s_case-%s_sza%d_phi%d_tFct%4.2f_V2.pkl' % paramTple #SIM3_polar07_case-Smoke+pollution_sza30_phi0_tFct0.04_V2.pkl            
-        else:
-            savePath = saveStart + '%s_case-%s_sza%d_phi%d_tFct%4.2f_V2.pkl' % paramTple #SIM3_polar07_case-Smoke+pollution_sza30_phi0_tFct0.04_V2.pkl
-        
+    for n in range(N*len(barVal)):
+        # paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,tauVals]))[n]
+        paramTple = list(itertools.product(*[barVal,conCases,SZAs,Phis,tauVals]))[n]
+        savePtrn = saveStart + '%s_case-%sAOD_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple #SIM3_polar07_case-Smoke+pollution_sza30_phi0_tFct0.04_V2.pkl
+        savePath = glob.glob(savePtrn)
+        if not len(savePath)==1: assert False, 'Wrong number of files found (i.e. not one) for search string %s!' % savePath
         runNames.append('%s($θ_s=%d,φ=%d$)' % paramTple[1:4])
         runNames[-1] = runNames[-1].replace('pollution','POLL').replace('smoke','BB').replace('marine','MRN')
-#        if os.path.exists(savePath): # HACK -- worst of all time
-        simB = simulation(picklePath=savePath)
-#        else:
-#            print('=>'+str(n))
-        if not type(simB.rsltFwd) is dict: simB.rsltFwd = simB.rsltFwd[0] # HACK [VERY BAD] -- remove when we fix this to work with lists 
-        print("***** ", end=" ")
-        print(simB.rsltFwd['aod'][4])
+        simB = simulation(picklePath=savePath[0])
+        NsimsFull = len(simB.rsltBck)
+        lInd = np.argmin(np.abs(simB.rsltFwd[0]['lambda']-trgtλ))
+        simB.conerganceFilter(χthresh=χthresh, verbose=True)
         Nsims = len(simB.rsltBck)
-#        lInd = l+1 if 'lidar' in instruments[ind[0]] and l>0 else l
+        fineIndFwd = np.nonzero(['fine' in typ.lower() for typ in paramTple[1].split('+')])[0] 
+        if len(fineIndFwd)==0: fineIndFwd = np.nonzero(simB.rsltFwd[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
+        assert len(fineIndFwd)>0, 'No obvious fine mode could be found in fwd data!'
+        fineIndBck = [0]
+        rmse, bias = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck) 
+        harvest[:,n], harvestQ, rmseVal = af.normalizeError(simB.rsltFwd[0], rmse, lInd, totVars, bias)
+        
+        print("***** ", end=" ")
+        print(simB.rsltFwd[0]['aod'][lInd])
         print('---')
         print(runNames[-1])
         print(savePath)
-        print('AODf=%4.2f, AODc=%4.2f, Nsim=%d' % (simB.rsltFwd['aodMode'][0,lInd], simB.rsltFwd['aodMode'][1,lInd], Nsims))
+        print('AODf=%4.2f, AODc=%4.2f, Nsim=%d' % (simB.rsltFwd[0]['aodMode'][0,lInd], simB.rsltFwd[0]['aodMode'][1,lInd], Nsims))
         print(paramTple[0])
-        print('Spectral variables for λ = %4.2f μm'% simB.rsltFwd['lambda'][lInd])
-        try:
-#            assert False
-            rmse, bias = simB.analyzeSim(lInd, modeCut=None, swapFwdModes=swapModes) # HINT: this will break in cases with differnt number of fwd and back modes
-        except (ValueError, AssertionError):
-            rmse, bias = simB.analyzeSim(lInd, modeCut=0.5) # HINT: this is much slower than the above
+        print('Spectral variables for λ = %4.2f μm'% simB.rsltFwd[0]['lambda'][lInd])        
         print('---')
-        for vr in totBiasVars:
-            if n == 0: # allocate the array
-                totBias[vr] = np.ones([N*Nsims, bias[vr].shape[1]])
-            totBias[vr][n*Nsims:(n+1)*Nsims,:] = bias[vr]
-        harvest[:,n], harvestQ, rmseVal = af.normalizeError(simB.rsltFwd, rmse, lInd, totVars+modVars, bias)
-        if printRslt:
-            print("Q and σ (col,pbl) --- SSA, g, Lidar, AODF, AOD, n:")
-            for err in [np.array(harvestQ), np.array(rmseVal)]:
-                print('%5f' % err['$SSA$'==np.array(gvNames)], end =",")
-                print('%5f' % err['$SSA_{fine}$'==np.array(gvNames)], end =",")
-                print('%5f' % err['$g$'==np.array(gvNames)], end =",")
-#                print('---', end =",")
-                print('%5f' % err['$LidarRatio$'==np.array(gvNames)], end =",")
-                print('---', end =",")
-                if 'case06a' in paramTple[1] or 'case06b' in paramTple[1]: # HACK -- all this should be improved...
-                    print('%5f' % err['$AOD_{coarse}$'==np.array(gvNames)], end =",")
-                elif 'case06c' in paramTple[1] or 'case06d' in paramTple[1]:
-                    print('%5f' % err['$AOD$'==np.array(gvNames)], end =",")                
-                elif 'variable' in paramTple[1] and not 'swap' in paramTple[1]:
-                    print('%5f' % err['$AOD_{fine}$'==np.array(gvNames)], end =",")
-                else:
-                    print('---', end =",")
-                if 'case06c' in paramTple[1] or 'case06d' in paramTple[1]:
-                    print('%5f' % err['$AOD_{fine}$'==np.array(gvNames)], end =",")
-                else:
-                    print('---', end =",")
-                print('---', end =",") # NONSPH would go in these two
-                print('---', end =",")
-                print('%5f' % err['$AOD$'==np.array(gvNames)], end =",")
-                print('%5f' % err['$AOD_{fine}$'==np.array(gvNames)], end =",")
-                print('%5f' % err['$n$'==np.array(gvNames)], end =",")
-                print('%5f' % err['$n_{fine}$'==np.array(gvNames)])
-
-        # PLOT 3: print PDF of AOD as a function of case
-        aodDiffRng = 0.08
-        kern = st.gaussian_kde(bias['ssa'][np.abs(bias['ssa'])<aodDiffRng])
-        xAxisVals = np.linspace(-aodDiffRng, aodDiffRng, 500)                
-        axC.plot(xAxisVals, kern.pdf(xAxisVals), '-.')
-    axC.legend([cc[0:7] for cc in conCases])
-    axC.set_title(barVal)
-    if gridPlots: mf.gridPlot(runNames, gvNames, harvest)    
-    plt.rcParams.update({'font.size': 14})
+        
+    plt.rcParams.update({'font.size': 12})
     if barInd==0: 
-        figB, axB = plt.subplots(figsize=(4.8,6))
-        axB.plot([1,1], [0,5*(Nvars+1)], ':', color=0.65*np.ones(3))
+        figB, axB = plt.subplots(figsize=(4.8,6)) # THIS IS THE BOXPLOT
+        axB.plot([1,1], [0,5*(Nvars+1)], ':', color=0.65*np.ones(3)) # vertical line at unity
     pos = Nbar*np.r_[0:harvest.shape[0]]+0.7*barInd
-    indGood = np.nonzero([not 'coarse' in gn for gn in gvNames])[0][::-1]
-    hnd = axB.boxplot(harvest[indGood,:].T, vert=0, patch_artist=True, positions=pos[0:len(indGood)], sym='.')
-    if barInd == 10:
-        [hnd['boxes'][i].set_facecolor([0,0,1]) for i in range(len(hnd['boxes']))]
-        [hf.set_markeredgecolor([0,0,1]) for hf in hnd['fliers']]
-    elif barInd == 11:
-        [hnd['boxes'][i].set_facecolor([1,0,0]) for i in range(len(hnd['boxes']))]
-        [hf.set_markeredgecolor([1,0,0]) for hf in hnd['fliers']]
-    else:
-        [hnd['boxes'][i].set_facecolor(cm((barInd)/(Nbar))) for i in range(len(hnd['boxes']))]
-        [hf.set_markeredgecolor(cm((barInd)/(Nbar))) for hf in hnd['fliers']]
+    hnd = axB.boxplot(harvest.T, vert=0, patch_artist=True, positions=pos[0:Nvars], sym='.')
+    [hnd['boxes'][i].set_facecolor(cm((barInd)/(Nbar))) for i in range(len(hnd['boxes']))]
+    [hf.set_markeredgecolor(cm((barInd)/(Nbar))) for hf in hnd['fliers']]
     barLeg.append(hnd['boxes'][0])
 axB.set_xscale('log')
-axB.set_xlim([0.05,15])
-axB.set_ylim([-0.8, Nbar*len(indGood)])
+axB.set_xlim([0.08,11])
+axB.set_ylim([-0.8, Nbar*Nvars-1.5])
 plt.sca(axB)
-plt.yticks(Nbar*(np.r_[0:len(indGood)]+0.1*Nbar), [mv.replace('fine','PBL')for mv in np.array(gvNames)[indGood]])
-#lgHnd = axB.legend(barLeg[::-1], ['%s' % τ for τ in instruments[::-1]], loc='center left')
-#lgHnd = axB.legend(barLeg[::-1], ['Pol. Only', 'Pol+Lid09', 'Pol+Lid09', 'Lid05 Only'] , loc='center left')
-#lgHnd.draggable()
+plt.yticks(Nbar*(np.r_[0:Nvars]+0.1*Nbar-0.2), gvNames)
+lgTxt = [lgTxtTransform('%s' % τ) for τ in np.array(barVals)[:,0]]
+# lgTxt = ['Perfect Model','Coarse Nonsph','Fine Nonsph', 'Unmodeled WLR','2 extra modes']
+lgHnd = axB.legend(barLeg[::-1], ['%s' % τ for τ in lgTxt[::-1]], loc='center left', prop={'size': 9, 'weight':'bold'})
+lgHnd.draggable()
 axB.yaxis.set_tick_params(length=0)
 figB.tight_layout()
-figSavePath = '/Users/wrespino/Documents/'+tag+'_case-%s.png' % paramTple[1]
-figB.savefig(figSavePath, dpi=600, facecolor='w', edgecolor='w', orientation='portrait', pad_inches=0.1)
+
+sys.exit()
+figSavePath = '/Users/wrespino/Synced/Presentations/ClimateRadiationSeminar_2020/figures/allFiveConditions_misrModis_noFineModeVarsShown_case.png' # % concases[0]
+figB.savefig(figSavePath, dpi=600, facecolor='w', edgecolor='w', orientation='portrait', pad_inches=0.05)
+figB.savefig(figSavePath[:-3]+'pdf', dpi=600, facecolor='w', edgecolor='w', orientation='portrait', pad_inches=0.05)
+
 
 # PLOT 4: print PDF as a fuction of variable type
+if not plotD: sys.exit()
 trgt = {'aod':0.03, 'ssa':0.03, 'g':0.02, 'aodMode':0.03, 'n':0.025} # look at total and fine/coarse aod=0.2
 figD, axD = plt.subplots(2,3,figsize=(12,7))
 for i,vr in enumerate(totBiasVars):

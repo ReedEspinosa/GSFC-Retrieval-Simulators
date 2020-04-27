@@ -252,8 +252,8 @@ retrieval:
         molecular_profile_vertical_type: exponential
         number_of_layers: 50
         reference_plane_for_polarization: principal_plane
-        simulating_derivatives: {number_of_fourier_expansion_coefficients: 4, number_of_gaussian_quadratures_for_expansion_coefficients: 30, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40, order_of_scattering: derivatives}
-        simulating_observation: {number_of_fourier_expansion_coefficients: 4, number_of_gaussian_quadratures_for_expansion_coefficients: 30, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40, order_of_scattering: multiple_scattering}
+        simulating_derivatives: {number_of_fourier_expansion_coefficients: 20, number_of_gaussian_quadratures_for_expansion_coefficients: 30, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40, order_of_scattering: derivatives}
+        simulating_observation: {number_of_fourier_expansion_coefficients: 20, number_of_gaussian_quadratures_for_expansion_coefficients: 30, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40, order_of_scattering: multiple_scattering}
     regime_of_measurement_fitting: {polarization: relative_polarization_components}
     regime_of_multipixel_constraints: {inversion_regime: single_pixel}
 settings: {strict: false}
