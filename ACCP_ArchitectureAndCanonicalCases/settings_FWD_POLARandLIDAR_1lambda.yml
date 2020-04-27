@@ -7,7 +7,7 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [1.00001]
+                    max: [10.00001]
                     min: [0.00000001]
                     value: [0.009357605939569125]
                 single_pixel:
@@ -212,8 +212,8 @@ retrieval:
         molecular_profile_vertical_type: exponential
         number_of_layers: 50
         reference_plane_for_polarization: principal_plane
-        simulating_derivatives: {number_of_fourier_expansion_coefficients: 4, number_of_gaussian_quadratures_for_expansion_coefficients: 15, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 4, order_of_scattering: derivatives}
-        simulating_observation: {number_of_fourier_expansion_coefficients: 10, number_of_gaussian_quadratures_for_expansion_coefficients: 15, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: multiple_scattering}
+        simulating_derivatives: {number_of_fourier_expansion_coefficients: 20, number_of_gaussian_quadratures_for_expansion_coefficients: 30, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40, order_of_scattering: derivatives}
+        simulating_observation: {number_of_fourier_expansion_coefficients: 20, number_of_gaussian_quadratures_for_expansion_coefficients: 30, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40, order_of_scattering: multiple_scattering}
     regime_of_measurement_fitting: {polarization: absolute_polarization_components}
     regime_of_multipixel_constraints: {inversion_regime: single_pixel}
 settings: {strict: true}

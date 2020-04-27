@@ -13,17 +13,16 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_
 from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
 
-# n = int(sys.argv[1]) # (0,1,2,...,N-1)
-n=2
+n = int(sys.argv[1]) # (0,1,2,...,N-1)
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM14_lidarPolACCP/SIM43V2_2mode_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASE03_n%d_' % n)
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
-    Nsims = 56
-    maxCPU = 28
+    Nsims = 28
+    maxCPU = 14
 else: # MacBook Air
     saveStart = '/Users/wrespino/Desktop/testLIDAR_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
@@ -37,17 +36,20 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
 
 
-conCases = ['variableFineLofted+variableCoarse'] #4
-# SZAs = [0.1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60] # 13 (GRASP doesn't seem to be wild about θs=0)
-SZAs = [30] # 13 (GRASP doesn't seem to be wild about θs=0)
-Phis = [0] # 1 
-# τFactor = [0.04, 0.08, 0.12, 0.18, 0.35] #5 N=240
-τFactor = [0.18] #5 N=240
-instruments = ['modis', 'misr', 'modisMisr', 'modisMisrPolar', 'lidar05+modisMisrPolar', 'lidar09+modisMisrPolar'] #6
+conCases = []
+for caseLet in ['a','b','c','d','e','f']:
+    conCases.append('case06'+caseLet) # 6
+#     conCases.append('case06'+caseLet+'monomode') #12 total
+SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
+Phis = [0] # 1
+τFactor = [1, 4] #2
+instruments = ['Lidar09','Lidar05','Polar07','Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] #6 N=216
+# instruments = ['Lidar06+polar07'] #5 N=360
 rndIntialGuess = True # randomly vary the intial guess of retrieved parameters
 
 paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,τFactor]))[n] 
-savePath = saveStart + '%s_case-%s_sza%d_phi%d_tFct%4.2f_V2.pkl' % paramTple
+savePath = saveStart + '%s_case-%sAOD_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple
+
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 
 # RUN SIMULATION

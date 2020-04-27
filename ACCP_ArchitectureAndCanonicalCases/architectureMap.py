@@ -91,9 +91,26 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
         wvls = [0.532, 1.064] # Nλ=2
 #        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
-        meas = np.r_[np.repeat(0.0532, nbvm[0]), np.repeat(0.01064, nbvm[1])] # Note these are just dummy measurement, correspondance with wavelength is just for human reference
+        meas = np.r_[np.repeat(0.05, nbvm[0]), np.repeat(0.01, nbvm[1])] # Note these are just dummy measurement, correspondance with wavelength is just for human reference
         phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
         errStr = [y for y in archName.lower().split('+') if 'lidar05' in y][0]
+        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
+            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+            nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
+    if 'lidar06' in archName.lower(): # TODO: this needs to be more complex, real lidar05 has backscatter at 1 wavelength and DEPOL
+#        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
+        msTyp = [36, 39] # must be in ascending order
+        botLayer = 10 # bottom layer in meters
+        topLayer = 4510
+        Nlayers = 10 #TODO: ultimatly this should be read from (or even better define) the YAML file
+        nbvm = Nlayers*np.ones(len(msTyp), np.int)
+#        thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
+        thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
+        wvls = [0.355, 0.532, 1.064] # Nλ=2
+#        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        meas = np.r_[np.repeat(0.05, nbvm[0]), np.repeat(0.01, nbvm[1])] # Note these are just dummy measurement, correspondance with wavelength is just for human reference
+        phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
+        errStr = ['lidar05' for y in archName.lower().split('+') if 'lidar06' in y][0] # right now, lidar05 and lidar06 have the same errors
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
@@ -120,6 +137,8 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
 def addError(measNm, l, rsltFwd, edgInd):
     # if the following check ever becomes a problem see commit #6793cf7
     assert (np.diff(edgInd)[0]==np.diff(edgInd)).all(), 'Current error models assume that each measurement type has the same number of measurements at each wavelength!'
+    βextLowLim = 0.01/1e6
+    βscaLowLim = 2.0e-10
     mtch = re.match('^([A-z]+)([0-9]+)$', measNm)
     if mtch.group(1).lower() == 'polar': # measNm should be string w/ format 'polarN', where N is polarimeter number
         if int(mtch.group(2)) in [4, 7, 8]: # S-Polar04 (a-d), S-Polar07, S-Polar08
@@ -163,7 +182,6 @@ def addError(measNm, l, rsltFwd, edgInd):
             else:
                 relErrβsca = 0.05 #
                 absErrβext = 17/1e6 # m-1
-            βextLowLim = 0.01/1e6
 #            relErrβsca = 0.000358 # these values pulled from slide 39 of Rich's HSRL talk at the aerosol TIM
 #            relErrβext = 0.001157 # see A-CCP/LIDAR Erorr in Endnote for more details
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
@@ -172,6 +190,7 @@ def addError(measNm, l, rsltFwd, edgInd):
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErrβsca), size=len(trueSimβsca))
             fwdSimβext = trueSimβext + absErrβext*np.random.normal(size=len(trueSimβext))
             fwdSimβext[fwdSimβext<βextLowLim] = βextLowLim
+            fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
 #             fwdSimβext = trueSimβext*np.random.lognormal(sigma=np.log(1+relErrβext), size=len(trueSimβext))
 #            fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=len(trueSimDPOL))
 #            return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
@@ -182,6 +201,7 @@ def addError(measNm, l, rsltFwd, edgInd):
             if int(mtch.group(2)) == 900: print('Using 1/1000 standard noise in Lidar09')
             trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
+            fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
             return np.r_[fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
     if mtch.group(1).lower() == 'modismisr':
         relErr = 0.03

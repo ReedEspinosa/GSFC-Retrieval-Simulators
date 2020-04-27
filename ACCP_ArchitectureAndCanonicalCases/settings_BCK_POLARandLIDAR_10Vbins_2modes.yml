@@ -7,30 +7,26 @@ retrieval:
             mode[1]: # FINE
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                    max: [2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0e-06]
-                    min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
-                    value: [1.5e-06, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 1.5e-06]
+                    max: [2.0e-09, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
+                    min: [1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09]
+                    value: [1.634669718378219e-09, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 1.634669718378219e-06]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-1}
-#                    a_priori_estimates:
-#                            lagrange_multiplier:      [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.000001}
             mode[2]: # COARSE
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                    max: [2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0e-06]
-                    min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
-                    value: [1.5e-06, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 1.5e-06]
+                    max: [2.0e-09, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
+                    min: [1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09]
+                    value: [1.634669718378219e-09, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 1.634669718378219e-06]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 1.0e-1}
-#                    a_priori_estimates:
-#                            lagrange_multiplier:      [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.000001}
             retrieved: true
             type: vertical_profile_normalized
         characteristic[2]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [0.5] # τfactor should not exceed unity
+                    max: [1.0] 
                     min: [0.00000001]
                     value: [0.0005]
                 single_pixel:
@@ -38,7 +34,7 @@ retrieval:
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [1.5] # τfactor should not exceed unity
+                    max: [2.0]
                     min: [0.00000001]
                     value: [0.005]
                 single_pixel:
@@ -49,18 +45,18 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max: [0.22, 0.7]
-                    min: [0.12, 0.3]
-                    value: [0.17, 0.509795355796814]
+                    max:   [0.22, 0.7]
+                    min:   [0.12, 0.3]
+                    value: [0.17, 0.5]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier: [0, 0]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max: [4.6, 0.7]
-                    min: [0.6, 0.3]
-                    value: [2.0, 0.509795355796814]
+                    max:   [4.6, 0.7]
+                    min:   [0.6, 0.3]
+                    value: [2.0, 0.5]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier: [0, 0]
@@ -74,7 +70,7 @@ retrieval:
                     min: [1.34]
                     value: [1.41]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e-2}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0.1}
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -82,7 +78,7 @@ retrieval:
                     min: [1.34]
                     value: [1.41]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e-2}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0.1}
             retrieved: true
             type: real_part_of_refractive_index_spectral_dependent
         characteristic[5]:
@@ -90,18 +86,18 @@ retrieval:
                 initial_guess:
                     index_of_wavelength_involved: [1]
                     max: [0.0101]
-                    min: [0.001]
+                    min: [0.0001]
                     value: [0.003]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e-2}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0.1}
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
                     max: [0.0101]
-                    min: [0.001]
+                    min: [0.0001]
                     value: [0.003]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e-2}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0.1}
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
         characteristic[6]:
@@ -116,27 +112,27 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 1.0e6
+                        lagrange_multiplier: 1.0
             mode[2]:
                 initial_guess:                       #1      #2      #3 
                     value:                          [0.999999]
                     min:                            [0.999998]
                     max:                            [1.000000]
-                    index_of_wavelength_involved:   [1,      2,      3,]
+                    index_of_wavelength_involved:   [0]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 1.0e6
+                        lagrange_multiplier: 1.0
             mode[3]:
                 initial_guess:                       #1      #2      #3             
                     value:                          [0.01]  
                     min:                            [0.00406] # 1 m/s
                     max:                            [0.027] # 10 m/s
-                    index_of_wavelength_involved:   [ 1]
+                    index_of_wavelength_involved:   [0]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 1.0e6
+                        lagrange_multiplier: 1.0
         characteristic[7]:
             mode[1]:
                 initial_guess:
@@ -226,14 +222,14 @@ retrieval:
             measurement_type[1]:
                 index_of_wavelength_involved: [1]
                 type: VEXT
-            standard_deviation: 0.017e-03
+            standard_deviation: 0.034e-03
             standard_deviation_synthetic: 0.0
         noise[5]:
             error_type: relative
             measurement_type[1]:
                 index_of_wavelength_involved: [1]
                 type: VBS
-            standard_deviation: 0.1
+            standard_deviation: 0.2
             standard_deviation_synthetic: 0.0
     phase_matrix:
         kernels_folder: KERNELS_BASE/
@@ -256,8 +252,8 @@ retrieval:
         molecular_profile_vertical_type: exponential
         number_of_layers: 50
         reference_plane_for_polarization: principal_plane
-        simulating_derivatives: {number_of_fourier_expansion_coefficients: 10, number_of_gaussian_quadratures_for_expansion_coefficients: 15, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: derivatives}
-        simulating_observation: {number_of_fourier_expansion_coefficients: 10, number_of_gaussian_quadratures_for_expansion_coefficients: 15, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: multiple_scattering}
+        simulating_derivatives: {number_of_fourier_expansion_coefficients: 20, number_of_gaussian_quadratures_for_expansion_coefficients: 30, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40, order_of_scattering: derivatives}
+        simulating_observation: {number_of_fourier_expansion_coefficients: 20, number_of_gaussian_quadratures_for_expansion_coefficients: 30, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40, order_of_scattering: multiple_scattering}
     regime_of_measurement_fitting: {polarization: relative_polarization_components}
     regime_of_multipixel_constraints: {inversion_regime: single_pixel}
 settings: {strict: false}

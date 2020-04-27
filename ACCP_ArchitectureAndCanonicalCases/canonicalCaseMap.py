@@ -5,6 +5,7 @@ import numpy as np
 import numpy.random as rnd
 import tempfile
 from hashlib import md5
+import json
 import os
 import sys
 MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GRASP_scripts is in parent of MADCAP_scripts
@@ -31,9 +32,9 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999]] # mode 1, 2,...
         vals['vrtHght'] = [[3010]] if 'lofted' in caseStr.lower() else  [[1010]]  # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[500]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.34+rnd.random()*0.2, nwl)[None,:] # mode 1 
-        vals['k'] = np.repeat(0.0001+rnd.random()*0.01, nwl)[None,:] # mode 1 
+        vals['vrtHghtStd'] = [[500]] # Gaussian sigma in meters
+        vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.34+rnd.random(2)*0.20)[None,:] # mode 1 # linear w/ λ
+        vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.01)[None,:] # mode 1 # linear w/ λ
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0        
@@ -226,7 +227,7 @@ def conCaseDefinitions(caseStr, nowPix):
         for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
             bot = max(mid[0]-2*rng[0],115) # we want to bottom two bins to go to zero (GRASP bug)
             top = mid[0]+2*rng[0]
-            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*0.2+0.0001
+            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.0001
             vals['vrtProf'][i,2:] = np.convolve(vals['vrtProf'][i,:], np.ones(2)/2, mode='full')[3:] # smooth it, preserving zeros at ends and high concentration at bottom
         del vals['vrtHght']
         del vals['vrtHghtStd']
@@ -299,16 +300,25 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
                     vals[key] = np.vstack([vals[key], valsTmp[key]])
             else: # implies we take the surface parameters from the last case
                 vals[key] = valsTmp[key]
-    bsHsh = md5(baseYAML.encode()).hexdigest()[0:8]
+    bsHsh = md5(open(baseYAML,'rb').read()).hexdigest()[0:8] # unique ID from contents of original user created YAML file
+    valList = json.dumps([(y.tolist() if 'numpy' in str(type(y)) else y) for y in vals.values()])
+    valHsh = md5(json.dumps(valList).encode()).hexdigest()[0:8] # unique ID from this case's values
     nwl = len(np.unique([mv['wl'] for mv in nowPix.measVals]))
-    newFn = 'settingsYAML_conCase%s_nwl%d_%s.yml' % (caseStrs, nwl, bsHsh)
+    newFn = 'settingsYAML_conCase%s_nwl%d_%s_%s.yml' % (caseStrs, nwl, bsHsh, valHsh)
     newPathYAML = os.path.join(tempfile.gettempdir(), newFn)
+    if os.path.exists(newPathYAML): return newPathYAML, landPrct # reuse existing YAML file from this exact base YAML, con. case values and NWL
     yamlObj = rg.graspYAML(baseYAML, newPathYAML)
     yamlObj.adjustLambda(nwl)
     for key in vals.keys():
         for m in range(np.array(vals[key]).shape[0]): # loop over aerosol modes
                 fldNm = '%s.%d.value' % (fldNms[key], m+1)
                 yamlObj.access(fldNm, newVal=vals[key][m], write2disk=False, verbose=False) # verbose=False -> no wanrnings about creating a new mode
+                if key=='vrtProf':
+                    fldNm = '%s.%d.index_of_wavelength_involved' % (fldNms[key], m+1)
+                    yamlObj.access(fldNm, newVal=np.zeros(len(vals[key][m]), dtype=int), write2disk=False) 
+                    fldNm = '%s.%d.min' % (fldNms[key], m+1)
+                    yamlObj.access(fldNm, newVal=1e-9*np.ones(len(vals[key][m])), write2disk=False)
+                    fldNm = '%s.%d.max' % (fldNms[key], m+1)
+                    yamlObj.access(fldNm, newVal=2*np.ones(len(vals[key][m])), write2disk=False)
     yamlObj.access('stop_before_performing_retrieval', True, write2disk=True)    
     return newPathYAML, landPrct 
-
