@@ -85,15 +85,15 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         wvls = [0.532, 1.064] # Nλ=2
         if 'lidar06' in archName.lower():
             msTyp.insert(0,[36, 39])
-            wvls.insert(0,355)            
+            wvls.insert(0,0.355)            
         botLayer = 10 # bottom layer in meters
         topLayer = 4510
         Nlayers = 10 #TODO: ultimatly this should be read from (or even better define) the fwd/bck YAML file
-        errStr = [y for y in archName.lower().split('+') if 'lidar05' in y][0] # this must link to an error model in addError() below
+        errStr = [y for y in archName.lower().split('+') if ('lidar05' in y or 'lidar06' in y)][0] # this must link to an error model in addError() below
         for wvl, msTyp in zip(wvls, msTyp): # This will be expanded for wavelength dependent measurement types/geometry
             nbvm = Nlayers*np.ones(len(msTyp), np.int)
             thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
-            meas = np.r_[np.repeat(0.05, nbvm[0]), np.repeat(0.01, nbvm[1])] # Note these are just dummy measurement, correspondance with wavelength is just for human reference
+            meas = np.block([np.repeat(n*0.001, n) for n in nbvm]) # measurement value should be type/1000
             phi = np.repeat(0, len(thtv))
             if msTyp == [31]:
                 errModel = functools.partial(addError, errStr.replace('05','09').replace('06','09')) # We take LIDAR09 error in backscatter only channel
@@ -160,8 +160,8 @@ def addError(measNm, l, rsltFwd, edgInd):
         fwdSimU = fwdSimU*(1+dpRnd*dPol) 
         return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py 
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
-        if int(mtch.group(2)) in [5, 500]: # HSRL and depolarization
-            if  int(mtch.group(2)) == 500:
+        if int(mtch.group(2)) in [5, 6, 600, 500]: # HSRL and depolarization
+            if  int(mtch.group(2)) > 100:
                 print('Using 1/1000 standard noise in HSRL')
                 relErrβsca = 0.00005 #
                 absErrβext = 17/1e9 # m-1
@@ -183,8 +183,8 @@ def addError(measNm, l, rsltFwd, edgInd):
             return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
         elif int(mtch.group(2)) in [9, 900]: # backscatter and depol
 #            relErr = 0.07 # 5% calibration error from Gimmestad, G. et al. Sci. Rep. 7, 42337; (2017), random error so we also choose 5%, which, when added in quadrature give 7%
-            relErr = 0.05 if int(mtch.group(2)) == 9 else 0.00005
-            if int(mtch.group(2)) == 900: print('Using 1/1000 standard noise in Lidar09')
+            relErr = 0.05 if int(mtch.group(2)) < 100 else 0.00005
+            if int(mtch.group(2)) >= 100: print('Using 1/1000 standard noise in Lidar09')
             trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
             fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim

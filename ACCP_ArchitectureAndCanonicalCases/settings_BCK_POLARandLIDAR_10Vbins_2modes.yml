@@ -192,7 +192,6 @@ retrieval:
     debug: {additional_information: false, verbose: true}
     general: {path_to_internal_files: /usr/local/share/grasp/kernels/}
     noises:
-    noises:
         noise[1]:
             error_type: relative
             measurement_type[1]:

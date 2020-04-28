@@ -17,7 +17,7 @@ n = int(sys.argv[1]) # (0,1,2,...,N-1)
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASE03_n%d_' % n)
+    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASETEST4MODE_n%d_' % n)
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -31,7 +31,7 @@ else: # MacBook Air
     Nsims = 2
     maxCPU = 1
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
-bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes.yml')
+bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_4modes.yml')
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
 
@@ -39,12 +39,10 @@ bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
 conCases = []
 for caseLet in ['a','b','c','d','e','f']:
     conCases.append('case06'+caseLet) # 6
-#     conCases.append('case06'+caseLet+'monomode') #12 total
-SZAs = [0.1, 30, 60] # 3 (GRASP doesn't seem to be wild about θs=0)
+SZAs = [30] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1
-τFactor = [1, 4] #2
-instruments = ['Lidar09','Lidar05','Polar07','Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] #6 N=216
-# instruments = ['Lidar06+polar07'] #5 N=360
+τFactor = [1] #2
+instruments = ['polar07', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] #6 N=24
 rndIntialGuess = True # randomly vary the intial guess of retrieved parameters
 
 paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,τFactor]))[n] 
