@@ -5,7 +5,7 @@
 import os
 import sys
 import itertools
-from shutil import copyfile
+import shutil 
 MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GRASP_scripts is in parent of MADCAP_scripts
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import simulateRetrieval as rs
@@ -17,7 +17,8 @@ from canonicalCaseMap import setupConCaseYAML
 # n = int(sys.argv[1]) # (0,1,2,...,N-1)
 n=0
 
-dryRun = False
+dryRun = True # set everything up but don't actually retrieve (probably used with fullSave=True)
+fullSave = True # archive all the GRASP working directories into a zip file saved along side the pkl file 
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
@@ -32,8 +33,8 @@ else: # MacBook Air
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
     dirGRASP = '/usr/local/bin/grasp'
     krnlPath = None
-    Nsims = 1
-    maxCPU = 1
+    Nsims = 2
+    maxCPU = 2
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
 bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_4modes.yml')
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
@@ -69,17 +70,13 @@ print('n= %d, Nλ = %d' % (n,nowPix.nwl))
 simA = rs.simulation(nowPix) # defines new instance for architecture described by nowPix
 gObjFwd, gObjBck = simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, rndIntialGuess=rndIntialGuess, dryRun=dryRun)
 
-if dryRun:
-    # fwd YAML file
-    copyfile(gObjFwd.yamlObj.YAMLpath, savePath[0:-4] + '_forwardCalculationSettings.yml')
-    # fwd output file
-    outFile = os.path.join(gObjFwd.dirGRASP, gObjFwd.yamlObj.access('stream_fn'))
-    copyfile(outFile, savePath[0:-4] + '_forwardCalculationResult.txt')
-    # noised up bck data 
-    gObjBck.writeSDATA(savePath[0:-4] + '_noisyObservations2Retrieve.sdata')
-
-
-
-
-
+if fullSave: # TODO: build zip from original tmp folders without making extra copies to disk, see first answer here: https://stackoverflow.com/questions/458436/adding-folders-to-a-zip-file-using-python
+    fullSaveDir = savePath[0:-4]
+    if os.path.exists(fullSaveDir): shutil.rmtree(fullSaveDir)
+    os.mkdir(fullSaveDir)
+    shutil.copytree(gObjFwd.dirGRASP, os.path.join(fullSaveDir,'forwardCalculation'))
+    for i, gb in enumerate(gObjBck):
+        shutil.copytree(gb.dirGRASP, os.path.join(fullSaveDir,'inversion%02d' % i))
+    shutil.make_archive(fullSaveDir, 'zip', fullSaveDir)
+    shutil.rmtree(fullSaveDir) 
 
