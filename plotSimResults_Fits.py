@@ -16,9 +16,9 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 n=0
-simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/COMBO04_n1327_Lidar09+modisMisrPolar_case-variableFine+variableCoarseLofted_sza60_phi0_tFct0.07_V1.pkl'
-lIndP = 3 # polarimeter λ to plot
-lIndL = 2 # LIDAR λ to plot (3,7)
+simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASETEST4MODE_n15_Lidar05+polar07_case-case06dAOD_sza30_phi0_tFct1.00_V1.pkl'
+lIndP = 4 # polarimeter λ to plot
+lIndL = 3 # LIDAR λ to plot (3,7)
 
 simA = simulation(picklePath=simRsltFile)
 simA.conerganceFilter(χthresh=1.5, verbose=True)
