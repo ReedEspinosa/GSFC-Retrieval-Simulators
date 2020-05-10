@@ -85,7 +85,7 @@ retrieval:
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max: [3.71, 0.77]
+                    max: [6.0, 0.77]
                     min: [0.65, 0.3]
                     value: [1.5, 0.5]
                 single_pixel:
@@ -103,7 +103,7 @@ retrieval:
             mode[4]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max: [3.71, 0.77]
+                    max: [6.0, 0.77]
                     min: [0.65, 0.3] 
                     value: [1.5, 0.5]
                 single_pixel:
@@ -151,7 +151,7 @@ retrieval:
                 initial_guess:
                     index_of_wavelength_involved: [1] 
                     max: [0.05]
-                    min: [1e-5]
+                    min: [1e-8]
                     value: [0.001]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e3}
@@ -159,7 +159,7 @@ retrieval:
                 initial_guess:
                     index_of_wavelength_involved: [1]
                     max: [0.05]
-                    min: [1e-5]
+                    min: [1e-8]
                     value: [0.001]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e3}
@@ -167,7 +167,7 @@ retrieval:
                 initial_guess:
                     index_of_wavelength_involved: [1]
                     max: [0.05]
-                    min: [1e-5]
+                    min: [1e-8]
                     value: [0.001]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e3}
@@ -175,7 +175,7 @@ retrieval:
                 initial_guess:
                     index_of_wavelength_involved: [1]
                     max: [0.05]
-                    min: [1e-5]
+                    min: [1e-8]
                     value: [0.001]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0e3}

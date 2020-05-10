@@ -18,20 +18,21 @@ from simulateRetrieval import simulation
 import miscFunctions as mf
 import ACCP_functions as af
 
-instruments = ['Lidar06+polar07', 'Lidar05+polar07','Lidar09+polar07','Lidar05','Lidar09'] #5 N=360
+instruments = ['Lidar06+polar07', 'Lidar05+polar07','Lidar09+polar07','Lidar05','Lidar09','polar07'] #5 N=360
 conCases = []
-for caseLet in ['a','b','c','d','e','f']:
+# for caseLet in ['a','b','c','d','e','f']:
+for caseLet in ['e','f']:
     conCases.append('case06'+caseLet)
     # conCases.append('case06'+caseLet+'monomode') #12 total
-SZAs = [0.1, 30, 60] # 3
+SZAs = [30] # 3
 Phis = [0] # 1 -> N=18 Nodes
-tauVals = [4.0] # NEED TO MAKE THIS CHANGE FILE NAME
+tauVals = [1.0] # NEED TO MAKE THIS CHANGE FILE NAME
 N = len(SZAs)*len(conCases)*len(Phis)*len(tauVals)
 # N = len(SZAs)*len(Phis)*len(instruments)*len(tauVals)
 barVals = instruments # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
 
 trgtλ = 0.532
-χthresh=1.0 # χ^2 threshold on points
+χthresh=10.0 # χ^2 threshold on points
 
 def lgTxtTransform(lgTxt):
     if re.match('.*Coarse[A-z]*Nonsph', lgTxt): # conCase in leg
@@ -40,7 +41,7 @@ def lgTxtTransform(lgTxt):
         return 'Fine[Nonsph]\nCoarse[Sphere]'
     if 'misr' in lgTxt.lower(): # instrument in leg
         return lgTxt.replace('Misr','+misr').replace('Polar','+polar').upper()
-    if 'lidar' in lgTxt.lower(): # instrument in leg
+    if 'lidar' in lgTxt.lower() or 'polar' in lgTxt.lower(): # instrument in leg
         return lgTxt
     return 'Fine[Sphere]\nCoarse[Sphere]' # conCase in leg
 
@@ -52,7 +53,7 @@ totBiasVars = ['aod', 'ssa','aodMode_fine','n','rEffCalc'] # only used in Plot 4
 
 plotD = False # PDFs of errors as a fuction of different variables
 
-saveStart = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE02_n*_'
+saveStart = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV01_n*_'
 
 cm = pylab.get_cmap('viridis')
 
@@ -71,7 +72,7 @@ for barInd, barVal in enumerate(barVals):
     for n in range(N*len(barVal)):
         # paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,tauVals]))[n]
         paramTple = list(itertools.product(*[barVal,conCases,SZAs,Phis,tauVals]))[n]
-        savePtrn = saveStart + '%s_case-%sAOD_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple #SIM3_polar07_case-Smoke+pollution_sza30_phi0_tFct0.04_V2.pkl
+        savePtrn = saveStart + '%s_%s_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple #SIM3_polar07_case-Smoke+pollution_sza30_phi0_tFct0.04_V2.pkl
         savePath = glob.glob(savePtrn)
         if not len(savePath)==1: assert False, 'Wrong number of files found (i.e. not one) for search string %s!' % savePath
         runNames.append('%s($θ_s=%d,φ=%d$)' % paramTple[1:4])

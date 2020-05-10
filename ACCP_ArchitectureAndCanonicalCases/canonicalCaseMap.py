@@ -193,7 +193,7 @@ def conCaseDefinitions(caseStr, nowPix):
         else:
             R=[0.00000002, 0.00000002, 0.00000002, 0.00000002,	0.00000002, 0.00000002, 0.00000002, 0.00000002] 
         lambR = np.interp(wvls, λ, R)
-        FresFrac = 0.9999*np.ones(nwl)
+        FresFrac = 0.999999*np.ones(nwl)
         cxMnk = (7*0.00512+0.003)/2*np.ones(nwl) # 7 m/s
         vals['cxMnk'] = np.vstack([lambR, FresFrac, cxMnk])
     if not vals['brdf']  and landPrct>0: # we havn't programed these yet
@@ -227,7 +227,7 @@ def conCaseDefinitions(caseStr, nowPix):
         for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
             bot = max(mid[0]-2*rng[0],115) # we want to bottom two bins to go to zero (GRASP bug)
             top = mid[0]+2*rng[0]
-            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.0001
+            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.000001
             vals['vrtProf'][i,2:] = np.convolve(vals['vrtProf'][i,:], np.ones(2)/2, mode='full')[3:] # smooth it, preserving zeros at ends and high concentration at bottom
         del vals['vrtHght']
         del vals['vrtHghtStd']

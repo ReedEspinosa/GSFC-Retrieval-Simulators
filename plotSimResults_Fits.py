@@ -16,12 +16,12 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 n=0
-simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASETEST4MODE_n15_Lidar05+polar07_case-case06dAOD_sza30_phi0_tFct1.00_V1.pkl'
+simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV01_n34_Lidar05+polar07_case06e_sza30_phi0_tFct1.00_V1.pkl'
 lIndP = 4 # polarimeter λ to plot
 lIndL = 3 # LIDAR λ to plot (3,7)
 
 simA = simulation(picklePath=simRsltFile)
-simA.conerganceFilter(χthresh=1.5, verbose=True)
+simA.conerganceFilter(χthresh=10.5, verbose=True)
 
 alphVal = 1/np.sqrt(len(simA.rsltBck))
 color1 = np.array([
@@ -30,7 +30,7 @@ color1 = np.array([
         [0, 1, 0],
         [1, 1, 0]])
 # LIDAR Prep
-measTypesL = [x for x in ['VExt', 'VBS', 'LS'] if 'fit_'+x in simA.rsltFwd[0]]
+measTypesL = [x for x in ['VExt', 'VBS', 'LS'] if 'fit_'+x in simA.rsltFwd[0] and not np.isnan(simA.rsltFwd[0]['fit_'+x][:,lIndL]).any()]
 LIDARpresent = False if len(measTypesL)==0 else True
 if LIDARpresent:
     rngVar = 'RangeLidar'
