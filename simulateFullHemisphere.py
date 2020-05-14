@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This script will simulate a full hemispherical TOA obsrevation with GRASP's forward model
+It will also write single scattering properties to a CSV file
 """
 import os
 import sys
@@ -11,11 +12,14 @@ sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_ArchitectureAndCanonicalCases'))
 from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
+from ACCP_functions import writeConcaseVars
 import runGRASP as rg
 
-caseStrs = ['DustNonsph'] # seperate pixels for each of these scenes (CSV will only be written for first case)
+caseStrs = ['plltdmrn'] # seperate pixels for each of these scenes (CSV will only be written for first case)
+# caseStrs = ['DustNonsph'] # seperate pixels for each of these scenes (CSV will only be written for first case)
+tauFactor = 1
 hemiNetCDF = None
-singleScatCSV = '/Users/wrespino/Desktop/dustPM_nonsph.csv'
+singleScatCSV = None
 # caseStrs = ['cleanDesert', 'cleanVegetation'] # seperate pixels for each of these scenes
 # hemiNetCDF = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/Polar07_reflectanceTOA_cleanAtmosphere_landSurface_V2.nc4'
 # singleScatCSV = None
@@ -28,7 +32,7 @@ seaLevel = True # True -> ROD (corresponding to masl = 0 m) & rayleigh depol. sa
 nowPix = returnPixel(archName)
 rslts = []
 for caseStr in caseStrs:
-    fwdYAMLPath, landPrct = setupConCaseYAML(caseStr, nowPix, baseYAML)
+    fwdYAMLPath, landPrct = setupConCaseYAML(caseStr, nowPix, baseYAML, caseLoadFctr=tauFactor)
     nowPix.land_prct = landPrct
     gObjFwd = rg.graspRun(fwdYAMLPath)
     gObjFwd.addPix(nowPix)
@@ -38,3 +42,5 @@ if hemiNetCDF:
     gObjFwd.output2netCDF(hemiNetCDF, rsltDict=rslts, seaLevel=True)
 if singleScatCSV:
     gObjFwd.singleScat2CSV(singleScatCSV)
+# print results to console in order of Canoncial case XLSX
+writeConcaseVars(rslts[0])

@@ -86,7 +86,22 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0
+        landPrct = 0 #
+    elif 'plltdmrn' in caseStr.lower(): # Polluted Marine
+        σ = [0.36, 0.70] # mode 1, 2,...
+        rv = [0.11, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.0141207], [0.0318299]]) # gives AOD=[0.0287, 0.0713]
+        vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.45, nwl) # mode 1 
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.001, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
+        vals['brdf'] = [] # first dim mode (N=3), second lambda
+        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
+        landPrct = 0 #
     elif 'pollution' in caseStr.lower():
         σ = [0.36, 0.64] # mode 1, 2,...
         rv = [0.11, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -98,7 +113,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['n'] = np.repeat(1.45, nwl) # mode 1 
         vals['n'] = np.vstack([vals['n'], np.repeat(1.5, nwl)]) # mode 2
         vals['k'] = np.repeat(0.001, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.005, nwl)]) # mode 2 # NOTE: we cut this in half from XLSX
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.01, nwl)]) # mode 2 # NOTE: we cut this in half from XLSX
         vals['brdf'] = [] # first dim mode (N=3), second lambda
         vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
@@ -106,11 +121,12 @@ def conCaseDefinitions(caseStr, nowPix):
         σ = [0.5, 0.75] # mode 1, 2,...
         rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['vol'] = np.array([[0.02164019385230769], [0.3166795960377663]]) # gives AOD= [0.13279, 0.11721] but will change if intensive props. change!)
         if 'nonsph' in caseStr.lower():
-            vals['sph'] = [[0.00001], [0.00001]] # mode 1, 2,...
+            vals['sph'] = [[0.99999], [0.00001]] # mode fine sphere, coarse spheroid
+            vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # fix spheroids require scaling to maintain AOD 
         else:
             vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.02164019385230769], [0.3166795960377663]]) # gives AOD= [0.13279, 0.11721] but will change if intensive props. change!)
         vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.46, nwl) # mode 1 
@@ -193,7 +209,7 @@ def conCaseDefinitions(caseStr, nowPix):
         else:
             R=[0.00000002, 0.00000002, 0.00000002, 0.00000002,	0.00000002, 0.00000002, 0.00000002, 0.00000002] 
         lambR = np.interp(wvls, λ, R)
-        FresFrac = 0.9999*np.ones(nwl)
+        FresFrac = 0.999999*np.ones(nwl)
         cxMnk = (7*0.00512+0.003)/2*np.ones(nwl) # 7 m/s
         vals['cxMnk'] = np.vstack([lambR, FresFrac, cxMnk])
     if not vals['brdf']  and landPrct>0: # we havn't programed these yet
@@ -227,7 +243,7 @@ def conCaseDefinitions(caseStr, nowPix):
         for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
             bot = max(mid[0]-2*rng[0],115) # we want to bottom two bins to go to zero (GRASP bug)
             top = mid[0]+2*rng[0]
-            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.0001
+            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.000001
             vals['vrtProf'][i,2:] = np.convolve(vals['vrtProf'][i,:], np.ones(2)/2, mode='full')[3:] # smooth it, preserving zeros at ends and high concentration at bottom
         del vals['vrtHght']
         del vals['vrtHghtStd']
@@ -267,6 +283,27 @@ def splitMultipleCases(caseStrs, caseLoadFct):
             cases.append(case.replace('case06f','dust'))
             loadings.append(0.4*caseLoadFct)
             cases.append(case.replace('case06f','marine'))
+            loadings.append(2.5*caseLoadFct)
+        elif 'case06g' in case.lower():
+            cases.append(case.replace('case06g','marine'))
+            loadings.append(caseLoadFct)
+        elif 'case06h' in case.lower():
+            cases.append(case.replace('case06h','plltdMrn'))
+            loadings.append(caseLoadFct)
+        elif 'case06i' in case.lower():
+            cases.append(case.replace('case06i','smoke'))
+            loadings.append(0.4*caseLoadFct)
+            cases.append(case.replace('case06i','pollution'))
+            loadings.append(2*caseLoadFct)                    
+        elif 'case06j' in case.lower():
+            cases.append(case.replace('case06j','dustNonsph'))
+            loadings.append(caseLoadFct)
+            cases.append(case.replace('case06j','marine'))
+            loadings.append(caseLoadFct)
+        elif 'case06k' in case.lower():
+            cases.append(case.replace('case06k','dustNonsph'))
+            loadings.append(0.4*caseLoadFct)
+            cases.append(case.replace('case06k','marine'))
             loadings.append(2.5*caseLoadFct)
         else:
             cases.append(case)

@@ -17,28 +17,28 @@ from canonicalCaseMap import setupConCaseYAML
 # n = int(sys.argv[1]) # (0,1,2,...,N-1)
 n=0
 
-dryRun = True # set everything up but don't actually retrieve (probably used with fullSave=True)
+dryRun = False # set everything up but don't actually retrieve (probably used with fullSave=True)
 fullSave = True # archive all the GRASP working directories into a zip file saved along side the pkl file 
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASETEST4MODE_n%d_' % n)
+    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV02_n%d_' % n)
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
-    Nsims = 28
-    maxCPU = 14
+    Nsims = 56
+    maxCPU = 28
 else: # MacBook Air
     saveStart = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/canonicalCases4Lille/CASE_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
     dirGRASP = '/usr/local/bin/grasp'
     krnlPath = None
-    Nsims = 2
+    Nsims = 4
     maxCPU = 2
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
 bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_4modes.yml')
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
-bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_IQU_3lambda_POL.yml')
+bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 
 
 conCases = []
@@ -47,8 +47,8 @@ for caseLet in ['a','b','c','d','e','f']:
 SZAs = [30] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1
 τFactor = [1] #2
-instruments = ['Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] #3 N=18
-rndIntialGuess = True # randomly vary the intial guess of retrieved parameters
+instruments = ['polar07', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=42
+rndIntialGuess = False # randomly vary the intial guess of retrieved parameters
 
 paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,τFactor]))[n] 
 savePath = saveStart + '%s_%s_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple

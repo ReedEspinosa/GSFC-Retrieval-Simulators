@@ -16,12 +16,12 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 n=0
-simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASETEST4MODE_n15_Lidar05+polar07_case-case06dAOD_sza30_phi0_tFct1.00_V1.pkl'
+simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV02_n27_Lidar09+polar07_case06d_sza30_phi0_tFct1.00_V1.pkl'
 lIndP = 4 # polarimeter λ to plot
 lIndL = 3 # LIDAR λ to plot (3,7)
 
 simA = simulation(picklePath=simRsltFile)
-simA.conerganceFilter(χthresh=1.5, verbose=True)
+simA.conerganceFilter(χthresh=19.0, verbose=True)
 
 alphVal = 1/np.sqrt(len(simA.rsltBck))
 color1 = np.array([
@@ -30,7 +30,7 @@ color1 = np.array([
         [0, 1, 0],
         [1, 1, 0]])
 # LIDAR Prep
-measTypesL = [x for x in ['VExt', 'VBS', 'LS'] if 'fit_'+x in simA.rsltFwd[0]]
+measTypesL = [x for x in ['VExt', 'VBS', 'LS'] if 'fit_'+x in simA.rsltFwd[0] and not np.isnan(simA.rsltFwd[0]['fit_'+x][:,lIndL]).any()]
 LIDARpresent = False if len(measTypesL)==0 else True
 if LIDARpresent:
     rngVar = 'RangeLidar'
@@ -54,8 +54,8 @@ if POLARpresent:
     [x for x in measTypesP if 'fit_'+x in simA.rsltFwd[0]]
     θfun = lambda l,d: [θ if φ<180 else -θ for θ,φ in zip(d['vis'][:,l], d['fis'][:,l])]
     assert not np.isnan(simA.rsltBck[0]['fit_'+measTypesP[0]][0,lIndP]), 'Nans found in Polarimeter data at this wavelength! Is the value of lIndP valid?'
-figP, axP = plt.subplots(1,len(measTypesP),figsize=(12,6))
-if not type(axP)==np.ndarray: axP=[axP]
+    figP, axP = plt.subplots(1,len(measTypesP),figsize=(12,6))
+    if not type(axP)==np.ndarray: axP=[axP]
 # Plot LIDAR and Polar measurements and fits
 NfwdModes = simA.rsltFwd[0]['aodMode'].shape[0]
 NbckModes = simA.rsltBck[0]['aodMode'].shape[0]

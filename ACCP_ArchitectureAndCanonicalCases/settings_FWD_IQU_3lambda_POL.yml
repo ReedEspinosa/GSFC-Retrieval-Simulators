@@ -1,6 +1,6 @@
 input: {driver: sdata, file: bench.sdat}
 output:
-    segment: {function: classic, stream: bench_inversionRslts.txt}
+    segment: {function: classic, stream: bench_FWD_IQU_rslts.txt}
 retrieval:
     constraints:
         characteristic[1]:
