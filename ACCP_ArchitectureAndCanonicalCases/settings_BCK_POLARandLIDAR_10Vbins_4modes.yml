@@ -1,4 +1,4 @@
-input: {driver: sdata, file: bench.sdat}
+input: {driver: sdata, file: inversionBACK.sdat}
 output:
     segment: {function: classic, stream: bench_inversionRslts.txt}
 retrieval:

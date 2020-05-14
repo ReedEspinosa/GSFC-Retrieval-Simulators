@@ -14,8 +14,8 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_
 from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
 
-n = int(sys.argv[1]) # (0,1,2,...,N-1)
-# n=0
+# n = int(sys.argv[1]) # (0,1,2,...,N-1)
+n=0
 
 dryRun = False # set everything up but don't actually retrieve (probably used with fullSave=True)
 fullSave = True # archive all the GRASP working directories into a zip file saved along side the pkl file 
@@ -47,7 +47,7 @@ for caseLet in ['a','b','c','d','e','f']:
 SZAs = [30] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1
 τFactor = [1] #2
-instruments = ['Lidar09', 'Lidar05', 'Lidar06', 'polar07', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=42
+instruments = ['polar07', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=42
 rndIntialGuess = False # randomly vary the intial guess of retrieved parameters
 
 paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,τFactor]))[n] 

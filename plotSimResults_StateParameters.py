@@ -19,9 +19,11 @@ import miscFunctions as mf
 import ACCP_functions as af
 
 instruments = ['Lidar06+polar07', 'Lidar05+polar07','Lidar09+polar07','Lidar05','Lidar09','polar07'] #5 N=360
+# instruments = ['Lidar06+polar07', 'Lidar05+polar07','Lidar09+polar07'] #5 N=360
 conCases = []
-# for caseLet in ['a','b','c','d','e','f']:
-for caseLet in ['e','f']:
+for caseLet in ['a','b','c','d','e','f']:
+# for caseLet in ['e','f']:
+# for caseLet in ['a','b','c','d']:
     conCases.append('case06'+caseLet)
     # conCases.append('case06'+caseLet+'monomode') #12 total
 SZAs = [30] # 3
@@ -53,7 +55,7 @@ totBiasVars = ['aod', 'ssa','aodMode_fine','n','rEffCalc'] # only used in Plot 4
 
 plotD = False # PDFs of errors as a fuction of different variables
 
-saveStart = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV01_n*_'
+saveStart = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV02_n*_'
 
 cm = pylab.get_cmap('viridis')
 
