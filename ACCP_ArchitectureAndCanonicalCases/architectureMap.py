@@ -134,7 +134,6 @@ def addError(measNm, l, rsltFwd, edgInd):
         elif int(mtch.group(2)) in [700]: # "perfect" version of polarimeter 7 (1e-4 standard noise)
             relErr = 0.000003
             relDoLPErr = 0.0000005
-            print('No significant error in polarimeter')
         elif int(mtch.group(2)) in [1, 2, 3]: # S-Polar01, S-Polar2 (a-b), S-Polar3 [1st two state ΔI as "4% to 6%" in RFI]
             relErr = 0.05
             relDoLPErr = 0.005

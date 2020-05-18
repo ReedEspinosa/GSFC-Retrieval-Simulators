@@ -26,6 +26,8 @@ if checkDiscover(): # DISCOVER
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
+#    Nsims = 1
+#    maxCPU = 1
     Nsims = 56
     maxCPU = 28
 else: # MacBook Air
