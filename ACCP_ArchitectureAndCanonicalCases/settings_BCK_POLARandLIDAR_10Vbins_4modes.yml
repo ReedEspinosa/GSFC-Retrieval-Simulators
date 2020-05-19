@@ -262,6 +262,7 @@ retrieval:
         shift_for_applying_logarithm_to_negative_values: 1.1
         threshold_for_stopping: 1.0e-9 #0.001
         threshold_for_stopping_Q_iterations: 1.0e-09 #1.0e-06
+        stop_before_performing_retrieval: false
     debug: {additional_information: false, verbose: true}
     general: {path_to_internal_files: /usr/local/share/grasp/kernels/}
     noises:
