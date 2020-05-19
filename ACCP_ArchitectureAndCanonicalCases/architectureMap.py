@@ -3,10 +3,11 @@ import os
 import sys
 import re
 import datetime as dt
+from scipy.integrate import simps
 MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GRASP_scripts is in parent of MADCAP_scripts
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import runGRASP as rg
-import functools        
+import functools 
 
 # DUMMY MEASUREMENTS: (determined by architecture, should ultimatly move to seperate scripts)
 #  For more than one measurement type or viewing geometry pass msTyp, nbvm, thtv, phi and msrments as vectors: \n\
@@ -130,10 +131,9 @@ def addError(measNm, l, rsltFwd, edgInd):
         if int(mtch.group(2)) in [4, 7, 8]: # S-Polar04 (a-d), S-Polar07, S-Polar08
             relErr = 0.03
             relDoLPErr = 0.005
-        elif int(mtch.group(2)) in [700]: # "perfect" version of polarimeter 7
+        elif int(mtch.group(2)) in [700]: # "perfect" version of polarimeter 7 (1e-4 standard noise)
             relErr = 0.000003
             relDoLPErr = 0.0000005
-            print('No significant error in polarimeter')
         elif int(mtch.group(2)) in [1, 2, 3]: # S-Polar01, S-Polar2 (a-b), S-Polar3 [1st two state ΔI as "4% to 6%" in RFI]
             relErr = 0.05
             relDoLPErr = 0.005
@@ -161,34 +161,34 @@ def addError(measNm, l, rsltFwd, edgInd):
         return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py 
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
         if int(mtch.group(2)) in [5, 6, 600, 500]: # HSRL and depolarization
-            if  int(mtch.group(2)) > 100:
-                print('Using 1/1000 standard noise in HSRL')
-                relErrβsca = 0.00005 #
-                absErrβext = 17/1e9 # m-1
-            else:
+            if  int(mtch.group(2)) >= 100:# 1e-4 standard noise
+                relErrβsca = 0.000005 # fraction (unitless)
+                absErrβext = 17/1e10 # m-1
+            else: # use normal noise model
                 relErrβsca = 0.05 #
                 absErrβext = 17/1e6 # m-1
-#            relErrβsca = 0.000358 # these values pulled from slide 39 of Rich's HSRL talk at the aerosol TIM
-#            relErrβext = 0.001157 # see A-CCP/LIDAR Erorr in Endnote for more details
+                # relErrβsca = 0.000358 # these values pulled from slide 39 of Rich's HSRL talk at the aerosol TIM
+                # relErrβext = 0.001157 # see A-CCP/LIDAR Erorr in Endnote for more details
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
             trueSimβext = rsltFwd['fit_VExt'][:,l] # 36
-#            trueSimDPOL = rsltFwd['fit_DP'][:,l] # 35
+            # trueSimDPOL = rsltFwd['fit_DP'][:,l] # 35
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErrβsca), size=len(trueSimβsca))
             fwdSimβext = trueSimβext + absErrβext*np.random.normal(size=len(trueSimβext))
             fwdSimβext[fwdSimβext<βextLowLim] = βextLowLim
             fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
-#             fwdSimβext = trueSimβext*np.random.lognormal(sigma=np.log(1+relErrβext), size=len(trueSimβext))
-#            fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=len(trueSimDPOL))
-#            return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
+            # fwdSimβext = trueSimβext*np.random.lognormal(sigma=np.log(1+relErrβext), size=len(trueSimβext))
+            # fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=len(trueSimDPOL))
+            # return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
             return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
         elif int(mtch.group(2)) in [9, 900]: # backscatter and depol
-#            relErr = 0.07 # 5% calibration error from Gimmestad, G. et al. Sci. Rep. 7, 42337; (2017), random error so we also choose 5%, which, when added in quadrature give 7%
-            relErr = 0.05 if int(mtch.group(2)) < 100 else 0.00005
-            if int(mtch.group(2)) >= 100: print('Using 1/1000 standard noise in Lidar09')
-            trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 
+            # relErr = 0.07 # 5% calibration error from Gimmestad, G. et al. Sci. Rep. 7, 42337; (2017), random error so we also choose 5%, which, when added in quadrature give 7%
+            relErr = 0.05 if int(mtch.group(2)) < 100 else 0.000005 # else 1e-4 standard noise
+            vertRange = rsltFwd['RangeLidar'][:,l] 
+            trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 31
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
             fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
-            return np.r_[fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
+            fwdSimβscaNrm = np.r_[fwdSimβsca]/simps(fwdSimβsca, x=-vertRange) # normalize profile to unity (GRASP requirement)
+            return fwdSimβscaNrm # safe because of ascending order check in simulateRetrieval.py
     if mtch.group(1).lower() == 'modismisr':
         relErr = 0.03
         trueSimI = rsltFwd['fit_I'][:,l]
