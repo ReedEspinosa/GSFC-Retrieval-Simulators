@@ -9,33 +9,33 @@ retrieval:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                     max: [2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06] # top fine
                     min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
-                    value: [1.5e-06, 0.001, 0.001, 0.001, 0.001, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06]
+                    value: [1.5e-06, 1.0, 1.0, 1.0, 1.0, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.000001}
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.0}
             mode[2]: # TOP - COARSE
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                     max: [2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06] # top coarse
                     min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
-                    value: [1.5e-06, 0.001, 0.001, 0.001, 0.001, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06]
+                    value: [1.5e-06, 1.0, 1.0, 1.0, 1.0, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.000001}
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.0}
             mode[3]: # BOTTOM - FINE
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                     max: [2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0] # bottom fine
                     min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
-                    value: [1.5e-06, 1.5e-06,1.5e-06, 1.5e-06, 1.5e-06, 0.001, 0.001, 0.001, 0.001, 1.5e-06]
+                    value: [1.5e-06, 1.5e-06,1.5e-06, 1.5e-06, 1.5e-06, 1.0, 1.0, 1.0, 1.0, 1.5e-06]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.000001}
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.0}
             mode[4]: # BOTTOM - COARSE
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                     max: [2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0] # bottom coarse
                     min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
-                    value: [1.5e-06, 1.5e-06,1.5e-06, 1.5e-06, 1.5e-06, 0.001, 0.001, 0.001, 0.001, 1.5e-06]
+                    value: [1.5e-06, 1.5e-06,1.5e-06, 1.5e-06, 1.5e-06, 1.0, 1.0, 1.0, 1.0, 1.5e-06]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.000001}
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.0}
             retrieved: true
             type: vertical_profile_normalized
         characteristic[2]:

@@ -22,7 +22,7 @@ fullSave = True # archive all the GRASP working directories into a zip file save
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV04_n%d_' % n)
+    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV06_n%d_' % n)
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -43,14 +43,16 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 
 
-conCases = []
-for caseLet in ['a','b','c','d','e','f']:
-    conCases.append('case06'+caseLet) # 6
+# conCases = []
+# for caseLet in ['a','b','c','d','e','f']:
+#     conCases.append('case06'+caseLet) # 6
+conCases = ['case06d']
 SZAs = [30] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1
 τFactor = [1] #2
-instruments = ['polar07', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07',
-               'polar0700', 'Lidar0900+polar0700','Lidar0500+polar0700','Lidar0600+polar0700'] # 8 N=42
+# instruments = ['polar07', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07',
+#                'polar0700', 'Lidar0900+polar0700','Lidar0500+polar0700','Lidar0600+polar0700'] # 8 N=42
+instruments = ['Lidar0600+polar0700'] # 8 N=42
 rndIntialGuess = False # randomly vary the intial guess of retrieved parameters
 
 paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,τFactor]))[n] 
