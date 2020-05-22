@@ -1,10 +1,10 @@
 #!/usr/local/bin/bash
 #SBATCH --job-name=G_Sim
 #SBATCH --nodes=1 --constraint=hasw
-#SBATCH --time=1:00:00
+#SBATCH --time=2:00:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0
+#SBATCH --array=0-5
 
 date
 hostname
