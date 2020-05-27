@@ -70,7 +70,7 @@ retrieval:
                     index_of_wavelength_involved: [0, 0]
                     max: [0.5, 0.75]
                     min: [0.14, 0.3] # case2 goes down to ~0.11 but this covers smoke, marine, pol, dust 
-                    value: [0.1939289282631472, 0.4]
+                    value: [0.2, 0.4]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier: [0, 0]                        
@@ -79,7 +79,7 @@ retrieval:
                     index_of_wavelength_involved: [0, 0]
                     max: [6.0, 0.77]
                     min: [0.65, 0.3]
-                    value: [0.6609009840634831, 0.45]
+                    value: [1.0, 0.45]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier: [0, 0]
@@ -88,7 +88,7 @@ retrieval:
                     index_of_wavelength_involved: [0, 0]
                     max: [0.6, 0.75]
                     min: [0.15, 0.3] # case2 goes down to ~0.11 but this covers smoke, marine, pol, dust 
-                    value: [0.16227304279240035, 0.36]
+                    value: [0.2, 0.36]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier: [0, 0]                        
@@ -97,7 +97,7 @@ retrieval:
                     index_of_wavelength_involved: [0, 0]
                     max: [6.0, 0.77]
                     min: [0.65, 0.3] 
-                    value: [1.3668506092585497, 0.64]
+                    value: [1.0, 0.64]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier: [0, 0]
@@ -178,9 +178,9 @@ retrieval:
                     index_of_wavelength_involved:   [0]
             mode[3]:
                 initial_guess:                       #1      #2      #3             
-                    value:                          [0.01]  
+                    value:                          [0.015]  
                     min:                            [0.00406] # 1 m/s
-                    max:                            [0.019420000000000003] # 7 m/s
+                    max:                            [0.027] # 10 m/s
                     index_of_wavelength_involved:   [0]
         characteristic[7]:
             mode[1]:
@@ -258,7 +258,7 @@ retrieval:
         maximum_iterations_of_Levenberg-Marquardt: 40
         minimization_convention: logarithm
         normal_system_solver: sparse_matrix_solver
-        scale_for_finite_difference: 5.0e-03 #2.0e-5
+        scale_for_finite_difference: 7.0e-05 #2.0e-5
         shift_for_applying_logarithm_to_negative_values: 1.1
         threshold_for_stopping: 1.0e-9 #0.001
         threshold_for_stopping_Q_iterations: 1.0e-09 #1.0e-06
@@ -288,7 +288,7 @@ retrieval:
             measurement_type[1]:
                 index_of_wavelength_involved: [1]
                 type: LS
-            standard_deviation: 0.19
+            standard_deviation: 0.05
             standard_deviation_synthetic: 0.0
         noise[4]:
             error_type: absolute
