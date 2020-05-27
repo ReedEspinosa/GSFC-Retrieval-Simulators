@@ -4,10 +4,10 @@
 This script will plot the Lidar profile and polarimeter I, Q, U fits 
 It will produce unexpected behavoir if len(rsltFwd)>1 (always uses the zeroth index of rsltFwd)
 """
-
 import numpy as np
 import os
 import sys
+from glob import glob
 MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GRASP_scripts is in parent of MADCAP_scripts
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 from simulateRetrieval import simulation
@@ -15,14 +15,18 @@ from miscFunctions import matplotlibX11
 matplotlibX11()
 import matplotlib.pyplot as plt
 
-n=0
-simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV02_n27_Lidar09+polar07_case06d_sza30_phi0_tFct1.00_V1.pkl'
-lIndP = 4 # polarimeter λ to plot
-lIndL = 3 # LIDAR λ to plot (3,7)
+# simRsltFile can have glob style wildcards
+simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEVXX_z4_Lidar0600+polar0700_case06d_sza30_phi0_tFct1.00_V1.pkl'
+trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
+trgtλPolar = 0.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
 
-simA = simulation(picklePath=simRsltFile)
+# --END INPUT SETTINGS--
+posFiles = glob(simRsltFile)
+assert len(posFiles)==1, 'glob found %d files but we expect exactly 1' % len(posFiles)
+simA = simulation(picklePath=posFiles[0])
 simA.conerganceFilter(χthresh=19.0, verbose=True)
-
+lIndL = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλLidar))
+lIndP = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλPolar))
 alphVal = 1/np.sqrt(len(simA.rsltBck))
 color1 = np.array([
         [1, 0, 0],
@@ -33,6 +37,7 @@ color1 = np.array([
 measTypesL = [x for x in ['VExt', 'VBS', 'LS'] if 'fit_'+x in simA.rsltFwd[0] and not np.isnan(simA.rsltFwd[0]['fit_'+x][:,lIndL]).any()]
 LIDARpresent = False if len(measTypesL)==0 else True
 if LIDARpresent:
+    print('Lidar data found at %5.3f μm' % simA.rsltFwd[0]['lambda'][lIndL])
     rngVar = 'RangeLidar'
     profExtNm = 'βext'
     βfun = lambda i,l,d: d['aodMode'][i,l]*d[profExtNm][i,:]/np.mean(d[profExtNm][i,:])
@@ -42,7 +47,7 @@ if LIDARpresent:
 if 'fit_QoI' in simA.rsltBck[0]:
     measTypesP = ['I', 'QoI', 'UoI']
     POLARpresent = True
-elif 'fit_QoI' in simA.rsltBck[0]: 
+elif 'fit_Q' in simA.rsltBck[0]: 
     measTypesP = ['I', 'Q', 'U']
     POLARpresent = True
 elif 'fit_I' in simA.rsltBck[0]: 
@@ -51,6 +56,7 @@ elif 'fit_I' in simA.rsltBck[0]:
 else:
     POLARpresent = False
 if POLARpresent:
+    print('Polarimeter data found at %5.3f μm' % simA.rsltFwd[0]['lambda'][lIndP])
     [x for x in measTypesP if 'fit_'+x in simA.rsltFwd[0]]
     θfun = lambda l,d: [θ if φ<180 else -θ for θ,φ in zip(d['vis'][:,l], d['fis'][:,l])]
     assert not np.isnan(simA.rsltBck[0]['fit_'+measTypesP[0]][0,lIndP]), 'Nans found in Polarimeter data at this wavelength! Is the value of lIndP valid?'
@@ -118,7 +124,7 @@ if POLARpresent: # touch up Polarimeter plots
     figP.tight_layout(rect=[0, 0.03, 1, 0.95])
 
 # For X11 on Discover
-#plt.ioff()
-#plt.draw()
-#plt.show(block=False)
-#plt.show(block=False)
+# plt.ioff()
+# plt.draw()
+# plt.show(block=False)
+# plt.show(block=False)

@@ -244,7 +244,7 @@ def conCaseDefinitions(caseStr, nowPix):
             bot = max(mid[0]-2*rng[0],115) # we want to bottom two bins to go to zero (GRASP bug)
             top = mid[0]+2*rng[0]
             vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.000001
-#             vals['vrtProf'][i,2:] = np.convolve(vals['vrtProf'][i,:], np.ones(2)/2, mode='full')[3:] # smooth it, preserving zeros at ends and high concentration at bottom
+            # vals['vrtProf'][i,2:] = np.convolve(vals['vrtProf'][i,:], np.ones(2)/2, mode='full')[3:] # smooth it, preserving zeros at ends and high concentration at bottom
         del vals['vrtHght']
         del vals['vrtHghtStd']
     return vals, landPrct
