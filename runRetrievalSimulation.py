@@ -15,19 +15,18 @@ from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
 
 n = int(sys.argv[1]) # (0,1,2,...,N-1)
-# n=0
 
 dryRun = False # set everything up but don't actually retrieve (probably used with fullSave=True)
 fullSave = True # archive all the GRASP working directories into a zip file saved along side the pkl file 
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV03_n%d_' % n)
+    saveStart = os.path.join(basePath, 'synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV09_n%d_' % n)
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
-#    Nsims = 1
-#    maxCPU = 1
+#     Nsims = 1
+#     maxCPU = 1
     Nsims = 56
     maxCPU = 28
 else: # MacBook Air
@@ -43,15 +42,17 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_3lambda_POL.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 
 
-conCases = []
-for caseLet in ['a','b','c','d','e','f']:
-    conCases.append('case06'+caseLet) # 6
+
+conCases = ['case06'+caseLet for caseLet in ['a','b','c','d','e','f']] # 6
+# conCases = ['case06d']
 SZAs = [30] # 3 (GRASP doesn't seem to be wild about θs=0)
 Phis = [0] # 1
-τFactor = [1] #2
+τFactor = [1.0] #2
 instruments = ['polar07', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07',
-               'polar0700', 'Lidar0900+polar0700','Lidar0500+polar0700','Lidar0600+polar0700'] # 8 N=42
-rndIntialGuess = False # randomly vary the intial guess of retrieved parameters
+               'polar0700', 'Lidar0900+polar0700','Lidar0500+polar0700','Lidar0600+polar0700'] # 8 N=48
+# instruments = ['Lidar0600+polar0700'] # 8 N=42
+rndIntialGuess = n >= 48 # randomly vary the initial guess of retrieved parameters
+if rndIntialGuess: n = n-48 # HACK cycle through case/instrument combos twice, first with default then random initial guesses
 
 paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,τFactor]))[n] 
 savePath = saveStart + '%s_%s_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple

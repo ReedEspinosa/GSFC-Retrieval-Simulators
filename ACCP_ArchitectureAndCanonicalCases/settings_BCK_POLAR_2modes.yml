@@ -24,7 +24,7 @@ retrieval:
                     index_of_wavelength_involved: [0, 0]
                     max: [0.5, 0.75]
                     min: [0.14, 0.3] # case2 goes down to ~0.11 but this covers smoke, marine, pol, dust 
-                    value: [0.17, 0.5]
+                    value: [0.2, 0.4]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier: [0, 0]                        
@@ -33,7 +33,7 @@ retrieval:
                     index_of_wavelength_involved: [0, 0]
                     max: [6.0, 0.77]
                     min: [0.65, 0.3]
-                    value: [1.5, 0.5]
+                    value: [1.0, 0.45]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier: [0, 0]
@@ -51,7 +51,7 @@ retrieval:
                     index_of_wavelength_involved: [0]
                     max: [1.52]
                     min: [1.35]
-                    value: [1.363]
+                    value: [1.45]
             retrieved: true
             type: real_part_of_refractive_index_constant
         characteristic[4]:
@@ -81,7 +81,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 10.0
+                        lagrange_multiplier: 0.0
             mode[2]:
                 initial_guess:                       #1      #2      #3 
                     value:                          [0.999999]
@@ -90,7 +90,7 @@ retrieval:
                     index_of_wavelength_involved:   [0]
             mode[3]:
                 initial_guess:                       #1      #2      #3             
-                    value:                          [0.01]  
+                    value:                          [0.015]  
                     min:                            [0.00406] # 1 m/s
                     max:                            [0.027] # 10 m/s
                     index_of_wavelength_involved:   [0]
@@ -249,12 +249,12 @@ retrieval:
         simulating_derivatives:
             number_of_fourier_expansion_coefficients: 12
             number_of_gaussian_quadratures_for_expansion_coefficients: 20
-            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 15
+            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40
             order_of_scattering: derivatives
         simulating_observation:
             number_of_fourier_expansion_coefficients: 12
             number_of_gaussian_quadratures_for_expansion_coefficients: 20
-            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 15
+            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40
             order_of_scattering: multiple_scattering
     regime_of_measurement_fitting: {polarization: relative_polarization_components}
     regime_of_multipixel_constraints: {inversion_regime: single_pixel}
