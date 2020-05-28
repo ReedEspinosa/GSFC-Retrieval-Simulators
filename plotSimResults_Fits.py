@@ -16,7 +16,7 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
-simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEVXX_z4_Lidar0600+polar0700_case06d_sza30_phi0_tFct1.00_V1.pkl'
+simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEVYY_n*_Lidar05+polar07_case06a_sza30_phi0_tFct1.00_V1.pkl'
 trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
 trgtλPolar = 0.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
 
@@ -98,7 +98,7 @@ if POLARpresent:
         axP[i].legend(['Measured', 'Retrieved']) # there are many lines but the first two should be these
         axP[i].set_xlabel('viewing zenith (°)')
         axP[i].set_title(mt.replace('o','/'))
-fn = os.path.splitext(simRsltFile)[0].split('/')[-1]
+fn = os.path.splitext(posFiles[0])[0].split('/')[-1]
 if LIDARpresent: # touch up LIDAR plots
     axL[0].legend(list(map(list, zip(*mdHnd)))[0], lgTxt)
     axL[0].set_ylabel('Altitude (km)')

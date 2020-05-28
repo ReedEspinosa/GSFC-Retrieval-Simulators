@@ -75,4 +75,47 @@ def writeConcaseVars(rslt):
     valVect.append(rslt['g'][lInd])
     print(', '.join([str(x) for x in valVect]))
     
-    
+def selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA, \
+                        orbit=None, pcaVarPtrn='n_row_best_107sets_%s', verbose=False):
+    """
+    Pull scalars θs, φ (NADIR ONLY) from Pete's files at index specified by Feng's PCA
+    There are two ways to select proper orbit data:
+        1) rawAngleDir is directory with text files, orbit is None (will be determined from rawAngleDir string)
+        2) rawAngleDir is parrent of directory with text files, orbit must be provided by the calling function
+    rawAngleDir - directory of Pete's angle files for that particular orbit if orbit is None
+                    if obrit provided, should be top level folder with both SS & GPM directories 
+    PCAslctMatFilePath - full path of Feng's PCA results for indexing Pete's files
+    nPCA - index of Feng's file, will pull index of Pete's data to extract
+    orbit - 'GPM', 'SS', etc.; None -> try to extract it from rawAngleDir
+    pcaVarPtrn='n_row_best_107sets_%s' - matlab variable, %s will be filled with orbit
+    """
+    import sys
+    import os
+    from glob import glob
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from MADCAP_functions import readPetesAngleFiles
+    import scipy.io as spio
+    if orbit is None: 
+        if 'ss' in os.path.basename(rawAngleDir).lower():
+            orbit = 'SS'
+        elif 'gpm' in os.path.basename(rawAngleDir).lower():
+            orbit = 'GPM'
+    else:
+        rawAngleDirPoss = glob(os.path.join(rawAngleDir, '*'+orbit.lower()+'*'))
+        assert len(rawAngleDirPoss)==1, '%d angle directories found but should be exactly 1' % len(rawAngleDirPoss)
+        rawAngleDir = rawAngleDirPoss[0]
+    assert not orbit is None, 'Could not determine the orbit, which is needed to select mat file variable'
+    angData = readPetesAngleFiles(rawAngleDir, nAng=10, verbose=verbose)
+    pcaVar = pcaVarPtrn % orbit
+    pcaData = spio.loadmat(PCAslctMatFilePath, variable_names=[pcaVar], squeeze_me=True)
+    θs = max(angData['sza'][pcaData[pcaVar][nPCA]], 0.1) # (GRASP doesn't seem to be wild about θs=0)
+    φAll = angData['fis'][pcaData[pcaVar][nPCA],:]
+    φ = φAll[np.isclose(φAll, φAll.min(), atol=1)].mean() # take the mean of the smallest fis (will fail off-nadir)
+    return θs, φ
+
+
+
+
+
+
+ 
