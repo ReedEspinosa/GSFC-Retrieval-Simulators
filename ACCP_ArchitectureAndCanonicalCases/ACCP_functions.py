@@ -101,7 +101,7 @@ def selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA, \
         elif 'gpm' in os.path.basename(rawAngleDir).lower():
             orbit = 'GPM'
     else:
-        rawAngleDirPoss = glob(os.path.join(rawAngleDir, '*'+orbit.lower()+'*'))
+        rawAngleDirPoss = glob(os.path.join(rawAngleDir, orbit.lower()+'*'+ os.path.sep))
         assert len(rawAngleDirPoss)==1, '%d angle directories found but should be exactly 1' % len(rawAngleDirPoss)
         rawAngleDir = rawAngleDirPoss[0]
     assert not orbit is None, 'Could not determine the orbit, which is needed to select mat file variable'

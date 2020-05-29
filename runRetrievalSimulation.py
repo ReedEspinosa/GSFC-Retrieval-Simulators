@@ -15,9 +15,9 @@ from canonicalCaseMap import setupConCaseYAML
 from ACCP_functions import selectGeometryEntry
 
 # n = int(sys.argv[1]) # (0,1,2,...,N-1)
-n = 0
+n = 12
 # nAng = int(sys.argv[2]) # index of angles to select from PCA
-nAng = 0
+nAng = 12
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
@@ -32,7 +32,7 @@ if checkDiscover(): # DISCOVER
     Nsims = 56
     maxCPU = 28
 else: # MacBook Air
-    saveStart = '/Users/wrespino/Desktop/DRS_V01' # end will be appended
+    saveStart = '/Users/wrespino/Desktop/TEST_V01_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
     dirGRASP = '/usr/local/bin/grasp'
     rawAngleDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs'
@@ -79,5 +79,5 @@ simA = rs.simulation(nowPix) # defines new instance for architecture described b
 gObjFwd, gObjBck = simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
                                binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, \
                                lightSave=True, rndIntialGuess=rndIntialGuess, dryRun=False, \
-                               workingFileSave=True, verbose=verbose)
+                               workingFileSave=True, fixRndmSeed=False, verbose=verbose)
 
