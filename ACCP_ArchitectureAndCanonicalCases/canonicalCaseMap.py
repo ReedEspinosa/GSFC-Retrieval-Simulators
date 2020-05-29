@@ -35,9 +35,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['vrtHghtStd'] = [[500]] # Gaussian sigma in meters
         vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.34+rnd.random(2)*0.20)[None,:] # mode 1 # linear w/ λ
         vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.01)[None,:] # mode 1 # linear w/ λ
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0        
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'clean' in caseStr.lower():
         σ = [0.4, 0.68] # mode 1, 2,...
         rv = [0.1, 0.84]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -53,9 +51,6 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
         vals['k'] = np.repeat(1e-8, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(0.002, nwl)]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        vals['bpdf'] = [] # first dim mode (N=3), second lambda
         landPrct = 0 if 'ocean' in caseStr.lower() else 100
     elif 'smoke' in caseStr.lower(): # ALL VARIABLES WITH MODES MUST BE 2D (ie. var[mode,wl]) or [] (will not change these values)
         σ = [0.4, 0.45] # mode 1, 2,...
@@ -69,9 +64,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
         vals['k'] = np.repeat(0.04, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
         rv = [0.2, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -84,9 +77,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
         vals['k'] = np.repeat(0.002, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0 #
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'plltdmrn' in caseStr.lower(): # Polluted Marine
         σ = [0.36, 0.70] # mode 1, 2,...
         rv = [0.11, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -99,9 +90,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
         vals['k'] = np.repeat(0.001, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0 #
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'pollution' in caseStr.lower():
         σ = [0.36, 0.64] # mode 1, 2,...
         rv = [0.11, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -114,9 +103,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['n'] = np.vstack([vals['n'], np.repeat(1.5, nwl)]) # mode 2
         vals['k'] = np.repeat(0.001, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(0.01, nwl)]) # mode 2 # NOTE: we cut this in half from XLSX
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'dust' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
         σ = [0.5, 0.75] # mode 1, 2,...
         rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -136,9 +123,7 @@ def conCaseDefinitions(caseStr, nowPix):
         mode2k = [0.0025, 0.0025, 0.0024, 0.0021, 0.0019, 0.0011, 0.0010, 0.0010]
         mode2Intrp = np.interp(wvls, mode2λ, mode2k)
         vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
-        landPrct = 0
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     # case01 is blank in V22 of the canoncial case spreadsheet...
     elif 'case02' in caseStr.lower(): # VERSION 22 (except vol & 2.1μm RI)
         σ = [0.4, 0.4] # mode 1, 2,...
@@ -154,8 +139,6 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
         vals['k'] = np.repeat(1e-8, nwl) if 'case02c' in caseStr.lower() else np.repeat(0.035, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
     elif caseStr.lower()=='case03': # VERSION 22 (2.1μm RRI)
         σ = [0.6, 0.6] # mode 1, 2,...
@@ -169,8 +152,6 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
         vals['k'] = np.repeat(0.002, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0
     # case 04 is over land
     # case 05 has a water cloud in the scene
@@ -192,16 +173,16 @@ def conCaseDefinitions(caseStr, nowPix):
             vals['n'] = np.repeat(1.42, nwl) # mode 1 
             vals['n'] = np.vstack([vals['n'], np.repeat(1.52, nwl)]) # mode 2
             vals['k'] = np.vstack([vals['k'], np.repeat(0.002, nwl)]) # mode 2
-        vals['brdf'] = [] # first dim mode (N=3), second lambda
-        vals['cxMnk'] = [] # first dim mode (N=3), second lambda
         landPrct = 0 if 'case07' in caseStr.lower() else 100
     else:
         assert False, 'No match for caseStr: '+caseStr+'!'
-    if 'monomode' in caseStr.lower(): # keep only the large of the two (or more) modes
+    # MONOMDE [keep only the large of the two (or more) modes]
+    if 'monomode' in caseStr.lower(): 
         bigMode = np.argmax(vals['vol'])
         for key in ['vol','n','k','sph','lgrnm','vrtHght','vrtHghtStd']:
             vals[key] = np.atleast_2d(np.array(vals[key])[bigMode,:]) 
-    if not vals['cxMnk'] and landPrct<100: # if not set we will use defualt conical case
+    # OCEAN MODEL
+    if landPrct<100:
         λ=[0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
         if 'chl' in caseStr.lower():
             #R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.00000002, 0.00000002, 0.00000002] # SIT-A canonical values, TODO: need to double check these units
@@ -212,38 +193,43 @@ def conCaseDefinitions(caseStr, nowPix):
         FresFrac = 0.999999*np.ones(nwl)
         cxMnk = (7*0.00512+0.003)/2*np.ones(nwl) # 7 m/s
         vals['cxMnk'] = np.vstack([lambR, FresFrac, cxMnk])
-    if not vals['brdf']  and landPrct>0: # we havn't programed these yet
+    # LAND SURFACE BRDF [Polar07_reflectanceTOA_cleanAtmosphere_landSurface_V7.xlsx]
+    if landPrct>0: # we havn't programed these yet
         λ=[0.415, 0.470, 0.555, 0.659, 0.865, 1.24, 1.64, 2.13] # this should be ordered (interp behavoir is unexpected otherwise)
         if 'desert' in caseStr.lower(): # mean of July 1st 2019 Sahara MIAIC MODIS RTLS (MCD19A3.A2019177.h18v06.006.2019186034811.hdf)
-            iso = [0.085, 0.144, 0.236, 0.379, 0.456, 0.569, 0.621, 0.605]
-            vol = [0.644, 0.576, 0.462, 0.306, 0.213, 0.167, 0.159, 0.116] # MAIAC_vol/MAIAC_iso
-            geo = [0.012, 0.151, 0.083, 0.096, 0.087, 0.103, 0.082, 0.092] # MAIAC_geo/MAIAC_iso
+            iso = [0.0859, 0.1453, 0.2394, 0.3838, 0.4619, 0.5762, 0.6283, 0.6126]
+            vol = [0.4157, 0.4157, 0.4157, 0.4157, 0.4157, 0.4157, 0.4157, 0.4157] # MAIAC_vol/MAIAC_iso
+            geo = [0.0262, 0.0262, 0.0262, 0.0262, 0.0262, 0.0262, 0.0262, 0.0262] # MAIAC_geo/MAIAC_iso
         elif 'vegetation' in caseStr.lower(): # mean of July 1st 2019 SEUS MIAIC MODIS RTLS (MCD19A3.A2019177.h11v05.006.2019186033524.hdf)
-            iso = [0.02,  0.04,  0.07, 0.06,  0.42,  0.41,  0.25,  0.11] 
-            vol = [0.55, 0.325, 0.61428571, 0.41666667, 0.52619048, 0.48292683, 0.392, 0.24545455] # MAIAC_vol/MAIAC_iso
-            geo = [0.1, 0.35, 0.22857143, 0.23333333, 0.15952381, 0.1804878, 0.22, 0.27272727] # MAIAC_geo/MAIAC_iso
+            iso = [0.0237, 0.0368, 0.0745, 0.0560, 0.4225, 0.4104, 0.2457, 0.1128] 
+            vol = [0.6073, 0.6073, 0.6073, 0.6073, 0.6073, 0.6073, 0.6073, 0.6073] # MAIAC_vol/MAIAC_iso
+            geo = [0.1411, 0.1411, 0.1411, 0.1411, 0.1411, 0.1411, 0.1411, 0.1411] # MAIAC_geo/MAIAC_iso
         else:
             assert False, 'Land surface type not recognized!'
         lambISO = np.interp(wvls, λ, iso)
         lambVOL = np.interp(wvls, λ, vol)
         lambGEO = np.interp(wvls, λ, geo)
         vals['brdf'] = np.vstack([lambISO, lambVOL, lambGEO])
-    if 'bpdf' in vals and not vals['bpdf'] and landPrct>0: # if not set we will use defualt conical case
+    # LAND BPDF
+    if landPrct>0:
         if 'desert' in caseStr.lower(): # OSSE original sept. 1st test case over Sahara, BPDFCoef=7.3, NDVI=0.1
-            vals['bpdf'] = 6.6*np.ones([1,nwl]) # exp(-VLIDORT_NDVI)*VLIDORT_C)
+            vals['bpdf'] = 6.6564*np.ones([1,nwl]) # exp(-VLIDORT_NDVI)*VLIDORT_C)
         elif 'vegetation' in caseStr.lower(): # OSSE original sept. 1st test case over SEUS, BPDFCoef=6.9, NDVI=0.9
-            vals['bpdf'] = 2.8*np.ones([1,nwl]) # exp(-VLIDORT_NDVI)*VLIDORT_C)
+            vals['bpdf'] = 2.6145*np.ones([1,nwl]) # exp(-VLIDORT_NDVI)*VLIDORT_C)
         else:
             assert False, 'Land surface type not recognized!'
+    # LIDAR PROFILE SHAPE
     lidarMeasLogical = np.isclose(34.5, [mv['meas_type'][0] for mv in nowPix.measVals], atol=5) # measurement types 30-39 reserved for lidar; if first meas_type is LIDAR, they all should be 
     if lidarMeasLogical.any(): 
         lidarInd = lidarMeasLogical.nonzero()[0][0]
         hValTrgt = np.array(nowPix.measVals[lidarInd]['thetav'][0:nowPix.measVals[lidarInd]['nbvm'][0]]) # HINT: this assumes all LIDAR measurement types have the same vertical range values
         vals['vrtProf'] = np.empty([len(vals['vrtHght']), len(hValTrgt)])
         for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
-            bot = max(mid[0]-2*rng[0],115) # we want to bottom two bins to go to zero (GRASP bug)
+            bot = max(mid[0]-2*rng[0],0) 
             top = mid[0]+2*rng[0]
             vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.000001
+            if vals['vrtProf'][i,1]>1: vals['vrtProf'][i,0]=0.01 # keep very small amount in top bin if upper layer
+            if vals['vrtProf'][i,-2]>1: vals['vrtProf'][i,-1]=1.0 # fill bottom bin if lowwer layer
             # vals['vrtProf'][i,2:] = np.convolve(vals['vrtProf'][i,:], np.ones(2)/2, mode='full')[3:] # smooth it, preserving zeros at ends and high concentration at bottom
         del vals['vrtHght']
         del vals['vrtHghtStd']
