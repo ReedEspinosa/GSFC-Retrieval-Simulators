@@ -7,27 +7,27 @@ retrieval:
             mode[1]: # TOP - FINE
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                    max: [2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06] # top fine
-                    min: [1.0e-06, 2.0e-01, 2.0e-01, 2.0e-01, 2.0e-01, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
-                    value: [1.5e-06, 1.0, 1.0, 1.0, 1.0, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06]
+                    max: [2.0e-02, 2.0, 2.0, 2.0, 2.0, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06] # top fine
+                    min: [1.0e-03, 2.0e-01, 2.0e-01, 2.0e-01, 2.0e-01, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
+                    value: [1.0e-02, 1.0, 1.0, 1.0, 1.0, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06]
             mode[2]: # TOP - COARSE
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                    max: [2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06] # top coarse
-                    min: [1.0e-06, 2.0e-01, 2.0e-01, 2.0e-01, 2.0e-01, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
-                    value: [1.5e-06, 1.0, 1.0, 1.0, 1.0, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06]
+                    max: [2.0e-02, 2.0, 2.0, 2.0, 2.0, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06] # top coarse
+                    min: [2.0e-03, 2.0e-01, 2.0e-01, 2.0e-01, 2.0e-01, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06]
+                    value: [1.0e-02, 1.0, 1.0, 1.0, 1.0, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06, 1.5e-06]
             mode[3]: # BOTTOM - FINE
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                    max: [2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-6] # bottom fine
-                    min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 2.0e-01, 2.0e-01, 2.0e-01, 2.0e-01, 1.0e-06]
-                    value: [1.5e-06, 1.5e-06,1.5e-06, 1.5e-06, 1.5e-06, 1.0, 1.0, 1.0, 1.0, 1.5e-06]
+                    max: [2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0] # bottom fine
+                    min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 2.0e-01, 2.0e-01, 2.0e-01, 2.0e-01, 2.0e-01]
+                    value: [1.5e-06, 1.5e-06,1.5e-06, 1.5e-06, 1.5e-06, 1.0, 1.0, 1.0, 1.0, 1.0]
             mode[4]: # BOTTOM - COARSE
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                    max: [2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0e-6] # bottom coarse
-                    min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 2.0e-01, 2.0e-01, 2.0e-01, 2.0e-01, 1.0e-06]
-                    value: [1.5e-06, 1.5e-06,1.5e-06, 1.5e-06, 1.5e-06, 1.0, 1.0, 1.0, 1.0, 1.5e-06]
+                    max: [2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0e-06, 2.0, 2.0, 2.0, 2.0, 2.0] # bottom coarse
+                    min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 2.0e-01, 2.0e-01, 2.0e-01, 2.0e-01, 2.0e-01]
+                    value: [1.5e-06, 1.5e-06,1.5e-06, 1.5e-06, 1.5e-06, 1.0, 1.0, 1.0, 1.0, 1.0]
             retrieved: true
             type: vertical_profile_normalized
         characteristic[2]:
@@ -271,10 +271,12 @@ retrieval:
             standard_deviation_synthetic: 0.0
         noise[5]:
             error_type: relative
+#            error_type: absolute
             measurement_type[1]:
                 index_of_wavelength_involved: [1]
                 type: VBS
             standard_deviation: 0.1
+#            standard_deviation: 0.2e-6
             standard_deviation_synthetic: 0.0
 
     phase_matrix:
@@ -300,15 +302,25 @@ retrieval:
         molecular_profile_vertical_type: exponential
         number_of_layers: 50
         reference_plane_for_polarization: principal_plane
+#        simulating_derivatives:
+#            number_of_fourier_expansion_coefficients: 12
+#            number_of_gaussian_quadratures_for_expansion_coefficients: 20
+#            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40
+#            order_of_scattering: derivatives
+#        simulating_observation:
+#            number_of_fourier_expansion_coefficients: 12
+#            number_of_gaussian_quadratures_for_expansion_coefficients: 20
+#            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40
+#            order_of_scattering: multiple_scattering
         simulating_derivatives:
-            number_of_fourier_expansion_coefficients: 12
-            number_of_gaussian_quadratures_for_expansion_coefficients: 20
-            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40
+            number_of_fourier_expansion_coefficients: 6
+            number_of_gaussian_quadratures_for_expansion_coefficients: 10
+            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
             order_of_scattering: derivatives
         simulating_observation:
-            number_of_fourier_expansion_coefficients: 12
-            number_of_gaussian_quadratures_for_expansion_coefficients: 20
-            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 40
+            number_of_fourier_expansion_coefficients: 6
+            number_of_gaussian_quadratures_for_expansion_coefficients: 10
+            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
             order_of_scattering: multiple_scattering
     regime_of_measurement_fitting: {polarization: relative_polarization_components}
     regime_of_multipixel_constraints: {inversion_regime: single_pixel}
