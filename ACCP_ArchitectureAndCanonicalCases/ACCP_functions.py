@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-
+import re
+import os
+from glob import glob
+import csv
 
 #trgt = {'aod':[0.02], 'ssa':[0.03], 'g':[0.02], 'height':[500], 'rEffCalc':[0.0], 'aodMode':[0.02,0.02], 'ssaMode':[0.03,0.03], 'n':[0.025,0.025,0.025]} # look at total and fine/coarse 
 #trgt = {'aod':[0.02], 'ssa':[0.03], 'g':[0.02], 'height':[1000], 'rEffCalc':[0.0], 'aodMode':[0.02,0.02], 'ssaMode':[0.03,0.03], 'n':[0.025]} # only look at one mode (code below will work even if RMSE is calculated for fine/coarse too as long as n is listed under totVars)
@@ -113,8 +116,52 @@ def selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA, \
     φ = φAll[np.isclose(φAll, φAll.min(), atol=1)].mean() # take the mean of the smallest fis (will fail off-nadir)
     return θs, φ
 
-
-
+def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRange, measType, verbose=False):
+    """
+    concase -> e.g. 'case06dDesert'
+    measType -> Att, Ext, Bks [string]
+    instrument -> 5, 6, 9 [int]
+    wavelength -> λ in μm
+    orbit -> GPM, SS
+    basePath -> .../Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized
+    """
+    # determine reflectance string
+    wvlMap =   [0.355, 0.532, 1.064]
+    if 'vegetation' in concase.lower(): # Vegetative
+        rMap = [0.250, 0.140, 0.350]
+    elif 'desert' in concase.lower(): # Desert
+        rMap = [0.270, 0.250, 0.440] if instrument==9 else [0.270, 0.250, 0.490]
+    else: # Ocean 
+        rMap = [0.043, 0.050, 0.042] if instrument==9 else [0.043, 0.050, 0.050]
+    mtchInd = np.nonzero(np.isclose(wavelength, wvlMap, atol=0.01))[0]
+    assert len(mtchInd)==1, 'len(mtchInd)=%d but we expact exactly one match!' % len(mtchInd)
+    Rstr = '%4.2f' % rMap[mtchInd[0]]
+    # determine other aspects of the filename
+    mtchData = re.match('^case([0-9]+)([a-z])', concase)
+    assert mtchData, 'Could not parse canoncical case name %s' % concase
+    caseNum = int(mtchData.group(1))
+    caseLet = mtchData.group(2)
+    # build full file path, load the data and interpolate
+    fnPrms = (caseNum, caseLet, measType, 1000*wavelength, instrument, Rstr)
+    searchPatern = 'case%1d%c_%s_%d*_L0%d_50kmH_500mV_D_C_0.*_R_%s*.csv' % fnPrms
+    fnMtch = glob(os.path.join(basePath, orbit, searchPatern))
+    if len(fnMtch)==2: # might be M1 and M2; if so, we drop M2
+        fnMtch = (np.array(fnMtch)[[not '_M2.csv' in y for y in fnMtch]]).tolist()
+    assert len(fnMtch)==1, 'We want one file but %d matched the patern .../%s/%s' % (len(fnMtch), orbit, searchPatern)
+    if verbose: print('Reading lidar uncertainty data from: %s' % fnMtch[0])
+    hgt = []; absErr = []
+    with open(fnMtch[0], newline='') as csvfile:
+        csvReadObj = csv.reader(csvfile, delimiter=',', quotechar='|')
+        csvReadObj.__next__()
+        for row in csvReadObj:
+            hgt.append(float(row[0])*1000) # range km->m
+            absErr.append(float(row[2])/1000) # abs err 1/km/sr -> 1/m/sr
+    vldInd = ~np.logical_or(np.isnan(hgt), np.isnan(absErr))
+    absErr = np.array(absErr)[vldInd]
+    hgt = np.array(hgt)[vldInd]    
+    absErr = absErr[np.argsort(hgt)]
+    hgt = hgt[np.argsort(hgt)]
+    return np.interp(LidarRange, hgt, absErr)
 
 
 
