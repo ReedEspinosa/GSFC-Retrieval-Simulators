@@ -13,7 +13,7 @@ import functools
 #  For more than one measurement type or viewing geometry pass msTyp, nbvm, thtv, phi and msrments as vectors: \n\
 #  len(msrments)=len(thtv)=len(phi)=sum(nbvm); len(msTyp)=len(nbvm) \n\
 #  msrments=[meas[msTyp[0],thtv[0],phi[0]], meas[msTyp[0],thtv[1],phi[1]],...,meas[msTyp[0],thtv[nbvm[0]],phi[nbvm[0]]],meas[msTyp[1],thtv[nbvm[0]+1],phi[nbvm[0]+1]],...]'
-def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
+def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=None, orbit=None):
     """Multiple instruments by archName='arch1+arch2+arch3+...' OR multiple calls with nowPix argument (tacking on extra instrument each time)"""
     if not nowPix: nowPix = rg.pixel(dt.datetime.now(), 1, 1, 0, 0, 0, landPrct) # can be called for multiple instruments, BUT they must all have unqiue wavelengths
     assert nowPix.land_prct == landPrct, 'landPrct provided did not match land percentage in nowPix'
@@ -96,10 +96,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
             thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
             meas = np.block([np.repeat(n*0.001, n) for n in nbvm]) # measurement value should be type/1000
             phi = np.repeat(0, len(thtv))
-            if msTyp == [31]:
-                errModel = functools.partial(addError, errStr.replace('05','09').replace('06','09')) # We take LIDAR09 error in backscatter only channel
-            else:
-                errModel = functools.partial(addError, errStr) # HSRL (LIDAR05/06)
+            errModel = functools.partial(addError, errStr, concase=concase, orbit=orbit) # HSRL (LIDAR05/06)
             nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
     if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
 #        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
@@ -116,12 +113,12 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None):
         phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
         errStr = [y for y in archName.lower().split('+') if 'lidar09' in y][0]
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
-            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+            errModel = functools.partial(addError, errStr, concase=concase, orbit=orbit) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
     assert nowPix.measVals, 'archName did not match any instruments!'
     return nowPix
 
-def addError(measNm, l, rsltFwd, edgInd):
+def addError(measNm, l, rsltFwd, edgInd, concase=None, orbit=None):
     # if the following check ever becomes a problem see commit #6793cf7
     assert (np.diff(edgInd)[0]==np.diff(edgInd)).all(), 'Current error models assume that each measurement type has the same number of measurements at each wavelength!'
     βextLowLim = 0.01/1e6
@@ -160,35 +157,50 @@ def addError(measNm, l, rsltFwd, edgInd):
         fwdSimU = fwdSimU*(1+dpRnd*dPol) 
         return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py 
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
-        if int(mtch.group(2)) in [5, 6, 600, 500]: # HSRL and depolarization
-            if  int(mtch.group(2)) >= 100:# 1e-4 standard noise
-                relErrβsca = 0.000005 # fraction (unitless)
-                absErrβext = 17/1e10 # m-1
-            else: # use normal noise model
-                relErrβsca = 0.05 #
-                absErrβext = 17/1e6 # m-1
-                # relErrβsca = 0.000358 # these values pulled from slide 39 of Rich's HSRL talk at the aerosol TIM
-                # relErrβext = 0.001157 # see A-CCP/LIDAR Erorr in Endnote for more details
-            trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
-            trueSimβext = rsltFwd['fit_VExt'][:,l] # 36
-            # trueSimDPOL = rsltFwd['fit_DP'][:,l] # 35
-            fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErrβsca), size=len(trueSimβsca))
-            fwdSimβext = trueSimβext + absErrβext*np.random.normal(size=len(trueSimβext))
-            fwdSimβext[fwdSimβext<βextLowLim] = βextLowLim
-            fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
-            # fwdSimβext = trueSimβext*np.random.lognormal(sigma=np.log(1+relErrβext), size=len(trueSimβext))
-            # fwdSimDPOL = trueSimDPOL + dpolErr*np.random.lognormal(sigma=0.5, size=len(trueSimDPOL))
-            # return np.r_[fwdSimDPOL, fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
-            return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
-        elif int(mtch.group(2)) in [9, 900]: # backscatter and depol
-            # relErr = 0.07 # 5% calibration error from Gimmestad, G. et al. Sci. Rep. 7, 42337; (2017), random error so we also choose 5%, which, when added in quadrature give 7%
-            relErr = 0.05 if int(mtch.group(2)) < 100 else 0.000005 # else 1e-4 standard noise
+        if not np.isnan(rsltFwd['fit_LS'][:,l]).any(): # atten. backscatter
+            if int(mtch.group(2)) in [500, 600, 900]:
+                relErr = 0.000005 # else 1e-4 standard noise
+            elif int(mtch.group(2)) in [5, 6, 9]:
+                relErr = 0.05
+            elif int(mtch.group(2)) in [50, 60, 90]: # Kathy's uncertainty models
+                assert concase and orbit, 'Canoncial case string and orbit must be provided to use Kathys models!'
+            else:
+                assert False, 'Lidar ID number %d not recognized!' % mtch.group(2)
             vertRange = rsltFwd['RangeLidar'][:,l] 
             trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 31
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
             fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
             fwdSimβscaNrm = np.r_[fwdSimβsca]/simps(fwdSimβsca, x=-vertRange) # normalize profile to unity (GRASP requirement)
             return fwdSimβscaNrm # safe because of ascending order check in simulateRetrieval.py
+        elif not (np.isnan(rsltFwd['fit_VBS'][:,l]).any() or np.isnan(rsltFwd['fit_VExt'][:,l]).any()): # HSRL
+            if  int(mtch.group(2)) in [600, 500]:# 1e-4 standard noise
+                relErrβsca = 0.000005 # fraction (unitless)
+                absErrβext = 17/1e10 # m-1
+            elif int(mtch.group(2)) in [50, 60]: # kathy's noise models
+                assert concase and orbit, 'Canoncial case string and orbit must be provided to use Kathys models!'
+                print('NOT DONE')
+                """ WE NEED: 
+                    orbit - orbit
+                    wavelength - rsltFwd['lambda'][l]
+                    instrument - mtch.group(2)/10
+                    concase - concase
+                    surface type - pulled from concase
+                    range - rsltFwd['RangeLidar'][:,l]
+                """
+            elif int(mtch.group(2)) in [5, 6]: # use normal noise model
+                relErrβsca = 0.05 #
+                absErrβext = 17/1e6 # m-1
+            else:
+                assert False, 'Lidar ID number %d not recognized!' % mtch.group(2)
+            trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
+            trueSimβext = rsltFwd['fit_VExt'][:,l] # 36
+            fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErrβsca), size=len(trueSimβsca))
+            fwdSimβext = trueSimβext + absErrβext*np.random.normal(size=len(trueSimβext))
+            fwdSimβext[fwdSimβext<βextLowLim] = βextLowLim
+            fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
+            return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
+        else:
+            assert False, 'Lidar data type not VBS, VExt or LS!' % mtch.group(2)
     if mtch.group(1).lower() == 'modismisr':
         relErr = 0.03
         trueSimI = rsltFwd['fit_I'][:,l]

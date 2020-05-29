@@ -60,7 +60,7 @@ verbose = True
 # <><><><>END INPUTS<><><><>
 # AUTOMATED INPUT PREP
 paramTple = list(itertools.product(*[instruments, conCases, orbits, τFactor]))[n] 
-# SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=paramTple[2], verbose=verbose)
+SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=paramTple[2], verbose=verbose)
 savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n, nAng))
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 if 'lidar' in paramTple[0].lower(): # Use LIDAR YAML file
@@ -70,7 +70,8 @@ else: # Use Polarimeter YAML file
     fwdModelYAMLpath = fwdModelYAMLpathPOL
     bckYAMLpath = bckYAMLpathPOL
 # RUN SIMULATION
-nowPix = returnPixel(paramTple[0], sza=SZA, relPhi=phi, nowPix=None)
+nowPix = returnPixel(paramTple[0], sza=SZA, relPhi=phi, nowPix=None, \
+                     concase=paramTple[1], orbit=paramTple[2]) # these last two (concase & orbit) are only needed if using a lidar w/ Kathy's noise model
 cstmFwdYAML, landPrct = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath, caseLoadFctr=paramTple[3])
 nowPix.land_prct = landPrct
 print('n= %d, Nλ = %d' % (n,nowPix.nwl))
