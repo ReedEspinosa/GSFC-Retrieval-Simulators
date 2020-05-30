@@ -119,12 +119,13 @@ def selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA, \
 def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRange, measType, verbose=False):
     """
     concase -> e.g. 'case06dDesert'
-    measType -> Att, Ext, Bks [string]
+    measType -> Att, Ext, Bks [string] - Att is returned as relative error, all others absolute
     instrument -> 5, 6, 9 [int]
     wavelength -> λ in μm
     orbit -> GPM, SS
     basePath -> .../Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized
     """
+    resolution = '50kmH_500mV'
     # determine reflectance string
     wvlMap =   [0.355, 0.532, 1.064]
     if 'vegetation' in concase.lower(): # Vegetative
@@ -142,8 +143,8 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
     caseNum = int(mtchData.group(1))
     caseLet = mtchData.group(2)
     # build full file path, load the data and interpolate
-    fnPrms = (caseNum, caseLet, measType, 1000*wavelength, instrument, Rstr)
-    searchPatern = 'case%1d%c_%s_%d*_L0%d_50kmH_500mV_D_C_0.*_R_%s*.csv' % fnPrms
+    fnPrms = (caseNum, caseLet, measType, 1000*wavelength, instrument, resolution, Rstr)
+    searchPatern = 'case%1d%c_%s_%d*_L0%d_%s_D_C_0.*_R_%s*.csv' % fnPrms
     fnMtch = glob(os.path.join(basePath, orbit, searchPatern))
     if len(fnMtch)==2: # might be M1 and M2; if so, we drop M2
         fnMtch = (np.array(fnMtch)[[not '_M2.csv' in y for y in fnMtch]]).tolist()
@@ -155,7 +156,10 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
         csvReadObj.__next__()
         for row in csvReadObj:
             hgt.append(float(row[0])*1000) # range km->m
-            absErr.append(float(row[2])/1000) # abs err 1/km/sr -> 1/m/sr
+            if measType == 'Att':
+                absErr.append(float(row[3])) # relative err 
+            else:
+                absErr.append(float(row[2])/1000) # abs err 1/km/sr -> 1/m/sr
     vldInd = ~np.logical_or(np.isnan(hgt), np.isnan(absErr))
     absErr = np.array(absErr)[vldInd]
     hgt = np.array(hgt)[vldInd]    

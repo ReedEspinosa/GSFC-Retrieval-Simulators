@@ -7,13 +7,15 @@ from scipy.integrate import simps
 MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GRASP_scripts is in parent of MADCAP_scripts
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import runGRASP as rg
+from ACCP_functions import readKathysLidarσ
 import functools 
-
-# DUMMY MEASUREMENTS: (determined by architecture, should ultimatly move to seperate scripts)
-#  For more than one measurement type or viewing geometry pass msTyp, nbvm, thtv, phi and msrments as vectors: \n\
-#  len(msrments)=len(thtv)=len(phi)=sum(nbvm); len(msTyp)=len(nbvm) \n\
-#  msrments=[meas[msTyp[0],thtv[0],phi[0]], meas[msTyp[0],thtv[1],phi[1]],...,meas[msTyp[0],thtv[nbvm[0]],phi[nbvm[0]]],meas[msTyp[1],thtv[nbvm[0]+1],phi[nbvm[0]+1]],...]'
-def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=None, orbit=None):
+"""
+DUMMY MEASUREMENTS: (determined by architecture, should ultimatly move to seperate scripts)
+  For more than one measurement type or viewing geometry pass msTyp, nbvm, thtv, phi and msrments as vectors: \n\
+  len(msrments)=len(thtv)=len(phi)=sum(nbvm); len(msTyp)=len(nbvm) \n\
+  msrments=[meas[msTyp[0],thtv[0],phi[0]], meas[msTyp[0],thtv[1],phi[1]],...,meas[msTyp[0],thtv[nbvm[0]],phi[nbvm[0]]],meas[msTyp[1],thtv[nbvm[0]+1],phi[nbvm[0]+1]],...]'
+"""
+def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=None, orbit=None, lidErrDir=None):
     """Multiple instruments by archName='arch1+arch2+arch3+...' OR multiple calls with nowPix argument (tacking on extra instrument each time)"""
     if not nowPix: nowPix = rg.pixel(dt.datetime.now(), 1, 1, 0, 0, 0, landPrct) # can be called for multiple instruments, BUT they must all have unqiue wavelengths
     assert nowPix.land_prct == landPrct, 'landPrct provided did not match land percentage in nowPix'
@@ -82,7 +84,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=N
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
     if 'lidar05' in archName.lower() or 'lidar06' in archName.lower(): 
-        msTyp = [[36, 39],[31]] # TODO: still missing depol (msTyp=35); also, must be in ascending order
+        msTyp = [[36, 39],[31]] # must be in ascending order # BUG: we took out depol (msTyp=35) b/c GRASP was throwing error (& canonical cases are spherical)
         wvls = [0.532, 1.064] # Nλ=2
         if 'lidar06' in archName.lower():
             msTyp.insert(0,[36, 39])
@@ -96,29 +98,26 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=N
             thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
             meas = np.block([np.repeat(n*0.001, n) for n in nbvm]) # measurement value should be type/1000
             phi = np.repeat(0, len(thtv))
-            errModel = functools.partial(addError, errStr, concase=concase, orbit=orbit) # HSRL (LIDAR05/06)
+            errModel = functools.partial(addError, errStr, concase=concase, orbit=orbit, lidErrDir=lidErrDir) # HSRL (LIDAR05/06)
             nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
     if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
-#        msTyp = [35, 36, 39] # must be in ascending order # HACK: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
-        msTyp = [31] # must be in ascending order
+        msTyp = [31] # must be in ascending order # BUG: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
         botLayer = 10 # bottom layer in meters
         topLayer = 4510
         Nlayers = 10 #TODO: ultimatly this should be read from (or even better define) the YAML file
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
-#        thtv = np.tile(np.logspace(np.log10(botLayer), np.log10(topLayer), Nlayers)[::-1], len(msTyp))
         thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
         wvls = [0.532, 1.064] # Nλ=2
-#        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         meas = np.r_[np.repeat(0.007, nbvm[0])]
         phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
         errStr = [y for y in archName.lower().split('+') if 'lidar09' in y][0]
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
-            errModel = functools.partial(addError, errStr, concase=concase, orbit=orbit) # this must link to an error model in addError() below
+            errModel = functools.partial(addError, errStr, concase=concase, orbit=orbit, lidErrDir=lidErrDir) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
     assert nowPix.measVals, 'archName did not match any instruments!'
     return nowPix
 
-def addError(measNm, l, rsltFwd, edgInd, concase=None, orbit=None):
+def addError(measNm, l, rsltFwd, edgInd, concase=None, orbit=None, lidErrDir=None, verbose=False):
     # if the following check ever becomes a problem see commit #6793cf7
     assert (np.diff(edgInd)[0]==np.diff(edgInd)).all(), 'Current error models assume that each measurement type has the same number of measurements at each wavelength!'
     βextLowLim = 0.01/1e6
@@ -157,45 +156,46 @@ def addError(measNm, l, rsltFwd, edgInd, concase=None, orbit=None):
         fwdSimU = fwdSimU*(1+dpRnd*dPol) 
         return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py 
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
+        vertRange = rsltFwd['RangeLidar'][:,l] 
         if not np.isnan(rsltFwd['fit_LS'][:,l]).any(): # atten. backscatter
+            trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 31    
             if int(mtch.group(2)) in [500, 600, 900]:
                 relErr = 0.000005 # else 1e-4 standard noise
             elif int(mtch.group(2)) in [5, 6, 9]:
                 relErr = 0.05
             elif int(mtch.group(2)) in [50, 60, 90]: # Kathy's uncertainty models
-                assert concase and orbit, 'Canoncial case string and orbit must be provided to use Kathys models!'
+                assert concase and orbit and lidErrDir, 'Canoncial case string, orbit and lidErrDir must all be provided to use Kathys models!'
+                relErr = readKathysLidarσ(lidErrDir, orbit=orbit, wavelength=rsltFwd['lambda'][l], \
+                                 instrument=int(mtch.group(2))/10, concase=concase, \
+                                 LidarRange=vertRange, measType='Att', verbose=verbose)
             else:
                 assert False, 'Lidar ID number %d not recognized!' % mtch.group(2)
-            vertRange = rsltFwd['RangeLidar'][:,l] 
-            trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 31
-            fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca))
+            fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca)) # works w/ relErr as scalar or vector
             fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
             fwdSimβscaNrm = np.r_[fwdSimβsca]/simps(fwdSimβsca, x=-vertRange) # normalize profile to unity (GRASP requirement)
             return fwdSimβscaNrm # safe because of ascending order check in simulateRetrieval.py
         elif not (np.isnan(rsltFwd['fit_VBS'][:,l]).any() or np.isnan(rsltFwd['fit_VExt'][:,l]).any()): # HSRL
-            if  int(mtch.group(2)) in [600, 500]:# 1e-4 standard noise
+            trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
+            trueSimβext = rsltFwd['fit_VExt'][:,l] # 36    
+            if int(mtch.group(2)) in [600, 500]:# 1e-4 standard noise
                 relErrβsca = 0.000005 # fraction (unitless)
                 absErrβext = 17/1e10 # m-1
             elif int(mtch.group(2)) in [50, 60]: # kathy's noise models
-                assert concase and orbit, 'Canoncial case string and orbit must be provided to use Kathys models!'
-                print('NOT DONE')
-                """ WE NEED: 
-                    orbit - orbit
-                    wavelength - rsltFwd['lambda'][l]
-                    instrument - mtch.group(2)/10
-                    concase - concase
-                    surface type - pulled from concase
-                    range - rsltFwd['RangeLidar'][:,l]
-                """
+                assert concase and orbit and lidErrDir, 'Canoncial case string, orbit and lidErrDir must all be provided to use Kathys models!'
+                absErrβext = readKathysLidarσ(lidErrDir, orbit=orbit, wavelength=rsltFwd['lambda'][l], \
+                                 instrument=int(mtch.group(2))/10, concase=concase, \
+                                 LidarRange=vertRange, measType='Ext', verbose=verbose)
+                absErrβsca = readKathysLidarσ(lidErrDir, orbit=orbit, wavelength=rsltFwd['lambda'][l], \
+                                 instrument=int(mtch.group(2))/10, concase=concase, \
+                                 LidarRange=vertRange, measType='Bks', verbose=verbose)
+                relErrβsca = absErrβsca/trueSimβsca
             elif int(mtch.group(2)) in [5, 6]: # use normal noise model
                 relErrβsca = 0.05 #
                 absErrβext = 17/1e6 # m-1
             else:
                 assert False, 'Lidar ID number %d not recognized!' % mtch.group(2)
-            trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
-            trueSimβext = rsltFwd['fit_VExt'][:,l] # 36
-            fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErrβsca), size=len(trueSimβsca))
-            fwdSimβext = trueSimβext + absErrβext*np.random.normal(size=len(trueSimβext))
+            fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErrβsca), size=len(trueSimβsca)) # works w/ relErrβsca as scalar or vector
+            fwdSimβext = trueSimβext + absErrβext*np.random.normal(size=len(trueSimβext)) # works w/ absErrβext as scalar or vector
             fwdSimβext[fwdSimβext<βextLowLim] = βextLowLim
             fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
             return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py

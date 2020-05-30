@@ -61,11 +61,11 @@ retrieval:
                     value: [0.035]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
-            retrieved: false
+            retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
         characteristic[6]:
             type: surface_water_cox_munk_iso
-            retrieved: false
+            retrieved: true
             mode[1]:    
                 initial_guess:                       #1      #2      #3      
                     value:                          [0.02]
@@ -105,7 +105,7 @@ retrieval:
                     value: [0.9999998]
                 single_pixel:
                     smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
-            retrieved: false
+            retrieved: true
             type: sphere_fraction                        
         characteristic[8]:
             mode[1]:
@@ -118,17 +118,17 @@ retrieval:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             mode[2]:
                 initial_guess:
-                    index_of_wavelength_involved: [0]
-                    max:   [0.7533]
-                    min:   [0.0781]
+                    index_of_wavelength_involved: [1]
+                    max:   [1.0]
+                    min:   [0.01]
                     value: [0.40]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             mode[3]:
                 initial_guess:
-                    index_of_wavelength_involved: [0]
-                    max:   [0.1322]
-                    min:   [0.00001]
+                    index_of_wavelength_involved: [1]
+                    max:   [0.3]
+                    min:   [0.000001]
                     value: [0.05]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
@@ -141,7 +141,7 @@ retrieval:
                     max: [8.0]
                     min: [1.0e-10]
                     value: [2.0e-10]
-            retrieved: false
+            retrieved: true
             type: surface_land_polarized_maignan_breon            
     convergence: {maximum_iterations_for_stopping: 20, maximum_iterations_of_Levenberg-Marquardt: 20, minimization_convention: logarithm, normal_system_solver: sparse_matrix_solver, scale_for_finite_difference: 1.0e-06, shift_for_applying_logarithm_to_negative_values: 1.1, stop_before_performing_retrieval: true, threshold_for_stopping: 0.001, threshold_for_stopping_Q_iterations: 1.0e-05}
     debug: {additional_information: false, verbose: true}

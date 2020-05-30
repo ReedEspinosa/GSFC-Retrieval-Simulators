@@ -117,50 +117,8 @@ retrieval:
                     smoothness_constraints:
                         difference_order: 0
                         lagrange_multiplier: 0                        
-        characteristic[7]:
-            mode[1]:
-                initial_guess:
-                    index_of_wavelength_involved: [0]
-                    max:   [0.9999999]
-                    min:    [0.0000001]
-                    value: [0.9999998]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
-            mode[2]:
-                initial_guess:
-                    index_of_wavelength_involved: [0]
-                    max:   [0.9999999]
-                    min:    [0.0000001]
-                    value: [0.9999998]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
-            retrieved: false
-            type: sphere_fraction             
-        characteristic[8]: 
-            type: vertical_profile_parameter_standard_deviation
-            retrieved: false
-            mode[1]:
-                initial_guess:                      #1          
-                    value:                          [500.0 ]
-                    min:                            [200.0  ] 
-                    max:                            [3000.0 ]
-                    index_of_wavelength_involved:   [0      ]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 0
-                        lagrange_multiplier: 0                                  
-            mode[2]:
-                initial_guess:                      #1          
-                    value:                          [500.0 ]
-                    min:                            [200.0  ] 
-                    max:                            [3000.0 ]
-                    index_of_wavelength_involved:   [0      ]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 0
-                        lagrange_multiplier: 0
 #        VEGETATION
-#        characteristic[9]:
+#        characteristic[7]:
 #            mode[1]:
 #                initial_guess:
 #                    index_of_wavelength_involved: [1] # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
@@ -197,7 +155,7 @@ retrieval:
 #            retrieved: false
 #            type: surface_land_polarized_maignan_breon
         # DESERT
-        characteristic[9]:
+        characteristic[7]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1] # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
@@ -208,31 +166,63 @@ retrieval:
                     smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
             mode[2]:
                 initial_guess:
-                    index_of_wavelength_involved: [0]
+                    index_of_wavelength_involved: [1]
                     max:   [0.7533]
                     min:   [0.0781]
                     value: [0.40]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
             mode[3]:
                 initial_guess:
-                    index_of_wavelength_involved: [0]
+                    index_of_wavelength_involved: [1]
                     max:   [0.1322]
                     min:   [0.00001]
                     value: [0.05]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
             retrieved: true
             type: surface_land_brdf_ross_li
-        characteristic[10]:
+        characteristic[8]:
             mode[1]:
                 initial_guess:
-                    index_of_wavelength_involved: [0]
+                    index_of_wavelength_involved: [1]
                     max:   [7.895]
                     min:   [5.460]
                     value: [6.0]
-            retrieved: false
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
+            retrieved: true
             type: surface_land_polarized_maignan_breon
+        characteristic[9]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [0.9999999]
+                    min:    [0.0000001]
+                    value: [0.9999998]
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [0.9999999]
+                    min:    [0.0000001]
+                    value: [0.9999998]
+            retrieved: false
+            type: sphere_fraction             
+        characteristic[10]: 
+            type: vertical_profile_parameter_standard_deviation
+            retrieved: false
+            mode[1]:
+                initial_guess:                      #1          
+                    value:                          [500.0 ]
+                    min:                            [200.0  ] 
+                    max:                            [3000.0 ]
+                    index_of_wavelength_involved:   [0      ]
+            mode[2]:
+                initial_guess:                      #1          
+                    value:                          [500.0 ]
+                    min:                            [200.0  ] 
+                    max:                            [3000.0 ]
+                    index_of_wavelength_involved:   [0      ]
     convergence: 
         maximum_iterations_for_stopping: 20
         maximum_iterations_of_Levenberg-Marquardt: 20
