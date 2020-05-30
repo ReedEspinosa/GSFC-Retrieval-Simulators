@@ -31,7 +31,7 @@ if checkDiscover(): # DISCOVER
 #     Nsims = 1
 #     maxCPU = 1
     Nsims = 3
-    maxCPU = 3
+    maxCPU = 1
 else: # MacBook Air
     saveStart = '/Users/wrespino/Desktop/TEST_V02_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
@@ -84,5 +84,5 @@ simA = rs.simulation(nowPix) # defines new instance for architecture described b
 gObjFwd, gObjBck = simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
                                binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, \
                                lightSave=True, rndIntialGuess=rndIntialGuess, dryRun=False, \
-                               workingFileSave=True, fixRndmSeed=True, verbose=verbose)
+                               workingFileSave=False, fixRndmSeed=True, verbose=verbose)
 
