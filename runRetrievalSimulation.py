@@ -21,7 +21,7 @@ nAng = int(sys.argv[2]) # index of angles to select from PCA
 
 if checkDiscover(): # DISCOVER
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V00_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V01_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -30,8 +30,8 @@ if checkDiscover(): # DISCOVER
     lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized')
 #     Nsims = 1
 #     maxCPU = 1
-    Nsims = 7
-    maxCPU = 7
+    Nsims = 3
+    maxCPU = 3
 else: # MacBook Air
     saveStart = '/Users/wrespino/Desktop/TEST_V02_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
