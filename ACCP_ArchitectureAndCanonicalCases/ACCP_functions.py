@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-
+import re
+import os
+from glob import glob
+import csv
 
 #trgt = {'aod':[0.02], 'ssa':[0.03], 'g':[0.02], 'height':[500], 'rEffCalc':[0.0], 'aodMode':[0.02,0.02], 'ssaMode':[0.03,0.03], 'n':[0.025,0.025,0.025]} # look at total and fine/coarse 
 #trgt = {'aod':[0.02], 'ssa':[0.03], 'g':[0.02], 'height':[1000], 'rEffCalc':[0.0], 'aodMode':[0.02,0.02], 'ssaMode':[0.03,0.03], 'n':[0.025]} # only look at one mode (code below will work even if RMSE is calculated for fine/coarse too as long as n is listed under totVars)
@@ -75,4 +78,95 @@ def writeConcaseVars(rslt):
     valVect.append(rslt['g'][lInd])
     print(', '.join([str(x) for x in valVect]))
     
-    
+def selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA, \
+                        orbit=None, pcaVarPtrn='n_row_best_107sets_%s', verbose=False):
+    """
+    Pull scalars θs, φ (NADIR ONLY) from Pete's files at index specified by Feng's PCA
+    There are two ways to select proper orbit data:
+        1) rawAngleDir is directory with text files, orbit is None (will be determined from rawAngleDir string)
+        2) rawAngleDir is parrent of directory with text files, orbit must be provided by the calling function
+    rawAngleDir - directory of Pete's angle files for that particular orbit if orbit is None
+                    if obrit provided, should be top level folder with both SS & GPM directories 
+    PCAslctMatFilePath - full path of Feng's PCA results for indexing Pete's files
+    nPCA - index of Feng's file, will pull index of Pete's data to extract
+    orbit - 'GPM', 'SS', etc.; None -> try to extract it from rawAngleDir
+    pcaVarPtrn='n_row_best_107sets_%s' - matlab variable, %s will be filled with orbit
+    """
+    import sys
+    import os
+    from glob import glob
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from MADCAP_functions import readPetesAngleFiles
+    import scipy.io as spio
+    if orbit is None: 
+        if 'ss' in os.path.basename(rawAngleDir).lower():
+            orbit = 'SS'
+        elif 'gpm' in os.path.basename(rawAngleDir).lower():
+            orbit = 'GPM'
+    else:
+        rawAngleDirPoss = glob(os.path.join(rawAngleDir, orbit.lower()+'*'+ os.path.sep))
+        assert len(rawAngleDirPoss)==1, '%d angle directories found but should be exactly 1' % len(rawAngleDirPoss)
+        rawAngleDir = rawAngleDirPoss[0]
+    assert not orbit is None, 'Could not determine the orbit, which is needed to select mat file variable'
+    angData = readPetesAngleFiles(rawAngleDir, nAng=10, verbose=verbose)
+    pcaVar = pcaVarPtrn % orbit
+    pcaData = spio.loadmat(PCAslctMatFilePath, variable_names=[pcaVar], squeeze_me=True)
+    θs = max(angData['sza'][pcaData[pcaVar][nPCA]], 0.1) # (GRASP doesn't seem to be wild about θs=0)
+    φAll = angData['fis'][pcaData[pcaVar][nPCA],:]
+    φ = φAll[np.isclose(φAll, φAll.min(), atol=1)].mean() # take the mean of the smallest fis (will fail off-nadir)
+    return θs, φ
+
+def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRange, measType, verbose=False):
+    """
+    concase -> e.g. 'case06dDesert'
+    measType -> Att, Ext, Bks [string] - Att is returned as relative error, all others absolute
+    instrument -> 5, 6, 9 [int]
+    wavelength -> λ in μm
+    orbit -> GPM, SS
+    basePath -> .../Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized
+    """
+    resolution = '50kmH_500mV'
+    # determine reflectance string
+    wvlMap =   [0.355, 0.532, 1.064]
+    if 'vegetation' in concase.lower(): # Vegetative
+        rMap = [0.250, 0.140, 0.350]
+    elif 'desert' in concase.lower(): # Desert
+        rMap = [0.270, 0.250, 0.440] if instrument==9 else [0.270, 0.250, 0.490]
+    else: # Ocean 
+        rMap = [0.043, 0.050, 0.042] if instrument==9 else [0.043, 0.050, 0.050]
+    mtchInd = np.nonzero(np.isclose(wavelength, wvlMap, atol=0.01))[0]
+    assert len(mtchInd)==1, 'len(mtchInd)=%d but we expact exactly one match!' % len(mtchInd)
+    Rstr = '%4.2f' % rMap[mtchInd[0]]
+    # determine other aspects of the filename
+    mtchData = re.match('^case([0-9]+)([a-z])', concase)
+    assert mtchData, 'Could not parse canoncical case name %s' % concase
+    caseNum = int(mtchData.group(1))
+    caseLet = mtchData.group(2)
+    # build full file path, load the data and interpolate
+    fnPrms = (caseNum, caseLet, measType, 1000*wavelength, instrument, resolution, Rstr)
+    searchPatern = 'case%1d%c_%s_%d*_L0%d_%s_D_C_0.*_R_%s*.csv' % fnPrms
+    fnMtch = glob(os.path.join(basePath, orbit, searchPatern))
+    if len(fnMtch)==2: # might be M1 and M2; if so, we drop M2
+        fnMtch = (np.array(fnMtch)[[not '_M2.csv' in y for y in fnMtch]]).tolist()
+    assert len(fnMtch)==1, 'We want one file but %d matched the patern .../%s/%s' % (len(fnMtch), orbit, searchPatern)
+    if verbose: print('Reading lidar uncertainty data from: %s' % fnMtch[0])
+    hgt = []; absErr = []
+    with open(fnMtch[0], newline='') as csvfile:
+        csvReadObj = csv.reader(csvfile, delimiter=',', quotechar='|')
+        csvReadObj.__next__()
+        for row in csvReadObj:
+            hgt.append(float(row[0])*1000) # range km->m
+            if measType == 'Att':
+                absErr.append(float(row[3])) # relative err 
+            else:
+                absErr.append(float(row[2])/1000) # abs err 1/km/sr -> 1/m/sr
+    vldInd = ~np.logical_or(np.isnan(hgt), np.isnan(absErr))
+    absErr = np.array(absErr)[vldInd]
+    hgt = np.array(hgt)[vldInd]    
+    absErr = absErr[np.argsort(hgt)]
+    hgt = hgt[np.argsort(hgt)]
+    return np.interp(LidarRange, hgt, absErr)
+
+
+
+ 
