@@ -44,16 +44,19 @@ else: # MacBook Air
     maxCPU = 2
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
 bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_4modes.yml')
+bckYAMLpathLIDveg = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_VEG_10Vbins_4modes.yml')
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
+bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
-conCases = ['case06'+caseLet+surf for caseLet in ['a','b','c','d','e','f'] for surf in ['', 'Desert', 'Vegetation']] # 18
+casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
+conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
 # conCases = ['case06aVegetation']
 τFactor = [1.0] #1
 # orbits = ['SS', 'GPM'] # 2
 orbits = ['SS'] # 1
 instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
-               'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=126
+               'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
 # instruments = ['lidar0600'] # 8 N=42
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
@@ -67,10 +70,10 @@ savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (par
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 if 'lidar' in paramTple[0].lower(): # Use LIDAR YAML file
     fwdModelYAMLpath = fwdModelYAMLpathLID
-    bckYAMLpath = bckYAMLpathLID
+    bckYAMLpath = bckYAMLpathLIDveg if 'Vegetation' in paramTple[1] else bckYAMLpathLID
 else: # Use Polarimeter YAML file
     fwdModelYAMLpath = fwdModelYAMLpathPOL
-    bckYAMLpath = bckYAMLpathPOL
+    bckYAMLpath = bckYAMLpathPOLveg if 'Vegetation' in paramTple[1] else bckYAMLpathPOL
 # RUN SIMULATION
 nowPix = returnPixel(paramTple[0], sza=SZA, relPhi=phi, nowPix=None, \
                      concase=paramTple[1], orbit=paramTple[2], lidErrDir=lidErrDir) # these last two (concase & orbit) are only needed if using a lidar w/ Kathy's noise model
