@@ -17,22 +17,21 @@ def conCaseDefinitions(caseStr, nowPix):
     nwl = len(wvls)
     """ variable type appended options: 'fine'/'coarse', 'nonsph' and 'lofted' """
     if 'variable' in caseStr.lower(): # dimensions are [mode, λ or (rv,sigma)];
-        σ = 0.3+rnd.random()*0.4
+        σ = 0.35+rnd.random()*0.3
         if 'fine' in caseStr.lower():
-            rv = 0.12+rnd.random()*0.1 
-            vals['vol'] = np.array([[np.random.normal(0.8, 0.2)]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
+            rv = 0.145+rnd.random()*0.105
+            vals['vol'] = np.array([[0.5+rnd.random()*0.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
         elif 'coarse' in caseStr.lower():
-            rv = 0.6+rnd.random()*3
-            vals['vol'] = np.array([[np.random.normal(2.5, 0.5)]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
+            rv = 0.8+rnd.random()*3.2
+            vals['vol'] = np.array([[1.5+rnd.random()*1.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
         else:
             assert False, 'variable aerosol case must be appended with either fine or coarse'
-        vals['vol'][vals['vol']<0.001] = 0.001 # just in case random normal drops below zero
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999]] # mode 1, 2,...
         vals['vrtHght'] = [[3010]] if 'lofted' in caseStr.lower() else  [[1010]]  # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500]] # Gaussian sigma in meters
-        vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.34+rnd.random(2)*0.20)[None,:] # mode 1 # linear w/ λ
-        vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.01)[None,:] # mode 1 # linear w/ λ
+        vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.36+rnd.random(2)*0.15)[None,:] # mode 1 # linear w/ λ
+        vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.015)[None,:] # mode 1 # linear w/ λ
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'clean' in caseStr.lower():
         σ = [0.4, 0.68] # mode 1, 2,...
