@@ -22,7 +22,7 @@ if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2]) # index of angles to select from PCA
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V00_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V01_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -31,8 +31,8 @@ if checkDiscover(): # DISCOVER
     lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized')
 #     Nsims = 1
 #     maxCPU = 1
-    Nsims = 7
-    maxCPU = 7
+    Nsims = 3
+    maxCPU = 1
 else: # MacBook Air
     n = 0
     nAng = 2
@@ -114,5 +114,5 @@ simA = rs.simulation(nowPix) # defines new instance for architecture described b
 gObjFwd, gObjBck = simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
                                binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, \
                                lightSave=True, rndIntialGuess=rndIntialGuess, dryRun=False, \
-                               workingFileSave=True, fixRndmSeed=True, verbose=verbose)
+                               workingFileSave=False, fixRndmSeed=True, verbose=verbose)
 
