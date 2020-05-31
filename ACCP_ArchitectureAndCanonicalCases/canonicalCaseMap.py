@@ -238,27 +238,27 @@ def splitMultipleCases(caseStrs, caseLoadFct):
     loadings = []
     for case in caseStrs.split('+'):
         if 'case06a' in case.lower():
-            cases.append(case.replace('case06a','smoke'))
+            cases.append(case.replace('case06a','smoke')) # smoke base τ550=0.25
             loadings.append(caseLoadFct)
-            cases.append(case.replace('case06a','marine'))
+            cases.append(case.replace('case06a','marine')) # marine base τ550=0.1
             loadings.append(caseLoadFct)
         elif 'case06b' in case.lower():
             cases.append(case.replace('case06b','smoke'))
             loadings.append(0.4*caseLoadFct)
-            cases.append(case.replace('case06b','marine'))
+            cases.append(case.replace('case06b','marine')) 
             loadings.append(2.5*caseLoadFct)
         elif 'case06c' in case.lower():
             cases.append(case.replace('case06c','smoke'))
             loadings.append(caseLoadFct)
-            cases.append(case.replace('case06c','pollution'))
+            cases.append(case.replace('case06c','pollution')) # pollution base τ550=0.1
             loadings.append(caseLoadFct)
         elif 'case06d' in case.lower():
-            cases.append(case.replace('case06d','smoke'))
+            cases.append(case.replace('case06d','smoke')) 
             loadings.append(0.4*caseLoadFct)
-            cases.append(case.replace('case06d','pollution'))
-            loadings.append(0.4*caseLoadFct)
+            cases.append(case.replace('case06d','pollution')) 
+            loadings.append(2.5*caseLoadFct)
         elif 'case06e' in case.lower():
-            cases.append(case.replace('case06e','dust'))
+            cases.append(case.replace('case06e','dust')) # dust base τ550=0.25
             loadings.append(caseLoadFct)
             cases.append(case.replace('case06e','marine'))
             loadings.append(caseLoadFct)
@@ -268,18 +268,20 @@ def splitMultipleCases(caseStrs, caseLoadFct):
             cases.append(case.replace('case06f','marine'))
             loadings.append(2.5*caseLoadFct)
         elif 'case06g' in case.lower():
+            cases.append(case.replace('case06g','smoke'))
+            loadings.append(0.00001)
             cases.append(case.replace('case06g','marine'))
             loadings.append(caseLoadFct)
         elif 'case06h' in case.lower():
             cases.append(case.replace('case06h','smoke'))
             loadings.append(0.00001)
-            cases.append(case.replace('case06h','plltdMrn'))
+            cases.append(case.replace('case06h','plltdMrn')) # plltdMrn base τ550=0.1
             loadings.append(caseLoadFct)
         elif 'case06i' in case.lower():
             cases.append(case.replace('case06i','smoke'))
             loadings.append(0.4*caseLoadFct)
             cases.append(case.replace('case06i','pollution'))
-            loadings.append(2*caseLoadFct)                    
+            loadings.append(5*caseLoadFct)                    
         elif 'case06j' in case.lower():
             cases.append(case.replace('case06j','dustNonsph'))
             loadings.append(caseLoadFct)

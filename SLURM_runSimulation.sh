@@ -6,7 +6,7 @@
 #SBATCH -e log/error.%A-%a
 #SBATCH --array=0-230
 
-STARTnAng=13
+STARTnAng=$1
 date
 hostname
 echo "---Running Sims n="${SLURM_ARRAY_TASK_ID}"  STARTnAng="$STARTnAng"---"
@@ -25,19 +25,5 @@ python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((10+$STARTnAng)
 python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((11+$STARTnAng)) &
 python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((12+$STARTnAng)) &
 python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((13+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((14+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((15+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((16+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((17+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((18+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((19+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((20+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((21+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((22+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((23+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((24+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((25+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((26+$STARTnAng)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $((27+$STARTnAng)) &
 wait
 exit 0

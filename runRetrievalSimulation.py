@@ -22,7 +22,7 @@ if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2]) # index of angles to select from PCA
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V01_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V02_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -31,8 +31,8 @@ if checkDiscover(): # DISCOVER
     lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized')
 #     Nsims = 1
 #     maxCPU = 1
-    Nsims = 3
-    maxCPU = 1
+    Nsims = 2
+    maxCPU = 2
 else: # MacBook Air
     n = 0
     nAng = 2
@@ -53,14 +53,14 @@ bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
 casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
-# conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
-conCases = ['case06hVegetation']
+conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
+# conCases = ['case06dVegetation']
 τFactor = [1.0] #1
 # orbits = ['SS', 'GPM'] # 2
 orbits = ['SS'] # 1
-# instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
-#                'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
-instruments = ['Lidar09+polar07'] # 8 N=42
+instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
+                'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
+# instruments = ['Lidar09+polar07'] # 8 N=42
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
 # more specific simulation options in runSim call below... 
