@@ -13,13 +13,14 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_
 from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
 from ACCP_functions import selectGeometryEntry
+from runGRASP import graspYAML
+import numpy as np
+import tempfile
 
-n = int(sys.argv[1]) # (0,1,2,...,N-1)
-# n = 0
-nAng = int(sys.argv[2]) # index of angles to select from PCA
-# nAng = 2
 
 if checkDiscover(): # DISCOVER
+    n = int(sys.argv[1]) # (0,1,2,...,N-1)
+    nAng = int(sys.argv[2]) # index of angles to select from PCA
     basePath = os.environ['NOBACKUP']
     saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V00_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
@@ -33,15 +34,17 @@ if checkDiscover(): # DISCOVER
     Nsims = 7
     maxCPU = 7
 else: # MacBook Air
-    saveStart = '/Users/wrespino/Desktop/TEST_V02_' # end will be appended
+    n = 0
+    nAng = 2
+    saveStart = '/Users/wrespino/Desktop/TEST_V03_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
     dirGRASP = '/usr/local/bin/grasp'
     rawAngleDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs'
     PCAslctMatFilePath = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
     lidErrDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized'
     krnlPath = None
-    Nsims = 2
-    maxCPU = 2
+    Nsims = 1
+    maxCPU = 1
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
 bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_4modes.yml')
 bckYAMLpathLIDveg = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_VEG_10Vbins_4modes.yml')
@@ -50,14 +53,14 @@ bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
 casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
-conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
-# conCases = ['case06aVegetation']
+# conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
+conCases = ['case06hVegetation']
 τFactor = [1.0] #1
 # orbits = ['SS', 'GPM'] # 2
 orbits = ['SS'] # 1
-instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
-               'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
-# instruments = ['lidar0600'] # 8 N=42
+# instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
+#                'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
+instruments = ['Lidar09+polar07'] # 8 N=42
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
 # more specific simulation options in runSim call below... 
@@ -70,7 +73,12 @@ savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (par
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 if 'lidar' in paramTple[0].lower(): # Use LIDAR YAML file
     fwdModelYAMLpath = fwdModelYAMLpathLID
-    bckYAMLpath = bckYAMLpathLIDveg if 'Vegetation' in paramTple[1] else bckYAMLpathLID
+    bckYAMLpathOrg = bckYAMLpathLIDveg if 'Vegetation' in paramTple[1] else bckYAMLpathLID
+    # Δn = ±0.02 and Δk = ±0.001 
+    randomID = hex(np.random.randint(0, 2**63-1))[2:] # needed to prevent identical FN w/ many parallel runs
+    newFn = 'settingsBckYAML_conCase%s_tuned%s.yml' % (paramTple[1], randomID)
+    bckYAMLpath = os.path.join(tempfile.gettempdir(), newFn)
+    bckYAMLObj = graspYAML(baseYAMLpath=bckYAMLpathOrg, workingYAMLpath=bckYAMLpath)
 else: # Use Polarimeter YAML file
     fwdModelYAMLpath = fwdModelYAMLpathPOL
     bckYAMLpath = bckYAMLpathPOLveg if 'Vegetation' in paramTple[1] else bckYAMLpathPOL
@@ -79,6 +87,28 @@ nowPix = returnPixel(paramTple[0], sza=SZA, relPhi=phi, nowPix=None, \
                      concase=paramTple[1], orbit=paramTple[2], lidErrDir=lidErrDir) # these last two (concase & orbit) are only needed if using a lidar w/ Kathy's noise model
 cstmFwdYAML, landPrct = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath, caseLoadFctr=paramTple[3])
 nowPix.land_prct = landPrct
+
+if 'lidar' in paramTple[0].lower(): # implement ACCP SIT-A specific RI contraints 
+    fldPath='imaginary_part_of_refractive_index_constant.2.value'
+    fwdYAMLObj = graspYAML(baseYAMLpath=cstmFwdYAML)
+    val = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.2.value'))
+    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.2.min', [max(val-0.001, 1e-8)])
+    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.2.max', [val+0.001])
+    val = np.mean(fwdYAMLObj.access('real_part_of_refractive_index_spectral_dependent.2.value'))
+    bckYAMLObj.access('real_part_of_refractive_index_constant.2.min', [val-0.02])
+    bckYAMLObj.access('real_part_of_refractive_index_constant.2.max', [val+0.02])
+    val = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.4.value'))
+    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.4.min', [max(val-0.001, 1e-8)])
+    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.4.max', [val+0.001])
+    val = np.mean(fwdYAMLObj.access('real_part_of_refractive_index_spectral_dependent.4.value'))
+    bckYAMLObj.access('real_part_of_refractive_index_constant.4.min', [val-0.02])
+    bckYAMLObj.access('real_part_of_refractive_index_constant.4.max', [val+0.02])
+    # break with procedure starts here... (these are fine mode)
+    val = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.1.value'))
+    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.1.max', [val+0.001])
+    val = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.3.value'))
+    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.3.max', [val+0.001])
+
 print('n = %d, nAng = %d, Nλ = %d' % (n, nAng, nowPix.nwl))
 simA = rs.simulation(nowPix) # defines new instance for architecture described by nowPix
 gObjFwd, gObjBck = simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \

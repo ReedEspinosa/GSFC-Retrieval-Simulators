@@ -273,6 +273,8 @@ def splitMultipleCases(caseStrs, caseLoadFct):
             cases.append(case.replace('case06g','marine'))
             loadings.append(caseLoadFct)
         elif 'case06h' in case.lower():
+            cases.append(case.replace('case06h','smoke'))
+            loadings.append(0.00001)
             cases.append(case.replace('case06h','plltdMrn'))
             loadings.append(caseLoadFct)
         elif 'case06i' in case.lower():

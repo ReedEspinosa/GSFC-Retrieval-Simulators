@@ -18,23 +18,21 @@ from simulateRetrieval import simulation
 import miscFunctions as mf
 import ACCP_functions as af
 
-instruments = ['Lidar06+polar07', 'Lidar05+polar07','Lidar09+polar07','Lidar05','Lidar09','polar07'] #5 N=360
-# instruments = ['Lidar06+polar07', 'Lidar05+polar07','Lidar09+polar07'] #5 N=360
-conCases = []
-for caseLet in ['a','b','c','d','e','f']:
-# for caseLet in ['e','f']:
-# for caseLet in ['a','b','c','d']:
-    conCases.append('case06'+caseLet)
-    # conCases.append('case06'+caseLet+'monomode') #12 total
-SZAs = [30] # 3
+instruments = ['Lidar09','Lidar05','Lidar06', 'polar07', \
+               'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
+    
+casLets = list(map(chr, range(97, 105))) # 'a' - 'h' #8
+conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']]
+conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['Desert']]
+SZAs = [0] # 3
 Phis = [0] # 1 -> N=18 Nodes
 tauVals = [1.0] # NEED TO MAKE THIS CHANGE FILE NAME
 N = len(SZAs)*len(conCases)*len(Phis)*len(tauVals)
 # N = len(SZAs)*len(Phis)*len(instruments)*len(tauVals)
 barVals = instruments # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
 
-trgtλ = 0.532
-χthresh=10.0 # χ^2 threshold on points
+trgtλ = 1.0
+χthresh=4.0 # χ^2 threshold on points
 
 def lgTxtTransform(lgTxt):
     if re.match('.*Coarse[A-z]*Nonsph', lgTxt): # conCase in leg
@@ -55,7 +53,7 @@ totBiasVars = ['aod', 'ssa','aodMode_fine','n','rEffCalc'] # only used in Plot 4
 
 plotD = False # PDFs of errors as a fuction of different variables
 
-saveStart = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV02_n*_'
+saveStart = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V01_'
 
 cm = pylab.get_cmap('viridis')
 
@@ -69,44 +67,42 @@ totBias = dict([]) # only valid for last of whatever we itterate through on the 
 Nbar = len(barVals)
 barVals = [y if type(y) is list else [y] for y in barVals] # barVals should be a list of lists
 for barInd, barVal in enumerate(barVals):
-    harvest = np.zeros([Nvars, N*len(barVal)])
+    harvest = np.zeros([N*len(barVal), Nvars])
+    # harvest = [[] for _ in range(Nvars)]
     runNames = []    
     for n in range(N*len(barVal)):
         # paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,tauVals]))[n]
         paramTple = list(itertools.product(*[barVal,conCases,SZAs,Phis,tauVals]))[n]
-        savePtrn = saveStart + '%s_%s_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple #SIM3_polar07_case-Smoke+pollution_sza30_phi0_tFct0.04_V2.pkl
+        # savePtrn = saveStart + '%s_%s_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple[0:1]
+        savePtrn = saveStart + '%s_%s_orbSS_tFct1.00_multiAngles_n*_nAngALL.pkl' % paramTple[0:2]
         savePath = glob.glob(savePtrn)
         if not len(savePath)==1: assert False, 'Wrong number of files found (i.e. not one) for search string %s!' % savePath
-        runNames.append('%s($θ_s=%d,φ=%d$)' % paramTple[1:4])
-        runNames[-1] = runNames[-1].replace('pollution','POLL').replace('smoke','BB').replace('marine','MRN')
         simB = simulation(picklePath=savePath[0])
         NsimsFull = len(simB.rsltBck)
         lInd = np.argmin(np.abs(simB.rsltFwd[0]['lambda']-trgtλ))
-        simB.conerganceFilter(χthresh=χthresh, verbose=True)
         Nsims = len(simB.rsltBck)
+        print("<><><><><><>")
+        print(savePath)
+        print('AODf=%4.2f, AODc=%4.2f, Nsim=%d' % (simB.rsltFwd[0]['aodMode'][0,lInd], simB.rsltFwd[0]['aodMode'][1,lInd], Nsims))
+        print(paramTple[0])
+        print('Spectral variables for λ = %4.2f μm'% simB.rsltFwd[0]['lambda'][lInd])        
+        simB.conerganceFilter(χthresh=χthresh, verbose=True)
         fineIndFwd = np.nonzero(['fine' in typ.lower() for typ in paramTple[1].split('+')])[0] 
         if len(fineIndFwd)==0: fineIndFwd = np.nonzero(simB.rsltFwd[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
         assert len(fineIndFwd)>0, 'No obvious fine mode could be found in fwd data!'
         fineIndBck = [0]
         rmse, bias = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck) 
-        harvest[:,n], harvestQ, rmseVal = af.normalizeError(simB.rsltFwd[0], rmse, lInd, totVars, bias)
-        
-        print("***** ", end=" ")
-        print(simB.rsltFwd[0]['aod'][lInd])
-        print('---')
-        print(runNames[-1])
-        print(savePath)
-        print('AODf=%4.2f, AODc=%4.2f, Nsim=%d' % (simB.rsltFwd[0]['aodMode'][0,lInd], simB.rsltFwd[0]['aodMode'][1,lInd], Nsims))
-        print(paramTple[0])
-        print('Spectral variables for λ = %4.2f μm'% simB.rsltFwd[0]['lambda'][lInd])        
-        print('---')
-        
+        harvest[n, :], harvestQ, rmseVal = af.normalizeError(simB.rsltFwd[0], rmse, lInd, totVars, bias)
+        # for vInd, key in enumerate(totVars):
+        #     harvest[vInd] = harvest[vInd] + np.abs(bias[key].T[0]).tolist()
+        print('--------------------')
+    # harvest = np.array(harvest).squeeze().T
     plt.rcParams.update({'font.size': 12})
     if barInd==0: 
         figB, axB = plt.subplots(figsize=(4.8,6)) # THIS IS THE BOXPLOT
         axB.plot([1,1], [0,5*(Nvars+1)], ':', color=0.65*np.ones(3)) # vertical line at unity
-    pos = Nbar*np.r_[0:harvest.shape[0]]+0.7*barInd
-    hnd = axB.boxplot(harvest.T, vert=0, patch_artist=True, positions=pos[0:Nvars], sym='.')
+    pos = Nbar*np.r_[0:harvest.shape[1]]+0.7*barInd
+    hnd = axB.boxplot(harvest, vert=0, patch_artist=True, positions=pos[0:Nvars], sym='.')
     [hnd['boxes'][i].set_facecolor(cm((barInd)/(Nbar))) for i in range(len(hnd['boxes']))]
     [hf.set_markeredgecolor(cm((barInd)/(Nbar))) for hf in hnd['fliers']]
     barLeg.append(hnd['boxes'][0])
@@ -151,4 +147,4 @@ figD.tight_layout()
         
 #a = [2,2,1,1,0,0,1,0,0,0]
 #S = lambda a,σ: 5*np.sum(a*(1+σ**2)**(np.log2(4/5)))/np.sum(a)
-#print(np.mean([S(a,σ) for σ in harvest.T]))
+#print(np.mean([S(a,σ) for σ in harvest]))
