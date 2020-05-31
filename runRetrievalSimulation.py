@@ -21,6 +21,12 @@ import tempfile
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2]) # index of angles to select from PCA
+    
+#     run1: nSLURM=0-197 -> n=0-65, nAng=0,14,28 (last nAng will be 41); note below we offset n by 231 in file names
+#     run2: (STARTnAng=42) nSLURM2=0-197 -> n=0-65, nAng=42,56,70 (last nAng will be 83); note below we offset n by 231 in file names
+    nAng = int(n/66)*14+nAng
+    n = n%66
+    
     basePath = os.environ['NOBACKUP']
     saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V02_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
@@ -57,10 +63,10 @@ conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Deser
 # conCases = ['case06dVegetation']
 τFactor = [1.0] #1
 # orbits = ['SS', 'GPM'] # 2
-orbits = ['SS'] # 1
-instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
-                'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
-# instruments = ['Lidar09+polar07'] # 8 N=42
+orbits = ['GPM'] # 1
+# instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
+#                 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
+instruments = ['polar07', 'Lidar09+polar07'] # 7 N=66
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
 # more specific simulation options in runSim call below... 
@@ -69,7 +75,7 @@ verbose = True
 # AUTOMATED INPUT PREP
 paramTple = list(itertools.product(*[instruments, conCases, orbits, τFactor]))[n] 
 SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=paramTple[2], verbose=verbose)
-savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n, nAng))
+savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n+231, nAng))
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 if 'lidar' in paramTple[0].lower(): # Use LIDAR YAML file
     fwdModelYAMLpath = fwdModelYAMLpathLID
