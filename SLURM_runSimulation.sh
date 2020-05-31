@@ -1,12 +1,12 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=G_GPM
+#SBATCH --job-name=GSPA1
 #SBATCH --nodes=1 --constraint=hasw
 #SBATCH --time=01:59:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-197
+#SBATCH --array=0-188
 
-STARTnAng=42
+STARTnAng=0
 date
 hostname
 echo "---Running Sims n="${SLURM_ARRAY_TASK_ID}"  STARTnAng="$STARTnAng"---"

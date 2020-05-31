@@ -21,6 +21,12 @@ import tempfile
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2]) # index of angles to select from PCA
+        
+#     run1: nSLURM=0-197 -> n=0-65, nAng=0,14,28 (last nAng will be 41); note below we offset n by 231 in file names
+#     run2: (STARTnAng=42) nSLURM2=0-197 -> n=0-65, nAng=42,56,70 (last nAng will be 83); note below we offset n by 231 in file names
+    nAng = int(n/63)*14+nAng
+    n = n%63
+    
     basePath = os.environ['NOBACKUP']
     saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V03_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
