@@ -1,10 +1,10 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=GSPA1
+#SBATCH --job-name=GSPA2
 #SBATCH --nodes=1 --constraint=hasw
 #SBATCH --time=01:59:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-188
+#SBATCH --array=0-125
 
 STARTnAng=0
 date
