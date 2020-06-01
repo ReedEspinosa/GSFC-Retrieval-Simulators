@@ -22,12 +22,12 @@ if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2]) # index of angles to select from PCA
         
-#     run1: nSLURM=0-125 -> n=0-17, nAng=0,14,28, 42,56,70, 84  (last nAng will be 97); filename offset by 63 (N_SS=64) below
-    nAng = int(n/18)*14+nAng
-    n = n%18
+#     run1: nSLURM=0-197 -> n=0-98, nAng=0,14 (last nAng will be 27); no filename offset (this is SS 1st collection)
+    nAng = int(n/99)*14+nAng
+    n = n%99
     
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V03_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V04_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -39,7 +39,7 @@ if checkDiscover(): # DISCOVER
     Nsims = 2
     maxCPU = 2
 else: # MacBook Air
-    n = 62
+    n = 28
     nAng = 2
     saveStart = '/Users/wrespino/Desktop/TEST_V03_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
@@ -51,22 +51,22 @@ else: # MacBook Air
     Nsims = 1
     maxCPU = 1
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
-bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_4modes.yml')
-bckYAMLpathLIDveg = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_VEG_10Vbins_4modes.yml')
+bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes.yml')
+bckYAMLpathLIDveg = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_VEG_10Vbins_2modes.yml')
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
-# casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
-# conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
+casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
+conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
 spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
-conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
-τFactor = [0.09,0.1,0.11] #3
+# conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
+τFactor = [1.0] #3
 # orbits = ['SS', 'GPM'] # 2
-orbits = ['GPM'] # 1
+orbits = ['SS'] # 1
 # instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
 #                 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=3*3*7=63
-instruments = ['polar07', 'Lidar09+polar07'] # 2 N=18
+instruments = ['Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 3 N=99
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
 # more specific simulation options in runSim call below... 
@@ -75,7 +75,7 @@ verbose = True
 # AUTOMATED INPUT PREP
 paramTple = list(itertools.product(*[instruments, conCases, orbits, τFactor]))[n] 
 SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=paramTple[2], verbose=verbose)
-savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n+63, nAng))
+savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n, nAng))
 savePath = savePath.replace(spaSetup, 'SPA')
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 if 'lidar' in paramTple[0].lower(): # Use LIDAR YAML file
@@ -98,28 +98,30 @@ nowPix.land_prct = landPrct
 if 'lidar' in paramTple[0].lower(): # implement ACCP SIT-A specific RI contraints 
     fldPath='imaginary_part_of_refractive_index_constant.2.value'
     fwdYAMLObj = graspYAML(baseYAMLpath=cstmFwdYAML)
-    val = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.2.value'))
-    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.2.min', [max(val-0.001, 1e-8)])
-    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.2.max', [val+0.001])
-    val = np.mean(fwdYAMLObj.access('real_part_of_refractive_index_spectral_dependent.2.value'))
-    bckYAMLObj.access('real_part_of_refractive_index_constant.2.min', [val-0.02])
-    bckYAMLObj.access('real_part_of_refractive_index_constant.2.max', [val+0.02])
-    val = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.4.value'))
-    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.4.min', [max(val-0.001, 1e-8)])
-    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.4.max', [val+0.001])
-    val = np.mean(fwdYAMLObj.access('real_part_of_refractive_index_spectral_dependent.4.value'))
-    bckYAMLObj.access('real_part_of_refractive_index_constant.4.min', [val-0.02])
-    bckYAMLObj.access('real_part_of_refractive_index_constant.4.max', [val+0.02])
-    # break with procedure starts here... (these are fine mode)
-    val = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.1.value'))
-    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.1.max', [val+0.001])
-    val = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.3.value'))
-    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.3.max', [val+0.001])
+    # COARSE IRI
+    val1 = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.2.value'))
+    val2 = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.4.value'))
+    newVal = min(val1, val2)-0.001
+    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.2.min', [max(newVal, 1e-8)])
+    newVal = max(val1, val2)+0.001
+    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.2.max', [newVal])
+    # COARSE RRI
+    val1 = np.mean(fwdYAMLObj.access('real_part_of_refractive_index_spectral_dependent.2.value'))
+    val2 = np.mean(fwdYAMLObj.access('real_part_of_refractive_index_spectral_dependent.4.value'))
+    newVal = min(val1, val2)-0.02
+    bckYAMLObj.access('real_part_of_refractive_index_constant.2.min', [newVal])
+    newVal = max(val1, val2)+0.02
+    bckYAMLObj.access('real_part_of_refractive_index_constant.2.max', [newVal])
+    # FINE IRI MAX (break with procedure starts here... )
+    val1 = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.1.value'))
+    val2 = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.3.value'))
+    newVal = max(val1, val2)+0.001
+    bckYAMLObj.access('imaginary_part_of_refractive_index_constant.1.max', [newVal])
 
 print('n = %d, nAng = %d, Nλ = %d' % (n, nAng, nowPix.nwl))
 simA = rs.simulation(nowPix) # defines new instance for architecture described by nowPix
 gObjFwd, gObjBck = simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
                                binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, \
                                lightSave=True, rndIntialGuess=rndIntialGuess, dryRun=False, \
-                               workingFileSave=False, fixRndmSeed=True, verbose=verbose)
+                               workingFileSave=True, fixRndmSeed=True, verbose=verbose)
 
