@@ -21,11 +21,9 @@ import tempfile
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2]) # index of angles to select from PCA
-        
-#     run1: nSLURM=0-197 -> n=0-98, nAng=0,14 (last nAng will be 27); no filename offset (this is SS 1st collection)
-    nAng = int(n/99)*14+nAng
-    n = n%99
-    
+# #     run1: ***nSLURM=0-197*** IGNORE:-> n=0-98, nAng=0,14 (last nAng will be 27); no filename offset (this is SS 1st collection)
+#     nAng = int(n/99)*14+nAng
+#     n = n%99    
     basePath = os.environ['NOBACKUP']
     saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V02_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
@@ -33,20 +31,20 @@ if checkDiscover(): # DISCOVER
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     rawAngleDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs')
     PCAslctMatFilePath = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat')
-    lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized')
+    lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized_5kmH_500mV')
 #     Nsims = 1
 #     maxCPU = 1
     Nsims = 2
     maxCPU = 2
 else: # MacBook Air
-    n = 28
+    n = 128
     nAng = 2
     saveStart = '/Users/wrespino/Desktop/TEST_V03_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
     dirGRASP = '/usr/local/bin/grasp'
     rawAngleDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs'
     PCAslctMatFilePath = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
-    lidErrDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized'
+    lidErrDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized_5kmH_500mV'
     krnlPath = None
     Nsims = 1
     maxCPU = 1
@@ -64,9 +62,9 @@ spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
 # conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
 # orbits = ['SS', 'GPM'] # 2
 orbits = ['SS'] # 1
-instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
-                'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
-# instruments = ['Lidar09+polar07'] # 8 N=42
+# instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
+#                 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
+instruments = ['Lidar09','Lidar05','Lidar06','Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 6 N=42
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
 # more specific simulation options in runSim call below... 
