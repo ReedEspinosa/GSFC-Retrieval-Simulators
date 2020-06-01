@@ -21,6 +21,11 @@ import tempfile
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2]) # index of angles to select from PCA
+        
+#     run1: nSLURM=0-197 -> n=0-98, nAng=0,14 (last nAng will be 27); no filename offset (this is SS 1st collection)
+    nAng = int(n/99)*14+nAng
+    n = n%99
+    
     basePath = os.environ['NOBACKUP']
     saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V02_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
@@ -34,7 +39,7 @@ if checkDiscover(): # DISCOVER
     Nsims = 2
     maxCPU = 2
 else: # MacBook Air
-    n = 0
+    n = 28
     nAng = 2
     saveStart = '/Users/wrespino/Desktop/TEST_V03_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
@@ -54,8 +59,9 @@ bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
 casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
 conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
-# conCases = ['case06dVegetation']
 τFactor = [1.0] #1
+spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
+# conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
 # orbits = ['SS', 'GPM'] # 2
 orbits = ['SS'] # 1
 instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
@@ -70,6 +76,7 @@ verbose = True
 paramTple = list(itertools.product(*[instruments, conCases, orbits, τFactor]))[n] 
 SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=paramTple[2], verbose=verbose)
 savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n, nAng))
+savePath = savePath.replace(spaSetup, 'SPA')
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 if 'lidar' in paramTple[0].lower(): # Use LIDAR YAML file
     fwdModelYAMLpath = fwdModelYAMLpathLID
