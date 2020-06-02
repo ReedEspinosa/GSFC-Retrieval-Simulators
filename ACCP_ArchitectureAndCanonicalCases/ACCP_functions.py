@@ -125,8 +125,8 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
     orbit -> GPM, SS
     basePath -> .../Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized
     """
-    resolution = '5kmH_500mV'
-    # resolution = '50kmH_500mV'
+#     resolution = '5kmH_500mV'
+    resolution = '50kmH_500mV'
     # determine reflectance string
     wvlMap =   [0.355, 0.532, 1.064]
     if 'vegetation' in concase.lower(): # Vegetative

@@ -28,13 +28,14 @@ if checkDiscover(): # DISCOVER
 #     if nAng>97: sys.exit()
         
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V07_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V08_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     rawAngleDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs')
     PCAslctMatFilePath = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat')
-    lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized_5kmH_500mV')
+#     lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized_5kmH_500mV')
+    lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized')
 #     Nsims = 1
 #     maxCPU = 1
     Nsims = 2
@@ -58,8 +59,8 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
-casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
-conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
+casLets = list(map(chr, range(97, 106))) # 'a' - 'i'
+conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 9x3=27
 τFactor = [1.0] #3
 spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
 # conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
@@ -67,7 +68,8 @@ spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
 orbits = ['SS'] # 1
 # instruments = ['polar07', 'Lidar090','Lidar050','Lidar060', \
 #                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
-instruments = ['Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07'] # 7 N=132
+instruments = ['Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07', \
+                'Lidar090','Lidar050','Lidar060'] # 7 N=189
 
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
@@ -83,7 +85,6 @@ if 'GPM' in paramTple[0]:
 else:
     instrmntNow = paramTple[0]
     orbitNow = 'SS'
-
 
 SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbitNow, verbose=verbose)
 savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n, nAng))

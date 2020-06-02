@@ -1,10 +1,10 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=GSS7
+#SBATCH --job-name=GSS8
 #SBATCH --nodes=1 --constraint=hasw
 #SBATCH --time=01:59:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-131
+#SBATCH --array=0-230
 
 STARTnAng=$1
 date
