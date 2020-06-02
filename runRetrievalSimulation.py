@@ -28,7 +28,7 @@ if checkDiscover(): # DISCOVER
 #     if nAng>97: sys.exit()
         
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V06_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V07_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -58,16 +58,16 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
-# casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
-# conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
-τFactor = [0.09,0.1,0.11] #3
+casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
+conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
+τFactor = [1.0] #3
 spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
-conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
+# conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
 # orbits = ['SS', 'GPM'] # 2
 orbits = ['SS'] # 1
-# instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
-#                 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
-instruments = ['Lidar09','Lidar05','Lidar06', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 6 N=54
+# instruments = ['polar07', 'Lidar090','Lidar050','Lidar060', \
+#                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
+instruments = ['Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07'] # 7 N=132
 
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
@@ -76,11 +76,20 @@ verbose = True
 # <><><><>END INPUTS<><><><>
 # AUTOMATED INPUT PREP
 paramTple = list(itertools.product(*[instruments, conCases, orbits, τFactor]))[n] 
-SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=paramTple[2], verbose=verbose)
+
+if 'GPM' in paramTple[0]:
+    instrmntNow = paramTple[0].replace('GPM','')
+    orbitNow = 'GPM'
+else:
+    instrmntNow = paramTple[0]
+    orbitNow = 'SS'
+
+
+SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbitNow, verbose=verbose)
 savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n, nAng))
 savePath = savePath.replace(spaSetup, 'SPA')
 print('-- Processing ' + os.path.basename(savePath) + ' --')
-if 'lidar' in paramTple[0].lower(): # Use LIDAR YAML file
+if 'lidar' in instrmntNow.lower(): # Use LIDAR YAML file
     fwdModelYAMLpath = fwdModelYAMLpathLID
     bckYAMLpathOrg = bckYAMLpathLIDveg if 'Vegetation' in paramTple[1] else bckYAMLpathLID
     # Δn = ±0.02 and Δk = ±0.001 
@@ -92,12 +101,12 @@ else: # Use Polarimeter YAML file
     fwdModelYAMLpath = fwdModelYAMLpathPOL
     bckYAMLpath = bckYAMLpathPOLveg if 'Vegetation' in paramTple[1] else bckYAMLpathPOL
 # RUN SIMULATION
-nowPix = returnPixel(paramTple[0], sza=SZA, relPhi=phi, nowPix=None, \
-                     concase=paramTple[1], orbit=paramTple[2], lidErrDir=lidErrDir) # these last two (concase & orbit) are only needed if using a lidar w/ Kathy's noise model
+nowPix = returnPixel(instrmntNow, sza=SZA, relPhi=phi, nowPix=None, \
+                     concase=paramTple[1], orbit=orbitNow, lidErrDir=lidErrDir) # these last two (concase & orbit) are only needed if using a lidar w/ Kathy's noise model
 cstmFwdYAML, landPrct = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath, caseLoadFctr=paramTple[3])
 nowPix.land_prct = landPrct
 
-if 'lidar' in paramTple[0].lower(): # implement ACCP SIT-A specific RI contraints 
+if 'lidar' in instrmntNow.lower(): # implement ACCP SIT-A specific RI contraints 
     fldPath='imaginary_part_of_refractive_index_constant.2.value'
     fwdYAMLObj = graspYAML(baseYAMLpath=cstmFwdYAML)
     val = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.2.value'))
