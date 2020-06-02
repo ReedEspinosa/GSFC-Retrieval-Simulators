@@ -4,9 +4,9 @@
 #SBATCH --time=01:59:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-197
+#SBATCH --array=0-230
 
-STARTnAng=$1
+STARTnAng=0
 date
 hostname
 echo "---Running Sims n="${SLURM_ARRAY_TASK_ID}"  STARTnAng="$STARTnAng"---"
