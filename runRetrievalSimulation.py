@@ -21,11 +21,14 @@ import tempfile
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2]) # index of angles to select from PCA
-#     run1: ***nSLURM=0-230***, nAng=0,14,28,42,56,70,84 (this will give all 98); filename is n+198
-    nAng = int(n/33)*14+nAng
-    n = n%33    
+#     run1: ***nSLURM=0-53***, stackSLURM -> 0, 14, 28, 42, 56, 70 ,84
+#     run2: MANUAL LATER,  more iterations through GPm angles
+#     nAng = int(n/54)*14+nAng
+#     n = n%54 
+#     if nAng>97: sys.exit()
+        
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V05_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V06_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -55,16 +58,17 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
-casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
-conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
-τFactor = [1.0] #1
+# casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
+# conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
+τFactor = [0.09,0.1,0.11] #3
 spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
-# conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
+conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
 # orbits = ['SS', 'GPM'] # 2
-orbits = ['GPM'] # 1
+orbits = ['SS'] # 1
 # instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
 #                 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
-instruments = ['Lidar09+polar07'] # 1 N=33
+instruments = ['Lidar09','Lidar05','Lidar06', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 6 N=54
+
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
 # more specific simulation options in runSim call below... 
@@ -73,7 +77,7 @@ verbose = True
 # AUTOMATED INPUT PREP
 paramTple = list(itertools.product(*[instruments, conCases, orbits, τFactor]))[n] 
 SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=paramTple[2], verbose=verbose)
-savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n+198, nAng))
+savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n, nAng))
 savePath = savePath.replace(spaSetup, 'SPA')
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 if 'lidar' in paramTple[0].lower(): # Use LIDAR YAML file
