@@ -13,8 +13,8 @@ import csv
 #trgt = {'aod':0.025, 'ssa':0.04, 'aodMode':[0.02,0.02], 'n':[0.025,0.025,0.025], 'ssaMode':[0.05,0.05], 'rEffCalc':0.05}
 def normalizeError(simFwd, rmse, lInd, GVs, bias):
     """ Note - we pull the indices that match below, ex. 'n_fine' key value has one element so we only pull the first of n_fine """
-    trgt = {'aod':[0.01], 'ssa':[0.03], 'g':[0.02], 'aodMode_fine':[0.01], 'ssaMode_fine':[0.03], 'n':[0.02], 'n_fine':[0.02], 'LidarRatio':[0.0], 'rEffCalc':[0.0]} # look at total and fine/coarse 
-    trgtRel = {'aod':0.05, 'aodMode_fine':0.05, 'LidarRatio':0.25, 'rEffCalc':0.10} # this part must be same for every mode but absolute component above can change
+    trgt = {'aod':[0.04], 'ssa':[0.02], 'g':[0.02], 'aodMode_fine':[0.01], 'aodMode_PBLFT':[0.04],'rEffMode_PBLFT':[0.1],'ssaMode_fine':[0.03], 'n':[0.02], 'n_fine':[0.02], 'LidarRatio':[0.0], 'rEffCalc':[0.1]} # look at total and fine/coarse 
+    trgtRel = {'aod':0.05, 'aodMode_fine':0.05, 'LidarRatio':0.25, 'rEffCalc':0.0} # this part must be same for every mode but absolute component above can change
     assert np.all([not type(x) is list for x in trgtRel.values()]), 'All entries in trgtRel should be scalars (not lists)'
     i=0
     harvest = []
@@ -34,7 +34,10 @@ def normalizeError(simFwd, rmse, lInd, GVs, bias):
             harvestQ.append(np.sum((tg+trgtRel[vr]*true)>=np.abs(bias[vr][:,0]))/len(bias[vr][:,0]))
         else:
             harvest.append(tg/np.atleast_1d(rmse[vr])[0])
-            harvestQ.append(np.sum(tg>=np.abs(bias[vr][:,0]))/len(bias[vr][:,0]))
+            try:
+                harvestQ.append(np.sum(tg>=np.abs(bias[vr][:,0]))/len(bias[vr][:,0]))
+            except:
+                harvestQ.append(np.nan)
         rmseVal.append(np.atleast_1d(rmse[vr])[0])
         i+=1
     return harvest, harvestQ, rmseVal
