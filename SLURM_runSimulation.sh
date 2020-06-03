@@ -4,7 +4,7 @@
 #SBATCH --time=01:59:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-230
+#SBATCH --array=0-188
 
 STARTnAng=$1
 date

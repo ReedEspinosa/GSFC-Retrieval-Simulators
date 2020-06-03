@@ -48,7 +48,7 @@ else: # MacBook Air
     dirGRASP = '/usr/local/bin/grasp'
     rawAngleDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs'
     PCAslctMatFilePath = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
-    lidErrDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized_5kmH_500mV'
+    lidErrDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized'
     krnlPath = None
     Nsims = 1
     maxCPU = 1
@@ -67,7 +67,7 @@ spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
 # orbits = ['SS', 'GPM'] # 2
 orbits = ['SS'] # 1
 # instruments = ['polar07', 'Lidar090','Lidar050','Lidar060', \
-#                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
+#                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=189
 instruments = ['Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07', \
                 'Lidar090','Lidar050','Lidar060'] # 7 N=189
 
@@ -86,6 +86,15 @@ else:
     instrmntNow = paramTple[0]
     orbitNow = 'SS'
 
+# reprocessing of land cases 0<=nAng<56
+if nAng < 56:
+    if not 'Desert' in paramTple[1] and not 'Vegetation' in paramTple[1]: # no bug with ocean surface
+        print('Ocean cases with nAng<56 are all done.') 
+        sys.exit()
+    if not 'polar07' in instrmntNow: # bug was in the surface; no polar, no care
+        print('Cases without polarimeter and with nAng<56 are already done.') 
+        sys.exit()
+        
 SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbitNow, verbose=verbose)
 savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n, nAng))
 savePath = savePath.replace(spaSetup, 'SPA')
@@ -108,8 +117,14 @@ cstmFwdYAML, landPrct = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath,
 nowPix.land_prct = landPrct
 
 if 'lidar' in instrmntNow.lower(): # implement ACCP SIT-A specific RI contraints 
-    fldPath='imaginary_part_of_refractive_index_constant.2.value'
     fwdYAMLObj = graspYAML(baseYAMLpath=cstmFwdYAML)
+    # adjust BRDF ranges, which will change for lidar05/09 w/o 355 nm
+    if not 'lidar06' in paramTple[0].lower():
+        val = bckYAMLObj.access('surface_land_brdf_ross_li.1.min')
+        bckYAMLObj.access('surface_land_brdf_ross_li.1.min', val[1:])
+        val = bckYAMLObj.access('surface_land_brdf_ross_li.1.max')
+        bckYAMLObj.access('surface_land_brdf_ross_li.1.max', val[1:])
+    # implement ACCP SIT-A specific RI contraints
     val = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.2.value'))
     bckYAMLObj.access('imaginary_part_of_refractive_index_constant.2.min', [max(val-0.001, 1e-8)])
     bckYAMLObj.access('imaginary_part_of_refractive_index_constant.2.max', [val+0.001])
