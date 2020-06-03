@@ -21,17 +21,21 @@ import tempfile
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2]) # index of angles to select from PCA
-#     run1: ***nSLURM=0-230***, nAng=0,14,28,42,56,70,84 (this will give all 98); filename is n+198
-    nAng = int(n/33)*14+nAng
-    n = n%33    
+#     run1: ***nSLURM=0-53***, stackSLURM -> 0, 14, 28, 42, 56, 70 ,84
+#     run2: MANUAL LATER,  more iterations through GPm angles
+#     nAng = int(n/54)*14+nAng
+#     n = n%54 
+#     if nAng>97: sys.exit()
+        
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V05_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V08_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     rawAngleDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs')
     PCAslctMatFilePath = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat')
-    lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized_5kmH_500mV')
+#     lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized_5kmH_500mV')
+    lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized')
 #     Nsims = 1
 #     maxCPU = 1
     Nsims = 2
@@ -44,7 +48,7 @@ else: # MacBook Air
     dirGRASP = '/usr/local/bin/grasp'
     rawAngleDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs'
     PCAslctMatFilePath = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
-    lidErrDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized_5kmH_500mV'
+    lidErrDir = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized'
     krnlPath = None
     Nsims = 1
     maxCPU = 1
@@ -55,16 +59,18 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
-casLets = list(map(chr, range(97, 108))) # 'a' - 'k'
-conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 11x3=33
-τFactor = [1.0] #1
+casLets = list(map(chr, range(97, 106))) # 'a' - 'i'
+conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 9x3=27
+τFactor = [1.0] #3
 spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
 # conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
 # orbits = ['SS', 'GPM'] # 2
-orbits = ['GPM'] # 1
-# instruments = ['polar07', 'Lidar09','Lidar05','Lidar06', \
-#                 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
-instruments = ['Lidar09+polar07'] # 1 N=33
+orbits = ['SS'] # 1
+# instruments = ['polar07', 'Lidar090','Lidar050','Lidar060', \
+#                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=189
+instruments = ['Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07', \
+                'Lidar090','Lidar050','Lidar060'] # 7 N=189
+
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
 # more specific simulation options in runSim call below... 
@@ -72,11 +78,28 @@ verbose = True
 # <><><><>END INPUTS<><><><>
 # AUTOMATED INPUT PREP
 paramTple = list(itertools.product(*[instruments, conCases, orbits, τFactor]))[n] 
-SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=paramTple[2], verbose=verbose)
-savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n+198, nAng))
+
+if 'GPM' in paramTple[0]:
+    instrmntNow = paramTple[0].replace('GPM','')
+    orbitNow = 'GPM'
+else:
+    instrmntNow = paramTple[0]
+    orbitNow = 'SS'
+
+# reprocessing of land cases 0<=nAng<56
+if nAng < 56:
+    if not 'Desert' in paramTple[1] and not 'Vegetation' in paramTple[1]: # no bug with ocean surface
+        print('Ocean cases with nAng<56 are all done.') 
+        sys.exit()
+    if not 'polar07' in instrmntNow: # bug was in the surface; no polar, no care
+        print('Cases without polarimeter and with nAng<56 are already done.') 
+        sys.exit()
+        
+SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbitNow, verbose=verbose)
+savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n, nAng))
 savePath = savePath.replace(spaSetup, 'SPA')
 print('-- Processing ' + os.path.basename(savePath) + ' --')
-if 'lidar' in paramTple[0].lower(): # Use LIDAR YAML file
+if 'lidar' in instrmntNow.lower(): # Use LIDAR YAML file
     fwdModelYAMLpath = fwdModelYAMLpathLID
     bckYAMLpathOrg = bckYAMLpathLIDveg if 'Vegetation' in paramTple[1] else bckYAMLpathLID
     # Δn = ±0.02 and Δk = ±0.001 
@@ -88,14 +111,20 @@ else: # Use Polarimeter YAML file
     fwdModelYAMLpath = fwdModelYAMLpathPOL
     bckYAMLpath = bckYAMLpathPOLveg if 'Vegetation' in paramTple[1] else bckYAMLpathPOL
 # RUN SIMULATION
-nowPix = returnPixel(paramTple[0], sza=SZA, relPhi=phi, nowPix=None, \
-                     concase=paramTple[1], orbit=paramTple[2], lidErrDir=lidErrDir) # these last two (concase & orbit) are only needed if using a lidar w/ Kathy's noise model
+nowPix = returnPixel(instrmntNow, sza=SZA, relPhi=phi, nowPix=None, \
+                     concase=paramTple[1], orbit=orbitNow, lidErrDir=lidErrDir) # these last two (concase & orbit) are only needed if using a lidar w/ Kathy's noise model
 cstmFwdYAML, landPrct = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath, caseLoadFctr=paramTple[3])
 nowPix.land_prct = landPrct
 
-if 'lidar' in paramTple[0].lower(): # implement ACCP SIT-A specific RI contraints 
-    fldPath='imaginary_part_of_refractive_index_constant.2.value'
+if 'lidar' in instrmntNow.lower(): # implement ACCP SIT-A specific RI contraints 
     fwdYAMLObj = graspYAML(baseYAMLpath=cstmFwdYAML)
+    # adjust BRDF ranges, which will change for lidar05/09 w/o 355 nm
+    if not 'lidar06' in paramTple[0].lower():
+        val = bckYAMLObj.access('surface_land_brdf_ross_li.1.min')
+        bckYAMLObj.access('surface_land_brdf_ross_li.1.min', val[1:])
+        val = bckYAMLObj.access('surface_land_brdf_ross_li.1.max')
+        bckYAMLObj.access('surface_land_brdf_ross_li.1.max', val[1:])
+    # implement ACCP SIT-A specific RI contraints
     val = np.mean(fwdYAMLObj.access('imaginary_part_of_refractive_index_spectral_dependent.2.value'))
     bckYAMLObj.access('imaginary_part_of_refractive_index_constant.2.min', [max(val-0.001, 1e-8)])
     bckYAMLObj.access('imaginary_part_of_refractive_index_constant.2.max', [val+0.001])
