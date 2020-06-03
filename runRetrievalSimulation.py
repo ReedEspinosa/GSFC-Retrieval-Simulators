@@ -21,14 +21,15 @@ import tempfile
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2]) # index of angles to select from PCA
-#     run1: ***nSLURM=0-53***, stackSLURM -> 0, 14, 28, 42, 56, 70 ,84
-#     run2: MANUAL LATER,  more iterations through GPm angles
-#     nAng = int(n/54)*14+nAng
-#     n = n%54 
-#     if nAng>97: sys.exit()
+#     run1: ***nSLURM=0-239***, stackSLURM -> 0, 14
+#     run2: ***nSLURM=0-239***, stackSLURM -> 28, 42
+#       ...
+    nAng = int(n/120)*14+nAng
+    n = n%120 
+
         
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V08_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V09_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -41,7 +42,7 @@ if checkDiscover(): # DISCOVER
     Nsims = 2
     maxCPU = 2
 else: # MacBook Air
-    n = 128
+    n = 8
     nAng = 2
     saveStart = '/Users/wrespino/Desktop/TEST_V03_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
@@ -59,17 +60,15 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
-casLets = list(map(chr, range(97, 106))) # 'a' - 'i'
-conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 9x3=27
-τFactor = [1.0] #3
+# casLets = list(map(chr, range(97, 106))) # 'a' - 'i'
+# conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 9x3=27
+τFactor = [0.07, 0.08, 0.09, 0.1, 0.11] #5
 spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
-# conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
+conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
 # orbits = ['SS', 'GPM'] # 2
 orbits = ['SS'] # 1
-# instruments = ['polar07', 'Lidar090','Lidar050','Lidar060', \
-#                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=189
-instruments = ['Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07', \
-                'Lidar090','Lidar050','Lidar060'] # 7 N=189
+instruments = ['Lidar09+polar07','Lidar09+polar07GPM','Lidar05+polar07','Lidar06+polar07', \
+                'polar07', 'Lidar09','Lidar05','Lidar06'] # 8 N=5*3*8=120
 
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
@@ -85,15 +84,6 @@ if 'GPM' in paramTple[0]:
 else:
     instrmntNow = paramTple[0]
     orbitNow = 'SS'
-
-# reprocessing of land cases 0<=nAng<56
-if nAng < 56:
-    if not 'Desert' in paramTple[1] and not 'Vegetation' in paramTple[1]: # no bug with ocean surface
-        print('Ocean cases with nAng<56 are all done.') 
-        sys.exit()
-    if not 'polar07' in instrmntNow: # bug was in the surface; no polar, no care
-        print('Cases without polarimeter and with nAng<56 are already done.') 
-        sys.exit()
         
 SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbitNow, verbose=verbose)
 savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n, nAng))

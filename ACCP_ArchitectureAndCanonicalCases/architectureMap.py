@@ -162,7 +162,14 @@ def addError(measNm, l, rsltFwd, edgInd, concase=None, orbit=None, lidErrDir=Non
             if int(mtch.group(2)) in [500, 600, 900]:
                 relErr = 0.000005 # else 1e-4 standard noise
             elif int(mtch.group(2)) in [5, 6, 9]:
-                relErr = 0.05
+                if np.isclose(rsltFwd['lambda'][l], 0.532):
+                    relErr = 0.1260293290948793 
+                elif np.isclose(rsltFwd['lambda'][l], 1.064) and int(mtch.group(2)) in [9]:
+                    relErr = 0.3886337504522533 
+                elif np.isclose(rsltFwd['lambda'][l], 1.064) and int(mtch.group(2)) in [5, 6]:
+                    relErr = 0.03958725394460227 
+                else:
+                    assert False, 'No error values available for lidar %s wavelength %5.3 μm' % (mtch.group(2),rsltFwd['lmabda'][l])
             elif int(mtch.group(2)) in [50, 60, 90]: # Kathy's uncertainty models
                 assert concase and orbit and lidErrDir, 'Canoncial case string, orbit and lidErrDir must all be provided to use Kathys models!'
                 relErr = readKathysLidarσ(lidErrDir, orbit=orbit, wavelength=rsltFwd['lambda'][l], \
@@ -190,8 +197,14 @@ def addError(measNm, l, rsltFwd, edgInd, concase=None, orbit=None, lidErrDir=Non
                                  LidarRange=vertRange, measType='Bks', verbose=verbose)
                 relErrβsca = absErrβsca/trueSimβsca
             elif int(mtch.group(2)) in [5, 6]: # use normal noise model
-                relErrβsca = 0.05 #
-                absErrβext = 17/1e6 # m-1
+                if np.isclose(rsltFwd['lambda'][l], 0.355):
+                    relErrβsca = 0.12915467996297214 #
+                    absErrβext = 0.22044810971688877*trueSimβext # m-1
+                elif np.isclose(rsltFwd['lambda'][l], 0.532):
+                    relErrβsca = 0.06035257422277036 #
+                    absErrβext = 0.2104532507453847*trueSimβext # m-1
+                else:
+                    assert False, 'No error values available for lidar wavelength %5.3 μm' % rsltFwd['lmabda'][l]   
             else:
                 assert False, 'Lidar ID number %d not recognized!' % mtch.group(2)
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErrβsca), size=len(trueSimβsca)) # works w/ relErrβsca as scalar or vector
