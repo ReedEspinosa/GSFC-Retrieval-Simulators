@@ -118,7 +118,7 @@ for barInd, barVal in enumerate(barVals):
             rmse, bias = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=2100)
             rmse['aodMode_PBLFT'] = rmse['aodMode_PBLFT'][0]
             rmse['rEffMode_PBLFT'] = rmse['rEffMode_PBLFT'][0]
-        harvest[n, :], harvestQ, rmseVal = af.normalizeError(simB.rsltFwd[0], rmse, lInd, totVars, bias)
+        harvest[n, :], harvestQ, rmseVal = af.prepHarvest(simB.rsltFwd[0], rmse, lInd, totVars, bias) # TODO: replace with new normalizeError function 
         # for vInd, key in enumerate(totVars):
         #     harvest[vInd] = harvest[vInd] + np.abs(bias[key].T[0]).tolist()
         print('--------------------')
