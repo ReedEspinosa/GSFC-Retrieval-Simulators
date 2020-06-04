@@ -103,20 +103,12 @@ retrieval:
                     min:                            [500.0] 
                     max:                            [4000.0]
                     index_of_wavelength_involved:   [0      ]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 0
-                        lagrange_multiplier: 0
             mode[2]:
                 initial_guess:                      #1          
                     value:                          [1000.0 ]
                     min:                            [500.0] 
                     max:                            [4000.0]
                     index_of_wavelength_involved:   [0      ]
-                single_pixel:
-                    smoothness_constraints:
-                        difference_order: 0
-                        lagrange_multiplier: 0                        
 #        VEGETATION
 #        characteristic[7]:
 #            mode[1]:
@@ -129,30 +121,32 @@ retrieval:
 #                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
 #            mode[2]:
 #                initial_guess:
-#                    index_of_wavelength_involved: [0]
+#                    index_of_wavelength_involved: [1]
 #                    max: [1.3143]
 #                    min: [0.00001]
 #                    value: [0.43884894251823425]
 #                single_pixel:
-#                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
+#                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
 #            mode[3]:
 #                initial_guess:
-#                    index_of_wavelength_involved: [0]
+#                    index_of_wavelength_involved: [1]
 #                    max: [0.2985]
 #                    min: [0.00001]
 #                    value: [0.1366906464099884]
 #                single_pixel:
-#                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
+#                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
 #            retrieved: true
 #            type: surface_land_brdf_ross_li
-#        characteristic[10]:
+#        characteristic[8]:
 #            mode[1]:
 #                initial_guess:
-#                    index_of_wavelength_involved: [0]
+#                    index_of_wavelength_involved: [1]
 #                    max:   [4.166]
 #                    min:   [1.340]
 #                    value: [2.0]
-#            retrieved: false
+#                single_pixel:
+#                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
+#            retrieved: true
 #            type: surface_land_polarized_maignan_breon
         # DESERT
         characteristic[7]:

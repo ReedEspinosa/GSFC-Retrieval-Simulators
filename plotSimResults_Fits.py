@@ -11,20 +11,22 @@ from glob import glob
 MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GRASP_scripts is in parent of MADCAP_scripts
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 from simulateRetrieval import simulation
-from miscFunctions import matplotlibX11
+from miscFunctions import matplotlibX11, norm2absExtProf
 matplotlibX11()
 import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
-simRsltFile = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEVYY_n*_Lidar05+polar07_case06a_sza30_phi0_tFct1.00_V1.pkl'
+# simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V03_Lidar05+polar07_SPA_orbSS_tFct0.10_multiAngles_n*_nAngALL.pkl'
+simRsltFile = '/Users/wrespino/Desktop/TEST_V03_Lidar06_SPAVegetation_orbSS_tFct0.11_sza72_phi34_n119_nAng2.pkl'
 trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
 trgtλPolar = 0.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
+extErrPlot = True
 
 # --END INPUT SETTINGS--
 posFiles = glob(simRsltFile)
 assert len(posFiles)==1, 'glob found %d files but we expect exactly 1' % len(posFiles)
 simA = simulation(picklePath=posFiles[0])
-simA.conerganceFilter(χthresh=19.0, verbose=True)
+simA.conerganceFilter(χthresh=20.0, verbose=True)
 lIndL = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλLidar))
 lIndP = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλPolar))
 alphVal = 1/np.sqrt(len(simA.rsltBck))
@@ -69,7 +71,8 @@ frstPass = True
 for rb in simA.rsltBck:
     if LIDARpresent:
         for i in range(NbckModes): # Lidar extinction profile
-            axL[0].plot(βfun(i,lIndL,rb), rb['range'][i,:]/1e3, color=color1[i], alpha=alphVal)
+            βprof = norm2absExtProf(rb['βext'][i,:], rb['range'][i,:], rb['aodMode'][i,lIndL])
+            axL[0].plot(1e6*βprof, rb['range'][i,:]/1e3, color=color1[i], alpha=alphVal)
         frstPass = False
         for i,mt in enumerate(measTypesL): # Lidar retrieval meas & fit
             axL[i+1].plot(1e6*rb['meas_'+mt][:,lIndL], rb[rngVar][:,lIndL]/1e3, color=color1[0], alpha=alphVal)
@@ -82,7 +85,8 @@ if LIDARpresent:
     mdHnd = []
     lgTxt = []
     for i in range(NfwdModes):
-        mdHnd.append(axL[0].plot(βfun(i,lIndL,simA.rsltFwd[0]), simA.rsltFwd[0]['range'][i,:]/1e3, 'o-', color=color1[i]/2))
+        βprof = norm2absExtProf(simA.rsltFwd[0]['βext'][i,:], simA.rsltFwd[0]['range'][i,:], simA.rsltFwd[0]['aodMode'][i,lIndL])
+        mdHnd.append(axL[0].plot(1e6*βprof, simA.rsltFwd[0]['range'][i,:]/1e3, 'o-', color=color1[i]/2))
         lgTxt.append('Mode %d' % i)
     for i,mt in enumerate(measTypesL): # Lidar fwd fit
         axL[i+1].plot(1e6*simA.rsltFwd[0]['fit_'+mt][:,lIndL], simA.rsltFwd[0][rngVar][:,lIndL]/1e3, 'ko-')
@@ -94,7 +98,7 @@ if POLARpresent:
             fwdData = simA.rsltFwd[0]['fit_'+mt[0]][:,lIndP]/simA.rsltFwd[0]['fit_I'][:,lIndP]
         else:
             fwdData = simA.rsltFwd[0]['fit_'+mt][:,lIndP]
-        axP[i].plot(θfun(lIndP,simA.rsltFwd[0]), fwdData, 'ko-')
+        # axP[i].plot(θfun(lIndP,simA.rsltFwd[0]), fwdData, 'ko-')
         axP[i].legend(['Measured', 'Retrieved']) # there are many lines but the first two should be these
         axP[i].set_xlabel('viewing zenith (°)')
         axP[i].set_title(mt.replace('o','/'))
@@ -102,13 +106,13 @@ fn = os.path.splitext(posFiles[0])[0].split('/')[-1]
 if LIDARpresent: # touch up LIDAR plots
     axL[0].legend(list(map(list, zip(*mdHnd)))[0], lgTxt)
     axL[0].set_ylabel('Altitude (km)')
-    axL[0].set_xlabel('Modal Extinction (A.U.)')
-    axL[0].set_xlim([0,2.0])
+    axL[0].set_xlabel('Mode resolved extinction ($Mm^{-1}$)')
+    # axL[0].set_xlim([0,2.0])
     for i,mt in enumerate(measTypesL): # loop throuh measurement types to label x-axes
         if mt == 'VExt':
-            lblStr = 'Extinction ($Mm^{-1}$)'
+            lblStr = 'Total extinction ($Mm^{-1}$)'
         elif mt == 'VBS':
-            lblStr = 'Backscatter ($Mm^{-1}Sr^{-1}$)'
+            lblStr = 'Total backscatter ($Mm^{-1}Sr^{-1}$)'
         elif mt == 'LS':
             lblStr = 'Attenuated Backscatter ($Mm^{-1}Sr^{-1}$)'
         else:
@@ -122,6 +126,11 @@ if POLARpresent: # touch up Polarimeter plots
     ttlTxt = '%s [%5.3f μm]' % (fn, simA.rsltFwd[0]['lambda'][lIndP])
     figP.suptitle(ttlTxt)
     figP.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+
+
+
+
 
 # For X11 on Discover
 # plt.ioff()

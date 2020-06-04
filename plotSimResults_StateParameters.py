@@ -18,23 +18,32 @@ from simulateRetrieval import simulation
 import miscFunctions as mf
 import ACCP_functions as af
 
-instruments = ['Lidar06+polar07', 'Lidar05+polar07','Lidar09+polar07','Lidar05','Lidar09','polar07'] #5 N=360
-# instruments = ['Lidar06+polar07', 'Lidar05+polar07','Lidar09+polar07'] #5 N=360
-conCases = []
-for caseLet in ['a','b','c','d','e','f']:
-# for caseLet in ['e','f']:
-# for caseLet in ['a','b','c','d']:
-    conCases.append('case06'+caseLet)
-    # conCases.append('case06'+caseLet+'monomode') #12 total
-SZAs = [30] # 3
+# instruments = ['Lidar090','Lidar050','Lidar060', 'polar07', \
+#                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
+instruments = ['Lidar090','Lidar050', 'polar07', \
+                'Lidar090+polar07','Lidar050+polar07'] # 7 N=231
+# instruments = ['Lidar090','Lidar050', \
+#                 'Lidar090+polar07','Lidar050+polar07'] # 7 N=231
+
+    # instruments = ['Lidar09','Lidar05','Lidar06', 'polar07', \
+#                 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
+    # instruments = ['polar07', 'Lidar09+polar07'] # 7 N=231
+
+    # ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k']
+casLets = ['a', 'b', 'c', 'd', 'e', 'f','i']
+conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['Desert', 'Vegetation']]
+# conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['','Desert', 'Vegetation']]
+# conCases = ['SPA'+surf for surf in ['', 'Desert', 'Vegetation']] 
+SZAs = [0] # 3
 Phis = [0] # 1 -> N=18 Nodes
-tauVals = [1.0] # NEED TO MAKE THIS CHANGE FILE NAME
+# tauVals = [0.09,0.10,0.11] 
+tauVals = [1.0] 
 N = len(SZAs)*len(conCases)*len(Phis)*len(tauVals)
 # N = len(SZAs)*len(Phis)*len(instruments)*len(tauVals)
 barVals = instruments # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
 
-trgtλ = 0.532
-χthresh=10.0 # χ^2 threshold on points
+trgtλ =  0.5
+χthresh= 5.0 # χ^2 threshold on points
 
 def lgTxtTransform(lgTxt):
     if re.match('.*Coarse[A-z]*Nonsph', lgTxt): # conCase in leg
@@ -49,19 +58,19 @@ def lgTxtTransform(lgTxt):
 
     
 #totVars = ['aod', 'ssa', 'n', 'aodMode_fine', 'ssaMode_fine', 'n_fine', 'rEffCalc','g','height'] # must match to keys in rmse dict
-totVars = np.flipud(['aod', 'ssa', 'n', 'rEffCalc', 'aodMode_fine', 'ssaMode_fine', 'n_fine'])
-totVars = np.flipud(['aod', 'ssa', 'n', 'rEffCalc'])
+totVars = np.flipud(['aod', 'ssa', 'n', 'rEffCalc', 'aodMode_PBLFT',  'rEffMode_PBLFT'])
+# totVars = np.flipud(['aod', 'ssa', 'n', 'rEffCalc'])
 totBiasVars = ['aod', 'ssa','aodMode_fine','n','rEffCalc'] # only used in Plot 4, if it is a multi dim array we take first index (aodmode and n)
 
-plotD = False # PDFs of errors as a fuction of different variables
+saveStart = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V08_'
 
-saveStart = '/Users/wrespino/Synced/Working/SIM15_pre613SeminarApr2020/CONCASE4MODEV02_n*_'
+plotD = False # PDFs of errors as a fuction of different variables
 
 cm = pylab.get_cmap('viridis')
 
 # def getGVlabels(totVars, modVars)
 gvNames = copy.copy(totVars)
-gvNames = ['$'+mv.replace('Mode','').replace('_fine','_{fine}').replace('rEffCalc','r_{eff}').replace('ssa', 'SSA').replace('aod','AOD')+'$' for mv in gvNames]
+gvNames = ['$'+mv.replace('Mode','').replace('_fine','_{fine}').replace('rEffCalc','r_{eff}').replace('ssa', 'SSA').replace('aod','AOD').replace('PBLFT','{PBL}')+'$' for mv in gvNames]
 
 Nvars = len(gvNames)
 barLeg = []
@@ -69,49 +78,62 @@ totBias = dict([]) # only valid for last of whatever we itterate through on the 
 Nbar = len(barVals)
 barVals = [y if type(y) is list else [y] for y in barVals] # barVals should be a list of lists
 for barInd, barVal in enumerate(barVals):
-    harvest = np.zeros([Nvars, N*len(barVal)])
+    harvest = np.zeros([N*len(barVal), Nvars])
+    # harvest = [[] for _ in range(Nvars)]
     runNames = []    
     for n in range(N*len(barVal)):
         # paramTple = list(itertools.product(*[instruments,conCases,SZAs,Phis,tauVals]))[n]
         paramTple = list(itertools.product(*[barVal,conCases,SZAs,Phis,tauVals]))[n]
-        savePtrn = saveStart + '%s_%s_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple #SIM3_polar07_case-Smoke+pollution_sza30_phi0_tFct0.04_V2.pkl
+        # saveStartn = saveStart
+        # savePtrn = saveStart + '%s_%s_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple[0:1]
+        if ['polar07'] == barVal:
+            saveStartn = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V02_'
+        else:
+            saveStartn = saveStart
+        savePtrn = saveStartn + '%s_%s_orbGPM_tFct1.00_multiAngles_n*_nAngALL.pkl' % paramTple[0:2]
+        savePtrn = saveStartn + '%s_%s_orbSS_tFct%4.2f_multiAngles_n*_nAngALL.pkl' % (paramTple[0:2] + (paramTple[4],))
         savePath = glob.glob(savePtrn)
-        if not len(savePath)==1: assert False, 'Wrong number of files found (i.e. not one) for search string %s!' % savePath
-        runNames.append('%s($θ_s=%d,φ=%d$)' % paramTple[1:4])
-        runNames[-1] = runNames[-1].replace('pollution','POLL').replace('smoke','BB').replace('marine','MRN')
+        if not len(savePath)==1: assert False, 'Wrong number of files found (i.e. not one) for search string %s!' % savePtrn
         simB = simulation(picklePath=savePath[0])
         NsimsFull = len(simB.rsltBck)
         lInd = np.argmin(np.abs(simB.rsltFwd[0]['lambda']-trgtλ))
-        simB.conerganceFilter(χthresh=χthresh, verbose=True)
         Nsims = len(simB.rsltBck)
-        fineIndFwd = np.nonzero(['fine' in typ.lower() for typ in paramTple[1].split('+')])[0] 
-        if len(fineIndFwd)==0: fineIndFwd = np.nonzero(simB.rsltFwd[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
-        assert len(fineIndFwd)>0, 'No obvious fine mode could be found in fwd data!'
-        fineIndBck = [0]
-        rmse, bias = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck) 
-        harvest[:,n], harvestQ, rmseVal = af.normalizeError(simB.rsltFwd[0], rmse, lInd, totVars, bias)
-        
-        print("***** ", end=" ")
-        print(simB.rsltFwd[0]['aod'][lInd])
-        print('---')
-        print(runNames[-1])
+        print("<><><><><><>")
         print(savePath)
         print('AODf=%4.2f, AODc=%4.2f, Nsim=%d' % (simB.rsltFwd[0]['aodMode'][0,lInd], simB.rsltFwd[0]['aodMode'][1,lInd], Nsims))
         print(paramTple[0])
         print('Spectral variables for λ = %4.2f μm'% simB.rsltFwd[0]['lambda'][lInd])        
-        print('---')
-        
+        simB.conerganceFilter(χthresh=χthresh, verbose=True)
+        fineIndFwd = np.nonzero(['fine' in typ.lower() for typ in paramTple[1].split('+')])[0] 
+        if len(fineIndFwd)==0: fineIndFwd = np.nonzero(simB.rsltFwd[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
+        assert len(fineIndFwd)>0, 'No obvious fine mode could be found in fwd data!'
+        fineIndBck = [0]
+        if ['polar07'] == barVal:
+            rmse, bias = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck)
+            rmse['aodMode_PBLFT'] = np.nan
+            rmse['rEffMode_PBLFT'] = np.nan
+            # bias['aodMode_PBLFT'] = [[np.nan]]
+            # bias['rEffMode_PBLFT'] = [[np.nan]]
+        else:
+            rmse, bias = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=2100)
+            rmse['aodMode_PBLFT'] = rmse['aodMode_PBLFT'][0]
+            rmse['rEffMode_PBLFT'] = rmse['rEffMode_PBLFT'][0]
+        harvest[n, :], harvestQ, rmseVal = af.prepHarvest(simB.rsltFwd[0], rmse, lInd, totVars, bias) # TODO: replace with new normalizeError function 
+        # for vInd, key in enumerate(totVars):
+        #     harvest[vInd] = harvest[vInd] + np.abs(bias[key].T[0]).tolist()
+        print('--------------------')
+    # harvest = np.array(harvest).squeeze().T
     plt.rcParams.update({'font.size': 12})
     if barInd==0: 
         figB, axB = plt.subplots(figsize=(4.8,6)) # THIS IS THE BOXPLOT
         axB.plot([1,1], [0,5*(Nvars+1)], ':', color=0.65*np.ones(3)) # vertical line at unity
-    pos = Nbar*np.r_[0:harvest.shape[0]]+0.7*barInd
-    hnd = axB.boxplot(harvest.T, vert=0, patch_artist=True, positions=pos[0:Nvars], sym='.')
+    pos = Nbar*np.r_[0:harvest.shape[1]]+0.7*barInd
+    hnd = axB.boxplot(harvest, vert=0, patch_artist=True, positions=pos[0:Nvars], sym='.')
     [hnd['boxes'][i].set_facecolor(cm((barInd)/(Nbar))) for i in range(len(hnd['boxes']))]
     [hf.set_markeredgecolor(cm((barInd)/(Nbar))) for hf in hnd['fliers']]
     barLeg.append(hnd['boxes'][0])
 axB.set_xscale('log')
-axB.set_xlim([0.08,11])
+axB.set_xlim([0.08,31])
 axB.set_ylim([-0.8, Nbar*Nvars-1.5])
 plt.sca(axB)
 plt.yticks(Nbar*(np.r_[0:Nvars]+0.1*Nbar-0.2), gvNames)
@@ -151,4 +173,4 @@ figD.tight_layout()
         
 #a = [2,2,1,1,0,0,1,0,0,0]
 #S = lambda a,σ: 5*np.sum(a*(1+σ**2)**(np.log2(4/5)))/np.sum(a)
-#print(np.mean([S(a,σ) for σ in harvest.T]))
+#print(np.mean([S(a,σ) for σ in harvest]))

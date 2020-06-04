@@ -4,8 +4,6 @@
 import numpy as np
 import numpy.random as rnd
 import tempfile
-from hashlib import md5
-import json
 import os
 import sys
 MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GRASP_scripts is in parent of MADCAP_scripts
@@ -19,22 +17,21 @@ def conCaseDefinitions(caseStr, nowPix):
     nwl = len(wvls)
     """ variable type appended options: 'fine'/'coarse', 'nonsph' and 'lofted' """
     if 'variable' in caseStr.lower(): # dimensions are [mode, λ or (rv,sigma)];
-        σ = 0.3+rnd.random()*0.4
+        σ = 0.35+rnd.random()*0.3
         if 'fine' in caseStr.lower():
-            rv = 0.12+rnd.random()*0.1 
-            vals['vol'] = np.array([[np.random.normal(0.8, 0.2)]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
+            rv = 0.145+rnd.random()*0.105
+            vals['vol'] = np.array([[0.5+rnd.random()*0.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
         elif 'coarse' in caseStr.lower():
-            rv = 0.6+rnd.random()*3
-            vals['vol'] = np.array([[np.random.normal(2.5, 0.5)]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
+            rv = 0.8+rnd.random()*3.2
+            vals['vol'] = np.array([[1.5+rnd.random()*1.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
         else:
             assert False, 'variable aerosol case must be appended with either fine or coarse'
-        vals['vol'][vals['vol']<0.001] = 0.001 # just in case random normal drops below zero
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999]] # mode 1, 2,...
         vals['vrtHght'] = [[3010]] if 'lofted' in caseStr.lower() else  [[1010]]  # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500]] # Gaussian sigma in meters
-        vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.34+rnd.random(2)*0.20)[None,:] # mode 1 # linear w/ λ
-        vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.01)[None,:] # mode 1 # linear w/ λ
+        vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.36+rnd.random(2)*0.15)[None,:] # mode 1 # linear w/ λ
+        vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.015)[None,:] # mode 1 # linear w/ λ
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'clean' in caseStr.lower():
         σ = [0.4, 0.68] # mode 1, 2,...
@@ -227,9 +224,13 @@ def conCaseDefinitions(caseStr, nowPix):
         for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
             bot = max(mid[0]-2*rng[0],0) 
             top = mid[0]+2*rng[0]
-            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.000001
-            if vals['vrtProf'][i,1]>1: vals['vrtProf'][i,0]=0.01 # keep very small amount in top bin if upper layer
-            if vals['vrtProf'][i,-2]>1: vals['vrtProf'][i,-1]=1.0 # fill bottom bin if lowwer layer
+            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1
+            if vals['vrtProf'][i,1]>=1: vals['vrtProf'][i,0]=0.01 # keep very small amount in top bin if upper layer
+            if vals['vrtProf'][i,-2]>=1: vals['vrtProf'][i,-1]=1.0 # fill bottom bin οf lowwer layer
+            if 'variable' in caseStr.lower():
+                np.interp(np.r_[0:10], [0,5,10], rnd.rand(3))
+                vals['vrtProf'] = vals['vrtProf'] * np.linspace(rnd.rand(),rnd.rand(),vals['vrtProf'].shape[1])
+            vals['vrtProf'][vals['vrtProf'] < 0.000001] = 0.000001
         del vals['vrtHght']
         del vals['vrtHghtStd']
     return vals, landPrct
@@ -240,27 +241,27 @@ def splitMultipleCases(caseStrs, caseLoadFct):
     loadings = []
     for case in caseStrs.split('+'):
         if 'case06a' in case.lower():
-            cases.append(case.replace('case06a','smoke'))
+            cases.append(case.replace('case06a','smoke')) # smoke base τ550=0.25
             loadings.append(caseLoadFct)
-            cases.append(case.replace('case06a','marine'))
+            cases.append(case.replace('case06a','marine')) # marine base τ550=0.1
             loadings.append(caseLoadFct)
         elif 'case06b' in case.lower():
             cases.append(case.replace('case06b','smoke'))
             loadings.append(0.4*caseLoadFct)
-            cases.append(case.replace('case06b','marine'))
+            cases.append(case.replace('case06b','marine')) 
             loadings.append(2.5*caseLoadFct)
         elif 'case06c' in case.lower():
             cases.append(case.replace('case06c','smoke'))
             loadings.append(caseLoadFct)
-            cases.append(case.replace('case06c','pollution'))
+            cases.append(case.replace('case06c','pollution')) # pollution base τ550=0.1
             loadings.append(caseLoadFct)
         elif 'case06d' in case.lower():
-            cases.append(case.replace('case06d','smoke'))
+            cases.append(case.replace('case06d','smoke')) 
             loadings.append(0.4*caseLoadFct)
-            cases.append(case.replace('case06d','pollution'))
-            loadings.append(0.4*caseLoadFct)
+            cases.append(case.replace('case06d','pollution')) 
+            loadings.append(2.5*caseLoadFct)
         elif 'case06e' in case.lower():
-            cases.append(case.replace('case06e','dust'))
+            cases.append(case.replace('case06e','dust')) # dust base τ550=0.25
             loadings.append(caseLoadFct)
             cases.append(case.replace('case06e','marine'))
             loadings.append(caseLoadFct)
@@ -270,16 +271,20 @@ def splitMultipleCases(caseStrs, caseLoadFct):
             cases.append(case.replace('case06f','marine'))
             loadings.append(2.5*caseLoadFct)
         elif 'case06g' in case.lower():
+            cases.append(case.replace('case06g','smoke'))
+            loadings.append(0.00001)
             cases.append(case.replace('case06g','marine'))
             loadings.append(caseLoadFct)
         elif 'case06h' in case.lower():
-            cases.append(case.replace('case06h','plltdMrn'))
+            cases.append(case.replace('case06h','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case06h','plltdMrn')) # plltdMrn base τ550=0.1
             loadings.append(caseLoadFct)
         elif 'case06i' in case.lower():
             cases.append(case.replace('case06i','smoke'))
             loadings.append(0.4*caseLoadFct)
             cases.append(case.replace('case06i','pollution'))
-            loadings.append(2*caseLoadFct)                    
+            loadings.append(5*caseLoadFct)                    
         elif 'case06j' in case.lower():
             cases.append(case.replace('case06j','dustNonsph'))
             loadings.append(caseLoadFct)
@@ -322,11 +327,9 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
                     vals[key] = np.vstack([vals[key], valsTmp[key]])
             else: # implies we take the surface parameters from the last case
                 vals[key] = valsTmp[key]
-    bsHsh = md5(open(baseYAML,'rb').read()).hexdigest()[0:8] # unique ID from contents of original user created YAML file
-    valList = json.dumps([(y.tolist() if 'numpy' in str(type(y)) else y) for y in vals.values()])
-    valHsh = md5(json.dumps(valList).encode()).hexdigest()[0:8] # unique ID from this case's values
-    nwl = len(np.unique([mv['wl'] for mv in nowPix.measVals]))
-    newFn = 'settingsYAML_conCase%s_nwl%d_%s_%s.yml' % (caseStrs, nwl, bsHsh, valHsh)
+    randomID = hex(rnd.randint(0, 2**63-1))[2:] # needed to prevent identical FN w/ many parallel runs
+    nwl = len(np.unique([mv['wl'] for mv in nowPix.measVals])) 
+    newFn = 'settingsYAML_conCase%s_nwl%d_%s.yml' % (caseStrs, nwl, randomID)
     newPathYAML = os.path.join(tempfile.gettempdir(), newFn)
     if os.path.exists(newPathYAML): return newPathYAML, landPrct # reuse existing YAML file from this exact base YAML, con. case values and NWL
     yamlObj = rg.graspYAML(baseYAML, newPathYAML)
