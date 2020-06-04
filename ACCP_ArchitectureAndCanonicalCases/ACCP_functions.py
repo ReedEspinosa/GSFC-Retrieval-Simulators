@@ -8,40 +8,34 @@ from glob import glob
 import csv
 
 
-def normalizeError(simFwd, rmse, lInd, GVs, bias):
-    """ Note - we pull the indices that match below, ex. 'n_fine' key value has one element so we only pull the first of n_fine """
-    trgt = {'aod':[0.04], 'ssa':[0.02], 'g':[0.02], 'aodMode_fine':[0.01], 'aodMode_PBLFT':[0.04], \
-            'rEffMode_PBLFT':[0.1],'ssaMode_fine':[0.03], 'n':[0.02], 'n_fine':[0.02], \
-                'LidarRatio':[0.0], 'rEffCalc':[0.1]} # look at total and fine/coarse 
-    trgtRel = {'aod':0.05, 'aodMode_fine':0.05, 'LidarRatio':0.25, 'rEffCalc':0.0} # this part must be same for every mode but absolute component above can change
-    assert np.all([not type(x) is list for x in trgtRel.values()]), 'All entries in trgtRel should be scalars (not lists)'
-    i=0
-    harvest = []
-    harvestQ = []
-    rmseVal = []
-    for vr in GVs:
-        tg = trgt[vr]
-        if vr in trgtRel.keys():     
-            rsltFwdVr = vr.replace('Mode_fine','') # NOTE: we work relative to the total in the modal variables (e.g. Δτ_fine = ±(0.2 + 0.05*τ_total)
-            if np.isscalar(simFwd[rsltFwdVr]):
-                true = simFwd[rsltFwdVr]
-            elif simFwd[rsltFwdVr].ndim==1:
-                true = simFwd[rsltFwdVr][lInd]
-            else:
-                true = simFwd[vr][0,lInd]
-            harvest.append((tg+trgtRel[vr]*true)/np.atleast_1d(rmse[vr])[0])
-            harvestQ.append(np.sum((tg+trgtRel[vr]*true)>=np.abs(bias[vr][:,0]))/len(bias[vr][:,0]))
+def normalizeError(rmse, bias, true, enhanced=False):
+    ssaTrg = 0.02 if enhanced else 0.04 # this (and rEff below) is for integrated quantities, not profiles!
+    trgt = {'aod':0.0, 'aodMode_fine':0.0, 'aodMode_PBLFT':0.0, \
+            'ssa':ssaTrg, 'ssaMode_fine':ssaTrg, 'ssaMode_PBLFT':ssaTrg, \
+            'rEffCalc':0.1, 'rEffMode_fine':0.1, 'rEffMode_PBLFT':0.1, \
+            'n':0.025, 'n_fine':0.025, 'n_PBLFT':0.025, \
+            'k':0.002, 'k_fine':0.002, 'k_PBLFT':0.002, \
+            'g':0.02, 'LidarRatio':0.0} 
+    trgtRel = {'LidarRatio':0.25, 'rEffCalc':0.1} # this part must be same for every mode but absolute component above can change
+    aodTrgt = lambda τ: 0.02 + 0.05*τ # this needs to tolerate a 2D array
+    qScore = dict()
+    σScore = dict()
+    mBias = dict()
+    Nbck = bias['aod'].shape[0]
+    for av in set(rmse.keys()) & set(trgt.keys()):
+        trNow = np.tile(true[av],(Nbck,1)) if true[av].shape[0]==1 else true[av]
+        if av in trgtRel:
+            trgtNow = np.array([max([trgt[av]], tr) for tr in trNow*trgtRel[av]]) # this might break if trgtRel is modal
+        elif 'aod' in av:
+            trgtNow = aodTrgt(trNow)
         else:
-            harvest.append(tg/np.atleast_1d(rmse[vr])[0])
-            try:
-                harvestQ.append(np.sum(tg>=np.abs(bias[vr][:,0]))/len(bias[vr][:,0]))
-            except:
-                harvestQ.append(np.nan)
-        rmseVal.append(np.atleast_1d(rmse[vr])[0])
-        i+=1
-    return harvest, harvestQ, rmseVal
-
-
+            trgtNow = trgt[av]*np.ones(bias[av].shape)
+        print('%s - ' % av, end='')
+        print(trgtNow)
+        qScore[av] = np.mean(np.abs(bias[av])<=trgtNow, axis=0)
+        σScore[av] = np.mean(trgtNow, axis=0)/rmse[av]
+        mBias[av] = np.mean(bias[av], axis=0)
+    return qScore, mBias, σScore
 
 def prepHarvest(simFwd, rmse, lInd, GVs, bias):
     """ Note - we pull the indices that match below, ex. 'n_fine' key value has one element so we only pull the first of n_fine """
