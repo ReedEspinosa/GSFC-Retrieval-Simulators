@@ -24,12 +24,12 @@ if checkDiscover(): # DISCOVER
 #     run1: ***nSLURM=0-239***, stackSLURM -> 0, 14
 #     run2: ***nSLURM=0-239***, stackSLURM -> 28, 42
 #       ...
-    nAng = int(n/120)*14+nAng
-    n = n%120 
+    nAng = int(n/84)*14+nAng
+    n = n%84 
 
         
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V09_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V11_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -62,13 +62,13 @@ bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
 # casLets = list(map(chr, range(97, 106))) # 'a' - 'i'
 # conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 9x3=27
-τFactor = [0.07, 0.08, 0.09, 0.1, 0.11] #5
+τFactor = [0.07, 0.08, 0.09, 0.1] #4
 spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
 conCases = [spaSetup+surf for surf in ['', 'Desert', 'Vegetation']] # 3
 # orbits = ['SS', 'GPM'] # 2
 orbits = ['SS'] # 1
 instruments = ['Lidar09+polar07','Lidar09+polar07GPM','Lidar05+polar07','Lidar06+polar07', \
-                'polar07', 'Lidar09','Lidar05','Lidar06'] # 8 N=5*3*8=120
+                'Lidar09','Lidar05','Lidar06'] # 8 N=4*3*7=84
 
 rndIntialGuess = True # randomly vary the initial guess of retrieved parameters
 verbose = True
