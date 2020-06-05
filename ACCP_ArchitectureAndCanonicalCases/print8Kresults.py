@@ -15,41 +15,99 @@ from simulateRetrieval import simulation
 from ACCP_functions import normalizeError
 
 
-instruments = ['Lidar09','Lidar05','Lidar06', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=189
-case = 'case06a'
-surface = 'Ocean'
-# surface = 'Vegetation'
-# surface = 'Desert'
+# instruments = ['Lidar09','Lidar05','Lidar06', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=189
+# instruments = ['Lidar090','Lidar050','Lidar060', 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=189
+# instruments = ['Lidar09+polar07GPM'] # 7 N=189
+instruments = ['polar07'] # 7 N=189
+# caseIDs = ['6a', '6b', '6c', '6d', '6e', '6f', '6g', '6h', '6i']
+caseIDs = ['']
+surfaces = ['','Vegetation','Desert']
+simType = 'SPA'
+orbit = 'GPM'
 
+srcPath = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFilesLev2/'
+# filePatrn = 'DRS_V08_%s_case0%s%s_orb%s_tFct1.00_multiAngles_n*_nAngALL.pkl'
+# filePatrn = 'DRS_V08_%s_case0%s%s_orbSS%s_tFct1.00_multiAngles_n*_nAngALL.pkl'
+filePatrn = 'SPA_V11_%s_SPA%s%s_orb%s.pkl'
+# SPA_V11_Lidar09+polar07GPM_SPADesert_orbGPM.pkl
+PathFrmt = os.path.join(srcPath, filePatrn)
 
-# simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V02_%s_%s%s_orbSS_tFct1.00_multiAngles_n*_nAngALL.pkl'
-simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V08_Lidar060+polar07_case06iDesert_orbSS_tFct1.00_multiAngles_n106_nAngALL.pkl'
-
-χthresh = 15
+χthresh = 3
 trgtλUV = 0.355
 trgtλVis = 0.532
 trgtλNIR = 1.064
 finePBLind = 2
+# fineModeInd = [0,2]
+fineModeInd = [0]
 upLayInd = [1,2,3,4]
 lowLayInd = [5,6,7,8,9]
 frmStr = '%2d, %29s, %8.3f, %8.3f, %8.3f'
 bad1 = 999 # bad data value
 
-
+polarSSPn = 0
 def main():
+    runStatus = []
+    for instrument in instruments:
+        for caseID in caseIDs:
+            for surface in surfaces:
+                runStatus.append(run1case(instrument, orbit, caseID, surface, PathFrmt, polOnlyPlat=polarSSPn))
+    return runStatus
+                
+def run1case(instrument, orbit, caseID, surface, PathFrmt, polOnlyPlat=0):
+    NNN='NGE'
+    polarOnly = False
+    TYP=simType + caseID.lower()
+    if 'Lidar05' in instrument: 
+        PLTF='SSP0'
+    elif 'Lidar06' in instrument: 
+        PLTF='SSP1'
+    elif 'Lidar09' in instrument: 
+        PLTF='SSP2' if orbit=='SS' else 'SSP3'
+    if 'polar07' in instrument:
+        if 'Lidar' in instrument:
+            OBS='NAD'
+        else:
+            PLTF='SSP%d' % polOnlyPlat # THIS ONE NEEDS TO BE REPEATED FOUR TIMES
+            OBS='OND'
+            polarOnly = True
+    else:
+        OBS='NAN'
+    SRFC='OCEN' if len(surface)==0 else surface.replace('Desert','LNDD').replace('Vegetation','LNDV')
+    RES='RES1'
+    V='V01'
+
+    trgtFN = '_'.join([NNN,TYP,PLTF,OBS,SRFC,RES,V]) + '.csv'
     # find and load file
+    simRsltFile = PathFrmt % (instrument, caseID, surface, orbit)
+    print(simRsltFile)
     posFiles = glob(simRsltFile)
-    assert len(posFiles)==1, 'glob found %d files but we expect exactly 1' % len(posFiles)
+    if not len(posFiles)==1:
+        print('¡¡¡Glob found %d files but we expect exactly 1!!!' % len(posFiles))
+        print('We return the search pattern and move on to the next file...')
+        print('<><><><><>')
+        return 'FAILED: '+simRsltFile
+    print('Loading %s...' % os.path.basename(posFiles[0]))
     simA = simulation(picklePath=posFiles[0])
-    trgtFile = '/Users/wrespino/Desktop/8Kfiles_X0/test.csv'
-    cntnts = ['%s, Comments: None' % trgtFile]
-    cntnts = buildContents(cntnts, simA)
-    with open(trgtFile, mode='wt', encoding='utf-8') as file:
+    # trgtPath = os.path.join('/Users/wrespino/Desktop/', trgtFN)
+    trgtPath = os.path.join('/Users/wrespino/Desktop/8Kfiles_C0/', trgtFN)
+    cntnts = ['%s, Comments: None' % trgtFN]
+    print('Building conents of output file...')
+    cntnts = buildContents(cntnts, simA, polarOnly)
+    with open(trgtPath, mode='wt', encoding='utf-8') as file:
         file.write('\n'.join(cntnts))  
+    print('Output file save to %s' % os.path.basename(trgtPath))
+    return trgtFN
 
 
-def prep4normError(rmse, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd, lowLayInd):
+def prep4normError(rmse, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd, lowLayInd, polarOnly):
     lidScale = 1e6 # m-1 -> Mm-1
+    if polarOnly:
+        nanVars = ['aodMode_finePBL', 'βext_PBL', 'βext_FT', 'βextFine_PBL', 'βextFine_FT', 'ssaPrf_PBL', 'ssaPrf_FT']
+        for vr in nanVars:
+            rmse[vr] = np.r_[bad1]
+            bs[vr] = np.r_[bad1]
+            tr[vr] = np.r_[bad1]
+        return rmse, bs, tr
     rmse['aodMode_finePBL'] = np.r_[rmse['aodMode'][finePBLind]]
     bs['aodMode_finePBL'] = np.r_[[bs['aodMode'][:,finePBLind]]].T
     tr['aodMode_finePBL'] = np.r_[[tr['aodMode'][:,finePBLind]]].T
@@ -74,37 +132,43 @@ def prep4normError(rmse, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd
     return rmse, bs, tr
 
 def buildString(num, name, qScr, mBs, rmse, key):
-    q = qScr[key][0]
-    m = mBs[key][0]
-    r = rmse[key][0]
+    if key in qScr and key in rmse and not rmse[key][0]==bad1:
+        q = qScr[key][0]
+        m = mBs[key][0]
+        r = rmse[key][0]
+    else:
+        q = bad1
+        m = bad1
+        r = bad1
     vals = (num, name, q, m, r)
     return frmStr % vals
 
-def buildContents(cntnts, simA):
+def buildContents(cntnts, simA, polarOnly):
     
     # prep/filter this data and find λInds
     cntnts.append('GV#, GVname, QIscore, mean_unc, RMS')
-    simA.conerganceFilter(χthresh=χthresh, verbose=True)
+    simA.conerganceFilter(χthresh=χthresh, verbose=True, minSaved=7)
     lIndUV = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλUV))
     lIndVIS = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλVis))
     lIndNIR = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλNIR))
     
-    #UV - find error stats for column and PBL and profiles
-    rmseUV,bs,tr = simA.analyzeSim(lIndUV, fineModesFwd=[0,2], fineModesBck=[0,2], hghtCut=2100) # todo, drop hghtCut if polar (or better fix in anaylze sim w/ nans)
+    hghtCut = None if polarOnly else 2100
+    #UV - find error stats for column and PBL and profiles 
+    rmseUV,bs,tr = simA.analyzeSim(lIndUV, fineModesFwd=fineModeInd, fineModesBck=fineModeInd, hghtCut=hghtCut) # todo, drop hghtCut if polar (or better fix in anaylze sim w/ nans)
     prfRMSE, prfBias, prfTrue = simA.analyzeSimProfile(wvlnthInd=lIndUV)
-    rmseUV,bs,tr = prep4normError(rmseUV, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd, lowLayInd)
+    rmseUV,bs,tr = prep4normError(rmseUV, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd, lowLayInd, polarOnly)
     qScrUV, mBsUV, _ = normalizeError(rmseUV,bs,tr)
     qScrUV_EN, _0, _ = normalizeError(rmseUV,bs,tr, enhanced=True)
     #VIS
-    rmseVis,bs,tr = simA.analyzeSim(lIndVIS, fineModesFwd=[0,2], fineModesBck=[0,2], hghtCut=2100)
+    rmseVis,bs,tr = simA.analyzeSim(lIndVIS, fineModesFwd=fineModeInd, fineModesBck=fineModeInd, hghtCut=hghtCut)
     prfRMSE, prfBias, prfTrue = simA.analyzeSimProfile(wvlnthInd=lIndVIS)
-    rmseVis,bs,tr = prep4normError(rmseVis, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd, lowLayInd)
+    rmseVis,bs,tr = prep4normError(rmseVis, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd, lowLayInd, polarOnly)
     qScrVis, mBsVis, _ = normalizeError(rmseVis,bs,tr)
     qScrVis_EN, _0, _ = normalizeError(rmseVis,bs,tr, enhanced=True)
     #NIR
-    rmseNIR,bs,tr = simA.analyzeSim(lIndNIR, fineModesFwd=[0,2], fineModesBck=[0,2], hghtCut=2100)
+    rmseNIR,bs,tr = simA.analyzeSim(lIndNIR, fineModesFwd=fineModeInd, fineModesBck=fineModeInd, hghtCut=hghtCut)
     prfRMSE, prfBias, prfTrue = simA.analyzeSimProfile(wvlnthInd=lIndNIR)
-    rmseNIR,bs,tr = prep4normError(rmseNIR, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd, lowLayInd)
+    rmseNIR,bs,tr = prep4normError(rmseNIR, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd, lowLayInd, polarOnly)
     qScrNIR, mBsNIR, _ = normalizeError(rmseNIR,bs,tr)
     
     # build file contents, line-by-line
@@ -116,7 +180,7 @@ def buildContents(cntnts, simA):
     cntnts.append(buildString(6,  'AAOD_l_UV_PBL', qScrUV_EN, mBsUV, rmseUV, 'ssaMode_PBLFT'))
     cntnts.append(buildString(7,  'AAOD_l_VIS_column', qScrVis_EN, mBsVis, rmseVis, 'ssa'))
     cntnts.append(buildString(8,  'AAOD_l_VIS_PBL', qScrVis_EN, mBsVis, rmseVis, 'ssaMode_PBLFT'))
-    cntnts.append(frmStr %   (9,  'ASYM_UV', bad1, bad1, bad1))
+    cntnts.append(frmStr %   (9,  'ASYM_UV', bad1, bad1, bad1)) # should be able to replace these with calls to BS variable in buildString
     cntnts.append(frmStr %   (10, 'ASYM_VIS', bad1, bad1, bad1))
     cntnts.append(buildString(11, 'AEFR_l_column', qScrUV, mBsUV, rmseUV, 'rEffCalc'))
     cntnts.append(buildString(12, 'AEFR_l_PBL', qScrUV, mBsUV, rmseUV, 'rEffMode_PBLFT'))
@@ -185,4 +249,4 @@ def buildContents(cntnts, simA):
     cntnts.append(frmStr %   (73, 'ANC_z_profile_in_PBL', bad1, bad1, bad1))
     return cntnts
 
-if __name__ == "__main__": main()
+if __name__ == "__main__": runStatus = main()

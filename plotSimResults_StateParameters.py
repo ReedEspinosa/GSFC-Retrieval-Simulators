@@ -20,10 +20,9 @@ import ACCP_functions as af
 
 # instruments = ['Lidar090','Lidar050','Lidar060', 'polar07', \
 #                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
-instruments = ['Lidar090','Lidar050', 'polar07', \
-                'Lidar090+polar07','Lidar050+polar07'] # 7 N=231
-instruments = ['Lidar09','Lidar05', 'polar07', \
-                'Lidar09+polar07','Lidar05+polar07'] # 7 N=231
+instruments = ['Lidar09','Lidar05','Lidar06', \
+                'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
+
 
     # instruments = ['Lidar09','Lidar05','Lidar06', 'polar07', \
 #                 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
@@ -36,7 +35,7 @@ instruments = ['Lidar09','Lidar05', 'polar07', \
 conCases = ['SPA'+surf for surf in ['','Desert', 'Vegetation']]
 SZAs = [0] # 3
 Phis = [0] # 1 -> N=18 Nodes
-tauVals = [0.07,0.08,0.09,0.10,0.11] 
+tauVals = [0.07,0.08,0.09,0.10] 
 # tauVals = [0.07,0.08,0.09] 
 N = len(SZAs)*len(conCases)*len(Phis)*len(tauVals)
 # N = len(SZAs)*len(Phis)*len(instruments)*len(tauVals)
@@ -62,7 +61,7 @@ totVars = np.flipud(['aod', 'ssa', 'n', 'rEffCalc', 'aodMode_PBLFT',  'rEffMode_
 # totVars = np.flipud(['aod', 'ssa', 'n', 'rEffCalc'])
 totBiasVars = ['aod', 'ssa','aodMode_fine','n','rEffCalc'] # only used in Plot 4, if it is a multi dim array we take first index (aodmode and n)
 
-saveStart = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V09_'
+saveStart = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V11_'
 
 plotD = False # PDFs of errors as a fuction of different variables
 

@@ -16,7 +16,7 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
-simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment/DRS_V09_Lidar05+polar07_SPADesert_orbSS_tFct0.09_sza51_phi141_n37_nAng85.pkl'
+simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V08_Lidar050_case06hDesert_orbSS_tFct1.00_multiAngles_n157_nAngALL.pkl'
 # simRsltFile = '/Users/wrespino/Desktop/TEST_V03_Lidar06_SPAVegetation_orbSS_tFct0.11_sza72_phi34_n119_nAng2.pkl'
 trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
 trgtλPolar = 0.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
@@ -26,7 +26,7 @@ extErrPlot = True
 posFiles = glob(simRsltFile)
 assert len(posFiles)==1, 'glob found %d files but we expect exactly 1' % len(posFiles)
 simA = simulation(picklePath=posFiles[0])
-simA.conerganceFilter(χthresh=20.0, verbose=True)
+simA.conerganceFilter(χthresh=200.0, verbose=True)
 lIndL = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλLidar))
 lIndP = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλPolar))
 alphVal = 1/np.sqrt(len(simA.rsltBck))
