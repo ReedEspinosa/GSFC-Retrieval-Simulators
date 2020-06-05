@@ -22,28 +22,28 @@ import ACCP_functions as af
 #                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
 instruments = ['Lidar090','Lidar050', 'polar07', \
                 'Lidar090+polar07','Lidar050+polar07'] # 7 N=231
-# instruments = ['Lidar090','Lidar050', \
-#                 'Lidar090+polar07','Lidar050+polar07'] # 7 N=231
+instruments = ['Lidar09','Lidar05', 'polar07', \
+                'Lidar09+polar07','Lidar05+polar07'] # 7 N=231
 
     # instruments = ['Lidar09','Lidar05','Lidar06', 'polar07', \
 #                 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=231
     # instruments = ['polar07', 'Lidar09+polar07'] # 7 N=231
 
     # ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k']
-casLets = ['a', 'b', 'c', 'd', 'e', 'f','i']
-conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['Desert', 'Vegetation']]
+# casLets = ['a', 'b', 'c', 'd', 'e', 'f','i']
+# conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['Desert', 'Vegetation']]
 # conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['','Desert', 'Vegetation']]
-# conCases = ['SPA'+surf for surf in ['', 'Desert', 'Vegetation']] 
+conCases = ['SPA'+surf for surf in ['','Desert', 'Vegetation']]
 SZAs = [0] # 3
 Phis = [0] # 1 -> N=18 Nodes
-# tauVals = [0.09,0.10,0.11] 
-tauVals = [1.0] 
+tauVals = [0.07,0.08,0.09,0.10,0.11] 
+# tauVals = [0.07,0.08,0.09] 
 N = len(SZAs)*len(conCases)*len(Phis)*len(tauVals)
 # N = len(SZAs)*len(Phis)*len(instruments)*len(tauVals)
 barVals = instruments # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
 
 trgtλ =  0.5
-χthresh= 5.0 # χ^2 threshold on points
+χthresh= 3.0 # χ^2 threshold on points
 
 def lgTxtTransform(lgTxt):
     if re.match('.*Coarse[A-z]*Nonsph', lgTxt): # conCase in leg
@@ -62,7 +62,7 @@ totVars = np.flipud(['aod', 'ssa', 'n', 'rEffCalc', 'aodMode_PBLFT',  'rEffMode_
 # totVars = np.flipud(['aod', 'ssa', 'n', 'rEffCalc'])
 totBiasVars = ['aod', 'ssa','aodMode_fine','n','rEffCalc'] # only used in Plot 4, if it is a multi dim array we take first index (aodmode and n)
 
-saveStart = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V08_'
+saveStart = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V09_'
 
 plotD = False # PDFs of errors as a fuction of different variables
 
@@ -86,7 +86,7 @@ for barInd, barVal in enumerate(barVals):
         paramTple = list(itertools.product(*[barVal,conCases,SZAs,Phis,tauVals]))[n]
         # saveStartn = saveStart
         # savePtrn = saveStart + '%s_%s_sza%d_phi%d_tFct%4.2f_V1.pkl' % paramTple[0:1]
-        if ['polar07'] == barVal:
+        if ['intXXX'] == barVal:
             saveStartn = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V02_'
         else:
             saveStartn = saveStart
@@ -109,13 +109,13 @@ for barInd, barVal in enumerate(barVals):
         assert len(fineIndFwd)>0, 'No obvious fine mode could be found in fwd data!'
         fineIndBck = [0]
         if ['polar07'] == barVal:
-            rmse, bias = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck)
+            rmse, bias, true = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck)
             rmse['aodMode_PBLFT'] = np.nan
             rmse['rEffMode_PBLFT'] = np.nan
             # bias['aodMode_PBLFT'] = [[np.nan]]
             # bias['rEffMode_PBLFT'] = [[np.nan]]
         else:
-            rmse, bias = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=2100)
+            rmse, bias, true = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=2100)
             rmse['aodMode_PBLFT'] = rmse['aodMode_PBLFT'][0]
             rmse['rEffMode_PBLFT'] = rmse['rEffMode_PBLFT'][0]
         harvest[n, :], harvestQ, rmseVal = af.prepHarvest(simB.rsltFwd[0], rmse, lInd, totVars, bias) # TODO: replace with new normalizeError function 

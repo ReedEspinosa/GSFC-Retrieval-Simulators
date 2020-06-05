@@ -6,23 +6,33 @@ import re
 import os
 from glob import glob
 import csv
+"""
+  rmse['βext_PBL'] = np.sqrt(np.mean(prfRMSE['βext'][lowLayInd]**2))
+    rmse['βext_FT'] = np.sqrt(np.mean(prfRMSE['βext'][upLayInd]**2))
+    rmse['βextFine_PBL'] = np.sqrt(np.mean(prfRMSE['βextFine'][lowLayInd]**2))
+    rmse['βextFine_FT'] = np.sqrt(np.mean(prfRMSE['βextFine'][upLayInd]**2))
+    rmse['ssaPrf_PBL'] = np.sqrt(np.mean(prfRMSE['ssa'][lowLayInd]**2))
+    rmse['ssaPrf_FT'] = np.sqrt(np.mean(prfRMSE['ssa'][upLayInd]**2))"""
 
 
 def normalizeError(rmse, bias, true, enhanced=False):
     ssaTrg = 0.02 if enhanced else 0.04 # this (and rEff below) is for integrated quantities, not profiles!
-    trgt = {'aod':0.0, 'aodMode_fine':0.0, 'aodMode_PBLFT':0.0, \
+    trgt = {'aod':0.0, 'aodMode_fine':0.0, 'aodMode_PBLFT':0.0, 'aodMode_finePBL':0.0, \
             'ssa':ssaTrg, 'ssaMode_fine':ssaTrg, 'ssaMode_PBLFT':ssaTrg, \
             'rEffCalc':0.1, 'rEffMode_fine':0.1, 'rEffMode_PBLFT':0.1, \
             'n':0.025, 'n_fine':0.025, 'n_PBLFT':0.025, \
             'k':0.002, 'k_fine':0.002, 'k_PBLFT':0.002, \
-            'g':0.02, 'LidarRatio':0.0} 
-    trgtRel = {'LidarRatio':0.25, 'rEffCalc':0.1} # this part must be same for every mode but absolute component above can change
+            'g':0.02, 'LidarRatio':0.0, \
+            'βext_PBL':20.0, 'βext_FT':20.0, 'βextFine_PBL':20.0, 'βextFine_FT':20.0, \
+            'ssaPrf_PBL':0.03, 'ssaPrf_FT':0.03} 
+    trgtRel = {'LidarRatio':0.25, 'rEffCalc':0.1, 
+               'βext_PBL':0.20, 'βext_FT':0.20, 'βextFine_PBL':0.20, 'βextFine_FT':0.20}
     aodTrgt = lambda τ: 0.02 + 0.05*τ # this needs to tolerate a 2D array
     qScore = dict()
     σScore = dict()
     mBias = dict()
-    Nbck = bias['aod'].shape[0]
     for av in set(rmse.keys()) & set(trgt.keys()):
+        Nbck = bias[av].shape[0] # profile variables will be longer than other vars
         trNow = np.tile(true[av],(Nbck,1)) if true[av].shape[0]==1 else true[av]
         if av in trgtRel:
             trgtNow = np.array([max([trgt[av]], tr) for tr in trNow*trgtRel[av]]) # this might break if trgtRel is modal
@@ -30,8 +40,8 @@ def normalizeError(rmse, bias, true, enhanced=False):
             trgtNow = aodTrgt(trNow)
         else:
             trgtNow = trgt[av]*np.ones(bias[av].shape)
-        print('%s - ' % av, end='')
-        print(trgtNow)
+        # print('%s - ' % av, end='')
+        # print(trgtNow)
         qScore[av] = np.mean(np.abs(bias[av])<=trgtNow, axis=0)
         σScore[av] = np.mean(trgtNow, axis=0)/rmse[av]
         mBias[av] = np.mean(bias[av], axis=0)
@@ -156,7 +166,7 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
     orbit -> GPM, SS
     basePath -> .../Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized
     """
-#     resolution = '5kmH_500mV'
+    # resolution = '5kmH_500mV'
     resolution = '50kmH_500mV'
     # determine reflectance string
     wvlMap =   [0.355, 0.532, 1.064]
@@ -191,7 +201,7 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
             if measType == 'Att':
                 absErr.append(float(row[3])) # relative err 
             else:
-                absErr.append(float(row[2])/1000) # abs err 1/km/sr -> 1/m/sr
+                absErr.append(float(row[3])/1) # abs err 1/km/sr -> 1/m/sr
     vldInd = ~np.logical_or(np.isnan(hgt), np.isnan(absErr))
     absErr = np.array(absErr)[vldInd]
     hgt = np.array(hgt)[vldInd]    

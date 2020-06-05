@@ -43,7 +43,7 @@ if checkDiscover(): # DISCOVER
     maxCPU = 2
 else: # MacBook Air
     n = 119
-    nAng = 2
+    nAng = 116
     saveStart = '/Users/wrespino/Desktop/TEST_V03_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
     dirGRASP = '/usr/local/bin/grasp'
