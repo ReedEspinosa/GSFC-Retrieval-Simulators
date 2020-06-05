@@ -62,12 +62,12 @@ def run1case(instrument, orbit, caseID, surface, PathFrmt, polOnlyPlat=0):
     elif 'Lidar06' in instrument: 
         PLTF='SSP1'
     elif 'Lidar09' in instrument: 
-        PLTF='SSP2' if orbit=='SS' else 'SSP3'
+        PLTF='SSP2' if orbit=='SS' else 'SSG3'
     if 'polar07' in instrument:
         if 'Lidar' in instrument:
             OBS='NAD'
         else:
-            PLTF='SSP%d' % polOnlyPlat # THIS ONE NEEDS TO BE REPEATED FOUR TIMES
+            PLTF='SSG3'  if polOnlyPlat==3 else 'SSP%d' % polOnlyPlat
             OBS='OND'
             polarOnly = True
     else:
@@ -217,8 +217,6 @@ def buildContents(cntnts, simA, polarOnly):
     cntnts.append(buildString(43, 'AABS_z_UV_profile_in_PBL', qScrUV, mBsUV, rmseUV, 'ssaPrf_PBL'))
     cntnts.append(buildString(44, 'AABS_z_VIS_profile_above_PBL', qScrVis, mBsVis, rmseVis, 'ssaPrf_FT'))
     cntnts.append(buildString(45, 'AABS_z_VIS_profile_in_PBL', qScrVis, mBsVis, rmseVis, 'ssaPrf_PBL'))
-    cntnts.append(buildString(44, 'AABS_z_NIR_profile_above_PBL', qScrNIR, mBsNIR, rmseNIR, 'ssaPrf_FT'))
-    cntnts.append(buildString(45, 'AABS_z_NIR_profile_in_PBL', qScrNIR, mBsNIR, rmseNIR, 'ssaPrf_PBL'))
     cntnts.append(frmStr %   (46, 'AEFR_z_profile_above_PBL', bad1, bad1, bad1))
     cntnts.append(frmStr %   (47, 'AEFR_z_profile_in_PBL', bad1, bad1, bad1))
     cntnts.append(buildString(48, 'AEXT_z_UV_profile_above_PBL', qScrUV, mBsUV, rmseUV, 'βext_FT'))
