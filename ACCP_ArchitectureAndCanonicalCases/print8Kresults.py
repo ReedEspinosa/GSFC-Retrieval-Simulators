@@ -9,36 +9,44 @@ import numpy as np
 import os
 import sys
 from glob import glob
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases'))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../GRASP_scripts'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../GRASP_scripts'))
 from simulateRetrieval import simulation
 from ACCP_functions import normalizeError
 
 
 # instruments = ['Lidar09','Lidar05','Lidar06', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=189
-# instruments = ['Lidar090','Lidar050','Lidar060', 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=189
-# instruments = ['Lidar09+polar07GPM'] # 7 N=189
-instruments = ['polar07'] # 7 N=189
+instruments = ['Lidar090','Lidar050','Lidar060', 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=189
+# instruments = ['polar07'] # 7 N=189
+# instruments = ['Lidar090+polar07GPM'] # 7 N=189
 # caseIDs = ['6a', '6b', '6c', '6d', '6e', '6f', '6g', '6h', '6i']
-caseIDs = ['']
+caseIDs = ['6All']
 surfaces = ['','Vegetation','Desert']
-simType = 'SPA'
-orbit = 'GPM'
+simType = 'DRS'
+# simType = 'SPA'
+orbit = 'SS'
 
 srcPath = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFilesLev2/'
-# filePatrn = 'DRS_V08_%s_case0%s%s_orb%s_tFct1.00_multiAngles_n*_nAngALL.pkl'
+# srcPath = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/'
+# filePatrn = 'DRS_V11_%s_case0%s%s_orb%s_tFct1.00_multiAngles_n*_nAngALL.pkl'
 # filePatrn = 'DRS_V08_%s_case0%s%s_orbSS%s_tFct1.00_multiAngles_n*_nAngALL.pkl'
-filePatrn = 'SPA_V11_%s_SPA%s%s_orb%s.pkl'
+filePatrn = 'DRS_V08_%s_case0%s%s_orb%s.pkl'
 # SPA_V11_Lidar09+polar07GPM_SPADesert_orbGPM.pkl
 PathFrmt = os.path.join(srcPath, filePatrn)
+destDir = '/Users/wrespino/Desktop/8Kfiles_EspinosaJune05_GSFC_V3'
+comments = 'tighter fit filter - no scores for nonexistent layers or UV GVs when no UV channel - file name SSP3->SSG3 - extra AABS_z_NIR_profile... variables removed'
 
-χthresh = 3
+# χthresh = 10
+χthresh = 10
 trgtλUV = 0.355
 trgtλVis = 0.532
 trgtλNIR = 1.064
 finePBLind = 2
-# fineModeInd = [0,2]
-fineModeInd = [0]
+fineModeInd = [0,2]
+# fineModeInd = [0]
+
+assert 'lidar' not in instruments[0].lower() or len(fineModeInd)==2, 'Wrong fineModeInd???'
+assert 'lidar' in instruments[0].lower() or len(fineModeInd)==1, 'Wrong fineModeInd???'
 upLayInd = [1,2,3,4]
 lowLayInd = [5,6,7,8,9]
 frmStr = '%2d, %29s, %8.3f, %8.3f, %8.3f'
@@ -79,6 +87,7 @@ def run1case(instrument, orbit, caseID, surface, PathFrmt, polOnlyPlat=0):
     trgtFN = '_'.join([NNN,TYP,PLTF,OBS,SRFC,RES,V]) + '.csv'
     # find and load file
     simRsltFile = PathFrmt % (instrument, caseID, surface, orbit)
+    # simRsltFile = PathFrmt % (instrument, caseID, surface, 'SS')
     print(simRsltFile)
     posFiles = glob(simRsltFile)
     if not len(posFiles)==1:
@@ -88,9 +97,8 @@ def run1case(instrument, orbit, caseID, surface, PathFrmt, polOnlyPlat=0):
         return 'FAILED: '+simRsltFile
     print('Loading %s...' % os.path.basename(posFiles[0]))
     simA = simulation(picklePath=posFiles[0])
-    # trgtPath = os.path.join('/Users/wrespino/Desktop/', trgtFN)
-    trgtPath = os.path.join('/Users/wrespino/Desktop/8Kfiles_C0/', trgtFN)
-    cntnts = ['%s, Comments: None' % trgtFN]
+    trgtPath = os.path.join(destDir, trgtFN)
+    cntnts = ['%s, Comments: %s' % (trgtFN, comments)]
     print('Building conents of output file...')
     cntnts = buildContents(cntnts, simA, polarOnly)
     with open(trgtPath, mode='wt', encoding='utf-8') as file:
@@ -108,26 +116,35 @@ def prep4normError(rmse, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd
             bs[vr] = np.r_[bad1]
             tr[vr] = np.r_[bad1]
         return rmse, bs, tr
+    # lower layer
     rmse['aodMode_finePBL'] = np.r_[rmse['aodMode'][finePBLind]]
     bs['aodMode_finePBL'] = np.r_[[bs['aodMode'][:,finePBLind]]].T
     tr['aodMode_finePBL'] = np.r_[[tr['aodMode'][:,finePBLind]]].T
     rmse['βext_PBL'] = np.r_[np.sqrt(np.mean(prfRMSE['βext'][lowLayInd]**2))]*lidScale
-    rmse['βext_FT'] = np.r_[np.sqrt(np.mean(prfRMSE['βext'][upLayInd]**2))]*lidScale
     rmse['βextFine_PBL'] = np.r_[np.sqrt(np.mean(prfRMSE['βextFine'][lowLayInd]**2))]*lidScale
-    rmse['βextFine_FT'] = np.r_[np.sqrt(np.mean(prfRMSE['βextFine'][upLayInd]**2))]*lidScale
     rmse['ssaPrf_PBL'] = np.r_[np.sqrt(np.mean(prfRMSE['ssa'][lowLayInd]**2))]
-    rmse['ssaPrf_FT'] = np.r_[np.sqrt(np.mean(prfRMSE['ssa'][upLayInd]**2))]
     bs['βext_PBL'] = prfBias['βext'][:,lowLayInd].reshape(-1,1)*lidScale
-    bs['βext_FT'] = prfBias['βext'][:,upLayInd].reshape(-1,1)*lidScale
     bs['βextFine_PBL'] = prfBias['βextFine'][:,lowLayInd].reshape(-1,1)*lidScale
-    bs['βextFine_FT'] = prfBias['βextFine'][:,upLayInd].reshape(-1,1)*lidScale
     bs['ssaPrf_PBL'] = prfBias['ssa'][:,lowLayInd].reshape(-1,1)
-    bs['ssaPrf_FT'] = prfBias['ssa'][:,upLayInd].reshape(-1,1)
     tr['βext_PBL'] = prfTrue['βext'][:,lowLayInd].reshape(-1,1)*lidScale
-    tr['βext_FT'] = prfTrue['βext'][:,upLayInd].reshape(-1,1)*lidScale
     tr['βextFine_PBL'] = prfTrue['βextFine'][:,lowLayInd].reshape(-1,1)*lidScale
-    tr['βextFine_FT'] = prfTrue['βextFine'][:,upLayInd].reshape(-1,1)*lidScale
     tr['ssaPrf_PBL'] = prfTrue['ssa'][:,lowLayInd].reshape(-1,1)
+    # upper layer
+    if prfTrue['βext'][:,upLayInd].max() < 1/lidScale: # no meaningful upperlay (never exceeds 1 Mm-1)
+        nanVars = ['βext_FT', 'βextFine_FT',  'ssaPrf_FT'] 
+        for vr in nanVars:
+            rmse[vr] = np.r_[bad1]
+            bs[vr] = np.r_[bad1]
+            tr[vr] = np.r_[bad1]
+        return rmse, bs, tr
+    rmse['βext_FT'] = np.r_[np.sqrt(np.mean(prfRMSE['βext'][upLayInd]**2))]*lidScale
+    rmse['βextFine_FT'] = np.r_[np.sqrt(np.mean(prfRMSE['βextFine'][upLayInd]**2))]*lidScale
+    rmse['ssaPrf_FT'] = np.r_[np.sqrt(np.mean(prfRMSE['ssa'][upLayInd]**2))]
+    bs['βext_FT'] = prfBias['βext'][:,upLayInd].reshape(-1,1)*lidScale
+    bs['βextFine_FT'] = prfBias['βextFine'][:,upLayInd].reshape(-1,1)*lidScale
+    bs['ssaPrf_FT'] = prfBias['ssa'][:,upLayInd].reshape(-1,1)
+    tr['βext_FT'] = prfTrue['βext'][:,upLayInd].reshape(-1,1)*lidScale
+    tr['βextFine_FT'] = prfTrue['βextFine'][:,upLayInd].reshape(-1,1)*lidScale
     tr['ssaPrf_FT'] = prfTrue['ssa'][:,upLayInd].reshape(-1,1)
     return rmse, bs, tr
 
@@ -153,12 +170,6 @@ def buildContents(cntnts, simA, polarOnly):
     lIndNIR = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλNIR))
     
     hghtCut = None if polarOnly else 2100
-    #UV - find error stats for column and PBL and profiles 
-    rmseUV,bs,tr = simA.analyzeSim(lIndUV, fineModesFwd=fineModeInd, fineModesBck=fineModeInd, hghtCut=hghtCut) # todo, drop hghtCut if polar (or better fix in anaylze sim w/ nans)
-    prfRMSE, prfBias, prfTrue = simA.analyzeSimProfile(wvlnthInd=lIndUV)
-    rmseUV,bs,tr = prep4normError(rmseUV, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd, lowLayInd, polarOnly)
-    qScrUV, mBsUV, _ = normalizeError(rmseUV,bs,tr)
-    qScrUV_EN, _0, _ = normalizeError(rmseUV,bs,tr, enhanced=True)
     #VIS
     rmseVis,bs,tr = simA.analyzeSim(lIndVIS, fineModesFwd=fineModeInd, fineModesBck=fineModeInd, hghtCut=hghtCut)
     prfRMSE, prfBias, prfTrue = simA.analyzeSimProfile(wvlnthInd=lIndVIS)
@@ -170,6 +181,20 @@ def buildContents(cntnts, simA, polarOnly):
     prfRMSE, prfBias, prfTrue = simA.analyzeSimProfile(wvlnthInd=lIndNIR)
     rmseNIR,bs,tr = prep4normError(rmseNIR, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd, lowLayInd, polarOnly)
     qScrNIR, mBsNIR, _ = normalizeError(rmseNIR,bs,tr)
+    #UV - find error stats for column and PBL and profiles 
+    if simA.rsltFwd[0]['lambda'][lIndUV] < 0.4: # we have at least one UV channel
+        rmseUV,bs,tr = simA.analyzeSim(lIndUV, fineModesFwd=fineModeInd, fineModesBck=fineModeInd, hghtCut=hghtCut) # todo, drop hghtCut if polar (or better fix in anaylze sim w/ nans)
+        prfRMSE, prfBias, prfTrue = simA.analyzeSimProfile(wvlnthInd=lIndUV)
+        rmseUV,bs,tr = prep4normError(rmseUV, bs, tr, prfRMSE, prfBias, prfTrue, finePBLind, upLayInd, lowLayInd, polarOnly)
+        qScrUV, mBsUV, _ = normalizeError(rmseUV,bs,tr)
+        qScrUV_EN, _0, _ = normalizeError(rmseUV,bs,tr, enhanced=True)
+        print('UV: %5.3f μm, VIS: %5.3f μm, NIR: %5.3f μm' % tuple(simA.rsltFwd[0]['lambda'][np.r_[lIndUV,lIndVIS,lIndNIR]]))
+    else: # no UV available
+        qScrUV = {key: np.r_[bad1] for key in qScrVis}
+        mBsUV = {key: np.r_[bad1] for key in mBsVis}
+        rmseUV = {key: np.r_[bad1] for key in rmseVis}
+        qScrUV_EN = {key: np.r_[bad1] for key in qScrVis_EN}
+        print('NO UV DATA, VIS: %5.3f μm, NIR: %5.3f μm' % tuple(simA.rsltFwd[0]['lambda'][np.r_[lIndVIS,lIndNIR]]))
     
     # build file contents, line-by-line
     cntnts.append(buildString(1,  'AAOD_l_UV_column', qScrUV, mBsUV, rmseUV, 'ssa'))
