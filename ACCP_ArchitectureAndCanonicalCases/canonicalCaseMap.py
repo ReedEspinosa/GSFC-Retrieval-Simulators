@@ -224,13 +224,9 @@ def conCaseDefinitions(caseStr, nowPix):
         for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
             bot = max(mid[0]-2*rng[0],0) 
             top = mid[0]+2*rng[0]
-            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1
-            if vals['vrtProf'][i,1]>=1: vals['vrtProf'][i,0]=0.01 # keep very small amount in top bin if upper layer
-            if vals['vrtProf'][i,-2]>=1: vals['vrtProf'][i,-1]=1.0 # fill bottom bin οf lowwer layer
-            if 'variable' in caseStr.lower():
-                np.interp(np.r_[0:10], [0,5,10], rnd.rand(3))
-                vals['vrtProf'] = vals['vrtProf'] * np.linspace(rnd.rand(),rnd.rand(),vals['vrtProf'].shape[1])
-            vals['vrtProf'][vals['vrtProf'] < 0.000001] = 0.000001
+            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.000001
+            if vals['vrtProf'][i,1]>1: vals['vrtProf'][i,0]=0.01 # keep very small amount in top bin if upper layer
+            if vals['vrtProf'][i,-2]>1: vals['vrtProf'][i,-1]=1.0 # fill bottom bin if lowwer layer
         del vals['vrtHght']
         del vals['vrtHghtStd']
     return vals, landPrct

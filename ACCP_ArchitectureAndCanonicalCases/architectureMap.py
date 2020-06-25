@@ -162,12 +162,12 @@ def addError(measNm, l, rsltFwd, edgInd, concase=None, orbit=None, lidErrDir=Non
             if int(mtch.group(2)) in [500, 600, 900]:
                 relErr = 0.000005 # else 1e-4 standard noise
             elif int(mtch.group(2)) in [5, 6, 9]:
-                if np.isclose(rsltFwd['lambda'][l], 0.532):
-                    relErr = 0.1260293290948793 
+                if np.isclose(rsltFwd['lambda'][l], 0.532): # must be lidar09
+                    relErr = 0.07780750097002524 
                 elif np.isclose(rsltFwd['lambda'][l], 1.064) and int(mtch.group(2)) in [9]:
-                    relErr = 0.3886337504522533 
+                    relErr = 0.16634947070811995 
                 elif np.isclose(rsltFwd['lambda'][l], 1.064) and int(mtch.group(2)) in [5, 6]:
-                    relErr = 0.03958725394460227 
+                    relErr = 0.031179547685912617 
                 else:
                     assert False, 'No error values available for lidar %s wavelength %5.3 μm' % (mtch.group(2),rsltFwd['lmabda'][l])
             elif int(mtch.group(2)) in [50, 60, 90]: # Kathy's uncertainty models
@@ -198,11 +198,11 @@ def addError(measNm, l, rsltFwd, edgInd, concase=None, orbit=None, lidErrDir=Non
                 relErrβsca = absErrβsca/trueSimβsca
             elif int(mtch.group(2)) in [5, 6]: # use normal noise model
                 if np.isclose(rsltFwd['lambda'][l], 0.355):
-                    relErrβsca = 0.12915467996297214 #
-                    absErrβext = 0.22044810971688877*trueSimβext # m-1
+                    relErrβsca = 0.08548621115220849 #
+                    absErrβext = 0.14907060980676576*trueSimβext # m-1
                 elif np.isclose(rsltFwd['lambda'][l], 0.532):
-                    relErrβsca = 0.06035257422277036 #
-                    absErrβext = 0.2104532507453847*trueSimβext # m-1
+                    relErrβsca = 0.035656705986020394 #
+                    absErrβext = 0.19721356280281252*trueSimβext # m-1
                 else:
                     assert False, 'No error values available for lidar wavelength %5.3 μm' % rsltFwd['lmabda'][l]   
             else:
