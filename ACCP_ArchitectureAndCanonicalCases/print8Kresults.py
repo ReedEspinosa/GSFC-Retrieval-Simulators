@@ -15,35 +15,54 @@ from simulateRetrieval import simulation
 from ACCP_functions import normalizeError
 
 
-# instruments = ['Lidar09','Lidar05','Lidar06', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07'] # 7 N=189
-instruments = ['Lidar090','Lidar050','Lidar060', 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=189
-# instruments = ['polar07'] # 7 N=189
-# instruments = ['Lidar090+polar07GPM'] # 7 N=189
-# caseIDs = ['6a', '6b', '6c', '6d', '6e', '6f', '6g', '6h', '6i']
-caseIDs = ['6All']
-surfaces = ['','Vegetation','Desert']
-simType = 'DRS'
-# simType = 'SPA'
-orbit = 'SS'
+# instruments = ['Lidar09','Lidar05','Lidar06', 'Lidar09+polar07','Lidar05+polar07','Lidar06+polar07']
+# instruments = ['Lidar090','Lidar050','Lidar060', 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07']
+# instruments = ['Lidar090','Lidar050','Lidar060']
+# instruments = ['Lidar09','Lidar05','Lidar06']
+polarSSPn = 3
+orbit = 'GPM'
 
-srcPath = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFilesLev2/'
-# srcPath = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/'
-# filePatrn = 'DRS_V11_%s_case0%s%s_orb%s_tFct1.00_multiAngles_n*_nAngALL.pkl'
+instruments = ['Lidar090+polar07GPM']
+# polarSSPn = 3
+# orbit = '' # use this for DRS, and add SS after orb in filePatrn [does not apply to DRS06All]; out CSV file will be correctly named
+# orbit = 'GPM' # use this for SPA, or DRS06All
+
+fineModeInd = [0,2]
+
+
+# instruments = ['polar07']
+# fineModeInd = [0]
+
+
+
+
+# simType = 'DRS'
+# caseIDs = ['6a', '6b', '6c', '6d', '6e', '6f', '6g', '6h', '6i']
 # filePatrn = 'DRS_V08_%s_case0%s%s_orbSS%s_tFct1.00_multiAngles_n*_nAngALL.pkl'
+caseIDs = ['6All']
 filePatrn = 'DRS_V08_%s_case0%s%s_orb%s.pkl'
-# SPA_V11_Lidar09+polar07GPM_SPADesert_orbGPM.pkl
+χthresh = 5
+
+# simType = ''
+# caseIDs = ['SPA']
+# filePatrn = 'SPA_V11_%s_%s%s_orb%s.pkl'
+# χthresh = 3
+
+
+surfaces = ['','Vegetation','Desert']
+
+
+# srcPath = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/'
+srcPath = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFilesLev2/'
+
 PathFrmt = os.path.join(srcPath, filePatrn)
-destDir = '/Users/wrespino/Desktop/8Kfiles_EspinosaJune05_GSFC_V3'
+destDir = '/Users/wrespino/Desktop/8Kfiles_EspinosaJune05_GSFC_V4'
 comments = 'tighter fit filter - no scores for nonexistent layers or UV GVs when no UV channel - file name SSP3->SSG3 - extra AABS_z_NIR_profile... variables removed'
 
-# χthresh = 10
-χthresh = 10
 trgtλUV = 0.355
 trgtλVis = 0.532
 trgtλNIR = 1.064
 finePBLind = 2
-fineModeInd = [0,2]
-# fineModeInd = [0]
 
 assert 'lidar' not in instruments[0].lower() or len(fineModeInd)==2, 'Wrong fineModeInd???'
 assert 'lidar' in instruments[0].lower() or len(fineModeInd)==1, 'Wrong fineModeInd???'
@@ -52,7 +71,6 @@ lowLayInd = [5,6,7,8,9]
 frmStr = '%2d, %29s, %8.3f, %8.3f, %8.3f'
 bad1 = 999 # bad data value
 
-polarSSPn = 0
 def main():
     runStatus = []
     for instrument in instruments:
@@ -82,7 +100,7 @@ def run1case(instrument, orbit, caseID, surface, PathFrmt, polOnlyPlat=0):
         OBS='NAN'
     SRFC='OCEN' if len(surface)==0 else surface.replace('Desert','LNDD').replace('Vegetation','LNDV')
     RES='RES1'
-    V='V01'
+    V='V04'
 
     trgtFN = '_'.join([NNN,TYP,PLTF,OBS,SRFC,RES,V]) + '.csv'
     # find and load file
@@ -207,8 +225,8 @@ def buildContents(cntnts, simA, polarOnly):
     cntnts.append(buildString(8,  'AAOD_l_VIS_PBL', qScrVis_EN, mBsVis, rmseVis, 'ssaMode_PBLFT'))
     cntnts.append(frmStr %   (9,  'ASYM_UV', bad1, bad1, bad1)) # should be able to replace these with calls to BS variable in buildString
     cntnts.append(frmStr %   (10, 'ASYM_VIS', bad1, bad1, bad1))
-    cntnts.append(buildString(11, 'AEFR_l_column', qScrUV, mBsUV, rmseUV, 'rEffCalc'))
-    cntnts.append(buildString(12, 'AEFR_l_PBL', qScrUV, mBsUV, rmseUV, 'rEffMode_PBLFT'))
+    cntnts.append(buildString(11, 'AEFR_l_column', qScrVis, mBsVis, rmseVis, 'rEffCalc'))
+    cntnts.append(buildString(12, 'AEFR_l_PBL', qScrVis, mBsVis, rmseVis, 'rEffMode_PBLFT'))
     cntnts.append(buildString(13, 'AE2BR_l_UV_column', qScrUV, mBsUV, rmseUV, 'LidarRatio'))
     cntnts.append(frmStr %   (14, 'AE2BR_l_UV_PBL', bad1, bad1, bad1))
     cntnts.append(buildString(15, 'AE2BR_l_VIS_column', qScrVis, mBsVis, rmseVis, 'LidarRatio'))
