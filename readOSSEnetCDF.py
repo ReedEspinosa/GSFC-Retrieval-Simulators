@@ -13,28 +13,32 @@ from MADCAP_functions import loadVARSnetCDF
 
 class osseData(object):
     def __init__(self, fpDict=None, verbose=False):
+        # TODO: this comment could partically move to fpDict initiator function below; but what about the other, non-filepath keys?
         """
-        fpDict has fields (* -> optional): 
+        fpDict is a dictionary with fields (* -> optional): 
             'polarNc4FP' (string) - full file path of polarimeter data with λ (in nm) replaced w/ %d
             'wvls'* (list of floats) - wavelengths to process in μm, not present or None -> determine them from polarNc4FP
             'dateTime'* (datetime obj.) - day and hour of measurement (min. & sec. loaded from file)
             'asmNc4FP'* (string) - gpm-g5nr.lb2.asm_Nx.YYYYMMDD_HH00z.nc4 file path (FRLAND for land percentage)
             'metNc4FP'* (string) - gpm-g5nr.lb2.met_Nv.YYYYMMDD_HH00z.nc4 file path (PS for surface alt.)
             'aerNc4FP'* (string) - gpm-g5nr.lb2.aer_Nv.YYYYMMDD_HH00z.nc4 file path (DELP/AIRDEN for level heights)
-            'lcExt'* (string) - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ and SSA)
+            'lcExt'* (string)    - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ and SSA)
             'lc2Lidar'* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
             'stateVar'* (string) - file with state variable truth, NOT YET DEVELOPED (may ultimatly be multiple files)
             'verbose'* (logical) - verbose output from all methods of the class
-            - All of the above files should contain noise free data, except lc2Lidar -
+        Note: you can use the buildFpDict method below to set up the dictionary mirroring file structure on DISCOVER
+        - All of the above files should contain noise free data, except lc2Lidar -
         """
-        self.verbose = fpDict['verbose'] if 'verbose' in fpDict else False
         self.measData = None # measData has observational netCDF data
         self.rtrvdData = None # rtrvdData has state variables from netCDF data
         self.invldInd = np.array([])
         self.invldIndPurged = False
         self.loadingCalls = []
         self.pblTopInd = None
+        self.verbose = verbose
         if not fpDict: return
+        # TODO: below here should move to another function, that takes in fpDict (can be called by init if fpDict given but also can be called by user)
+        if 'verbose' in fpDict: self.verbose = fpDict['verbose']
         if ('wvls' not in fpDict) or (not fpDict['wvls']): 
             self.wvls = self.λSearch(fpDict['polarNc4FP'])
         else: 
@@ -48,7 +52,39 @@ class osseData(object):
         self.readStateVars(fpDict)
         if 'lc2Lidar' in fpDict: self.readlidarData(fpDict['lc2Lidar'])
         self.purgeInvldInd()
-        
+
+    def buildFpDict(osseDataPath, orbit, year, month, day=1, hour=0, random=False):
+        """
+        returns fpDict dictionary with fields (* -> optional): 
+            'polarNc4FP' (string) - full file path of polarimeter data with λ (in nm) replaced w/ %d
+            'asmNc4FP'* (string) - gpm-g5nr.lb2.asm_Nx.YYYYMMDD_HH00z.nc4 file path (FRLAND for land percentage)
+            'metNc4FP'* (string) - gpm-g5nr.lb2.met_Nv.YYYYMMDD_HH00z.nc4 file path (PS for surface alt.)
+            'aerNc4FP'* (string) - gpm-g5nr.lb2.aer_Nv.YYYYMMDD_HH00z.nc4 file path (DELP/AIRDEN for level heights)
+            'lcExt'* (string)    - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ and SSA)
+            'lc2Lidar'* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
+            'stateVar'* (string) - file with state variable truth, NOT YET DEVELOPED (may ultimatly be multiple files)
+            - All of the above files should contain noise free data, except lc2Lidar -
+        """
+        assert not osseDataPath is None, 'osseDataPath, Year, month, day, hour and orbit must be provided to build fpDict'
+        tmStr = '%04d%02d%02d_%02d00z' % (year, month, day, hour)
+        if random: 
+            tmStr = 'random.'+tmStr
+            dtTple = (year, month)
+            pathFrmt = os.path.join(osseDataPath, orbit.upper(), 'Level%s', 'Y%04d','M%02d', '%s')
+        else:
+            dtTple = (year, month, day)
+            pathFrmt = os.path.join(osseDataPath, orbit.upper(), 'Level%s', 'Y%04d','M%02d', 'D%02d', '%s')
+        fpDict = {
+            'polarNc4FP': pathFrmt % (('C',)+dtTple+(orbit+'-polar07-g5nr.lc.vlidort.'+tmStr+'_%dd00nm.nc4',)),
+            'asmNc4FP': pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.asm_Nx.'+tmStr+'.nc4',)),
+            'metNc4FP': pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.met_Nv.'+tmStr+'.nc4',)),
+            'aerNc4FP': pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.aer_Nv.'+tmStr+'.nc4',)),
+            'lcExt': pathFrmt % (('C',)+dtTple+(orbit+'-g5nr.lc.ext.'+tmStr+'.%dnm.nc4',)),
+            'lc2Lidar': pathFrmt % (('D',)+dtTple+(orbit+'-g5nr.lc2.'+tmStr+'.%dnm.LIDAR.nc4',)), #  will need a str replace, e.g. VAR.replace('LIDAR', 'LIDAR09')
+        }
+        savePath = pathFrmt % (('E',)+dtTple+(orbit+'-g5nr.leV%02d.GRASP.%s.%s.'+tmStr+'.pkl',)) # % (vrsn, yamlTag, archName) needed from calling function 
+        return fpDict, savePath
+     
     def λSearch(self, fpDict):
         wvls = []
         posKeys = ['polarNc4FP', 'lcExt', 'lc2Lidar'] # we only loop over these specific keys (if they exist)
