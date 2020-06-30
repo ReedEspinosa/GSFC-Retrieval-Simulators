@@ -117,9 +117,9 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=N
     assert nowPix.measVals, 'archName did not match any instruments!'
     return nowPix
 
-def addError(measNm, l, rsltFwd, edgInd, concase=None, orbit=None, lidErrDir=None, verbose=False):
-    # if the following check ever becomes a problem see commit #6793cf7
-    assert (np.diff(edgInd)[0]==np.diff(edgInd)).all(), 'Current error models assume that each measurement type has the same number of measurements at each wavelength!'
+def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbose=False):
+    # if we ever want to simulate different number of measurements between the different types see commit #6793cf7
+    wrngNumMeasMsg = 'Current error models assume that each measurement type has the same number of measurements at each wavelength!'
     βextLowLim = 0.01/1e6
     βscaLowLim = 2.0e-10
     mtch = re.match('^([A-z]+)([0-9]+)$', measNm)
@@ -144,6 +144,7 @@ def addError(measNm, l, rsltFwd, edgInd, concase=None, orbit=None, lidErrDir=Non
         trueSimI = rsltFwd['fit_I'][:,l]
         trueSimQ = rsltFwd['fit_Q'][:,l]
         trueSimU = rsltFwd['fit_U'][:,l]
+        assert len(trueSimI)==len(trueSimQ) and len(trueSimI)==len(trueSimU), wrngNumMeasMsg
         noiseVctI = np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimI))
         fwdSimI = trueSimI*noiseVctI
         fwdSimQ = trueSimQ*noiseVctI # we scale Q and U too to keep q, u and DoLP inline with truth
@@ -184,6 +185,7 @@ def addError(measNm, l, rsltFwd, edgInd, concase=None, orbit=None, lidErrDir=Non
         elif not (np.isnan(rsltFwd['fit_VBS'][:,l]).any() or np.isnan(rsltFwd['fit_VExt'][:,l]).any()): # HSRL
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
             trueSimβext = rsltFwd['fit_VExt'][:,l] # 36    
+            assert len(trueSimβsca)==len(trueSimβext), wrngNumMeasMsg
             if int(mtch.group(2)) in [600, 500]:# 1e-4 standard noise
                 relErrβsca = 0.000005 # fraction (unitless)
                 absErrβext = 17/1e10 # m-1
