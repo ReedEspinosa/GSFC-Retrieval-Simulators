@@ -223,10 +223,3 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
         fwdSimI = trueSimI*noiseVctI
         return np.r_[fwdSimI] # safe because of ascending order check in simulateRetrieval.py 
     assert False, 'No error model found for %s!' % measNm # S-Polar06 has DoLP dependent ΔDoLP
-
-
-
-
-
-
-        
