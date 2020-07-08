@@ -36,33 +36,21 @@ day = 1
 hour = 0
 orbit = 'gpm' # gpm OR ss450
 archName = 'polar07' # name of instrument to pull from returnPixel()
-vrsn = 1 # version of this script/processing (appended to save filename)
-
-tmStr = '%04d%02d%02d_%02d00z' % (year, month, day, hour)
-dtTple = (year, month, day)
-pathFrmt = os.path.join(osseDataPath, orbit.upper(), 'Level%s', 'Y%04d','M%02d', 'D%02d', '%s')
-fpDict = {
-    'polarNc4FP': pathFrmt % (('C',)+dtTple+(orbit+'-polar07-g5nr.lc.vlidort.'+tmStr+'_%dd00nm.nc4',)),
-    'asmNc4FP': pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.asm_Nx.'+tmStr+'.nc4',)),
-    'metNc4FP': pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.met_Nv.'+tmStr+'.nc4',)),
-    'aerNc4FP': pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.aer_Nv.'+tmStr+'.nc4',)),
-    'lcExt': pathFrmt % (('C',)+dtTple+(orbit+'-g5nr.lc.ext.'+tmStr+'.%dnm.nc4',)),
-#    'lc2Lidar':* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
-    'verbose':   True,
-        }
+vrsn = 1 # general version tag to distinguish runs
 
 # choose YAML flavor, derive save file path and setup/run retrievals
 YAMLpth = bckYAMLpathLID if 'lidar' in archName.lower() else bckYAMLpathPOL
 yamlTag = 'YAML%s' % hashFileSHA1(YAMLpth)[0:8]
-savePath = pathFrmt % (('E',)+dtTple+('%s-g5nr.le%02d.GRASP.%s.%s.%s.pkl' % (orbit,vrsn,yamlTag,archName,tmStr),))
-print('-- Generating ' + os.path.basename(savePath) + ' --')
-sys.exit()
 nowPix = returnPixel(archName)
-fpDict['wvls'] = [mv['wl'] for mv in nowPix.measVals]
+wvls = [mv['wl'] for mv in nowPix.measVals]
 simA = rs.simulation(nowPix) # defines new instance corresponding to this architecture
-od = osseData(fpDict)
-fwdData = od.osse2graspRslts()
-simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, savePath=savePath, binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, rndIntialGuess=rndIntialGuess)
+od = osseData(osseDataPath, orbit, year, month, day, hour, random=False, wvls=wvls, verbose=True)
+savePath = od.fpDict['savePath'] % (vrsn, yamlTag, archName)
+print('-- Generating ' + os.path.basename(savePath) + ' --')
+fwdData = od.osse2graspRslts(NpixMax=6)
+simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, maxT=20, savePath=savePath, binPathGRASP=dirGRASP, 
+            intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, 
+            rndIntialGuess=rndIntialGuess, verbose=True)
 
 """ TODO:
     - we need to add code to osseData to read LIDAR measurments

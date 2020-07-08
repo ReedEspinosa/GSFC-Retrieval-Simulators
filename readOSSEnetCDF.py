@@ -180,7 +180,7 @@ class osseData(object):
         self.Npix = len(self.measData[0]['dtObj']) # this assumes all λ have the same # of pixels
         return True
 
-    def readasmData(self, levBFN):
+    def readasmData(self):
         """ Read in levelB data to obtain pressure and then surface altitude along w/ PBL height"""
         levBFN = self.fpDict['asmNc4FP']
         call1st = 'readPolarimeterNetCDF'
@@ -190,7 +190,7 @@ class osseData(object):
         self.invldInd = np.append(self.invldInd, icePix).astype(int)
         for md in self.measData: md['land_prct'] = levB_data['FRLAND'] # PBL height in m
 
-    def readmetData(self, levBFN):
+    def readmetData(self):
         """ Read in levelB data to obtain pressure and then surface altitude along w/ PBL height
             These files are in the LevB data folders and have the form gpm-g5nr.lb2.met_Nv.YYYYMMDD_HH00z.nc4 """
         levBFN = self.fpDict['metNc4FP']
@@ -201,7 +201,7 @@ class osseData(object):
         for md in self.measData: md['masl'] = maslTmp # suface height [m], we use GRASP atmosphere to get better agreement w/ ROT that ze below
         for md in self.measData: md['PBLH'] = levB_data['PBLH'] # PBL height in m -- looks a little fishy, should double check w/ patricia
 
-    def readaerData(self, levBFN):
+    def readaerData(self):
         """ Read in levelB data to obtain vertical layer heights """
         levBFN = self.fpDict['aerNc4FP']
         preReqs = ['readPolarimeterNetCDF','readmetData']
@@ -248,10 +248,11 @@ class osseData(object):
             if 'stateVar' in self.fpDict:
                 assert False, 'We can not handle stateVar path yet!'
 
-    def readlidarData(self, levBFN):
+    def readlidarData(self):
         call1st = 'readPolarimeterNetCDF'
         if not self._loadingChecks(prereqCalls=call1st, functionName='readlidarData'): return # removing this prereq requires factoring out creation of measData and setting some keys (e.g. time, dtObj) in polarimeter reader
-        assert False, 'This function will reads lc2Lidar when complete (currently under development).'
+        if self.verbose: print('This function will reads lc2Lidar when complete (currently under development).')
+        return
 
     def rtrvdDataSetPixels(self, timeLoopVars, λ, hghtInd=None, km=''):
         """ hghtInd (Npixels x 2) vector denoating top, bottom (lev=0 is TOA in G5NR) lev index of PBL """
@@ -310,7 +311,7 @@ class osseData(object):
                     md['Q_surf'] = md['surf_reflectance_Q']*np.cos(30*np.pi/180)
                     md['U_surf'] = md['surf_reflectance_U']*np.cos(30*np.pi/180)
                     if self.verbose: print('%4.2fμm Q[U]_surf derived from surf_reflectance_Q[U] (meridian system)' % wvl)
-                if (md['I_surf'] > 0).all():
+                if (md['I_surf'] > 0).all(): # ignore sqrt runtime warning, bug in anaconda Numpy (see https://github.com/numpy/numpy/issues/11448) 
                     md['DOLP_surf'] = np.sqrt(md['Q_surf']**2+md['U_surf']**2)/md['I_surf']
                 else:
                     md['DOLP_surf'] = np.full(md['I_surf'].shape, np.nan)
@@ -340,7 +341,7 @@ class osseData(object):
         if self.verbose and filename: print('Processing data from %s' % filename)
         return True
 
-    def purgeInvldInd(self):
+    def purgeInvldInd(self):        
         """ The method will remove all invldInd from measData """
         timeInvariantVars = ['ocean_refractive_index','x', 'y', 'lev', 'rayleigh_depol_ratio']
         if self.invldIndPurged:
