@@ -10,7 +10,7 @@ import warnings
 import os
 import copy
 import datetime as dt
-from MADCAP_functions import loadVARSnetCDF
+from MADCAP_functions import loadVARSnetCDF, downsample1d
 
 GRAV = 9.80616 # m/s^2
 SCALE_HGHT = 8000 # scale height (meters) for presure to alt. conversion, 8 km is consistent w/ GRASP
@@ -110,6 +110,7 @@ class osseData(object):
         rsltVars = ['fit_I','fit_Q','fit_U','fit_VBS','fit_VExt','fit_DP','fit_LS',          'vis','fis',         'sza']
         mdVars   = [    'I',    'Q',    'U',    'VBS',    'VExt',    'DP',    'LS','sensor_zenith','fis','solar_zenith']
         measData = self.convertPolar2GRASP() # we can chain existing measData when we add LIDAR
+        # TODO prep lidar data, in part using downsample1d function 
         Nλ = len(measData)
         assert len(self.rtrvdData) == self.Npix, \
             'OSSE observable and state variable data structures contain a differnt number of pixels!'
@@ -248,10 +249,16 @@ class osseData(object):
             if 'stateVar' in self.fpDict:
                 assert False, 'We can not handle stateVar path yet!'
 
-    def readlidarData(self):
+    def readlidarData(self, noisySignal=True):
+        ncDataVar = 'INSTRUMENT_ATB_NOISE' if noisySignal else 'INSTRUMENT_ATB'
         call1st = 'readPolarimeterNetCDF'
         if not self._loadingChecks(prereqCalls=call1st, functionName='readlidarData'): return # removing this prereq requires factoring out creation of measData and setting some keys (e.g. time, dtObj) in polarimeter reader
-        if self.verbose: print('This function will reads lc2Lidar when complete (currently under development).')
+        for i,wvl in enumerate(self.wvls):
+            lidarFN = self.fpDict['lc2Lidar'] % (wvl*1000)
+            if self.verbose: print('Processing data from %s' % lidarFN)
+            lidar_data = loadVARSnetCDF(lidarFN, varNames=['lev', ncDataVar], verbose=self.verbose)
+            self.measData[i]['lidarRange_FULL'] = lidar_data['lev']*1e3 # km -> m
+            self.measData[i]['LS_FULL'] = lidar_data[ncDataVar]/1e3 # km-1 sr-1 -> m-1 sr-1
         return
 
     def rtrvdDataSetPixels(self, timeLoopVars, λ, hghtInd=None, km=''):

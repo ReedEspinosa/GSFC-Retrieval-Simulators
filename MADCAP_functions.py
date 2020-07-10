@@ -34,6 +34,27 @@ def loadVARSnetCDF(filePath, varNames=None, verbose=False):
     netCDFobj.close()
     return measData
 
+
+def downsample1d(X,Y,Xnew):
+    """ Returns 1D array with the mean of Y over the interval Xnew-ΔXnew to Xnew+ΔXnew."""
+    from scipy import integrate, interpolate
+    assert len(X)==len(Y), 'X and Y must have the same length.'
+    assert np.all(Xnew==np.sort(Xnew)), 'The values of Xnew must be in ascending order.' 
+    # edge treatment 1: mean(Y(X[0] to X[0]+ΔXnew))
+#     XnewBnds = np.interp(np.r_[0.5:len(Xnew)-1], np.r_[0:len(Xnew)], Xnew)
+#     XnewBnds = np.r_[Xnew[0], XnewBnds, Xnew[-1]]
+    # edge treatment 2: {Y[0]+mean(Y(X[0] to X[0]+ΔXnew))}/2 – produces curves that _look_ more like original Y    
+    f = interpolate.interp1d(np.r_[0:len(Xnew)], Xnew, fill_value="extrapolate")
+    XnewBnds = f(np.r_[-0.5:len(Xnew)])
+    Ynew = np.empty(len(Xnew))
+    for i,(lb,ub) in enumerate(zip(XnewBnds[:-1], XnewBnds[1:])):
+        bndsY = np.interp([lb, ub], X, Y)
+        chnkInd = np.logical_and(X>lb, X<ub)
+        chnkX = np.r_[lb, X[chnkInd], ub]
+        chnkY = np.r_[bndsY[0], Y[chnkInd], bndsY[1]]
+        Ynew[i] = integrate.simps(chnkY, chnkX)/(ub-lb)
+    return Ynew
+
 def hashFileSHA1(filePaths, quick=False):
     """
     filePaths -> string or list of string with file path(s) to hash; no NUMPY arrays!
