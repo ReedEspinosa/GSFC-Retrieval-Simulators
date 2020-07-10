@@ -4,6 +4,7 @@
 
 import os
 import sys
+import re
 MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GRASP_scripts is in parent of MADCAP_scripts
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_ArchitectureAndCanonicalCases'))
@@ -35,7 +36,7 @@ month = 8
 day = 1
 hour = 0
 orbit = 'gpm' # gpm OR ss450
-archName = 'polar07' # name of instrument to pull from returnPixel()
+archName = 'polar07+lidar0900' # name of instrument to pull from returnPixel()
 vrsn = 1 # general version tag to distinguish runs
 
 # choose YAML flavor, derive save file path and setup/run retrievals
@@ -44,14 +45,13 @@ yamlTag = 'YAML%s' % hashFileSHA1(YAMLpth)[0:8]
 nowPix = returnPixel(archName)
 wvls = [mv['wl'] for mv in nowPix.measVals]
 simA = rs.simulation(nowPix) # defines new instance corresponding to this architecture
-od = osseData(osseDataPath, orbit, year, month, day, hour, random=False, wvls=wvls, verbose=True)
+lidMtch = re.match('[A-z0-9]+\+lidar0([0-9])', archName)
+lidVer = int(lidMtch[1]) if lidMtch else None
+od = osseData(osseDataPath, orbit, year, month, day, hour, random=False, wvls=wvls, lidarVersion=lidVer, verbose=True)
 savePath = od.fpDict['savePath'] % (vrsn, yamlTag, archName)
 print('-- Generating ' + os.path.basename(savePath) + ' --')
 fwdData = od.osse2graspRslts(NpixMax=6, newLayers=None) # TODO: this should be the lidar bin heights to use in back SDATA file
+sys.exit()
 simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, maxT=20, savePath=savePath, binPathGRASP=dirGRASP, 
             intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, 
             rndIntialGuess=rndIntialGuess, verbose=True)
-
-""" TODO:
-    - we need to add code to osseData to read LIDAR measurments
-"""

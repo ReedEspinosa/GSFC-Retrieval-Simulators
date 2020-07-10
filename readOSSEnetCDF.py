@@ -16,16 +16,18 @@ GRAV = 9.80616 # m/s^2
 SCALE_HGHT = 8000 # scale height (meters) for presure to alt. conversion, 8 km is consistent w/ GRASP
 STAND_PRES = 1.01e5 # standard pressure (Pa)
 MIN_ALT = -100 # defualt GRASP build complains below -100m
+λFRMT = ' %5.3f μm'
 
 
 class osseData(object):
-    def __init__(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, wvls=None, verbose=False):
+    def __init__(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, wvls=None, lidarVersion=None, verbose=False):
         """
         IN: orbit - 'ss450' or 'gpm'
             year, month, day - integers specifying data of pixels to load
             hour - integer from 0 to 23 specifying the starting hour of pixels to load
             random - logical, use 10,000 randomly selected pixels for that month (day & hour not needed if random=true)
             'wvls'* (list of floats) - wavelengths to process in μm, not present or None -> determine them from polarNc4FP
+            lidarVersion - integer with lidar instrument version (e.g. 9), None to skip loading of lidar
         Note: buildFpDict() method below will setup file paths mirroring paths on DISCOVER
         """
         self.measData = None # measData has observational netCDF data
@@ -35,21 +37,24 @@ class osseData(object):
         self.loadingCalls = []
         self.pblTopInd = None
         self.verbose = verbose
-        self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random)
+        self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random, lidarVersion)
         self.wvls = wvls if wvls else self.λSearch(self.fpDict['polarNc4FP'])
-        self.loadAllData()
+        if lidarVersion is not None:
+            self.loadAllData(loadLidar=True)
+        elif self.verbose:
+            print('Lidar version not provided, not attempting to load any lidar data')
 
-    def loadAllData(self, fpDict=None):
+    def loadAllData(self, fpDict=None, loadLidar=True):
         """Loads NetCDF OSSE data into memory, see buildFpDict below for variable descriptions"""
         assert self.readPolarimeterNetCDF(), 'This class currently requires a polarNc4FP file to be present.' # reads polarNc4FP
         self.readasmData() # reads asmNc4FP
         self.readmetData() # reads metNc4FP
         self.readaerData() # reads aerNc4FP
         self.readStateVars() # reads lcExt and stateVar
-        self.readlidarData() # reads lc2Lidar
+        if loadLidar: self.readlidarData() # reads lc2Lidar
         self.purgeInvldInd()
 
-    def buildFpDict(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False):
+    def buildFpDict(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, lidarVersion=None):
         """
         Sets the self.fpDict dictionary with filepath fields:
             'polarNc4FP' (string) - full file path of polarimeter data with λ (in nm) replaced w/ %d
@@ -64,6 +69,7 @@ class osseData(object):
         """
         assert osseDataPath is not None, 'osseDataPath, Year, month and orbit must be provided to build fpDict'
         tmStr = '%04d%02d%02d_%02d00z' % (year, month, day, hour)
+        ldStr = 'LIDAR%02d' % lidarVersion if lidarVersion else 'LIDAR'
         if random:
             tmStr = 'random.'+tmStr
             dtTple = (year, month)
@@ -77,7 +83,7 @@ class osseData(object):
             'metNc4FP': pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.met_Nv.'+tmStr+'.nc4',)),
             'aerNc4FP': pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.aer_Nv.'+tmStr+'.nc4',)),
             'lcExt': pathFrmt % (('C',)+dtTple+(orbit+'-g5nr.lc.ext.'+tmStr+'.%dnm.nc4',)),
-            'lc2Lidar': pathFrmt % (('D',)+dtTple+(orbit+'-g5nr.lc2.'+tmStr+'.%dnm.LIDAR.nc4',)), # will need a str replace, e.g. VAR.replace('LIDAR', 'LIDAR09')
+            'lc2Lidar': pathFrmt % (('D',)+dtTple+(orbit+'-g5nr.lc2.'+tmStr+'.%dnm.'+ldStr+'.nc4',)), # will need a str replace, e.g. VAR.replace('LIDAR', 'LIDAR09')
             'savePath': pathFrmt % (('E',)+dtTple+(orbit+'-g5nr.leV%02d.GRASP.%s.%s.'+tmStr+'.pkl',)) # % (vrsn, yamlTag, archName) needed from calling function
         }
         self.fpDict['dateTime'] = dt.datetime(year, month, day, hour)
@@ -126,7 +132,7 @@ class osseData(object):
                     if mv in md: # this is an observable
                         if rv not in rslt: rslt[rv] = np.empty([len(md[mv][k,:]), Nλ])*np.nan # len(md[mv][k,:]) will change between imagers(Nang) & LIDAR(Nhght)
                         rslt[rv][:,l] = md[mv][k,:]
-                        if k==0 and self.verbose: print('%s at %4.2f found in OSSE observables' % (mv, self.wvls[l]))
+                        if k==0 and self.verbose: print(('%s at '+λFRMT+' found in OSSE observables') % (mv, self.wvls[l]))
                 if k==0 and rv not in rslt and self.verbose: print('%s NOT found in OSSE data' % mv)
             rslt['lambda'] = self.wvls
             rslt['datetime'] = md['dtObj'][k] # we keep using md b/c all λ should be the same for these vars
@@ -178,7 +184,7 @@ class osseData(object):
                 invldIndλ = invldBool.any(axis=1).nonzero()[0]
                 self.invldInd = np.append(self.invldInd, invldIndλ).astype(int) # only take points w/ I>0 at all wavelengths & angles
             elif self.verbose:
-                print('No polarimeter data found at %4.2f μm' % wvl)
+                print('No polarimeter data found at' + λFRMT % wvl)
         self.Npix = len(self.measData[0]['dtObj']) # this assumes all λ have the same # of pixels
         return True
 
@@ -246,7 +252,7 @@ class osseData(object):
                 hghtInd = np.r_[[np.zeros(self.Npix)], [self.pblTopInd]].T
                 self.rtrvdDataSetPixels(timeLoopVars, λ, hghtInd, '_PBL')
             elif self.verbose:
-                print('No lcExt profile data found at %4.2f μm' % wvl)
+                print('No lcExt profile data found at' + λFRMT % wvl)
             if 'stateVar' in self.fpDict:
                 assert False, 'We can not handle stateVar path yet!'
 
@@ -256,10 +262,14 @@ class osseData(object):
         if not self._loadingChecks(prereqCalls=call1st, functionName='readlidarData'): return # removing this prereq requires factoring out creation of measData and setting some keys (e.g. time, dtObj) in polarimeter reader
         for i,wvl in enumerate(self.wvls):
             lidarFN = self.fpDict['lc2Lidar'] % (wvl*1000)
-            if self.verbose: print('Processing data from %s' % lidarFN)
-            lidar_data = loadVARSnetCDF(lidarFN, varNames=['lev', ncDataVar], verbose=self.verbose)
-            self.measData[i]['RangeLidar'] = lidar_data['lev']*1e3 # km -> m
-            self.measData[i]['LS'] = lidar_data[ncDataVar]/1e3 # km-1 sr-1 -> m-1 sr-1
+            if os.path.exists(lidarFN): # data is there, load it
+                if self.verbose: print('Processing data from %s' % lidarFN)
+                lidar_data = loadVARSnetCDF(lidarFN, varNames=['lev', ncDataVar], verbose=self.verbose)
+                self.measData[i]['RangeLidar'] = lidar_data['lev']*1e3 # km -> m
+                self.measData[i]['LS'] = lidar_data[ncDataVar]/1e3 # km-1 sr-1 -> m-1 sr-1
+            elif self.verbose:
+#                 assert not np.isclose(wvl,0.532)
+                print('No lidar data found at' + λFRMT % wvl)
         return
 
     def rtrvdDataSetPixels(self, timeLoopVars, λ, hghtInd=None, km=''):
@@ -300,15 +310,20 @@ class osseData(object):
         if not measData:
             assert self.measData, 'measData must be provided or self.measData must be set!'
             measData = copy.deepcopy(self.measData) # We will return a measData in GRASP format, self.measData will remain unchanged.
-        for md in measData: # loop over λ
-            if newLayers:
-                for key in [k for k in ['LS', 'VExt', 'VBS',' DP'] if k in md]:
-                    md[key] = downsample1d(md['RangeLidar'], md[key], newLayer, axis=1)
-                md['RangeLidar'] = newLayer
-            if 'LS' in md: # normalize att. backscatter signal
-                md['LS'] = md['LS']/np.trapz(md['LS'], x=md['RangeLidar'], axis=1)
+        for wvl,md in zip(self.wvls, measData): # loop over λ
+            if 'RangeLidar' in md:
+                if self.verbose: print('Converting lidar data to GRASP units at' + λFRMT % wvl)
+                if newLayers:
+                    for key in [k for k in ['LS', 'VExt', 'VBS',' DP'] if k in md]:
+                        md[key] = downsample1d(md['RangeLidar'], md[key], newLayers, axis=1)
+                    md['RangeLidar'] = newLayers
+                if 'LS' in md: # normalize att. backscatter signal
+                    normConstants = np.trapz(md['LS'], x=md['RangeLidar'], axis=1)
+                    md['LS'] = md['LS']/normConstants[:,None]
+                md['RangeLidar'] = np.tile(md['RangeLidar'],[self.Npix,1])
+            elif self.verbose:
+                print('No lidar data to convert at' + λFRMT % wvl)
         return measData
-                
 
     def convertPolar2GRASP(self, measData=None):
         """ convert OSSE polarimeter radiance "measDdata" to a GRASP friendly format
@@ -317,33 +332,35 @@ class osseData(object):
         if not measData:
             assert self.measData, 'measData must be provided or self.measData must be set!'
             measData = copy.deepcopy(self.measData) # We will return a measData in GRASP format, self.measData will remain unchanged.
-        assert 'solar_azimuth' in measData[0], \
-            'solar_azimuth field required for conversion but it was not found in measData. Was polarimeter data loaded propertly?'
         for wvl,md in zip(self.wvls, measData):
-            if 'I' in md:
-                md['I'] = md['I']*np.pi # GRASP "I"=R=L/FO*pi
-                if 'Q' in md.keys(): md['Q'] = md['Q']*np.pi
-                if 'U' in md.keys(): md['U'] = md['U']*np.pi
-                if 'Q' in md.keys() and 'U' in md.keys():
-                    md['DOLP'] = np.sqrt(md['Q']**2+md['U']**2)/md['I']
-            if 'surf_reflectance' in md:
-                md['I_surf'] = md['surf_reflectance']*np.cos(30*np.pi/180)
-                if 'surf_reflectance_Q_scatplane' in md:
-                    md['Q_surf'] = md['surf_reflectance_Q_scatplane']*np.cos(30*np.pi/180)
-                    md['U_surf'] = md['surf_reflectance_U_scatplane']*np.cos(30*np.pi/180)
-                    if self.verbose: print('%4.2fμm Q[U]_surf derived from surf_reflectance_Q[U]_scatplane (scat. plane system)' % wvl)
-                else:
-                    md['Q_surf'] = md['surf_reflectance_Q']*np.cos(30*np.pi/180)
-                    md['U_surf'] = md['surf_reflectance_U']*np.cos(30*np.pi/180)
-                    if self.verbose: print('%4.2fμm Q[U]_surf derived from surf_reflectance_Q[U] (meridian system)' % wvl)
-                if (md['I_surf'] > 0).all(): # ignore sqrt runtime warning, bug in anaconda Numpy (see https://github.com/numpy/numpy/issues/11448) 
-                    md['DOLP_surf'] = np.sqrt(md['Q_surf']**2+md['U_surf']**2)/md['I_surf']
-                else:
-                    md['DOLP_surf'] = np.full(md['I_surf'].shape, np.nan)
-            if 'Q_scatplane' in md: md['Q_scatplane'] = md['Q_scatplane']*np.pi
-            if 'U_scatplane' in md: md['U_scatplane'] = md['U_scatplane']*np.pi
-            md['fis'] = md['solar_azimuth'] - md['sensor_azimuth']
-            md['fis'][md['fis']<0] = md['fis'][md['fis']<0] + 360  # GRASP accuracy degrades when φ<0
+            if 'solar_azimuth' in md:
+                if self.verbose: print('Converting polarimeter data to GRASP units at' + λFRMT % wvl)
+                if 'I' in md:
+                    md['I'] = md['I']*np.pi # GRASP "I"=R=L/FO*pi
+                    if 'Q' in md.keys(): md['Q'] = md['Q']*np.pi
+                    if 'U' in md.keys(): md['U'] = md['U']*np.pi
+                    if 'Q' in md.keys() and 'U' in md.keys():
+                        md['DOLP'] = np.sqrt(md['Q']**2+md['U']**2)/md['I']
+                if 'surf_reflectance' in md:
+                    md['I_surf'] = md['surf_reflectance']*np.cos(30*np.pi/180)
+                    if 'surf_reflectance_Q_scatplane' in md:
+                        md['Q_surf'] = md['surf_reflectance_Q_scatplane']*np.cos(30*np.pi/180)
+                        md['U_surf'] = md['surf_reflectance_U_scatplane']*np.cos(30*np.pi/180)
+                        if self.verbose: print('    %5f μm Q[U]_surf derived from surf_reflectance_Q[U]_scatplane (scat. plane system)' % wvl)
+                    else:
+                        md['Q_surf'] = md['surf_reflectance_Q']*np.cos(30*np.pi/180)
+                        md['U_surf'] = md['surf_reflectance_U']*np.cos(30*np.pi/180)
+                        if self.verbose: print('    %5f μm Q[U]_surf derived from surf_reflectance_Q[U] (meridian system)' % wvl)
+                    if (md['I_surf'] > 0).all(): # ignore sqrt runtime warning, bug in anaconda Numpy (see https://github.com/numpy/numpy/issues/11448)
+                        md['DOLP_surf'] = np.sqrt(md['Q_surf']**2+md['U_surf']**2)/md['I_surf']
+                    else:
+                        md['DOLP_surf'] = np.full(md['I_surf'].shape, np.nan)
+                if 'Q_scatplane' in md: md['Q_scatplane'] = md['Q_scatplane']*np.pi
+                if 'U_scatplane' in md: md['U_scatplane'] = md['U_scatplane']*np.pi
+                md['fis'] = md['solar_azimuth'] - md['sensor_azimuth']
+                md['fis'][md['fis']<0] = md['fis'][md['fis']<0] + 360  # GRASP accuracy degrades when φ<0
+            elif self.verbose:
+                print('No polarimeter data to convert at' + λFRMT % wvl)
         return measData
 
     def _loadingChecks(self, prereqCalls=False, filename=None, functionName=None):
@@ -366,20 +383,24 @@ class osseData(object):
         if self.verbose and filename: print('Processing data from %s' % filename)
         return True
 
-    def purgeInvldInd(self):        
+    def purgeInvldInd(self):
         """ The method will remove all invldInd from measData """
-        timeInvariantVars = ['ocean_refractive_index','x', 'y', 'lev', 'rayleigh_depol_ratio']
+        timeInvariantVars = ['ocean_refractive_index','x', 'y', 'RangeLidar', 'lev', 'rayleigh_depol_ratio']
         if self.invldIndPurged:
             warnings.warn('You should only purge invalid indices once. If you really want to purge again set self.invldIndPurged=False.')
             return
         self.invldInd = np.array(np.unique(self.invldInd), dtype='int')
+        if self.verbose: 
+            allKeys = np.unique(sum([list(md.keys()) for md in self.measData],[]))
+            virgin = {key:True for key in allKeys}
         for λ,md in enumerate(self.measData):
             for varName in np.setdiff1d(list(md.keys()), timeInvariantVars):
-                if self.verbose and λ==0: strArgs = [varName, md[varName].shape]
+                if self.verbose and virgin[varName]: strArgs = [varName, md[varName].shape]
                 md[varName] = np.delete(md[varName], self.invldInd, axis=0)
-                if self.verbose and λ==0:
+                if self.verbose and virgin[varName]:
                     strArgs.append(md[varName].shape)
                     print('Purging %s -- original shape: %s -> new shape:%s' % tuple(strArgs))
+                    virgin[varName] = False
         if self.pblTopInd is not None: self.pblTopInd = np.delete(self.pblTopInd, self.invldInd)
         if self.rtrvdData is not None: # we loaded state variable data that needs purging
             if self.verbose: startShape = self.rtrvdData.shape
