@@ -14,6 +14,7 @@ import pickle
 from glob import glob
 import os
 
+
 def loadVARSnetCDF(filePath, varNames=None, verbose=False):
     badDataCuttoff = 1e12 # values larger than this will be replaced with NaNs
     if varNames: assert isinstance(varNames, (list, np.ndarray)), 'varNames must be a list or numpy array!'
@@ -22,7 +23,7 @@ def loadVARSnetCDF(filePath, varNames=None, verbose=False):
     if varNames is None: varNames = netCDFobj.variables.keys()
     for varName in varNames:
         if varName in netCDFobj.variables.keys():
-            with warnings.catch_warnings(): 
+            with warnings.catch_warnings():
                 warnings.simplefilter('ignore', category=UserWarning) # ignore missing_value not cast warning
                 measData[varName] = np.array(netCDFobj.variables[varName])
             if 'float' in measData[varName].dtype.name and np.any(measData[varName] > badDataCuttoff):
@@ -35,30 +36,45 @@ def loadVARSnetCDF(filePath, varNames=None, verbose=False):
     return measData
 
 
-def downsample1d(X,Y,Xnew):
-    """ Returns 1D array with the mean of Y over the interval Xnew-ΔXnew to Xnew+ΔXnew."""
+def downsample1d(X, Y, Xnew, axis=0):
+    """
+    Returns an array with the mean of Y over the interval Xnew-ΔXnew to Xnew+ΔXnew.
+    This function can actually be used to down- and up-sample (i.e. interpolate) data
+    """
     from scipy import integrate, interpolate
-    assert len(X)==len(Y), 'X and Y must have the same length.'
-    assert np.all(Xnew==np.sort(Xnew)), 'The values of Xnew must be in ascending order.' 
+    Y = np.array(Y)
+    X = np.array(X)
+    if Y.ndim==2 and X.ndim==1: 
+        X = np.tile(np.transpose([X]), [1, Y.shape[1]]) if axis==0 else np.tile(X, [Y.shape[0],1])
+    assert X.shape==Y.shape, 'X and Y could not be made to have the same shape.'
+    assert X.ndim<=2 and axis<2, 'This function can only handle X and Y arrays of 1D or 2D (not greater).'
+    assert np.array(Xnew).ndim==1, 'Xnew must be a 1D array, even if X and Y are 2D.'
+    assert np.all(Xnew==np.sort(Xnew)), 'The values of Xnew must be in ascending order.'
     # edge treatment 1: mean(Y(X[0] to X[0]+ΔXnew))
 #     XnewBnds = np.interp(np.r_[0.5:len(Xnew)-1], np.r_[0:len(Xnew)], Xnew)
 #     XnewBnds = np.r_[Xnew[0], XnewBnds, Xnew[-1]]
-    # edge treatment 2: {Y[0]+mean(Y(X[0] to X[0]+ΔXnew))}/2 – produces curves that _look_ more like original Y    
+    # edge treatment 2: {Y[0]+mean(Y(X[0] to X[0]+ΔXnew))}/2 – produces curves that _look_ more like original Y
     f = interpolate.interp1d(np.r_[0:len(Xnew)], Xnew, fill_value="extrapolate")
     XnewBnds = f(np.r_[-0.5:len(Xnew)])
-    Ynew = np.empty(len(Xnew))
+    Ynew = np.empty([len(Xnew), Y.shape[1]]) if axis==0 else np.empty([Y.shape[0], len(Xnew)])
+    XYinLoopOrder = list(zip(X.T,Y.T)) if axis==0 else list(zip(X,Y)) # zip obj. is a generator, which we can only use once; list is a reusable iterable 
     for i,(lb,ub) in enumerate(zip(XnewBnds[:-1], XnewBnds[1:])):
-        bndsY = np.interp([lb, ub], X, Y)
-        chnkInd = np.logical_and(X>lb, X<ub)
-        chnkX = np.r_[lb, X[chnkInd], ub]
-        chnkY = np.r_[bndsY[0], Y[chnkInd], bndsY[1]]
-        Ynew[i] = integrate.simps(chnkY, chnkX)/(ub-lb)
+        for j,(x,y) in enumerate(XYinLoopOrder): # loop over each series
+            bndsY = np.interp([lb, ub], x, y)
+            chnkInd = np.logical_and(x>lb, x<ub)
+            chnkX = np.r_[lb, x[chnkInd], ub]
+            chnkY = np.r_[bndsY[0], y[chnkInd], bndsY[1]]
+            if axis==0:
+                Ynew[i,j] = integrate.simps(chnkY, chnkX)/(ub-lb)
+            else:
+                Ynew[j,i] = integrate.simps(chnkY, chnkX)/(ub-lb)
     return Ynew
+
 
 def hashFileSHA1(filePaths, quick=False):
     """
     filePaths -> string or list of string with file path(s) to hash; no NUMPY arrays!
-    quick -> only read the first block (~65kB from files) 
+    quick -> only read the first block (~65kB from files)
     """
     BLOCKSIZE = 65536
     if type(filePaths) is np.ndarray: filePaths = filePaths.tolist()
@@ -74,25 +90,28 @@ def hashFileSHA1(filePaths, quick=False):
                 satisfied = len(buf) == 0 or quick
     return hasher.hexdigest()
 
+
 def findNewestMatch(directory, pattern='*'):
     nwstTime = 0
     for file in os.listdir(directory):
         filePath = os.path.join(directory, file)
         if fnmatch.fnmatch(file, pattern) and os.path.getmtime(filePath) > nwstTime:
             nwstTime = os.path.getmtime(filePath)
-            newestFN = filePath 
+            newestFN = filePath
     if nwstTime > 0:
         return newestFN
     else:
         return ''
-    
+
+
 def ordinal2datetime(ordinal):
     dtObjDay = dt.fromordinal(np.int(np.floor(ordinal)))
     dtObjTime = timedelta(seconds=np.remainder(ordinal, 1)*86400)
     dtObj = dtObjDay + dtObjTime
     return dtObj
 
-def KDEhist2D(x,y, axHnd=None, res=100, xrng=None, yrng=None, sclPow=1, cmap = 'BuGn', clbl='Probability Density (a.u.)'):
+
+def KDEhist2D(x,y, axHnd=None, res=100, xrng=None, yrng=None, sclPow=1, cmap='BuGn', clbl='Probability Density (a.u.)'):
     # set plot range
     xmin = xrng[0] if xrng else x.min()
     xmax = xrng[1] if xrng else x.max()
@@ -118,11 +137,12 @@ def KDEhist2D(x,y, axHnd=None, res=100, xrng=None, yrng=None, sclPow=1, cmap = '
     clrHnd.set_ticklabels(['%4.1f' % x for x in 100*tckVals])
     clrHnd.set_label(clbl)
     return axHnd
-    
+
+
 def readPetesAngleFiles(fileDirPath, nAng=10, verbose=False, saveData=True, loadData=True):
     """
     Read in the randomly sampled angle text files generated by Pete.
-    fileDirPath - Full path directory from which glob will grab ALL text files (should be free of extraneous *.txt files) 
+    fileDirPath - Full path directory from which glob will grab ALL text files (should be free of extraneous *.txt files)
     nAng - The number of viewing angles per ground pixel
     saveData - Save the results to the directory in fileDirPath in the form of a pickle
     loadData - Load the results from a previous run, if they exist
@@ -130,14 +150,14 @@ def readPetesAngleFiles(fileDirPath, nAng=10, verbose=False, saveData=True, load
     fileNames = np.sort(glob(os.path.join(fileDirPath, '*.txt')))
     hashTag = hashFileSHA1(fileNames, quick=True)[0:16] # if files differ after first 65kB we will miss it
     pklPath = os.path.join(fileDirPath, 'readPetesAngleFiles_ALLdata_'+hashTag+'.pkl')
-    if loadData == True:
+    if loadData:
         try:
             with open(pklPath, 'rb') as f:
                 angDict = pickle.load(f)
             if verbose: print('Data loaded from %s' % pklPath)
             return angDict
         except EnvironmentError:
-            if verbose: print('Could not load valid pickle data from %s. Processing raw text files...' % pklPath)    
+            if verbose: print('Could not load valid pickle data from %s. Processing raw text files...' % pklPath)
     angDict = {k: [] for k in ['lon','lat','datetime','vis','sza','fis','sca']}
     for fn in fileNames:
         if verbose: print('Processing %s...' % os.path.basename(fn))

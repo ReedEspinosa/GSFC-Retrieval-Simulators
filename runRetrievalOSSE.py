@@ -47,7 +47,7 @@ simA = rs.simulation(nowPix) # defines new instance corresponding to this archit
 od = osseData(osseDataPath, orbit, year, month, day, hour, random=False, wvls=wvls, verbose=True)
 savePath = od.fpDict['savePath'] % (vrsn, yamlTag, archName)
 print('-- Generating ' + os.path.basename(savePath) + ' --')
-fwdData = od.osse2graspRslts(NpixMax=6)
+fwdData = od.osse2graspRslts(NpixMax=6, newLayers=None) # TODO: this should be the lidar bin heights to use in back SDATA file
 simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, maxT=20, savePath=savePath, binPathGRASP=dirGRASP, 
             intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, 
             rndIntialGuess=rndIntialGuess, verbose=True)

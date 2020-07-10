@@ -100,17 +100,18 @@ class osseData(object):
             warnings.warn('No wavelengths found for the pattern %s' % levCFN)
         return wvls
 
-    def osse2graspRslts(self, NpixMax=None):
+    def osse2graspRslts(self, NpixMax=None, newLayers=None):
         """ osse2graspRslts will convert that data in measData to the format used to store GRASP's output
                 IN: NpixMax -> no more than this many pixels will be returned in rslts list (primarly for testing)
+                    newLidarLayers -> a list of layer heights (in meters) at which to return the lidar signal
                 OUT: a list of Npixels dicts with all the keys mapping measData as rslts[nPix][var][nAng, λ]
                     keys in output dictionary:
                 NOTE: GRASP can only use one SZA value & simulator just takes 1st value. Maybe just make them all equal to the average? """
         assert self.measData, 'self.measData must be set (e.g through readPolarimeterNetCDF()) before calling this method!'
-        rsltVars = ['fit_I','fit_Q','fit_U','fit_VBS','fit_VExt','fit_DP','fit_LS',          'vis','fis',         'sza']
-        mdVars   = [    'I',    'Q',    'U',    'VBS',    'VExt',    'DP',    'LS','sensor_zenith','fis','solar_zenith']
+        rsltVars = ['fit_I','fit_Q','fit_U','fit_VBS','fit_VExt','fit_DP','fit_LS',          'vis','fis',         'sza', 'RangeLidar']
+        mdVars   = [    'I',    'Q',    'U',    'VBS',    'VExt',    'DP',    'LS','sensor_zenith','fis','solar_zenith', 'RangeLidar']
         measData = self.convertPolar2GRASP() # we can chain existing measData when we add LIDAR
-        # TODO prep lidar data, in part using downsample1d function 
+        measData = self.convertLidar2GRASP(measData, newLayers)
         Nλ = len(measData)
         assert len(self.rtrvdData) == self.Npix, \
             'OSSE observable and state variable data structures contain a differnt number of pixels!'
@@ -257,8 +258,8 @@ class osseData(object):
             lidarFN = self.fpDict['lc2Lidar'] % (wvl*1000)
             if self.verbose: print('Processing data from %s' % lidarFN)
             lidar_data = loadVARSnetCDF(lidarFN, varNames=['lev', ncDataVar], verbose=self.verbose)
-            self.measData[i]['lidarRange_FULL'] = lidar_data['lev']*1e3 # km -> m
-            self.measData[i]['LS_FULL'] = lidar_data[ncDataVar]/1e3 # km-1 sr-1 -> m-1 sr-1
+            self.measData[i]['RangeLidar'] = lidar_data['lev']*1e3 # km -> m
+            self.measData[i]['LS'] = lidar_data[ncDataVar]/1e3 # km-1 sr-1 -> m-1 sr-1
         return
 
     def rtrvdDataSetPixels(self, timeLoopVars, λ, hghtInd=None, km=''):
@@ -292,8 +293,25 @@ class osseData(object):
             P11[θ] = F11[θ]/β = Σ(τh*ωh*P11h[θ])/Στh*ωh -> g = ∫ P11[θ]...dθ = ∫ Σ(τh*ωh*P11h[θ])/Στh*ωh...dθ
             g = Σ(τh*ωh*∫P11h[θ]...dθ)/Στh*ωh = Σ(τh*ωh*gh)/Σ(τh*ωh) """
 
+    def convertLidar2GRASP(self, measData=None, newLayers=None):
+        """ convert OSSE lidar "measDdata" to a GRASP friendly format
+            IN: if measData argument is provided we work with that, else we use self.measData (this allows chaining with other converters)
+            OUT: the converted measData list is returned, self.measData will remain unchanged """
+        if not measData:
+            assert self.measData, 'measData must be provided or self.measData must be set!'
+            measData = copy.deepcopy(self.measData) # We will return a measData in GRASP format, self.measData will remain unchanged.
+        for md in measData: # loop over λ
+            if newLayers:
+                for key in [k for k in ['LS', 'VExt', 'VBS',' DP'] if k in md]:
+                    md[key] = downsample1d(md['RangeLidar'], md[key], newLayer, axis=1)
+                md['RangeLidar'] = newLayer
+            if 'LS' in md: # normalize att. backscatter signal
+                md['LS'] = md['LS']/np.trapz(md['LS'], x=md['RangeLidar'], axis=1)
+        return measData
+                
+
     def convertPolar2GRASP(self, measData=None):
-        """ convert OSSE "measDdata" to a GRASP friendly format
+        """ convert OSSE polarimeter radiance "measDdata" to a GRASP friendly format
             IN: if measData argument is provided we work with that, else we use self.measData (this allows chaining with other converters)
             OUT: the converted measData list is returned, self.measData will remain unchanged """
         if not measData:
