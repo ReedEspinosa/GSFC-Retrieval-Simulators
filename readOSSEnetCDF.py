@@ -27,7 +27,7 @@ class osseData(object):
             hour - integer from 0 to 23 specifying the starting hour of pixels to load
             random - logical, use 10,000 randomly selected pixels for that month (day & hour not needed if random=true)
             'wvls'* (list of floats) - wavelengths to process in μm, not present or None -> determine them from polarNc4FP
-            lidarVersion - integer with lidar instrument version (e.g. 9), None to skip loading of lidar
+            lidarVersion - int w/ lidar instrument version (e.g. 9), x100 for instrument w/o noise (e.g. 900), None to not load lidar
         Note: buildFpDict() method below will setup file paths mirroring paths on DISCOVER
         """
         self.measData = None # measData has observational netCDF data
@@ -69,7 +69,7 @@ class osseData(object):
         """
         assert osseDataPath is not None, 'osseDataPath, Year, month and orbit must be provided to build fpDict'
         tmStr = '%04d%02d%02d_%02d00z' % (year, month, day, hour)
-        ldStr = 'LIDAR%02d' % lidarVersion if lidarVersion else 'LIDAR'
+        ldStr = 'LIDAR%02d' % np.floor(lidarVersion/100) if lidarVersion else 'LIDAR'
         if random:
             tmStr = 'random.'+tmStr
             dtTple = (year, month)
@@ -87,6 +87,7 @@ class osseData(object):
             'savePath': pathFrmt % (('E',)+dtTple+(orbit+'-g5nr.leV%02d.GRASP.%s.%s.'+tmStr+'.pkl',)) # % (vrsn, yamlTag, archName) needed from calling function
         }
         self.fpDict['dateTime'] = dt.datetime(year, month, day, hour)
+        self.fpDict['noisyLidar'] = lidarVersion < 100 # e.g. 0900 is noise free, but 09 is not
         return self.fpDict
 
     def λSearch(self, fpDict):
@@ -256,8 +257,8 @@ class osseData(object):
             if 'stateVar' in self.fpDict:
                 assert False, 'We can not handle stateVar path yet!'
 
-    def readlidarData(self, noisySignal=True):
-        ncDataVar = 'INSTRUMENT_ATB_NOISE' if noisySignal else 'INSTRUMENT_ATB'
+    def readlidarData(self):
+        ncDataVar = 'INSTRUMENT_ATB_NOISE' if self.fpDict['noisyLidar'] else 'INSTRUMENT_ATB'
         call1st = 'readPolarimeterNetCDF'
         if not self._loadingChecks(prereqCalls=call1st, functionName='readlidarData'): return # removing this prereq requires factoring out creation of measData and setting some keys (e.g. time, dtObj) in polarimeter reader
         for i,wvl in enumerate(self.wvls):
