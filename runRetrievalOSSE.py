@@ -37,9 +37,12 @@ day = 1
 hour = 0
 orbit = 'gpm' # gpm OR ss450
 archName = 'polar07+lidar09' # name of instrument (never 100x, e.g. lidar0900 – that is set w/ noiseFree below)
+hghtBins = [4500, 4000, 3500, 3000, 2500, 2000, 1500, 1000,  500,    0] # centers of lidar bins (meters)
 vrsn = 1 # general version tag to distinguish runs
 wvls = None # (μm) if we only want specific λ set it here, otherwise it will use all netCDF files found
-noiseFree = True # do not add noise to the observations
+noiseFree = False # do not add noise to the observations
+
+
 
 # choose YAML flavor, derive save file path and setup/run retrievals
 YAMLpth = bckYAMLpathLID if 'lidar' in archName.lower() else bckYAMLpathPOL
@@ -50,7 +53,7 @@ simA = rs.simulation() # defines new instance corresponding to this architecture
 od = osseData(osseDataPath, orbit, year, month, day, hour, random=False, wvls=wvls, lidarVersion=lidVer, verbose=True)
 savePath = od.fpDict['savePath'] % (vrsn, yamlTag, archName)
 print('-- Generating ' + os.path.basename(savePath) + ' --')
-fwdData = od.osse2graspRslts(NpixMax=6, newLayers=None) # TODO: this should be the lidar bin heights to use in back SDATA file
+fwdData = od.osse2graspRslts(NpixMax=6, newLayers=hghtBins)
 sys.exit()
 radNoiseFun = None if noiseFree else functools.partial(addError, 'polar07')
 simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, maxT=20, savePath=savePath, binPathGRASP=dirGRASP, 

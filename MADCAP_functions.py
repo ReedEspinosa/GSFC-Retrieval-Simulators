@@ -42,12 +42,15 @@ def downsample1d(X, Y, Xnew, axis=0):
     This function can actually be used to down- and up-sample (i.e. interpolate) data
     """
     from scipy import integrate, interpolate
-    Y = np.array(Y)
-    X = np.array(X)
-    if Y.ndim==2 and X.ndim==1: 
-        X = np.tile(np.transpose([X]), [1, Y.shape[1]]) if axis==0 else np.tile(X, [Y.shape[0],1])
+    X = np.atleast_2d(X)
+    Y = np.atleast_2d(Y)
+    if X.shape[0]==1 and axis==0: X = X.T
+    if Y.shape[0]==1 and axis==0: Y = Y.T 
+    if np.all(np.array(Y.shape)>1) and np.any(np.array(X.shape)==1): # Y was 2D but X was only 1D
+        X = np.tile(X, [1, Y.shape[1]]) if axis==0 else np.tile(X, [Y.shape[0],1])
     assert X.shape==Y.shape, 'X and Y could not be made to have the same shape.'
     assert X.ndim<=2 and axis<2, 'This function can only handle X and Y arrays of 1D or 2D (not greater).'
+    assert np.all(X==np.sort(X, axis=axis)), 'The values of X must be in ascending order along axis.'
     assert np.array(Xnew).ndim==1, 'Xnew must be a 1D array, even if X and Y are 2D.'
     assert np.all(Xnew==np.sort(Xnew)), 'The values of Xnew must be in ascending order.'
     # edge treatment 1: mean(Y(X[0] to X[0]+ΔXnew))
@@ -62,12 +65,20 @@ def downsample1d(X, Y, Xnew, axis=0):
         for j,(x,y) in enumerate(XYinLoopOrder): # loop over each series
             bndsY = np.interp([lb, ub], x, y)
             chnkInd = np.logical_and(x>lb, x<ub)
-            chnkX = np.r_[lb, x[chnkInd], ub]
-            chnkY = np.r_[bndsY[0], y[chnkInd], bndsY[1]]
+            xSelect = x[chnkInd]
+            chnkX = np.empty(len(xSelect)+2) # 4x lines of code, but 30x faster than np.r_[lb, x[chnkInd], ub]
+            chnkX[0] = lb
+            chnkX[-1] = ub
+            chnkX[1:-1] = xSelect
+            chnkY = np.empty(len(chnkX))
+            chnkY[0] = bndsY[0]
+            chnkY[-1] = bndsY[1]
+            chnkY[1:-1] = y[chnkInd]
             if axis==0:
-                Ynew[i,j] = integrate.simps(chnkY, chnkX)/(ub-lb)
+                Ynew[i,j] = np.trapz(chnkY, chnkX)/(ub-lb)
             else:
-                Ynew[j,i] = integrate.simps(chnkY, chnkX)/(ub-lb)
+                Ynew[j,i] = np.trapz(chnkY, chnkX)/(ub-lb)
+    if Ynew.shape[1]==1: Ynew = Ynew[:,0] # user probably doesn't want 2D out w/ singletons, at least horizontal singletons
     return Ynew
 
 

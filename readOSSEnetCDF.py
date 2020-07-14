@@ -26,7 +26,7 @@ class osseData(object):
             year, month, day - integers specifying data of pixels to load
             hour - integer from 0 to 23 specifying the starting hour of pixels to load
             random - logical, use 10,000 randomly selected pixels for that month (day & hour not needed if random=true)
-            'wvls'* (list of floats) - wavelengths to process in μm, not present or None -> determine them from polarNc4FP
+            'wvls'* (_list_ [not np.array] of floats) - wavelengths to process in μm, not present or None -> determine them from polarNc4FP
             lidarVersion - int w/ lidar instrument version (e.g. 9), x100 for instrument w/o noise (e.g. 900), None to not load lidar
         Note: buildFpDict() method below will setup file paths mirroring paths on DISCOVER
         """
@@ -38,13 +38,13 @@ class osseData(object):
         self.pblTopInd = None
         self.verbose = verbose
         self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random, lidarVersion)
-        self.wvls = wvls if wvls else self.λSearch(self.fpDict['polarNc4FP'])
+        self.wvls = list(wvls) if wvls is not None else self.λSearch() # wvls should be a list
         if lidarVersion is not None:
             self.loadAllData(loadLidar=True)
         elif self.verbose:
             print('Lidar version not provided, not attempting to load any lidar data')
 
-    def loadAllData(self, fpDict=None, loadLidar=True):
+    def loadAllData(self, loadLidar=True):
         """Loads NetCDF OSSE data into memory, see buildFpDict below for variable descriptions"""
         assert self.readPolarimeterNetCDF(), 'This class currently requires a polarNc4FP file to be present.' # reads polarNc4FP
         self.readasmData() # reads asmNc4FP
@@ -90,21 +90,22 @@ class osseData(object):
         self.fpDict['noisyLidar'] = lidarVersion < 100 # e.g. 0900 is noise free, but 09 is not
         return self.fpDict
 
-    def λSearch(self, fpDict):
+    def λSearch(self):
         wvls = []
-        posKeys = ['polarNc4FP', 'lcExt', 'lc2Lidar'] # we only loop over these specific keys (if they exist)
-        for levCFN in [fpDict[key] for key in posKeys if key in fpDict]:
+        posKeys = ['polarNc4FP', 'lc2Lidar'] # we only loop over files with lidar or polarimter data
+        posPaths = [self.fpDict[key] for key in posKeys if key in self.fpDict]
+        for levCFN in posPaths:
             levCfiles = glob.glob(levCFN.replace('%d','[0-9]*'))
             for fn in levCfiles:
                 mtch = re.match(levCFN.replace('%d','([0-9]+)?'), fn)
                 wvlVal = float(mtch.group(1))/1000
                 if mtch and wvlVal not in wvls: wvls.append(wvlVal)
-        wvls = np.sort(wvls)
+        wvls = list(np.sort(wvls)) # this will also convert from list to numpy array
         if wvls and self.verbose:
             print('The following wavelengths were found:', end=" ")
             print('%s μm' % ', '.join([str(λ) for λ in wvls]))
         elif not wvls:
-            warnings.warn('No wavelengths found for the pattern %s' % levCFN)
+            warnings.warn('No wavelengths found for the patterns:\n%s' % "\n".join(posPaths))
         return wvls
 
     def osse2graspRslts(self, NpixMax=None, newLayers=None):
@@ -135,7 +136,7 @@ class osseData(object):
                         rslt[rv][:,l] = md[mv][k,:]
                         if k==0 and self.verbose: print(('%s at '+λFRMT+' found in OSSE observables') % (mv, self.wvls[l]))
                 if k==0 and rv not in rslt and self.verbose: print('%s NOT found in OSSE data' % mv)
-            rslt['lambda'] = self.wvls
+            rslt['lambda'] = np.asarray(self.wvls)
             rslt['datetime'] = md['dtObj'][k] # we keep using md b/c all λ should be the same for these vars
             rslt['latitude'] = self.checkReturnField(md, 'trjLat', k)
             rslt['longitude'] = self.checkReturnField(md, 'trjLon', k)
@@ -186,7 +187,9 @@ class osseData(object):
                 self.invldInd = np.append(self.invldInd, invldIndλ).astype(int) # only take points w/ I>0 at all wavelengths & angles
             elif self.verbose:
                 print('No polarimeter data found at' + λFRMT % wvl)
-        self.Npix = len(self.measData[0]['dtObj']) # this assumes all λ have the same # of pixels
+        NpixByλ = np.array([len(md['dtObj']) for md in self.measData if 'dtObj' in md])
+        assert np.all(NpixByλ[0] == NpixByλ), 'This class assumes that all λ have the same number of pixels.'
+        self.Npix = NpixByλ[0]
         return True
 
     def readasmData(self):
@@ -265,11 +268,11 @@ class osseData(object):
             lidarFN = self.fpDict['lc2Lidar'] % (wvl*1000)
             if os.path.exists(lidarFN): # data is there, load it
                 if self.verbose: print('Processing data from %s' % lidarFN)
-                lidar_data = loadVARSnetCDF(lidarFN, varNames=['lev', ncDataVar], verbose=self.verbose)
+                lidar_data = loadVARSnetCDF(lidarFN, varNames=['lev', 'SURFACE_ALT', ncDataVar], verbose=self.verbose)
                 self.measData[i]['RangeLidar'] = lidar_data['lev']*1e3 # km -> m
+                self.measData[i]['SurfaceAlt'] = lidar_data['SURFACE_ALT']*1e3 # km -> m
                 self.measData[i]['LS'] = lidar_data[ncDataVar]/1e3 # km-1 sr-1 -> m-1 sr-1
             elif self.verbose:
-#                 assert not np.isclose(wvl,0.532)
                 print('No lidar data found at' + λFRMT % wvl)
         return
 
@@ -307,21 +310,30 @@ class osseData(object):
     def convertLidar2GRASP(self, measData=None, newLayers=None):
         """ convert OSSE lidar "measDdata" to a GRASP friendly format
             IN: if measData argument is provided we work with that, else we use self.measData (this allows chaining with other converters)
+                if newLayers is not provided, some elements of measData[n]['RangeLidar'] will correspond to below ground level
             OUT: the converted measData list is returned, self.measData will remain unchanged """
         if not measData:
             assert self.measData, 'measData must be provided or self.measData must be set!'
             measData = copy.deepcopy(self.measData) # We will return a measData in GRASP format, self.measData will remain unchanged.
+        if newLayers is not None: newLayers = np.sort(newLayers) # sort in ascending order for downsample1d (flip later for GRASP which needs descending order)
         for wvl,md in zip(self.wvls, measData): # loop over λ
             if 'RangeLidar' in md:
+                assert np.all(np.diff(md['RangeLidar'])<0), 'RangeLidar should be in descending order.'
                 if self.verbose: print('Converting lidar data to GRASP units at' + λFRMT % wvl)
-                if newLayers:
-                    for key in [k for k in ['LS', 'VExt', 'VBS',' DP'] if k in md]:
-                        md[key] = downsample1d(md['RangeLidar'], md[key], newLayers, axis=1)
-                    md['RangeLidar'] = newLayers
+                md['RangeLidar'] = np.tile(md['RangeLidar'], [self.Npix,1]) - md['SurfaceAlt'][:,None] # RangeLidar is now relative to the surface
+                if newLayers is not None:
+                    for key in [k for k in ['LS', 'VExt', 'VBS',' DP'] if k in md]: # loop over lidar measurement types
+                        tempSig = np.empty((self.Npix, len(newLayers)))
+                        for t in range(self.Npix):
+                            vldInd = np.logical_and(md['RangeLidar'][t,:]>=0, ~np.isnan(md['LS'][t,:]))  # we will remove lidar returns corresponding to below ground (background subtraction)
+                            alt = md['RangeLidar'][t, vldInd]
+                            sig = md[key][t, vldInd]                         
+                            tempSig[t,:] = downsample1d(alt[::-1], sig[::-1], newLayers)[::-1] # alt and sig where in descending order (relative to alt)
+                        md[key] = tempSig
+                    md['RangeLidar'] = np.tile(newLayers[::-1], [self.Npix,1]) # now we flip to descending order
                 if 'LS' in md: # normalize att. backscatter signal
-                    normConstants = np.trapz(md['LS'], x=md['RangeLidar'], axis=1)
+                    normConstants = -np.trapz(md['LS'], x=md['RangeLidar'], axis=1) # sign flip needed since Range is in descending order
                     md['LS'] = md['LS']/normConstants[:,None]
-                md['RangeLidar'] = np.tile(md['RangeLidar'],[self.Npix,1])
             elif self.verbose:
                 print('No lidar data to convert at' + λFRMT % wvl)
         return measData
@@ -391,7 +403,7 @@ class osseData(object):
             warnings.warn('You should only purge invalid indices once. If you really want to purge again set self.invldIndPurged=False.')
             return
         self.invldInd = np.array(np.unique(self.invldInd), dtype='int')
-        if self.verbose: 
+        if self.verbose:
             allKeys = np.unique(sum([list(md.keys()) for md in self.measData],[]))
             virgin = {key:True for key in allKeys}
         for λ,md in enumerate(self.measData):
