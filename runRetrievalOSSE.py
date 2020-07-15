@@ -40,7 +40,7 @@ archName = 'polar07+lidar09' # name of instrument (never 100x, e.g. lidar0900 �
 hghtBins = [4500, 4000, 3500, 3000, 2500, 2000, 1500, 1000,  500,    0] # centers of lidar bins (meters)
 vrsn = 1 # general version tag to distinguish runs
 wvls = None # (μm) if we only want specific λ set it here, otherwise it will use all netCDF files found
-noiseFree = False # do not add noise to the observations
+noiseFree = True # do not add noise to the observations
 
 
 

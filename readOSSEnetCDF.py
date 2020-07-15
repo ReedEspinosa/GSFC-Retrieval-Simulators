@@ -331,7 +331,7 @@ class osseData(object):
                         for t in range(self.Npix):
                             vldInd = np.logical_and(md['RangeLidar'][t,:]>=0, ~np.isnan(md['LS'][t,:]))  # we will remove lidar returns corresponding to below ground (background subtraction)
                             alt = md['RangeLidar'][t, vldInd]
-                            sig = md[key][t, vldInd]                   
+                            sig = md[key][t, vldInd]
                             tempSig[t,:] = downsample1d(alt[::-1], sig[::-1], newLayers)[::-1] # alt and sig where in descending order (relative to alt)
                         md[key] = tempSig
                     md['RangeLidar'] = np.tile(newLayers[::-1], [self.Npix,1]) # now we flip to descending order
@@ -429,3 +429,86 @@ class osseData(object):
         self.Npix = len(self.measData[self.vldPolarλind]['dtObj']) # this assumes all λ have the same # of pixels
         if self.verbose:
             print('%d pixels with negative or bad-data-flag reflectances were purged from all variables.' % len(self.invldInd))
+
+    def rot2scatplane(self):
+        """
+        PATRICIA's CODE – NOT YET ADAPTED TO THIS CLASS
+        Rotate meridonal plane (VLIDORT) outputs to scattering plane (GRASP)
+        adapted from Kirk's code rot2scatplane.pro
+        """
+        assert False, 'REUSED CODE, NOT YET ADAPTED TO THIS CLASS'
+
+        # define RAA according to photon travel direction
+        saa = self.SAA + 180.0
+        I = saa >= 360.
+        saa[I] = saa[I] - 360.
+        self.RAA = self.VAA - saa
+
+        nvza = len(self.VZA)
+        nraa = len(self.VAA)
+
+        # raa = np.radians(self.VAA - self.SAA)
+        raa = np.radians(self.RAA)
+        razi_pm = np.ones(nraa)
+        razi_pm[np.sin(raa) >= 0] = -1.0
+        cos_razi = np.cos(raa)
+
+        u_s = np.cos(np.radians(self.SZA[0]))
+        u_v = np.cos(np.radians(self.VZA))
+
+        root_s = np.sqrt(1.0-u_s**2)
+        self.Q_out = np.zeros([nvza,nraa])
+        self.U_out = np.zeros([nvza,nraa])
+        self.Qsurf_out = np.zeros([nvza,nraa])
+        self.Usurf_out = np.zeros([nvza,nraa])
+        for ivza in range(nvza):
+            for iraa in range(nraa):
+                # print 'ivza,iraa',ivza,iraa
+                root_v = np.sqrt(1.0-u_v[ivza]**2)
+
+                cos_theta= -1.0*u_s*u_v[ivza] + root_v*root_s*cos_razi[iraa]
+                root_theta= np.sqrt(1.0 - cos_theta**2)
+                scatang = np.arccos(cos_theta) # scattering angle for output (not used below) # FLAKE SAYS VARIABLE IS NOT USED
+
+                # equation 3.16 in Hansen and Travis --------------------------
+                # Special limit case --------------------
+                # if np.abs(cos_theta) > 0.999999:
+                if np.abs(cos_theta) == 1.0:
+                    cosi1 = 0.0
+                    cosi2 = 0.0
+                else:
+                    cosi1= razi_pm[iraa]*(-1.0*u_v[ivza]*root_s - u_s*root_v*cos_razi[iraa])/root_theta
+                    cosi2= razi_pm[iraa]*(u_s*root_v + u_v[ivza]*root_s*cos_razi[iraa])/root_theta
+
+                # equation (10) in Hovenier ------------------------
+                # error correction for high cos(i)^2 values ------------
+                # if (cosi1**2.0) > 0.999999:
+                if (cosi1**2.0) >= 1.0:
+                    cos2i1 = 1.0 # FLAKE SAYS VARIABLE IS NOT USED
+                    sin2i1 = 0.0 # FLAKE SAYS VARIABLE IS NOT USED
+                else:
+                    sin2i1= 2.0*np.sqrt(1.0-(cosi1**2.0))*cosi1
+                    cos2i1= 2.0*(cosi1**2.0)-1.0
+                # if (cosi2**2.0) > 0.999999:
+                if (cosi2**2.0) >= 1.0:
+                    cos2i2 = 1.0
+                    sin2i2 = 0.0
+                else:
+                    sin2i2= 2.0*np.sqrt(1.0-(cosi2**2.0))*cosi2
+                    cos2i2= 2.0*(cosi2**2.0)-1.0
+
+                # rotate into scattering plane as shown in (2) of Hovenier
+                q_in = self.Q[ivza,iraa]
+                u_in = self.U[ivza,iraa]
+                q_out= q_in*cos2i2 - u_in*sin2i2
+                u_out= q_in*sin2i2 + u_in*cos2i2
+
+                self.Q_out[ivza,iraa] = -1.*q_out
+                self.U_out[ivza,iraa] = -1.*u_out
+
+                q_in = self.BR_Q[ivza,iraa]
+                u_in = self.BR_U[ivza,iraa]
+                q_out= q_in*cos2i2 - u_in*sin2i2
+                u_out= q_in*sin2i2 + u_in*cos2i2
+                self.Qsurf_out[ivza,iraa] = -1.*q_out
+                self.Usurf_out[ivza,iraa] = -1.*u_out
