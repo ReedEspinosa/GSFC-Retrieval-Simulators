@@ -37,12 +37,14 @@ class osseData(object):
         self.loadingCalls = []
         self.pblTopInd = None
         self.verbose = verbose
+        self.vldPolarλind = None # needed b/c measData at lidar data λ is missing some variables
         self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random, lidarVersion)
         self.wvls = list(wvls) if wvls is not None else self.λSearch() # wvls should be a list
         if lidarVersion is not None:
             self.loadAllData(loadLidar=True)
-        elif self.verbose:
-            print('Lidar version not provided, not attempting to load any lidar data')
+        else:
+            self.loadAllData(loadLidar=False)
+            if self.verbose: print('Lidar version not provided, not attempting to load any lidar data')
 
     def loadAllData(self, loadLidar=True):
         """Loads NetCDF OSSE data into memory, see buildFpDict below for variable descriptions"""
@@ -54,8 +56,9 @@ class osseData(object):
         if loadLidar: self.readlidarData() # reads lc2Lidar
         self.purgeInvldInd()
 
-    def buildFpDict(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, lidarVersion=None):
+    def buildFpDict(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, lidarVer=0):
         """
+        See _init_ for input variable definitions
         Sets the self.fpDict dictionary with filepath fields:
             'polarNc4FP' (string) - full file path of polarimeter data with λ (in nm) replaced w/ %d
             'dateTime'* (datetime obj.) - day and hour of measurement (min. & sec. loaded from file)
@@ -65,11 +68,11 @@ class osseData(object):
             'lcExt'* (string)    - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ and SSA)
             'lc2Lidar'* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
             'stateVar'* (string) - file with state variable truth, NOT YET DEVELOPED (may ultimatly be multiple files)
-        - All of the above files should contain noise free data, except lc2Lidar -
+        All of the above files should contain noise free data, except lc2Lidar -
         """
         assert osseDataPath is not None, 'osseDataPath, Year, month and orbit must be provided to build fpDict'
         tmStr = '%04d%02d%02d_%02d00z' % (year, month, day, hour)
-        ldStr = 'LIDAR%02d' % np.floor(lidarVersion/100) if lidarVersion else 'LIDAR'
+        ldStr = 'LIDAR%02d' % (np.floor(lidarVer/100) if lidarVer >= 100 else lidarVer)
         if random:
             tmStr = 'random.'+tmStr
             dtTple = (year, month)
@@ -87,7 +90,7 @@ class osseData(object):
             'savePath': pathFrmt % (('E',)+dtTple+(orbit+'-g5nr.leV%02d.GRASP.%s.%s.'+tmStr+'.pkl',)) # % (vrsn, yamlTag, archName) needed from calling function
         }
         self.fpDict['dateTime'] = dt.datetime(year, month, day, hour)
-        self.fpDict['noisyLidar'] = lidarVersion < 100 # e.g. 0900 is noise free, but 09 is not
+        self.fpDict['noisyLidar'] = lidarVer < 100 # e.g. 0900 is noise free, but 09 is not
         return self.fpDict
 
     def λSearch(self):
@@ -137,10 +140,10 @@ class osseData(object):
                         if k==0 and self.verbose: print(('%s at '+λFRMT+' found in OSSE observables') % (mv, self.wvls[l]))
                 if k==0 and rv not in rslt and self.verbose: print('%s NOT found in OSSE data' % mv)
             rslt['lambda'] = np.asarray(self.wvls)
-            rslt['datetime'] = md['dtObj'][k] # we keep using md b/c all λ should be the same for these vars
-            rslt['latitude'] = self.checkReturnField(md, 'trjLat', k)
-            rslt['longitude'] = self.checkReturnField(md, 'trjLon', k)
-            rslt['land_prct'] = self.checkReturnField(md, 'land_prct', k, 100)
+            rslt['datetime'] = measData[self.vldPolarλind]['dtObj'][k] # we keep using md b/c all λ should be the same for these vars
+            rslt['latitude'] = self.checkReturnField(measData[self.vldPolarλind], 'trjLat', k)
+            rslt['longitude'] = self.checkReturnField(measData[self.vldPolarλind])
+            rslt['land_prct'] = self.checkReturnField(measData[self.vldPolarλind], 'land_prct', k, 100)
             if k==0 and self.verbose:
                 for mv in rd.keys(): print('%s found in OSSE state variables' % mv)
             rslt = {**rslt, **rd}
@@ -185,6 +188,7 @@ class osseData(object):
                     invldBool = np.logical_or(np.isnan(self.measData[i]['I']), self.measData[i]['I'] < 0)
                 invldIndλ = invldBool.any(axis=1).nonzero()[0]
                 self.invldInd = np.append(self.invldInd, invldIndλ).astype(int) # only take points w/ I>0 at all wavelengths & angles
+                if not self.vldPolarλind: self.vldPolarλind = i # store the 1st λ index with polarimeter data
             elif self.verbose:
                 print('No polarimeter data found at' + λFRMT % wvl)
         NpixByλ = np.array([len(md['dtObj']) for md in self.measData if 'dtObj' in md])
@@ -422,6 +426,6 @@ class osseData(object):
                 shps = (startShape, self.rtrvdData.shape)
                 print('Purging rtrvdData (state variables) -- orignal shape: %s -> new shape: %s' % shps)
         self.invldIndPurged = True
-        self.Npix = len(self.measData[0]['dtObj']) # this assumes all λ have the same # of pixels
+        self.Npix = len(self.measData[self.vldPolarλind]['dtObj']) # this assumes all λ have the same # of pixels
         if self.verbose:
             print('%d pixels with negative or bad-data-flag reflectances were purged from all variables.' % len(self.invldInd))
