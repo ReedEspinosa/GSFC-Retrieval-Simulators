@@ -9,6 +9,7 @@ MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) #
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_ArchitectureAndCanonicalCases'))
 import simulateRetrieval as rs
+import functools
 from readOSSEnetCDF import osseData
 from miscFunctions import checkDiscover
 from architectureMap import returnPixel, addError
@@ -53,7 +54,7 @@ simA = rs.simulation() # defines new instance corresponding to this architecture
 od = osseData(osseDataPath, orbit, year, month, day, hour, random=False, wvls=wvls, lidarVersion=lidVer, verbose=True)
 savePath = od.fpDict['savePath'] % (vrsn, yamlTag, archName)
 print('-- Generating ' + os.path.basename(savePath) + ' --')
-fwdData = od.osse2graspRslts(NpixMax=6, newLayers=hghtBins)
+fwdData = od.osse2graspRslts(NpixMax=56, newLayers=hghtBins)
 radNoiseFun = None if noiseFree else functools.partial(addError, 'polar07')
 simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, maxT=20, savePath=savePath, binPathGRASP=dirGRASP, 
             intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, 
