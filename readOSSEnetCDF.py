@@ -331,7 +331,7 @@ class osseData(object):
                         for t in range(self.Npix):
                             vldInd = np.logical_and(md['RangeLidar'][t,:]>=0, ~np.isnan(md['LS'][t,:]))  # we will remove lidar returns corresponding to below ground (background subtraction)
                             alt = md['RangeLidar'][t, vldInd]
-                            sig = md[key][t, vldInd]                         
+                            sig = md[key][t, vldInd]                   
                             tempSig[t,:] = downsample1d(alt[::-1], sig[::-1], newLayers)[::-1] # alt and sig where in descending order (relative to alt)
                         md[key] = tempSig
                     md['RangeLidar'] = np.tile(newLayers[::-1], [self.Npix,1]) # now we flip to descending order
