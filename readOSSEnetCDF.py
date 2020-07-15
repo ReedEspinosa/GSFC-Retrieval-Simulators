@@ -17,6 +17,7 @@ SCALE_HGHT = 8000 # scale height (meters) for presure to alt. conversion, 8 km i
 STAND_PRES = 1.01e5 # standard pressure (Pa)
 MIN_ALT = -100 # defualt GRASP build complains below -100m
 λFRMT = ' %5.3f μm'
+βscaLowLim = 2.0e-10 # lower bound for lidar backscatter values to be passed into rslt dict, and ultimatly to GRASP
 
 
 class osseData(object):
@@ -142,7 +143,7 @@ class osseData(object):
             rslt['lambda'] = np.asarray(self.wvls)
             rslt['datetime'] = measData[self.vldPolarλind]['dtObj'][k] # we keep using md b/c all λ should be the same for these vars
             rslt['latitude'] = self.checkReturnField(measData[self.vldPolarλind], 'trjLat', k)
-            rslt['longitude'] = self.checkReturnField(measData[self.vldPolarλind])
+            rslt['longitude'] = self.checkReturnField(measData[self.vldPolarλind], 'trjLon', k)
             rslt['land_prct'] = self.checkReturnField(measData[self.vldPolarλind], 'land_prct', k, 100)
             if k==0 and self.verbose:
                 for mv in rd.keys(): print('%s found in OSSE state variables' % mv)
@@ -338,6 +339,7 @@ class osseData(object):
                 if 'LS' in md: # normalize att. backscatter signal
                     normConstants = -np.trapz(md['LS'], x=md['RangeLidar'], axis=1) # sign flip needed since Range is in descending order
                     md['LS'] = md['LS']/normConstants[:,None]
+                md['LS'][md['LS'] < βscaLowLim] = βscaLowLim #GRASP will not tolerate negative backscatter values
             elif self.verbose:
                 print('No lidar data to convert at' + λFRMT % wvl)
         return measData

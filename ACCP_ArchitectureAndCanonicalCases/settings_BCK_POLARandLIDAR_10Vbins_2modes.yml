@@ -274,7 +274,7 @@ retrieval:
         aerosol_profile_vertical_type: gaussian
         molecular_profile_vertical_type: exponential
         number_of_layers: 50
-        reference_plane_for_polarization: principal_plane
+        reference_plane_for_polarization: meridian
         simulating_derivatives:
             number_of_fourier_expansion_coefficients: 6
             number_of_gaussian_quadratures_for_expansion_coefficients: 10
