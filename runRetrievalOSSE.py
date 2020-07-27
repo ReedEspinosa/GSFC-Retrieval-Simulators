@@ -55,6 +55,7 @@ od = osseData(osseDataPath, orbit, year, month, day, hour, random=False, wvls=wv
 savePath = od.fpDict['savePath'] % (vrsn, yamlTag, archName)
 print('-- Generating ' + os.path.basename(savePath) + ' --')
 fwdData = od.osse2graspRslts(NpixMax=56, newLayers=hghtBins)
+assert False
 radNoiseFun = None if noiseFree else functools.partial(addError, 'polar07')
 simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, maxT=20, savePath=savePath, binPathGRASP=dirGRASP, 
             intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, 

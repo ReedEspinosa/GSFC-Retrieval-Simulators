@@ -53,7 +53,8 @@ class osseData(object):
         self.readasmData() # reads asmNc4FP
         self.readmetData() # reads metNc4FP
         self.readaerData() # reads aerNc4FP
-        self.readStateVars() # reads lcExt and stateVar
+        self.readStateVars() # reads lcExt
+        self.readStateVars(finemode=True) # reads lcExt (finemode version)
         if loadLidar: self.readlidarData() # reads lc2Lidar
         self.purgeInvldInd()
 
@@ -68,7 +69,6 @@ class osseData(object):
             'aerNc4FP'* (string) - gpm-g5nr.lb2.aer_Nv.YYYYMMDD_HH00z.nc4 file path (DELP/AIRDEN for level heights)
             'lcExt'* (string)    - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ and SSA)
             'lc2Lidar'* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
-            'stateVar'* (string) - file with state variable truth, NOT YET DEVELOPED (may ultimatly be multiple files)
         All of the above files should contain noise free data, except lc2Lidar -
         """
         assert osseDataPath is not None, 'osseDataPath, Year, month and orbit must be provided to build fpDict'
@@ -198,14 +198,14 @@ class osseData(object):
         return True
 
     def readasmData(self):
-        """ Read in levelB data to obtain pressure and then surface altitude along w/ PBL height"""
+        """ Read in levelB data to obtain the fraction of land in each pixel"""
         levBFN = self.fpDict['asmNc4FP']
         call1st = 'readPolarimeterNetCDF'
         if not self._loadingChecks(prereqCalls=call1st, filename=levBFN, functionName='readasmData'): return
         levB_data = loadVARSnetCDF(levBFN, varNames=['FRLAND', 'FRLANDICE'], verbose=self.verbose)
         icePix = np.nonzero(levB_data['FRLANDICE'] > 1e-5)[0]
         self.invldInd = np.append(self.invldInd, icePix).astype(int)
-        for md in self.measData: md['land_prct'] = levB_data['FRLAND'] # PBL height in m
+        for md in self.measData: md['land_prct'] = levB_data['FRLAND']
 
     def readmetData(self):
         """ Read in levelB data to obtain pressure and then surface altitude along w/ PBL height
@@ -216,7 +216,7 @@ class osseData(object):
         levB_data = loadVARSnetCDF(levBFN, varNames=['PS', 'PBLH'], verbose=self.verbose)
         maslTmp = np.array([max(SCALE_HGHT*np.log(STAND_PRES/PS), MIN_ALT) for PS in levB_data['PS']])
         for md in self.measData: md['masl'] = maslTmp # suface height [m], we use GRASP atmosphere to get better agreement w/ ROT that ze below
-        for md in self.measData: md['PBLH'] = levB_data['PBLH'] # PBL height in m -- looks a little fishy, should double check w/ patricia
+        for md in self.measData: md['PBLH'] = levB_data['PBLH'] # PBL height in m -- probably relative to surface (Reed thinks)
 
     def readaerData(self):
         """ Read in levelB data to obtain vertical layer heights """
@@ -234,20 +234,26 @@ class osseData(object):
                     md['range'] = np.full([self.Npix, len(delp)], np.nan)
                 md['range'][k,:] = rng
 
-    def readStateVars(self):
+    def readStateVars(self, finemode=False):
         """ readStateVars will read OSSE state variable file(s) and convert to the format used to store GRASP's output
             IN: dictionary stateVarFNs containing key 'lcExt' with path to lidar "truth" file
             RESULT: sets self.rtrvdData, numpy array of Npixels dicts -> rtrvdData[nPix][varKey][mode, λ]"""
+        if finemode:
+            modeStr = '_fine '
+            lcExtFNPtrn = self.fpDict['lcExt'].replace('g5nr.lc.ext.', 'g5nr.lc.ext.finemode.')
+            assert not self.fpDict['lcExt'] == lcExtFNPtrn, 'Unable to convert lcExt file patern to finemode format.'
+        else: 
+            modeStr = ''
+            lcExtFNPtrn = self.fpDict['lcExt']
         self.rtrvdData = np.array([{} for _ in range(self.Npix)])
         if 'lcExt' not in self.fpDict:
-            if 'stateVar' in self.fpDict: print('stateVar file can not be read without an lcExt file!')
             if self.verbose: print('lcExt filename not provided, no state variable data read.')
             return False
         netCDFvarNames = ['tau','ssa','refr','refi','reff','vol','g','ext2back'] # Order is important! (see for loop in rtrvdDataSetPixels())
         call1st = ['readPolarimeterNetCDF','readaerData']
         if not self._loadingChecks(prereqCalls=call1st, functionName='readStateVars'): return
         for λ,wvl in enumerate(self.wvls): # NOTE: will only use data corresponding to λ values in measData
-            lcExtFN = self.fpDict['lcExt'] % (wvl*1000)
+            lcExtFN = lcExtFNPtrn % (wvl*1000)
             if os.path.exists(lcExtFN):
                 if self.verbose: print('Processing data from %s' % lcExtFN)
                 lcD = loadVARSnetCDF(lcExtFN, varNames=netCDFvarNames, verbose=self.verbose)
@@ -255,15 +261,20 @@ class osseData(object):
                     for lev in range(lcD['reff'].shape[1]):
                         if np.isnan(lcD['reff'][t,lev]) or lcD['reff'][t,lev] < 1e-12:
                             lcD['reff'][t,lev] = 1e-7 if lev==0 else lcD['reff'][t,lev-1]
-                timeLoopVars = [lcD[key] for key in netCDFvarNames]
+                timeLoopVars = [lcD[key] for key in netCDFvarNames] # list of values for keys defined above
                 timeLoopVars.append(self.rtrvdData)
-                self.rtrvdDataSetPixels(timeLoopVars, λ) # rtrvdData [out] is a dict, which is mutable
+                assert finemode, 'DEBUG'
+                self.rtrvdDataSetPixels(timeLoopVars, λ, km=modeStr) # contains list of rtrvdData dicts, which are mutable
                 hghtInd = np.r_[[np.zeros(self.Npix)], [self.pblTopInd]].T
-                self.rtrvdDataSetPixels(timeLoopVars, λ, hghtInd, '_PBL')
+                pblStr = modeStr + 'PBL' if finemode else '_PBL'
+                self.rtrvdDataSetPixels(timeLoopVars, λ, hghtInd, km=pblStr)
+                Nlayers = len(lcD['tau'])
+                hghtInd = np.r_[[self.pblTopInd], [np.full(self.Npix, Nlayers)]].T
+                ftStr = modeStr + 'FT' if finemode else '_FT'
+                self.rtrvdDataSetPixels(timeLoopVars, λ, hghtInd, km=ftStr)
             elif self.verbose:
-                print('No lcExt profile data found at' + λFRMT % wvl)
-            if 'stateVar' in self.fpDict:
-                assert False, 'We can not handle stateVar path yet!'
+                msg = 'No lcExt%s state variable data found at' % modeStr.replace('_',' ')
+                print(msg + λFRMT % wvl)
 
     def readlidarData(self):
         ncDataVar = 'INSTRUMENT_ATB_NOISE' if self.fpDict['noisyLidar'] else 'INSTRUMENT_ATB'
