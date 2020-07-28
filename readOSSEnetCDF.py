@@ -18,6 +18,7 @@ STAND_PRES = 1.01e5 # standard pressure (Pa)
 MIN_ALT = -100 # defualt GRASP build complains below -100m
 λFRMT = ' %5.3f μm'
 βscaLowLim = 2.0e-10 # lower bound for lidar backscatter values to be passed into rslt dict, and ultimatly to GRASP
+FINE_MODE_THESH = 0.5 # inclusive[exclusive] upper[lower] bound of fine[coarse] mode (μm)
 
 
 class osseData(object):
@@ -55,6 +56,7 @@ class osseData(object):
         self.readaerData() # reads aerNc4FP
         self.readStateVars() # reads lcExt
 #         self.readStateVars(finemode=True) # reads lcExt (finemode version)
+        self.readPSD() # reads aerSD
         if loadLidar: self.readlidarData() # reads lc2Lidar
         self.purgeInvldInd()
 
@@ -67,6 +69,7 @@ class osseData(object):
             'asmNc4FP'* (string) - gpm-g5nr.lb2.asm_Nx.YYYYMMDD_HH00z.nc4 file path (FRLAND for land percentage)
             'metNc4FP'* (string) - gpm-g5nr.lb2.met_Nv.YYYYMMDD_HH00z.nc4 file path (PS for surface alt.)
             'aerNc4FP'* (string) - gpm-g5nr.lb2.aer_Nv.YYYYMMDD_HH00z.nc4 file path (DELP/AIRDEN for level heights)
+            'psdNc4FP'* (string) - gpm-g5nr.lb2.aer_SD.YYYYMMDD_HH00z.nc4 file path (contains speciated & total size distributions)
             'lcExt'* (string)    - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ and SSA)
             'lc2Lidar'* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
         All of the above files should contain noise free data, except lc2Lidar -
@@ -83,12 +86,13 @@ class osseData(object):
             pathFrmt = os.path.join(osseDataPath, orbit.upper(), 'Level%s', 'Y%04d','M%02d', 'D%02d', '%s')
         self.fpDict = {
             'polarNc4FP': pathFrmt % (('C',)+dtTple+(orbit+'-polar07-g5nr.lc.vlidort.'+tmStr+'_%dd00nm.nc4',)),
-            'asmNc4FP': pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.asm_Nx.'+tmStr+'.nc4',)),
-            'metNc4FP': pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.met_Nv.'+tmStr+'.nc4',)),
-            'aerNc4FP': pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.aer_Nv.'+tmStr+'.nc4',)),
-            'lcExt': pathFrmt % (('C',)+dtTple+(orbit+'-g5nr.lc.ext.'+tmStr+'.%dnm.nc4',)),
-            'lc2Lidar': pathFrmt % (('D',)+dtTple+(orbit+'-g5nr.lc2.'+tmStr+'.%dnm.'+ldStr+'.nc4',)), # will need a str replace, e.g. VAR.replace('LIDAR', 'LIDAR09')
-            'savePath': pathFrmt % (('E',)+dtTple+(orbit+'-g5nr.leV%02d.GRASP.%s.%s.'+tmStr+'.pkl',)) # % (vrsn, yamlTag, archName) needed from calling function
+            'asmNc4FP'  : pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.asm_Nx.'+tmStr+'.nc4',)),
+            'metNc4FP'  : pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.met_Nv.'+tmStr+'.nc4',)),
+            'aerNc4FP'  : pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.aer_Nv.'+tmStr+'.nc4',)),
+            'psdNc4FP'  : pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.aer_SD.'+tmStr+'.nc4',)),
+            'lcExt'     : pathFrmt % (('C',)+dtTple+(orbit+'-g5nr.lc.ext.'+tmStr+'.%dnm.nc4',)),
+            'lc2Lidar'  : pathFrmt % (('D',)+dtTple+(orbit+'-g5nr.lc2.'+tmStr+'.%dnm.'+ldStr+'.nc4',)), # will need a str replace, e.g. VAR.replace('LIDAR', 'LIDAR09')
+            'savePath'  : pathFrmt % (('E',)+dtTple+(orbit+'-g5nr.leV%02d.GRASP.%s.%s.'+tmStr+'.pkl',)) # % (vrsn, yamlTag, archName) needed from calling function
         }
         self.fpDict['dateTime'] = dt.datetime(year, month, day, hour)
         self.fpDict['noisyLidar'] = lidarVer < 100 # e.g. 0900 is noise free, but 09 is not
@@ -250,8 +254,8 @@ class osseData(object):
             if self.verbose: print('lcExt filename not provided, no state variable data read.')
             return False
         netCDFvarNames = ['tau','ssa','refr','refi','reff','vol','g','ext2back'] # Order is important! (see for loop in rtrvdDataSetPixels())
-        call1st = ['readPolarimeterNetCDF','readaerData']
-        if not self._loadingChecks(prereqCalls=call1st, functionName='readStateVars'): return
+        preReqs = ['readPolarimeterNetCDF','readaerData']
+        if not self._loadingChecks(prereqCalls=preReqs, functionName='readStateVars'): return
         for λ,wvl in enumerate(self.wvls): # NOTE: will only use data corresponding to λ values in measData
             lcExtFN = lcExtFNPtrn % (wvl*1000)
             if os.path.exists(lcExtFN):
@@ -268,7 +272,7 @@ class osseData(object):
                 pblStr = modeStr + 'PBL' if finemode else '_PBL'
                 self.rtrvdDataSetPixels(timeLoopVars, λ, hghtInd, km=pblStr)
                 Nlayers = len(lcD['tau'])
-                hghtInd = np.r_[[self.pblTopInd], [np.full(self.Npix, Nlayers)]].T
+                hghtInd = np.r_[[self.pblTopInd+1], [np.full(self.Npix, Nlayers)]].T
                 ftStr = modeStr + 'FT' if finemode else '_FT'
                 self.rtrvdDataSetPixels(timeLoopVars, λ, hghtInd, km=ftStr)
                 if finemode: self.estimateCoarseMode()
@@ -288,7 +292,30 @@ class osseData(object):
                     termTot = rd[tauTotKey]/rd['tau_coarse'+ls]*rd[ri]
                     termFine = rd['tau_fine'+ls]/rd['tau_coarse'+ls]*rd[ri+'_fine'+ls]
                     rd[ri+'_coarse'+ls] = termTot - termFine # nc = τ/τc*n - τf/τc*nf (uses τ weighted averaging)
-  
+
+    def readPSD(self):
+        """ Read in size distribution data and separate by mode/height(PBL vs FT) """
+        levBFN = self.fpDict['aerNc4FP']
+        preReqs = ['readPolarimeterNetCDF','readmetData']
+        if not self._loadingChecks(prereqCalls=preReqs, filename=levBFN, functionName='readPSD'): return
+        psdData = loadVARSnetCDF(levBFN, varNames=['radius', 'TOTdist'], verbose=self.verbose) # radius [m], dv/dr [m^3/m]
+        fcInds = {'fine'  : psdData['radius'] <= FINE_MODE_THESH,
+                  'coarse': psdData['radius'] > FINE_MODE_THESH}
+        for dvdr,rd,pblInd in zip(psdData['TOTdist'], self.rtrvdData, self.pblTopInd): # loop over pixels
+            rd['r'] = psdData['radius']
+            rd['dVdlnr'] = dvdr.sum(axis=0)*rd['r'] # total
+            for modeStr in ['fine','coarse']:
+                rd['dVdlnr_'+modeStr] = np.zeros(len(rd['r']))
+                rd['dVdlnr_'+modeStr][fcInds[modeStr]] = rd['dVdlnr'][fcInds[modeStr]]
+            rd['dVdlnr_PBL'] = dvdr[0:pblInd+1,:].sum(axis=0)*rd['r'] # PBL
+            for modeStr in ['finePBL','coarsePBL']:
+                rd['dVdlnr_'+modeStr] = np.zeros(len(rd['r']))
+                rd['dVdlnr_'+modeStr][fcInds[modeStr]] = rd['dVdlnr_PBL'][fcInds[modeStr]]
+            rd['dVdlnr_FT'] = dvdr[pblInd:,:].sum(axis=0)*rd['r'] # FT into LS
+            for modeStr in ['fineFT','coarseFT']:
+                rd['dVdlnr_'+modeStr] = np.zeros(len(rd['r']))
+                rd['dVdlnr_'+modeStr][fcInds[modeStr]] = rd['dVdlnr_FT'][fcInds[modeStr]]
+
     def readlidarData(self):
         ncDataVar = 'INSTRUMENT_ATB_NOISE' if self.fpDict['noisyLidar'] else 'INSTRUMENT_ATB'
         call1st = 'readPolarimeterNetCDF'
