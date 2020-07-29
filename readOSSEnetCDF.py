@@ -275,12 +275,12 @@ class osseData(object):
                 hghtInd = np.r_[[self.pblTopInd+1], [np.full(self.Npix, Nlayers)]].T
                 ftStr = modeStr + 'FT' if finemode else '_FT'
                 self.rtrvdDataSetPixels(timeLoopVars, λ, hghtInd, km=ftStr)
-                if finemode: self.estimateCoarseMode()
+                if finemode: self._estimateCoarseMode()
             elif self.verbose:
                 msg = 'No lcExt%s state variable data found at' % modeStr.replace('_',' ')
                 print(msg + λFRMT % wvl)
 
-    def estimateCoarseMode(self):
+    def _estimateCoarseMode(self):
         """"Add the total, PBL and FT coarse mode values of τ, n & k to self.rtrvdData"""
         layerStrs = ['', 'PBL', 'FT']
         riStrs = ['n', 'k']
@@ -295,27 +295,42 @@ class osseData(object):
 
     def readPSD(self):
         """ Read in size distribution data and separate by mode/height(PBL vs FT) """
+        dists2pull['TOTdist', 'DUdist'] # could add SUdist, SSdist, OCPHOBICdist, OCPHILICdist, etc. 
         levBFN = self.fpDict['aerNc4FP']
         preReqs = ['readPolarimeterNetCDF','readmetData']
         if not self._loadingChecks(prereqCalls=preReqs, filename=levBFN, functionName='readPSD'): return
-        psdData = loadVARSnetCDF(levBFN, varNames=['radius', 'TOTdist'], verbose=self.verbose) # radius [m], dv/dr [m^3/m]
-        fcInds = {'fine'  : psdData['radius'] <= FINE_MODE_THESH,
-                  'coarse': psdData['radius'] > FINE_MODE_THESH}
-        for dvdr,rd,pblInd in zip(psdData['TOTdist'], self.rtrvdData, self.pblTopInd): # loop over pixels
-            rd['r'] = psdData['radius']
-            rd['dVdlnr'] = dvdr.sum(axis=0)*rd['r'] # total
-            for modeStr in ['fine','coarse']:
-                rd['dVdlnr_'+modeStr] = np.zeros(len(rd['r']))
-                rd['dVdlnr_'+modeStr][fcInds[modeStr]] = rd['dVdlnr'][fcInds[modeStr]]
-            rd['dVdlnr_PBL'] = dvdr[0:pblInd+1,:].sum(axis=0)*rd['r'] # PBL
-            for modeStr in ['finePBL','coarsePBL']:
-                rd['dVdlnr_'+modeStr] = np.zeros(len(rd['r']))
-                rd['dVdlnr_'+modeStr][fcInds[modeStr]] = rd['dVdlnr_PBL'][fcInds[modeStr]]
-            rd['dVdlnr_FT'] = dvdr[pblInd:,:].sum(axis=0)*rd['r'] # FT into LS
-            for modeStr in ['fineFT','coarseFT']:
-                rd['dVdlnr_'+modeStr] = np.zeros(len(rd['r']))
-                rd['dVdlnr_'+modeStr][fcInds[modeStr]] = rd['dVdlnr_FT'][fcInds[modeStr]]
-
+        psdData = loadVARSnetCDF(levBFN, varNames=['radius']+dists2pull, verbose=self.verbose) # radius [m], dv/dr [m^3/m]
+        fineInd = psdData['radius'] <= FINE_MODE_THESH,
+        crseInd = psdData['radius'] > FINE_MODE_THESH}
+        for getKey in dists2pull:
+            for dvdr,rd,pblInd in zip(psdData[getKey], self.rtrvdData, self.pblTopInd): # loop over pixels
+                if 'r' not in rd: rd['r'] = psdData['radius']
+                prfx = '' if getKey=='TOTdist' else getKey.replace('dist','')
+                self._calcPSDvals(rd, dvdr, prfx+'')
+                self._calcPSDvals(rd, dvdr, prfx+'fine', modeInds=fineInd)
+                self._calcPSDvals(rd, dvdr, prfx+'coarse', modeInds=crseInd)
+                pblInds = np.r_[0:pblInd+1]
+                self._calcPSDvals(rd, dvdr, prfx+'finePBL', hgtInds=pblInds, modeInds=fineInd)
+                self._calcPSDvals(rd, dvdr, prfx+'coarsePBL', hgtInds=pblInds, modeInds=crseInd)
+                ftInds = np.r_[pblInd:dvdr.shape[0]]
+                self._calcPSDvals(rd, dvdr, prfx+'fineFT', hgtInds=ftInds, modeInds=fineInd)
+                self._calcPSDvals(rd, dvdr, prfx+'coarseFT', hgtInds=ftInds, modeInds=crseInd)
+        # TODO: calculate SPH from 1-DU/regular ratios
+            
+    def _calcPSDvals(self, rd, dvdr, rdSetKey, hgtInds=slice(None), modeInds=slice(None)):
+        """ Not hgtInds must be list/array of ints; modeInds should be logical (although ints likely will work)"""
+        if not rdSetKey=='': rdSetKey = '_'+rdSetKey
+        # N(r) [integrated over height]
+        rd['dVdlnr'+rdSetKey] = np.zeros(len(rd['r']))
+        rd['dVdlnr'+rdSetKey][modeInds] = dvdr[hgtInds,modeInds].sum(axis=0)*rd['r'][modeInds]
+        # V(h) [integrated over size]
+        rd['volProf'+rdSetKey] = np.zeros(dvdr.shape[0])
+        for Indlyr, dvdrLyr in zip(hgtInds, dvdr[hgtInds,modeInds]): # loop over layers
+            rd['volProf'+rdSetKey][Indlyr] = np.trapz(dvdrLyr, x=rd['r'][modeInds])
+        # total volume [integrate over both]
+        rd['vol'+rdSetKey] = rd['volProf'+rdSetKey].sum()
+        
+        
     def readlidarData(self):
         ncDataVar = 'INSTRUMENT_ATB_NOISE' if self.fpDict['noisyLidar'] else 'INSTRUMENT_ATB'
         call1st = 'readPolarimeterNetCDF'
