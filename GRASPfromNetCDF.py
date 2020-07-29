@@ -12,20 +12,20 @@ from MADCAP_functions import readVILDORTnetCDF, hashFileSHA1
 # Paths to files
 #binPathGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
 binPathGRASP = '/usr/local/bin/grasp'
-grspChnkSz = 28 # number of pixles in a single SDATA file
-maxCPUs = 3; # maximum number of simultaneous grasp run threads
+grspChnkSz = 20 # number of pixles in a single SDATA file
+maxCPUs = 4; # maximum number of simultaneous grasp run threads
 
-radianceFNfrmtStr = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+simple_aerosol_BRDF/calipso-g5nr.vlidort.vector.MODIS_BRDF.%dd00.nc4'
+radianceFNfrmtStr = '/Users/wrespino/Synced/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+simple_aerosol_CX/calipso-g5nr.vlidort.vector.CX.%dd00.nc4'
 dayStr = '20060901'
 dirGRASPworking = False # use sytem temp directories as path to store GRASP SDATA and output files 
-pathYAML = '/Users/wrespino/Synced/Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+simple_aerosol_BRDF/calipso-g5nr.vlidort.vector.BRDF.1Wvlsd00.yml'
-savePathTag = 'VLIDORTMatch_vB' # preprend tag for save file, A-z and _ only
+pathYAML = '/Users/wrespino/Synced/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+simple_aerosol_CX/calipso-g5nr.vlidort.vector.CX.1Wvlsd00.yml'
+savePathTag = 'VLIDORTMatch_vC' # preprend tag for save file, A-z and _ only
 #vB = number_of_gaussian_quadratures_for_expansion_coefficients=15
 #vC = number_of_gaussian_quadratures_for_expansion_coefficients=30
 
 # Constants
 wvls = [0.800] # wavelengths to read from levC files
-lndPrct = 100; # land cover amount (%)
+lndPrct = 0; # land cover amount (%)
 orbHghtKM = 700 # sensor height (km)
 GRASP_MIN = 1e-8 # SDATA measurements smaller than GRASP_MIN will be replaced by GRASP_MIN
 graspInputs = 'IQU' # 'Ionly' (intensity), 'DOLP' (I & DOLP), 'IQU' (1st 3 stokes), IQU_SURF (IQU for surface only)

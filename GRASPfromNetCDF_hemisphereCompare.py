@@ -15,16 +15,16 @@ import scipy.integrate.quadrature
 
 
 # Paths to files benchmark_GRASP_basedLUTs_V1/graspConfig_12_Osku_DrySU_V1
-basePath = '/Users/wrespino/Synced/' # NASA MacBook
+# basePath = '/Users/wrespino/Synced/' # NASA MacBook
 #rmtPrjctPath = os.path.join(basePath, 'Remote_Sensing_Projects/MADCAP_CAPER/VLIDORTbench_graspConfig_12')
-#radianceFNfrmtStr = os.path.join(rmtPrjctPath, 'benchmark_GRASP_basedLUTs_V2/graspConfig_12_Osku_DU001_V4/calipso-g5nr.vlidort.vector.LAMBERTIAN.%dd00.nc4')
-rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='VLIDORTMatch_vB*.pkl')
+radianceFNfrmtStr = '/Users/wrespino/Synced/MADCAP_CAPER/VLIDORTbench_graspConfig_12/benchmark_rayleigh+simple_aerosol_CX/calipso-g5nr.vlidort.vector.CX.%dd00.nc4'
+rsltsFile = findNewestMatch(os.path.split(radianceFNfrmtStr)[0], pattern='VLIDORTMatch_vC*.pkl')
 savePlotPath = os.path.split(radianceFNfrmtStr)[0]
 
 #varNames = ['I', 'Q', 'U', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'sensor_zenith', 'sensor_azimuth']
 varNames = ['ROT', 'TAU', 'I', 'Q', 'U', 'Q_scatplane', 'U_scatplane', 'surf_reflectance', 'surf_reflectance_Q', 'surf_reflectance_U', 'surf_reflectance_Q_scatplane','surf_reflectance_U_scatplane', 'sensor_zenith', 'sensor_azimuth']
 
-pltVar = 'DOLP'
+pltVar = 'I'
 noRayleigh = False # only compare with surface reflectance
 relDeltaI = True # relative (True) or absolute (False) I/Q/U difference (no effect on DOLP)
 singScat = False # plot single scattering aerosol (no surf or rayleigh) instead of GRASP
@@ -37,9 +37,9 @@ gDB.loadResults(rsltsFile)
 cstmTag = re.search('^[A-z_0-9]+_([0-9]+[nmLambda]+_YAML[0-9a-f]+).pkl', os.path.split(rsltsFile)[1])
 assert not cstmTag is None, 'Could not parse the PKL filename'
 cstmTag = cstmTag.group(1) + "_P11fixed"
-ttlStr = 'λ = 400 nm'
+ttlStr = 'λ = 800 nm'
 
-maxZnth = 60; # difference plots scales will accommodate values beyond this zenith angle
+maxZnth = 70; # difference plots scales will accommodate values beyond this zenith angle
 hemi = False
 
 # PLOTTING CODE
