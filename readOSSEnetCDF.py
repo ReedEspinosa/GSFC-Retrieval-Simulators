@@ -305,29 +305,46 @@ class osseData(object):
         for getKey in dists2pull:
             for dvdr,rd,pblInd in zip(psdData[getKey], self.rtrvdData, self.pblTopInd): # loop over pixels
                 if 'r' not in rd: rd['r'] = psdData['radius']
-                prfx = '' if getKey=='TOTdist' else getKey.replace('dist','')
-                self._calcPSDvals(rd, dvdr, prfx+'')
-                self._calcPSDvals(rd, dvdr, prfx+'fine', modeInds=fineInd)
-                self._calcPSDvals(rd, dvdr, prfx+'coarse', modeInds=crseInd)
+                prfx = '' if getKey=='TOTdist' else '_'+getKey.replace('dist','')
+                self._calcPSDvals(rd, dvdr, prfx, 'fine', modeInds=fineInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'coarse', modeInds=crseInd)
+                self._calcPSDvals(rd, dvdr, prfx, '')
                 pblInds = np.arange(pblInd+1)
-                self._calcPSDvals(rd, dvdr, prfx+'finePBL', hgtInds=pblInds, modeInds=fineInd)
-                self._calcPSDvals(rd, dvdr, prfx+'coarsePBL', hgtInds=pblInds, modeInds=crseInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'finePBL', hgtInds=pblInds, modeInds=fineInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'coarsePBL', hgtInds=pblInds, modeInds=crseInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'PBL', hgtInds=pblInds)
                 ftInds = np.arange(pblInd, dvdr.shape[0])
-                self._calcPSDvals(rd, dvdr, prfx+'fineFT', hgtInds=ftInds, modeInds=fineInd)
-                self._calcPSDvals(rd, dvdr, prfx+'coarseFT', hgtInds=ftInds, modeInds=crseInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=ftInds, modeInds=fineInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=ftInds, modeInds=crseInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=ftInds)
         for rd in self.rtrvdData: rd['SPH'] = 1 - rd['vol_DU']/rd['vol']
-   
-    def _calcPSDvals(self, rd, dvdr, rdSetKey, hgtInds=None, modeInds=slice(None)):
+
+    def _calcPSDvals(self, rd, dvdr, prfx, var, hgtInds=None, modeInds=slice(None)):
         """ Not hgtInds must be list/array of ints; modeInds should be logical (although ints likely will work)"""
-        if not rdSetKey=='': rdSetKey = '_'+rdSetKey
+        rdSetKey = prfx if var=='' else '%s_%s' % (prfx, var)
         if hgtInds is None: hgtInds = np.arange(dvdr.shape[0]) # use all vertical layers
         # N(r) [integrated over height]
         rd['dVdlnr'+rdSetKey] = np.zeros(len(rd['r']))
-        rd['dVdlnr'+rdSetKey][modeInds] = dvdr[hgtInds[:,None],modeInds].sum(axis=0)*rd['r'][modeInds]
+        rd['dVdlnr'+rdSetKey][modeInds] = dvdr[hgtInds[:,None],modeInds].sum(axis=0)*rd['r'][modeInds] # TODO: FIX THESE UNITS!
         # V(h) [integrated over size]
         rd['volProf'+rdSetKey] = np.zeros(dvdr.shape[0])
+        vPrfFineKy = 'volProf%s_fine' % prfx
+        vPrfCoarseKy = 'volProf%s_coarse' % prfx
+        printOut = True
         for Indlyr, dvdrLyr in zip(hgtInds, dvdr[hgtInds[:,None],modeInds]): # loop over layers
-            rd['volProf'+rdSetKey][Indlyr] = np.trapz(dvdrLyr, x=rd['r'][modeInds])
+            if 'fine' in var and not 'fine'==var and vPrfFineKy in rd: # we want PBL(FT) specific but already have column
+                rd['volProf'+rdSetKey][Indlyr] = rd[vPrfFineKy][Indlyr]
+                if printOut: print('%s - FINE' % rdSetKey)
+            elif 'coarse' in var and not 'coarse'==var and vPrfCoarseKy in rd: # we want PBL(FT) specific but already have column
+                rd['volProf'+rdSetKey][Indlyr] = rd[vPrfCoarseKy][Indlyr]
+                if printOut: print('%s - CRS' % rdSetKey)
+            elif vPrfFineKy in rd and vPrfCoarseKy in rd and not var in ['fine', 'coarse']: # we want total, just sum fine+coarse mode profiles
+                rd['volProf'+rdSetKey][Indlyr] = rd[vPrfFineKy][Indlyr] + rd[vPrfCoarseKy][Indlyr]
+                if printOut: print('%s - SUM' % rdSetKey)
+            else: # we got nothing, need to perform the _SLOW_ integration
+                rd['volProf'+rdSetKey][Indlyr] = np.trapz(dvdrLyr, x=rd['r'][modeInds])
+                if printOut: print('%s - TRAPZ' % rdSetKey)
+            printOut = False
         # total volume [integrate over both]
         rd['vol'+rdSetKey] = rd['volProf'+rdSetKey].sum()
 
