@@ -26,6 +26,7 @@ def loadVARSnetCDF(filePath, varNames=None, verbose=False):
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore', category=UserWarning) # ignore missing_value not cast warning
                 measData[varName] = np.array(netCDFobj.variables[varName])
+            measData[varName][np.isnan(measData[varName])] = badDataCuttoff+1 # could be better, but we rarely see NaNs at this point 
             if 'float' in measData[varName].dtype.name and np.any(measData[varName] > badDataCuttoff):
                 if np.issubdtype(measData[varName].dtype, np.integer): # numpy ints can't be NaN
                     measData[varName] = measData[varName].astype(np.float32)

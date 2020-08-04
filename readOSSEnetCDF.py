@@ -37,7 +37,7 @@ class osseData(object):
         self.invldInd = np.array([])
         self.invldIndPurged = False
         self.loadingCalls = []
-        self.pblTopInd = None
+        self.pblInds = None
         self.verbose = verbose
         self.vldPolarλind = None # needed b/c measData at lidar data λ is missing some variables
         self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random, lidarVersion)
@@ -124,8 +124,8 @@ class osseData(object):
                     keys in output dictionary:
                 NOTE: GRASP can only use one SZA value & simulator just takes 1st value. Maybe just make them all equal to the average? """
         assert self.measData, 'self.measData must be set (e.g through readPolarimeterNetCDF()) before calling this method!'
-        rsltVars = ['fit_I','fit_Q','fit_U','fit_VBS','fit_VExt','fit_DP','fit_LS',          'vis','fis',         'sza', 'RangeLidar']
-        mdVars   = [    'I',    'Q',    'U',    'VBS',    'VExt',    'DP',    'LS','sensor_zenith','fis','solar_zenith', 'RangeLidar']
+        rsltVars = ['fit_I','fit_Q','fit_U','fit_VBS','fit_VExt','fit_DP','fit_LS',          'vis','fis',         'sza', 'RangeLidar', 'range']
+        mdVars   = [    'I',    'Q',    'U',    'VBS',    'VExt',    'DP',    'LS','sensor_zenith','fis','solar_zenith', 'RangeLidar', 'range']
         measData = self.convertPolar2GRASP() # we can chain existing measData when we add LIDAR
         measData = self.convertLidar2GRASP(measData, newLayers)
         Nλ = len(measData)
@@ -158,15 +158,15 @@ class osseData(object):
                 ds = rslt['datetime'].strftime("%d/%m/%Y %H:%M:%S")
                 sza, Δsza = self.angleVals(rslt['sza'])
                 vφa, Δvφa = self.angleVals(rslt['fis'])
-                vza, Δvza = self.angleVals(rslt['vis']*(1-2*(rslt['fis']>180)))
+                with np.errstate(invalid='ignore'): vza, Δvza = self.angleVals(rslt['vis']*(1-2*(rslt['fis']>180))) # need with statement b/c fis could be NaN at lidar λ
                 frmStr = frmStr + ', θs=%4.1f° (±%4.1f°), φ=%4.1f° (±%4.1f°), θv=%4.1f° (±%4.1f°)'
                 print(frmStr % (k, ds, rslt['latitude'], rslt['longitude'], 100*rslt['land_prct'],
                                 rd['masl'], sza, Δsza, vφa, Δvφa, vza, Δvza))
         return rslts
 
     def angleVals(self, keyVal):
-        angle = np.mean(keyVal)
-        Δangle = np.abs(keyVal-angle).max()
+        angle = np.nanmean(keyVal) # nanmean b/c lidar channels will have nans
+        Δangle = np.nanmax(np.abs(keyVal-angle))
         return angle, Δangle
 
     def checkReturnField(self, dictObj, field, ind, defualtVal=0):
@@ -224,16 +224,18 @@ class osseData(object):
         for pblhVal,rd in zip(levB_data['PBLH'], self.rtrvdData): rd['pblh'] = pblhVal
 
     def readaerData(self):
-        """ Read in levelB data to obtain vertical layer heights """
+        """ Read in levelB data to obtain vertical layer heights """ # HOW TO PS WORK IN HERE? gpm-g5nr.lb2.aer_Nv.20060801_0000z.nc4.. is that aerNc4FP? it has PS and the vars below...
         levBFN = self.fpDict['aerNc4FP']
         preReqs = ['readPolarimeterNetCDF','readmetData']
         if not self._loadingChecks(prereqCalls=preReqs, filename=levBFN, functionName='readaerData'): return
         levB_data = loadVARSnetCDF(levBFN, varNames=['AIRDENS', 'DELP'], verbose=self.verbose) # air density [kg/m^3], pressure thickness [Pa]
-        self.pblTopInd = np.zeros(self.Npix, dtype=np.int) # used for indexing -> need integer type
+        self.Nlayers = levB_data['AIRDENS'].shape[1]
+        self.pblInds = np.zeros((self.Npix, self.Nlayers), dtype=np.bool)
         for k,(airdens,delp) in enumerate(zip(levB_data['AIRDENS'], levB_data['DELP'])): # loop over pixels
             ze = (delp[::-1]/airdens[::-1]/GRAV).cumsum()[::-1] # profiles run top down so we reverse order for cumsum
-            rng = (np.r_[ze[1::],0] + ze)/2
-            self.pblTopInd[k] = np.argmin(np.abs(self.rtrvdData[k]['pblh'] - rng))
+            rng = (np.r_[ze[1::],0] + ze)/2 # ze is then the top of the layers (?), so rng is midpoints
+            pblTopInd = np.argmin(np.abs(self.rtrvdData[k]['pblh'] - rng))
+            self.pblInds[k, pblTopInd:self.Nlayers] = True
             for md in self.measData:
                 if 'range' not in md: # i.e. k==0
                     md['range'] = np.full([self.Npix, len(delp)], np.nan)
@@ -267,18 +269,47 @@ class osseData(object):
                             lcD['reff'][t,lev] = 1e-7 if lev==0 else lcD['reff'][t,lev-1]
                 timeLoopVars = [lcD[key] for key in netCDFvarNames] # list of values for keys defined above
                 timeLoopVars.append(self.rtrvdData)
-                self.rtrvdDataSetPixels(timeLoopVars, λ, km=modeStr) # contains list of rtrvdData dicts, which are mutable
-                hghtInd = np.r_[[np.zeros(self.Npix)], [self.pblTopInd]].T
+                self._rtrvdDataSetPixels(timeLoopVars, λ, km=modeStr) # contains list of rtrvdData dicts, which are mutable
                 pblStr = modeStr + 'PBL' if finemode else '_PBL'
-                self.rtrvdDataSetPixels(timeLoopVars, λ, hghtInd, km=pblStr)
-                Nlayers = len(lcD['tau'])
-                hghtInd = np.r_[[self.pblTopInd+1], [np.full(self.Npix, Nlayers)]].T
+                self._rtrvdDataSetPixels(timeLoopVars, λ, self.pblInds, km=pblStr)
                 ftStr = modeStr + 'FT' if finemode else '_FT'
-                self.rtrvdDataSetPixels(timeLoopVars, λ, hghtInd, km=ftStr)
+                self._rtrvdDataSetPixels(timeLoopVars, λ, ~self.pblInds, km=ftStr)
                 if finemode: self._estimateCoarseMode()
             elif self.verbose:
                 msg = 'No lcExt%s state variable data found at' % modeStr.replace('_',' ')
                 print(msg + λFRMT % wvl)
+
+    def _rtrvdDataSetPixels(self, timeLoopVars, λ, hghtInds=None, km=''):
+        """ hghtInd is a logical 2D array [Npix X Nlayer] with true at index of values to use """ 
+        if hghtInds is None: hghtInds = np.ones((self.Npix, self.Nlayers), dtype=np.bool)
+        firstλ = 'aod'+km not in timeLoopVars[-1][0]
+        for τ,ω,n,k,rEff,V,g,S,rd,hInd in zip(*timeLoopVars, hghtInds): # loop over each pixel and vertically average
+            if firstλ:
+                for varKey in ['aod'+km,'ssa'+km,'n'+km,'k'+km,'g'+km, 'LidarRatio'+km]: # spectrally dependent vars only, reff doesn't need allocation
+                    rd[varKey] = np.full(len(self.wvls), np.nan)
+            if np.all(~np.isnan(rEff)):
+                rd['aod'+km][λ] = τ[hInd].sum()
+                if rd['aod'+km][λ]==0:
+                    print('IT WAS ZERO')
+                rd['ssa'+km][λ] = np.sum(τ[hInd]*ω[hInd])/rd['aod'+km][λ] # ω=Σβh/Σαh & ωh*αh=βh => ω=Σωh*αh/Σαh
+                rd['n'+km][λ] = np.sum(τ[hInd]*n[hInd])/rd['aod'+km][λ] # n is weighted by τ (this is a non-physical quantity)
+                rd['k'+km][λ] = np.sum(τ[hInd]*k[hInd])/rd['aod'+km][λ] # k is weighted by τ (this is a non-physical quantity)
+                rEff[rEff < 1e-12] = 1e-12
+                rEffTot = np.sum(V[hInd])/np.sum(V[hInd]/rEff[hInd]) # see bottom of this method for derivation
+                if firstλ:
+                    rd['rEff'+km] = rEffTot
+                elif not np.isclose(rd['rEff'+km], rEffTot):
+                    warnings.warn('The current rEff (%8.5f μm) differs from the first rEff (%8.5f μm) derived.' % (rEffTot, rd['rEff'+km]))
+                rd['g'+km][λ] = np.sum(τ[hInd]*ω[hInd]*g[hInd])/np.sum(τ[hInd]*ω[hInd]) # see bottom of this method for derivation
+                rd['LidarRatio'+km][λ] = np.sum(τ[hInd])/np.sum(τ[hInd]/S[hInd]) # S=τ/F11[180] & F11h[180]=τh/Sh => S=Στh/Σ(τh/Sh)
+            else:
+                print('¡¡¡¡NANS IN REFF!!!!')
+        """ --- reff vertical averaging (reff_h=Rh, # conc.=Nh, vol_conc.=Vh, height_ind=h) ---
+            reff = ∫ ΣNh*r^3*dr/∫ ΣNh*r^2*dr = 3/4/π*ΣVh/∫ Σnh*r^2*dr
+            Rh = (3/4/π*Vh)/∫ nh*r^2*dr -> reff = 3/4/π*ΣVh/(Σ(3/4/π*Vh)/Rh) = ΣVh/Σ(Vh/Rh)
+            --- g vertical averaging (normalized PF = P11[θ], absolute PF = F11[θ]) ---
+            P11[θ] = F11[θ]/β = Σ(τh*ωh*P11h[θ])/Στh*ωh -> g = ∫ P11[θ]...dθ = ∫ Σ(τh*ωh*P11h[θ])/Στh*ωh...dθ
+            g = Σ(τh*ωh*∫P11h[θ]...dθ)/Στh*ωh = Σ(τh*ωh*gh)/Σ(τh*ωh) """
 
     def _estimateCoarseMode(self):
         """"Add the total, PBL and FT coarse mode values of τ, n & k to self.rtrvdData"""
@@ -300,51 +331,45 @@ class osseData(object):
         preReqs = ['readPolarimeterNetCDF','readmetData']
         if not self._loadingChecks(prereqCalls=preReqs, filename=levBFN, functionName='readPSD'): return
         psdData = loadVARSnetCDF(levBFN, varNames=['radius']+dists2pull, verbose=self.verbose) # radius [m], dv/dr [m^3/m]
-        fineInd = psdData['radius'] <= FINE_MODE_THESH
-        crseInd = psdData['radius'] > FINE_MODE_THESH
+        fineInd = psdData['radius'] <= FINE_MODE_THESH/1e6
+        crseInd = psdData['radius'] > FINE_MODE_THESH/1e6
         for getKey in dists2pull:
-            for dvdr,rd,pblInd in zip(psdData[getKey], self.rtrvdData, self.pblTopInd): # loop over pixels
-                if 'r' not in rd: rd['r'] = psdData['radius']
+            for dvdr,rd,pblInd in zip(psdData[getKey], self.rtrvdData, self.pblInds): # loop over pixels
+                if 'r' not in rd: rd['r'] = psdData['radius']*1e6
+                dvdr = dvdr/1e6
                 prfx = '' if getKey=='TOTdist' else '_'+getKey.replace('dist','')
                 self._calcPSDvals(rd, dvdr, prfx, 'fine', modeInds=fineInd)
                 self._calcPSDvals(rd, dvdr, prfx, 'coarse', modeInds=crseInd)
                 self._calcPSDvals(rd, dvdr, prfx, '')
-                pblInds = np.arange(pblInd+1)
-                self._calcPSDvals(rd, dvdr, prfx, 'finePBL', hgtInds=pblInds, modeInds=fineInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'coarsePBL', hgtInds=pblInds, modeInds=crseInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'PBL', hgtInds=pblInds)
-                ftInds = np.arange(pblInd, dvdr.shape[0])
-                self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=ftInds, modeInds=fineInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=ftInds, modeInds=crseInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=ftInds)
+                self._calcPSDvals(rd, dvdr, prfx, 'finePBL', hgtInds=pblInd, modeInds=fineInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'coarsePBL', hgtInds=pblInd, modeInds=crseInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'PBL', hgtInds=pblInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=~pblInd, modeInds=fineInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
         for rd in self.rtrvdData: rd['SPH'] = 1 - rd['vol_DU']/rd['vol']
 
     def _calcPSDvals(self, rd, dvdr, prfx, var, hgtInds=None, modeInds=slice(None)):
-        """ Not hgtInds must be list/array of ints; modeInds should be logical (although ints likely will work)"""
+        """ Not hgtInds and modeInds should be logical (although ints may also work)"""
         rdSetKey = prfx if var=='' else '%s_%s' % (prfx, var)
-        if hgtInds is None: hgtInds = np.arange(dvdr.shape[0]) # use all vertical layers
+        if hgtInds is None: hgtInds = np.ones(self.Nlayers, dtype=np.bool) # use all vertical layers
         # N(r) [integrated over height]
         rd['dVdlnr'+rdSetKey] = np.zeros(len(rd['r']))
-        rd['dVdlnr'+rdSetKey][modeInds] = dvdr[hgtInds[:,None],modeInds].sum(axis=0)*rd['r'][modeInds] # TODO: FIX THESE UNITS!
+        rd['dVdlnr'+rdSetKey][modeInds] = dvdr[hgtInds][:, modeInds].sum(axis=0)*rd['r'][modeInds] # TODO: FIX THESE UNITS!
         # V(h) [integrated over size]
-        rd['volProf'+rdSetKey] = np.zeros(dvdr.shape[0])
+        rd['volProf'+rdSetKey] = np.zeros(self.Nlayers)
         vPrfFineKy = 'volProf%s_fine' % prfx
         vPrfCoarseKy = 'volProf%s_coarse' % prfx
-        printOut = True
-        for Indlyr, dvdrLyr in zip(hgtInds, dvdr[hgtInds[:,None],modeInds]): # loop over layers
+        assert sum(hgtInds)>0, 'At least one entry in hgtInds must be True – the layer has to be somewhere.'
+        for Indlyr, dvdrLyr in zip(np.where(hgtInds)[0], dvdr[hgtInds][:,modeInds]): # loop over layers – top down (IndLyr=71 is bottom)
             if 'fine' in var and not 'fine'==var and vPrfFineKy in rd: # we want PBL(FT) specific but already have column
                 rd['volProf'+rdSetKey][Indlyr] = rd[vPrfFineKy][Indlyr]
-                if printOut: print('%s - FINE' % rdSetKey)
             elif 'coarse' in var and not 'coarse'==var and vPrfCoarseKy in rd: # we want PBL(FT) specific but already have column
                 rd['volProf'+rdSetKey][Indlyr] = rd[vPrfCoarseKy][Indlyr]
-                if printOut: print('%s - CRS' % rdSetKey)
-            elif vPrfFineKy in rd and vPrfCoarseKy in rd and not var in ['fine', 'coarse']: # we want total, just sum fine+coarse mode profiles
+            elif vPrfFineKy in rd and vPrfCoarseKy in rd and var not in ['fine', 'coarse']: # we want total, just sum fine+coarse mode profiles
                 rd['volProf'+rdSetKey][Indlyr] = rd[vPrfFineKy][Indlyr] + rd[vPrfCoarseKy][Indlyr]
-                if printOut: print('%s - SUM' % rdSetKey)
             else: # we got nothing, need to perform the _SLOW_ integration
                 rd['volProf'+rdSetKey][Indlyr] = np.trapz(dvdrLyr, x=rd['r'][modeInds])
-                if printOut: print('%s - TRAPZ' % rdSetKey)
-            printOut = False
         # total volume [integrate over both]
         rd['vol'+rdSetKey] = rd['volProf'+rdSetKey].sum()
 
@@ -363,37 +388,6 @@ class osseData(object):
             elif self.verbose:
                 print('No lidar data found at' + λFRMT % wvl)
         return
-
-    def rtrvdDataSetPixels(self, timeLoopVars, λ, hghtInd=None, km=''):
-        """ hghtInd (Npixels x 2) vector denoating top, bottom (lev=0 is TOA in G5NR) lev index of PBL """
-        if hghtInd is None: hghtInd = np.repeat(slice(None), self.Npix)
-        firstλ = 'aod'+km not in timeLoopVars[-1][0]
-        for τ,ω,n,k,rEff,V,g,S,rd,hSlc in zip(*timeLoopVars, hghtInd): # loop over each pixel and vertically average
-            if not type(hSlc) is slice: hSlc = slice(int(hSlc[0]), int(hSlc[1]+1))
-            if firstλ:
-                for varKey in ['aod'+km,'ssa'+km,'n'+km,'k'+km,'g'+km, 'LidarRatio'+km]: # spectrally dependent vars only, reff doesn't need allocation
-                    rd[varKey] = np.full(len(self.wvls), np.nan)
-            if np.all(~np.isnan(rEff)):
-                rd['aod'+km][λ] = τ[hSlc].sum()
-                rd['ssa'+km][λ] = np.sum(τ[hSlc]*ω[hSlc])/rd['aod'+km][λ] # ω=Σβh/Σαh & ωh*αh=βh => ω=Σωh*αh/Σαh
-                rd['n'+km][λ] = np.sum(τ[hSlc]*n[hSlc])/rd['aod'+km][λ] # n is weighted by τ (this is a non-physical quantity)
-                rd['k'+km][λ] = np.sum(τ[hSlc]*k[hSlc])/rd['aod'+km][λ] # k is weighted by τ (this is a non-physical quantity)
-                rEff[rEff < 1e-12] = 1e-12
-                rEffTot = np.sum(V[hSlc])/np.sum(V[hSlc]/rEff[hSlc]) # see bottom of this method for derivation
-                if firstλ:
-                    rd['rEff'+km] = rEffTot
-                elif not np.isclose(rd['rEff'+km], rEffTot):
-                    warnings.warn('The current rEff (%8.5f μm) differs from the first rEff (%8.5f μm) derived.' % (rEffTot, rd['rEff'+km]))
-                rd['g'+km][λ] = np.sum(τ[hSlc]*ω[hSlc]*g[hSlc])/np.sum(τ[hSlc]*ω[hSlc]) # see bottom of this method for derivation
-                rd['LidarRatio'+km][λ] = np.sum(τ[hSlc])/np.sum(τ[hSlc]/S[hSlc]) # S=τ/F11[180] & F11h[180]=τh/Sh => S=Στh/Σ(τh/Sh)
-            else:
-                print('¡¡¡¡NANS IN REFF!!!!')
-        """ --- reff vertical averaging (reff_h=Rh, # conc.=Nh, vol_conc.=Vh, height_ind=h) ---
-            reff = ∫ ΣNh*r^3*dr/∫ ΣNh*r^2*dr = 3/4/π*ΣVh/∫ Σnh*r^2*dr
-            Rh = (3/4/π*Vh)/∫ nh*r^2*dr -> reff = 3/4/π*ΣVh/(Σ(3/4/π*Vh)/Rh) = ΣVh/Σ(Vh/Rh)
-            --- g vertical averaging (normalized PF = P11[θ], absolute PF = F11[θ]) ---
-            P11[θ] = F11[θ]/β = Σ(τh*ωh*P11h[θ])/Στh*ωh -> g = ∫ P11[θ]...dθ = ∫ Σ(τh*ωh*P11h[θ])/Στh*ωh...dθ
-            g = Σ(τh*ωh*∫P11h[θ]...dθ)/Στh*ωh = Σ(τh*ωh*gh)/Σ(τh*ωh) """
 
     def convertLidar2GRASP(self, measData=None, newLayers=None):
         """ convert OSSE lidar "measDdata" to a GRASP friendly format
@@ -445,18 +439,19 @@ class osseData(object):
                         md['DOLP'] = np.sqrt(md['Q']**2+md['U']**2)/md['I']
                 if 'surf_reflectance' in md:
                     md['I_surf'] = md['surf_reflectance']*np.cos(30*np.pi/180)
-                    if 'surf_reflectance_Q_scatplane' in md:
-                        md['Q_surf'] = md['surf_reflectance_Q_scatplane']*np.cos(30*np.pi/180)
-                        md['U_surf'] = md['surf_reflectance_U_scatplane']*np.cos(30*np.pi/180)
-                        if self.verbose: print('    %5f μm Q[U]_surf derived from surf_reflectance_Q[U]_scatplane (scat. plane system)' % wvl)
-                    else:
-                        md['Q_surf'] = md['surf_reflectance_Q']*np.cos(30*np.pi/180)
-                        md['U_surf'] = md['surf_reflectance_U']*np.cos(30*np.pi/180)
-                        if self.verbose: print('    %5f μm Q[U]_surf derived from surf_reflectance_Q[U] (meridian system)' % wvl)
-                    if (md['I_surf'] > 0).all(): # ignore sqrt runtime warning, bug in anaconda Numpy (see https://github.com/numpy/numpy/issues/11448)
-                        md['DOLP_surf'] = np.sqrt(md['Q_surf']**2+md['U_surf']**2)/md['I_surf']
-                    else:
-                        md['DOLP_surf'] = np.full(md['I_surf'].shape, np.nan)
+                    with np.errstate(invalid='ignore'): # ignore runtime warnings, bug in anaconda Numpy w/ zeros stored as float32 (see https://github.com/numpy/numpy/issues/11448)
+                        if 'surf_reflectance_Q_scatplane' in md:
+                            md['Q_surf'] = md['surf_reflectance_Q_scatplane']*np.cos(30*np.pi/180)
+                            md['U_surf'] = md['surf_reflectance_U_scatplane']*np.cos(30*np.pi/180)
+                            if self.verbose: print('    %5f μm Q[U]_surf derived from surf_reflectance_Q[U]_scatplane (scat. plane system)' % wvl)
+                        else:
+                            md['Q_surf'] = md['surf_reflectance_Q']*np.cos(30*np.pi/180)
+                            md['U_surf'] = md['surf_reflectance_U']*np.cos(30*np.pi/180)
+                            if self.verbose: print('    %5f μm Q[U]_surf derived from surf_reflectance_Q[U] (meridian system)' % wvl)
+                        if (md['I_surf'] > 0).all():
+                            md['DOLP_surf'] = np.sqrt(md['Q_surf']**2+md['U_surf']**2)/md['I_surf']
+                        else:
+                            md['DOLP_surf'] = np.full(md['I_surf'].shape, np.nan)
                 if 'Q_scatplane' in md: md['Q_scatplane'] = md['Q_scatplane']*np.pi
                 if 'U_scatplane' in md: md['U_scatplane'] = md['U_scatplane']*np.pi
                 md['fis'] = md['solar_azimuth'] - md['sensor_azimuth']
@@ -503,7 +498,7 @@ class osseData(object):
                     strArgs.append(md[varName].shape)
                     print('Purging %s -- original shape: %s -> new shape:%s' % tuple(strArgs))
                     virgin[varName] = False
-        if self.pblTopInd is not None: self.pblTopInd = np.delete(self.pblTopInd, self.invldInd)
+        if self.pblInds is not None: self.pblInds = np.delete(self.pblInds, self.invldInd, axis=0)
         if self.rtrvdData is not None: # we loaded state variable data that needs purging
             if self.verbose: startShape = self.rtrvdData.shape
             self.rtrvdData = np.delete(self.rtrvdData, self.invldInd)
