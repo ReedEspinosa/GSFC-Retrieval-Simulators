@@ -58,13 +58,13 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0] 
-                    max: [0.05]
+                    max: [0.005]
                     min: [1e-6]
                     value: [0.001]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [0.05]
+                    max: [0.005]
                     min: [1e-6]
                     value: [0.001]
             retrieved: true
@@ -109,52 +109,13 @@ retrieval:
                     min:                            [500.0] 
                     max:                            [4000.0]
                     index_of_wavelength_involved:   [0      ]
-#        VEGETATION
-#        characteristic[7]:
-#            mode[1]:
-#                initial_guess:
-#                    index_of_wavelength_involved: [1] # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
-#                    max:                               [0.0465, 0.0465, 0.0465, 0.1051, 0.1371, 0.5412, 0.3514, 0.3214]
-#                    min:                               [0.0009, 0.0009, 0.0009, 0.0395, 0.0607, 0.3032, 0.2142, 0.1646]
-#                    value:                             [0.0100, 0.0100, 0.0100, 0.0500, 0.1000, 0.3100, 0.3000, 0.2000]
-#                single_pixel:
-#                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
-#            mode[2]:
-#                initial_guess:
-#                    index_of_wavelength_involved: [1]
-#                    max: [1.3143]
-#                    min: [0.00001]
-#                    value: [0.43884894251823425]
-#                single_pixel:
-#                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
-#            mode[3]:
-#                initial_guess:
-#                    index_of_wavelength_involved: [1]
-#                    max: [0.2985]
-#                    min: [0.00001]
-#                    value: [0.1366906464099884]
-#                single_pixel:
-#                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
-#            retrieved: true
-#            type: surface_land_brdf_ross_li
-#        characteristic[8]:
-#            mode[1]:
-#                initial_guess:
-#                    index_of_wavelength_involved: [1]
-#                    max:   [4.166]
-#                    min:   [1.340]
-#                    value: [2.0]
-#                single_pixel:
-#                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
-#            retrieved: true
-#            type: surface_land_polarized_maignan_breon
-        # DESERT
+#        DESERT INSPIRED (lower mins)
         characteristic[7]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1] # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
                     max:                               [0.1261, 0.1261, 0.1261, 0.3068, 0.5141, 0.6099, 0.7676, 0.7768]
-                    min:                               [0.0457, 0.0457, 0.0457, 0.1612, 0.2717, 0.3207, 0.4656, 0.4792]
+                    min:                               [0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.1500, 0.1250, 0.1000]
                     value:                             [0.0800, 0.0800, 0.0800, 0.0500, 0.1000, 0.3100, 0.3000, 0.2000]
                 single_pixel:
                     smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
@@ -162,7 +123,7 @@ retrieval:
                 initial_guess:
                     index_of_wavelength_involved: [1]
                     max:   [0.7533]
-                    min:   [0.0781]
+                    min:   [0.01]
                     value: [0.40]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
@@ -267,7 +228,7 @@ retrieval:
         aerosol_profile_vertical_type: gaussian
         molecular_profile_vertical_type: exponential
         number_of_layers: 50
-        reference_plane_for_polarization: principal_plane
+        reference_plane_for_polarization: meridian
         simulating_derivatives:
             number_of_fourier_expansion_coefficients: 6
             number_of_gaussian_quadratures_for_expansion_coefficients: 10

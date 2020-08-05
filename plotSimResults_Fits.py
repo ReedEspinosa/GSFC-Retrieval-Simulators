@@ -16,7 +16,7 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
-simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment_SummaryFiles/DRS_V09_polar07_SPA_orbSS_tFct0.11_multiAngles_n64_nAngALL.pkl'
+simRsltFile = '/Users/wrespino/Synced/Working/gpm-g5nr.leV00.GRASP.YAMLb4b5986d.polar07+lidar09.20060801_0000z.pkl'
 # simRsltFile = '/Users/wrespino/Desktop/TEST_V03_Lidar06_SPAVegetation_orbSS_tFct0.11_sza72_phi34_n119_nAng2.pkl'
 trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
 trgtλPolar = 0.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
@@ -65,7 +65,8 @@ if POLARpresent:
     figP, axP = plt.subplots(1,len(measTypesP),figsize=(12,6))
     if not type(axP)==np.ndarray: axP=[axP]
 # Plot LIDAR and Polar measurements and fits
-NfwdModes = simA.rsltFwd[0]['aodMode'].shape[0]
+# NfwdModes = simA.rsltFwd[0]['aodMode'].shape[0]
+NfwdModes = 1
 NbckModes = simA.rsltBck[0]['aodMode'].shape[0]
 frstPass = True
 for rb in simA.rsltBck:
@@ -85,8 +86,9 @@ if LIDARpresent:
     mdHnd = []
     lgTxt = []
     for i in range(NfwdModes):
-        βprof = norm2absExtProf(simA.rsltFwd[0]['βext'][i,:], simA.rsltFwd[0]['range'][i,:], simA.rsltFwd[0]['aodMode'][i,lIndL])
-        mdHnd.append(axL[0].plot(1e6*βprof, simA.rsltFwd[0]['range'][i,:]/1e3, 'o-', color=color1[i]/2))
+#         βprof = norm2absExtProf(simA.rsltFwd[0]['βext'][i,:], simA.rsltFwd[0]['range'][i,:], simA.rsltFwd[0]['aodMode'][i,lIndL])
+#         mdHnd.append(axL[0].plot(1e6*βprof, simA.rsltFwd[0]['range'][i,:]/1e3, 'o-', color=color1[i]/2))
+        mdHnd.append(axL[0].plot([], [], 'o-', color=color1[i]/2))
         lgTxt.append('Mode %d' % i)
     for i,mt in enumerate(measTypesL): # Lidar fwd fit
         axL[i+1].plot(1e6*simA.rsltFwd[0]['fit_'+mt][:,lIndL], simA.rsltFwd[0][rngVar][:,lIndL]/1e3, 'ko-')
@@ -127,8 +129,7 @@ if POLARpresent: # touch up Polarimeter plots
     figP.suptitle(ttlTxt)
     figP.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-
-
+plt.show()
 
 
 
