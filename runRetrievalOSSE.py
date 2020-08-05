@@ -53,9 +53,9 @@ lidMtch = re.match('[A-z0-9]+\+lidar0([0-9])', archName.lower())
 lidVer = int(lidMtch[1])*100**noiseFree if lidMtch else None
 od = osseData(osseDataPath, orbit, year, month, day, hour, random=False, wvls=wvls, lidarVersion=lidVer, verbose=True)
 savePath = od.fpDict['savePath'] % (vrsn, yamlTag, archName)
-if customOutDir: os.path.join(customOutDir, os.path.basename(savePath))
+if customOutDir: savePath = os.path.join(customOutDir, os.path.basename(savePath))
 print('-- Generating ' + os.path.basename(savePath) + ' --')
-fwdData = od.osse2graspRslts(NpixMax=3, newLayers=hghtBins)
+fwdData = od.osse2graspRslts(NpixMax=28, newLayers=hghtBins)
 radNoiseFun = None if noiseFree else functools.partial(addError, 'polar07')
 simA = rs.simulation() # defines new instance corresponding to this architecture
 simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, maxT=20, savePath=savePath, binPathGRASP=dirGRASP, 
