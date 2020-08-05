@@ -16,7 +16,7 @@ import os
 
 
 def loadVARSnetCDF(filePath, varNames=None, verbose=False):
-    badDataCuttoff = 1e12 # values larger than this will be replaced with NaNs
+    badDataCuttoff = 1e12 # float values larger than this will be replaced with NaNs
     if varNames: assert isinstance(varNames, (list, np.ndarray)), 'varNames must be a list or numpy array!'
     measData = dict()
     netCDFobj = Dataset(filePath)
@@ -26,11 +26,14 @@ def loadVARSnetCDF(filePath, varNames=None, verbose=False):
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore', category=UserWarning) # ignore missing_value not cast warning
                 measData[varName] = np.array(netCDFobj.variables[varName])
-            measData[varName][np.isnan(measData[varName])] = badDataCuttoff+1 # could be better, but we rarely see NaNs at this point 
-            if 'float' in measData[varName].dtype.name and np.any(measData[varName] > badDataCuttoff):
-                if np.issubdtype(measData[varName].dtype, np.integer): # numpy ints can't be NaN
-                    measData[varName] = measData[varName].astype(np.float32)
-                measData[varName][measData[varName] > badDataCuttoff] = np.nan
+            if np.issubdtype(measData[varName].dtype, np.integer) and np.any(measData[varName] > badDataCuttoff):
+                if verbose:
+                    msg = '%s had type INT with value(s) above badDataCuttoff (%g), converting to FLOAT for NaN compatibility.'
+                    warnings.warn(msg % (varName, badDataCuttoff))
+                measData[varName] = measData[varName].astype(np.float64)  # numpy ints can't be NaN
+            if 'float' in measData[varName].dtype.name:
+                with np.errstate(invalid='ignore'): # comparison against preexisting NaNs will produce a runtime warning
+                    measData[varName][measData[varName] > badDataCuttoff] = np.nan
         elif verbose:
             print("\x1b[1;35m Could not find \x1b[1;31m%s\x1b[1;35m variable in netCDF file: %s\x1b[0m" % (varName,filePath))
     netCDFobj.close()
@@ -46,7 +49,7 @@ def downsample1d(X, Y, Xnew, axis=0):
     X = np.atleast_2d(X)
     Y = np.atleast_2d(Y)
     if X.shape[0]==1 and axis==0: X = X.T
-    if Y.shape[0]==1 and axis==0: Y = Y.T 
+    if Y.shape[0]==1 and axis==0: Y = Y.T
     if np.all(np.array(Y.shape)>1) and np.any(np.array(X.shape)==1): # Y was 2D but X was only 1D
         X = np.tile(X, [1, Y.shape[1]]) if axis==0 else np.tile(X, [Y.shape[0],1])
     assert X.shape==Y.shape, 'X and Y could not be made to have the same shape.'
@@ -61,7 +64,7 @@ def downsample1d(X, Y, Xnew, axis=0):
     f = interpolate.interp1d(np.r_[0:len(Xnew)], Xnew, fill_value="extrapolate")
     XnewBnds = f(np.r_[-0.5:len(Xnew)])
     Ynew = np.empty([len(Xnew), Y.shape[1]]) if axis==0 else np.empty([Y.shape[0], len(Xnew)])
-    XYinLoopOrder = list(zip(X.T,Y.T)) if axis==0 else list(zip(X,Y)) # zip obj. is a generator, which we can only use once; list is a reusable iterable 
+    XYinLoopOrder = list(zip(X.T,Y.T)) if axis==0 else list(zip(X,Y)) # zip obj. is a generator, which we can only use once; list is a reusable iterable
     for i,(lb,ub) in enumerate(zip(XnewBnds[:-1], XnewBnds[1:])):
         for j,(x,y) in enumerate(XYinLoopOrder): # loop over each series
             bndsY = np.interp([lb, ub], x, y)

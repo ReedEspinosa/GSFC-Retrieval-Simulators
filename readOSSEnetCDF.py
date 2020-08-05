@@ -287,23 +287,23 @@ class osseData(object):
             if firstλ:
                 for varKey in ['aod'+km,'ssa'+km,'n'+km,'k'+km,'g'+km, 'LidarRatio'+km]: # spectrally dependent vars only, reff doesn't need allocation
                     rd[varKey] = np.full(len(self.wvls), np.nan)
-            if np.all(~np.isnan(rEff)):
-                rd['aod'+km][λ] = τ[hInd].sum()
-                if rd['aod'+km][λ]==0:
-                    print('IT WAS ZERO')
-                rd['ssa'+km][λ] = np.sum(τ[hInd]*ω[hInd])/rd['aod'+km][λ] # ω=Σβh/Σαh & ωh*αh=βh => ω=Σωh*αh/Σαh
-                rd['n'+km][λ] = np.sum(τ[hInd]*n[hInd])/rd['aod'+km][λ] # n is weighted by τ (this is a non-physical quantity)
-                rd['k'+km][λ] = np.sum(τ[hInd]*k[hInd])/rd['aod'+km][λ] # k is weighted by τ (this is a non-physical quantity)
-                rEff[rEff < 1e-12] = 1e-12
-                rEffTot = np.sum(V[hInd])/np.sum(V[hInd]/rEff[hInd]) # see bottom of this method for derivation
-                if firstλ:
-                    rd['rEff'+km] = rEffTot
-                elif not np.isclose(rd['rEff'+km], rEffTot):
-                    warnings.warn('The current rEff (%8.5f μm) differs from the first rEff (%8.5f μm) derived.' % (rEffTot, rd['rEff'+km]))
-                rd['g'+km][λ] = np.sum(τ[hInd]*ω[hInd]*g[hInd])/np.sum(τ[hInd]*ω[hInd]) # see bottom of this method for derivation
-                rd['LidarRatio'+km][λ] = np.sum(τ[hInd])/np.sum(τ[hInd]/S[hInd]) # S=τ/F11[180] & F11h[180]=τh/Sh => S=Στh/Σ(τh/Sh)
-            else:
+            if np.any(np.isnan(rEff)):
                 print('¡¡¡¡NANS IN REFF!!!!')
+                return
+            rd['aod'+km][λ] = τ[hInd].sum()
+            if rd['aod'+km][λ]==0:
+                print('IT WAS ZERO')
+            rd['ssa'+km][λ] = np.sum(τ[hInd]*ω[hInd])/rd['aod'+km][λ] # ω=Σβh/Σαh & ωh*αh=βh => ω=Σωh*αh/Σαh
+            rd['n'+km][λ] = np.sum(τ[hInd]*n[hInd])/rd['aod'+km][λ] # n is weighted by τ (this is a non-physical quantity)
+            rd['k'+km][λ] = np.sum(τ[hInd]*k[hInd])/rd['aod'+km][λ] # k is weighted by τ (this is a non-physical quantity)
+            rEff[rEff < 1e-12] = 1e-12
+            rEffTot = np.sum(V[hInd])/np.sum(V[hInd]/rEff[hInd]) # see bottom of this method for derivation
+            if firstλ:
+                rd['rEff'+km] = rEffTot
+            elif not np.isclose(rd['rEff'+km], rEffTot):
+                warnings.warn('The current rEff (%8.5f μm) differs from the first rEff (%8.5f μm) derived.' % (rEffTot, rd['rEff'+km]))
+            rd['g'+km][λ] = np.sum(τ[hInd]*ω[hInd]*g[hInd])/np.sum(τ[hInd]*ω[hInd]) # see bottom of this method for derivation
+            rd['LidarRatio'+km][λ] = np.sum(τ[hInd])/np.sum(τ[hInd]/S[hInd]) # S=τ/F11[180] & F11h[180]=τh/Sh => S=Στh/Σ(τh/Sh)
         """ --- reff vertical averaging (reff_h=Rh, # conc.=Nh, vol_conc.=Vh, height_ind=h) ---
             reff = ∫ ΣNh*r^3*dr/∫ ΣNh*r^2*dr = 3/4/π*ΣVh/∫ Σnh*r^2*dr
             Rh = (3/4/π*Vh)/∫ nh*r^2*dr -> reff = 3/4/π*ΣVh/(Σ(3/4/π*Vh)/Rh) = ΣVh/Σ(Vh/Rh)
@@ -347,7 +347,10 @@ class osseData(object):
                 self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=~pblInd, modeInds=fineInd)
                 self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
                 self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
-        for rd in self.rtrvdData: rd['SPH'] = 1 - rd['vol_DU']/rd['vol']
+        for pstFx in ['', '_fine', '_coarse']:
+            for pstFx2 in ['', 'PBL', 'FT']:        
+                for rd in self.rtrvdData: # loop over pixels & find sphere fraction (assumes dust is only (and completely) non-spherical type)
+                    rd['SPH'+pstFx+pstFx2] = 1 - rd['vol_DU'+pstFx+pstFx2]/rd['vol'+pstFx+pstFx2]
 
     def _calcPSDvals(self, rd, dvdr, prfx, var, hgtInds=None, modeInds=slice(None)):
         """ Not hgtInds and modeInds should be logical (although ints may also work)"""
