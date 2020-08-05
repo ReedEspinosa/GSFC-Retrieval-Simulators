@@ -348,9 +348,10 @@ class osseData(object):
                 self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
                 self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
         for pstFx in ['', '_fine', '_coarse']:
-            for pstFx2 in ['', 'PBL', 'FT']:        
+            for pstFx2 in ['', 'PBL', 'FT']:
+                fullFx = pstFx+'_'+pstFx2 if not pstFx2=='' and pstFx=='' else pstFx+pstFx2
                 for rd in self.rtrvdData: # loop over pixels & find sphere fraction (assumes dust is only (and completely) non-spherical type)
-                    rd['SPH'+pstFx+pstFx2] = 1 - rd['vol_DU'+pstFx+pstFx2]/rd['vol'+pstFx+pstFx2]
+                    rd['SPH'+fullFx] = 1 - rd['vol_DU'+fullFx]/rd['vol'+fullFx]
 
     def _calcPSDvals(self, rd, dvdr, prfx, var, hgtInds=None, modeInds=slice(None)):
         """ Not hgtInds and modeInds should be logical (although ints may also work)"""
