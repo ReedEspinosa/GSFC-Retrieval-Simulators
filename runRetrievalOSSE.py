@@ -44,14 +44,15 @@ vrsn = 0 # general version tag to distinguish runs
 wvls = None # (μm) if we only want specific λ set it here, otherwise use all netCDF files found
 noiseFree = True # do not add noise to the observations
 
-customOutDir = os.path.join(basePath, 'synced', 'Working', 'SIM_OSSE_Test') # save output here instead of within osseDataPath (None to disable)
+# customOutDir = os.path.join(basePath, 'synced', 'Working', 'SIM_OSSE_Test') # save output here instead of within osseDataPath (None to disable)
+customOutDir = None
 
 # choose YAML flavor, derive save file path and setup/run retrievals
 YAMLpth = bckYAMLpathLID if 'lidar' in archName.lower() else bckYAMLpathPOL
 yamlTag = 'YAML%s' % hashFileSHA1(YAMLpth)[0:8]
 lidMtch = re.match('[A-z0-9]+\+lidar0([0-9])', archName.lower())
 lidVer = int(lidMtch[1])*100**noiseFree if lidMtch else None
-od = osseData(osseDataPath, orbit, year, month, day, hour, random=False, wvls=wvls, lidarVersion=lidVer, verbose=True)
+od = osseData(osseDataPath, orbit, year, month, day, hour, random=False, wvls=wvls, lidarVersion=lidVer, maxSZA=50, verbose=True)
 savePath = od.fpDict['savePath'] % (vrsn, yamlTag, archName)
 if customOutDir: savePath = os.path.join(customOutDir, os.path.basename(savePath))
 print('-- Generating ' + os.path.basename(savePath) + ' --')

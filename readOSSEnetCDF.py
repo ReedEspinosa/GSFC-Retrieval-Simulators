@@ -22,7 +22,7 @@ FINE_MODE_THESH = 0.5 # inclusive[exclusive] upper[lower] bound of fine[coarse] 
 
 
 class osseData(object):
-    def __init__(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, wvls=None, lidarVersion=None, verbose=False):
+    def __init__(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, wvls=None, lidarVersion=None, maxSZA=None, verbose=False):
         """
         IN: orbit - 'ss450' or 'gpm'
             year, month, day - integers specifying data of pixels to load
@@ -38,6 +38,7 @@ class osseData(object):
         self.invldIndPurged = False
         self.loadingCalls = []
         self.pblInds = None
+        self.maxSZA = maxSZA
         self.verbose = verbose
         self.vldPolarλind = None # needed b/c measData at lidar data λ is missing some variables
         self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random, lidarVersion)
@@ -58,7 +59,7 @@ class osseData(object):
 #         self.readStateVars(finemode=True) # reads lcExt (finemode version)
         self.readPSD() # reads aerSD
         if loadLidar: self.readlidarData() # reads lc2Lidar
-        self.purgeInvldInd()
+        self.purgeInvldInd(self.maxSZA)
 
     def buildFpDict(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, lidarVer=0):
         """
@@ -162,6 +163,8 @@ class osseData(object):
                 frmStr = frmStr + ', θs=%4.1f° (±%4.1f°), φ=%4.1f° (±%4.1f°), θv=%4.1f° (±%4.1f°)'
                 print(frmStr % (k, ds, rslt['latitude'], rslt['longitude'], 100*rslt['land_prct'],
                                 rd['masl'], sza, Δsza, vφa, Δvφa, vza, Δvza))
+        # TODO: USE norm2absExtProf TO ADD 'βext' to rslts... but actually that is normalized and independent of λ
+        #          'βext' should really be the mode resolved 'volProf'...
         return rslts
 
     def angleVals(self, keyVal):
@@ -484,12 +487,18 @@ class osseData(object):
         if self.verbose and filename: print('Processing data from %s' % filename)
         return True
 
-    def purgeInvldInd(self):
+    def purgeInvldInd(self, maxSZA=None):
         """ The method will remove all invldInd from measData """
         timeInvariantVars = ['ocean_refractive_index','x', 'y', 'RangeLidar', 'lev', 'rayleigh_depol_ratio']
         if self.invldIndPurged:
             warnings.warn('You should only purge invalid indices once. If you really want to purge again set self.invldIndPurged=False.')
             return
+        if maxSZA is not None:
+            overSZAInds = []
+            for ind, sza in enumerate(self.measData[self.vldPolarλind]['solar_zenith']):
+                if not np.all(np.isnan(sza)) and np.any(sza>maxSZA): overSZAInds.append(ind)            
+            self.invldInd = np.append(self.invldInd, overSZAInds).astype(int)
+            if self.verbose: print('%d pixels exlcuded for SZA>%4.1f°' % (len(overSZAInds), maxSZA))
         self.invldInd = np.array(np.unique(self.invldInd), dtype='int')
         if self.verbose:
             allKeys = np.unique(sum([list(md.keys()) for md in self.measData],[]))
