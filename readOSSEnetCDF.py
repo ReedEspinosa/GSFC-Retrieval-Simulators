@@ -43,11 +43,11 @@ class osseData(object):
         self.vldPolarλind = None # needed b/c measData at lidar data λ is missing some variables
         self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random, lidarVersion)
         self.wvls = list(wvls) if wvls is not None else self.λSearch() # wvls should be a list
-        if lidarVersion is not None:
-            self.loadAllData(loadLidar=True)
-        else:
-            self.loadAllData(loadLidar=False)
+        if lidarVersion is None or lidarVersion==0:
             if self.verbose: print('Lidar version not provided, not attempting to load any lidar data')
+            self.loadAllData(loadLidar=False)
+        else:
+            self.loadAllData(loadLidar=True)
 
     def loadAllData(self, loadLidar=True):
         """Loads NetCDF OSSE data into memory, see buildFpDict below for variable descriptions"""
@@ -76,6 +76,7 @@ class osseData(object):
         All of the above files should contain noise free data, except lc2Lidar -
         """
         assert osseDataPath is not None, 'osseDataPath, Year, month and orbit must be provided to build fpDict'
+        if lidarVer is None: lidarVer=0
         tmStr = '%04d%02d%02d_%02d00z' % (year, month, day, hour)
         ldStr = 'LIDAR%02d' % (np.floor(lidarVer/100) if lidarVer >= 100 else lidarVer)
         if random:
