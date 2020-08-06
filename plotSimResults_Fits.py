@@ -16,7 +16,7 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
-simRsltFile = '/Users/wrespino/Synced/Working/gpm-g5nr.leV00.GRASP.YAMLb4b5986d.polar07+lidar09.20060801_0000z.pkl'
+simRsltFile = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/gpm-g5nr.leV00.GRASP.YAMLebb025e0.polar07.20060801_0000z.pkl'
 # simRsltFile = '/Users/wrespino/Desktop/TEST_V03_Lidar06_SPAVegetation_orbSS_tFct0.11_sza72_phi34_n119_nAng2.pkl'
 trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
 trgtλPolar = 0.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
@@ -40,9 +40,6 @@ measTypesL = [x for x in ['VExt', 'VBS', 'LS'] if 'fit_'+x in simA.rsltFwd[0] an
 LIDARpresent = False if len(measTypesL)==0 else True
 if LIDARpresent:
     print('Lidar data found at %5.3f μm' % simA.rsltFwd[0]['lambda'][lIndL])
-    rngVar = 'RangeLidar'
-    profExtNm = 'βext'
-    βfun = lambda i,l,d: d['aodMode'][i,l]*d[profExtNm][i,:]/np.mean(d[profExtNm][i,:])
     assert not np.isnan(simA.rsltFwd[0]['fit_'+measTypesL[0]][0,lIndL]), 'Nans found in LIDAR data at this wavelength! Is the value of lIndL valid?'
     figL, axL = plt.subplots(1,len(measTypesL)+1,figsize=(12,6))
 # Polar Prep
@@ -76,8 +73,8 @@ for rb in simA.rsltBck:
             axL[0].plot(1e6*βprof, rb['range'][i,:]/1e3, color=color1[i], alpha=alphVal)
         frstPass = False
         for i,mt in enumerate(measTypesL): # Lidar retrieval meas & fit
-            axL[i+1].plot(1e6*rb['meas_'+mt][:,lIndL], rb[rngVar][:,lIndL]/1e3, color=color1[0], alpha=alphVal)
-            axL[i+1].plot(1e6*rb['fit_'+mt][:,lIndL], rb[rngVar][:,lIndL]/1e3, color=color1[1], alpha=alphVal)
+            axL[i+1].plot(1e6*rb['meas_'+mt][:,lIndL], rb['RangeLidar'][:,lIndL]/1e3, color=color1[0], alpha=alphVal)
+            axL[i+1].plot(1e6*rb['fit_'+mt][:,lIndL], rb['RangeLidar'][:,lIndL]/1e3, color=color1[1], alpha=alphVal)
     if POLARpresent:
         for i,mt in enumerate(measTypesP): # Polarimeter retrieval meas & fit
             axP[i].plot(θfun(lIndP,rb), rb['meas_'+mt][:,lIndP], color=color1[0], alpha=alphVal)
@@ -91,7 +88,7 @@ if LIDARpresent:
         mdHnd.append(axL[0].plot([], [], 'o-', color=color1[i]/2))
         lgTxt.append('Mode %d' % i)
     for i,mt in enumerate(measTypesL): # Lidar fwd fit
-        axL[i+1].plot(1e6*simA.rsltFwd[0]['fit_'+mt][:,lIndL], simA.rsltFwd[0][rngVar][:,lIndL]/1e3, 'ko-')
+        axL[i+1].plot(1e6*simA.rsltFwd[0]['fit_'+mt][:,lIndL], simA.rsltFwd[0]['RangeLidar'][:,lIndL]/1e3, 'ko-')
         axL[i+1].legend(['Measured', 'Retrieved']) # there are many lines but the first two should be these
     axL[i+1].set_xlim([0,2*1e6*simA.rsltFwd[0]['fit_'+mt][:,lIndL].max()])
 if POLARpresent:
