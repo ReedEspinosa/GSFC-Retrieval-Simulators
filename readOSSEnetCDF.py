@@ -338,7 +338,7 @@ class osseData(object):
         fineInd = psdData['radius'] <= FINE_MODE_THESH/1e6
         crseInd = psdData['radius'] > FINE_MODE_THESH/1e6
         for getKey in dists2pull:
-            for dvdr,rd,pblInd in zip(psdData[getKey], self.rtrvdData, self.pblInds): # loop over pixels
+            for dvdr,rd,pblInd in zip(psdData[getKey], self.rtrvdData, self.pblInds): # loop over pixels - TODO: MAKE SKIP INVLD INDS, COULD ALSO MOVE SZA CHECK TO BEFORE THIS (increase # of invalid)
                 if 'r' not in rd: rd['r'] = psdData['radius']*1e6
                 dvdr = dvdr/1e6
                 prfx = '' if getKey=='TOTdist' else '_'+getKey.replace('dist','')
@@ -355,7 +355,7 @@ class osseData(object):
             for pstFx2 in ['', 'PBL', 'FT']:
                 fullFx = pstFx+'_'+pstFx2 if not pstFx2=='' and pstFx=='' else pstFx+pstFx2
                 for rd in self.rtrvdData: # loop over pixels & find sphere fraction (assumes dust is only (and completely) non-spherical type)
-                    rd['SPH'+fullFx] = 1 - rd['vol_DU'+fullFx]/rd['vol'+fullFx]
+                    rd['sph'+fullFx] = 1 - rd['vol_DU'+fullFx]/rd['vol'+fullFx]
 
     def _calcPSDvals(self, rd, dvdr, prfx, var, hgtInds=None, modeInds=slice(None)):
         """ Not hgtInds and modeInds should be logical (although ints may also work)"""
@@ -522,7 +522,7 @@ class osseData(object):
         self.invldIndPurged = True
         self.Npix = len(self.measData[self.vldPolarλind]['dtObj']) # this assumes all λ have the same # of pixels
         if self.verbose:
-            print('%d pixels with negative or bad-data-flag reflectances were purged from all variables.' % len(self.invldInd))
+            print('%d pixels with negative reflectances, bad-data-flag or excluded SZAs were purged from all variables.' % len(self.invldInd))
 
     def rot2scatplane(self):
         """
