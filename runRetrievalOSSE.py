@@ -25,7 +25,7 @@ if checkDiscover(): # DISCOVER
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     osseDataPath = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/'
-    maxCPU = 28
+    maxCPU = 2
 else: # MacBook Air
     bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_POLARandLIDAR_10Vbins_2modes.yml'
     bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_POLAR_2modes.yml'
@@ -41,9 +41,9 @@ day = 1
 hour = 0
 orbit = 'gpm' # gpm OR ss450
 #archNames = ['polar07+lidar09', 'polar07'] # name of instrument (never 100x, e.g. 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
-archNames = ['polar07+lidar09'] # name of instrument (never 100x, e.g. 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
+archNames = ['polar07'] # name of instrument (never 100x, e.g. 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
 hghtBins = np.r_[10000:-1:-500] # centers of lidar bins (meters)
-vrsn = 0 # general version tag to distinguish runs
+vrsn = 1 # general version tag to distinguish runs
 wvls = None # (μm) if we only want specific λ set it here, otherwise use all netCDF files found
 noiseFrees = [True, False] # do not add noise to the observations
 
@@ -62,7 +62,7 @@ saveArchNm = archName+'NONOISE' if noiseFree else archName
 savePath = od.fpDict['savePath'] % (vrsn, yamlTag, saveArchNm)
 if customOutDir: savePath = os.path.join(customOutDir, os.path.basename(savePath))
 print('-- Generating ' + os.path.basename(savePath) + ' --')
-fwdData = od.osse2graspRslts(NpixMax=56, newLayers=hghtBins)
+fwdData = od.osse2graspRslts(NpixMax=1, newLayers=hghtBins)
 radNoiseFun = None if noiseFree else functools.partial(addError, 'polar07')
 simA = rs.simulation() # defines new instance corresponding to this architecture
 simA.runSim(fwdData, YAMLpth, maxCPU=maxCPU, maxT=20, savePath=savePath, binPathGRASP=dirGRASP, 
