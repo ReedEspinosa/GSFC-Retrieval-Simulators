@@ -231,11 +231,10 @@ def conCaseDefinitions(caseStr, nowPix):
         del vals['vrtHghtStd']
     return vals, landPrct
 
-def splitMultipleCases(caseStrs, caseLoadFct):
-    if caseLoadFct is None: caseLoadFct = 1
+def splitMultipleCases(caseStrs, caseLoadFct=1):
     cases = []
     loadings = []
-    for case in caseStrs.split('+'):
+    for case in caseStrs.split('+'): # HINT: reader for sharon's files [TOP_F, TOP_C, BOT_F, BOT_C]
         if 'case06a' in case.lower():
             cases.append(case.replace('case06a','smoke')) # smoke base τ550=0.25
             loadings.append(caseLoadFct)
@@ -291,13 +290,14 @@ def splitMultipleCases(caseStrs, caseLoadFct):
             loadings.append(0.4*caseLoadFct)
             cases.append(case.replace('case06k','marine'))
             loadings.append(2.5*caseLoadFct)
+        # TODO: add case08a1,...; need to remove/ignore number at end (only needed for Sharon and Kathy's files)
         else:
             cases.append(case)
             loadings.append(caseLoadFct)
         # print(cases)
     return zip(cases, loadings)
 
-def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
+def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM=None, simBldProfs=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
     fldNms = {
         'lgrnm':'size_distribution_lognormal',
         'sph':'sphere_fraction',
@@ -330,6 +330,13 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
     if os.path.exists(newPathYAML): return newPathYAML, landPrct # reuse existing YAML file from this exact base YAML, con. case values and NWL
     yamlObj = rg.graspYAML(baseYAML, newPathYAML)
     yamlObj.adjustLambda(nwl)
+    if simBldProfs:
+        msg = 'Using sim_builder profiles requires 4 modes ordered [TOP_F, TOP_C, BOT_F, BOT_C]!'
+        assert vals['vrtProf'].shape==simBldProfs.shape, msg
+        vrtOrdVld = np.sum(vals['vrtProf'][0,:-1]>1e-4)>np.sum(vals['vrtProf'][2,:-1]>1e-4)
+        modeOrdVld = vals['lgrnm'][0,0]<vals['lgrnm'][1,0] and vals['lgrnm'][2,0]<vals['lgrnm'][3,0]
+        assert vrtOrdVld and modeOrdVld, msg
+        vals['vrtProf'] = simBldProfs
     for key in vals.keys():
         for m in range(np.array(vals[key]).shape[0]): # loop over aerosol modes
                 fldNm = '%s.%d.value' % (fldNms[key], m+1)

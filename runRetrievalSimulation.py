@@ -12,7 +12,7 @@ from miscFunctions import checkDiscover
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_ArchitectureAndCanonicalCases'))
 from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
-from ACCP_functions import selectGeometryEntry
+from ACCP_functions import selectGeometryEntry, readSharonsLidarProfs
 from runGRASP import graspYAML
 import numpy as np
 import tempfile
@@ -27,7 +27,6 @@ if checkDiscover(): # DISCOVER
     nAng = int(n/120)*14+nAng
     n = n%120 
 
-        
     basePath = os.environ['NOBACKUP']
     saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V10_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
@@ -37,6 +36,7 @@ if checkDiscover(): # DISCOVER
     PCAslctMatFilePath = os.path.join(basePath, 'synced/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat')
 #     lidErrDir = os.path.join(basePath, 'synced/Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized_5kmH_500mV')
     lidErrDir = os.path.join(basePath, 'synced/A-CCP/lidarUncertainties/organized')
+    simBuildPtrn = os.path.join(basePath, 'synced/A-CCP/Assessment_8K_Sept2020/Case_Definitions/simprofile_vACCP_case%s_*.csv') #%s for case str (e.g. '8b2') and wildcard * for creation time stamp
 #     Nsims = 1
 #     maxCPU = 1
     Nsims = 2
@@ -50,6 +50,7 @@ else: # MacBook Air
     rawAngleDir = '/Users/wrespino/Synced/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs'
     PCAslctMatFilePath = '/Users/wrespino/Synced/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
     lidErrDir = '/Users/wrespino/Synced/A-CCP/lidarUncertainties/organized'
+    simBuildPtrn = '/Users/wrespino/Synced/A-CCP/Assessment_8K_Sept2020/Case_Definitions/simprofile_vACCP_case%s_*.csv' #%s for case str (e.g. '8b2') and wildcard * for creation time stamp
     krnlPath = None
     Nsims = 2
     maxCPU = 2
@@ -60,11 +61,13 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 bckYAMLpathPOLveg = os.path.join(ymlDir, 'settings_BCK_POLAR_VEG_2modes.yml')
 
-# casLets = list(map(chr, range(97, 106))) # 'a' - 'i'
+
+# casLets = list(map(chr, range(97, 106))) # 'a' - 'i' # TODO: need to append 1 or 2 here for sept. asses.
 # conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['', 'Desert', 'Vegetation']] # 9x3=27
 τFactor = [0.07, 0.08, 0.09, 0.1, 0.11] #5
-spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
-conCases = [spaSetup+surf for surf in ['', 'Desert']] # 3
+# spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
+# conCases = [spaSetup+surf for surf in ['', 'Desert']] # 3
+conCases = ['case06a']
 # orbits = ['SS', 'GPM'] # 2
 orbits = ['SS'] # 1
 instruments = ['Lidar09+polar07','Lidar09+polar07GPM','Lidar05+polar07','Lidar06+polar07', \
@@ -87,7 +90,7 @@ else:
         
 SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbitNow, verbose=verbose)
 savePath = saveStart + '%s_%s_orb%s_tFct%4.2f_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (SZA, phi, n, nAng))
-savePath = savePath.replace(spaSetup, 'SPA')
+# savePath = savePath.replace(spaSetup, 'SPA')
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 if 'lidar' in instrmntNow.lower(): # Use LIDAR YAML file
     fwdModelYAMLpath = fwdModelYAMLpathLID
@@ -97,13 +100,20 @@ if 'lidar' in instrmntNow.lower(): # Use LIDAR YAML file
     newFn = 'settingsBckYAML_conCase%s_tuned%s.yml' % (paramTple[1], randomID)
     bckYAMLpath = os.path.join(tempfile.gettempdir(), newFn)
     bckYAMLObj = graspYAML(baseYAMLpath=bckYAMLpathOrg, workingYAMLpath=bckYAMLpath)
+    # load profiles
+    if 'case08' in paramTple[1]:
+        layAlt, profs = readSharonsLidarProfs(simBuildPtrn % paramTple[1].replace('case0',''), verbose)
+    else:
+        layAlt, profs = (None, None)
 else: # Use Polarimeter YAML file
     fwdModelYAMLpath = fwdModelYAMLpathPOL
     bckYAMLpath = bckYAMLpathPOLveg if 'Vegetation' in paramTple[1] else bckYAMLpathPOL
+    LayAlt = None
 # RUN SIMULATION
-nowPix = returnPixel(instrmntNow, sza=SZA, relPhi=phi, nowPix=None, \
-                     concase=paramTple[1], orbit=orbitNow, lidErrDir=lidErrDir) # these last two (concase & orbit) are only needed if using a lidar w/ Kathy's noise model
-cstmFwdYAML, landPrct = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath, caseLoadFctr=paramTple[3])
+nowPix = returnPixel(instrmntNow, sza=SZA, relPhi=phi, nowPix=None, concase=paramTple[1], \
+                     orbit=orbitNow, lidErrDir=lidErrDir, lidarLayers=layAlt) #(concase & orbit are only needed if using a lidar w/ Kathy's noise model
+cstmFwdYAML, landPrct = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath, \
+                                         caseLoadFctr=paramTple[3], simBldProfs=profs)
 nowPix.land_prct = landPrct
 
 if 'lidar' in instrmntNow.lower(): # implement ACCP SIT-A specific RI contraints 

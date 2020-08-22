@@ -15,10 +15,19 @@ DUMMY MEASUREMENTS: (determined by architecture, should ultimatly move to sepera
   len(msrments)=len(thtv)=len(phi)=sum(nbvm); len(msTyp)=len(nbvm) \n\
   msrments=[meas[msTyp[0],thtv[0],phi[0]], meas[msTyp[0],thtv[1],phi[1]],...,meas[msTyp[0],thtv[nbvm[0]],phi[nbvm[0]]],meas[msTyp[1],thtv[nbvm[0]+1],phi[nbvm[0]+1]],...]'
 """
-def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=None, orbit=None, lidErrDir=None):
+def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=None, orbit=None, lidErrDir=None, lidarLayers=None):
     """Multiple instruments by archName='arch1+arch2+arch3+...' OR multiple calls with nowPix argument (tacking on extra instrument each time)"""
     if not nowPix: nowPix = rg.pixel(dt.datetime.now(), 1, 1, 0, 0, 0, landPrct) # can be called for multiple instruments, BUT they must all have unqiue wavelengths
     assert nowPix.land_prct == landPrct, 'landPrct provided did not match land percentage in nowPix'
+    assert lidarLayers is None or np.all(np.diff(lidarLayers)<0), 'LidarLayers must be descending, starting with top of profile'
+    if lidarLayers is None: # we use the below for lidar range bins
+        botLayer = 10 # bottom layer in meters
+        topLayer = 4510
+        Nlayers = 10
+        singProf = np.linspace(botLayer, topLayer, Nlayers)[::-1] 
+    else: # we use user input
+        Nlayers = len(lidarLayers)
+        singProf = lidarLayers
     if 'harp02' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
@@ -88,25 +97,19 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=N
         wvls = [0.532, 1.064] # Nλ=2
         if 'lidar06' in archName.lower():
             msTyp.insert(0,[36, 39])
-            wvls.insert(0,0.355)            
-        botLayer = 10 # bottom layer in meters
-        topLayer = 4510
-        Nlayers = 10 #TODO: ultimatly this should be read from (or even better define) the fwd/bck YAML file
+            wvls.insert(0,0.355)
         errStr = [y for y in archName.lower().split('+') if ('lidar05' in y or 'lidar06' in y)][0] # this must link to an error model in addError() below
         for wvl, msTyp in zip(wvls, msTyp): # This will be expanded for wavelength dependent measurement types/geometry
             nbvm = Nlayers*np.ones(len(msTyp), np.int)
-            thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
+            thtv = np.tile(singProf, len(msTyp))
             meas = np.block([np.repeat(n*0.001, n) for n in nbvm]) # measurement value should be type/1000
             phi = np.repeat(0, len(thtv))
             errModel = functools.partial(addError, errStr, concase=concase, orbit=orbit, lidErrDir=lidErrDir) # HSRL (LIDAR05/06)
             nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
     if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
         msTyp = [31] # must be in ascending order # BUG: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
-        botLayer = 10 # bottom layer in meters
-        topLayer = 4510
-        Nlayers = 10 #TODO: ultimatly this should be read from (or even better define) the YAML file
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
-        thtv = np.tile(np.linspace(botLayer, topLayer, Nlayers)[::-1], len(msTyp))
+        thtv = np.tile(singProf, len(msTyp))
         wvls = [0.532, 1.064] # Nλ=2
         meas = np.r_[np.repeat(0.007, nbvm[0])]
         phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
