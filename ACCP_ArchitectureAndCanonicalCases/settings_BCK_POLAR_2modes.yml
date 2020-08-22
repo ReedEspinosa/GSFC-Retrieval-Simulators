@@ -25,50 +25,44 @@ retrieval:
                     max: [0.5, 0.75]
                     min: [0.14, 0.3] # case2 goes down to ~0.11 but this covers smoke, marine, pol, dust 
                     value: [0.2, 0.4]
-                single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier: [0, 0]                        
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
                     max: [6.0, 0.77]
                     min: [0.65, 0.3]
                     value: [1.0, 0.45]
-                single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier: [0, 0]
             retrieved: true
             type: size_distribution_lognormal
         characteristic[3]:
             mode[1]:
                 initial_guess:
-                    index_of_wavelength_involved: [0] # setting this to zero resulted in an error
+                    index_of_wavelength_involved: [1]
                     max: [1.65]
                     min: [1.35]
                     value: [1.45]
             mode[2]:
                 initial_guess:
-                    index_of_wavelength_involved: [0]
+                    index_of_wavelength_involved: [1]
                     max: [1.52]
                     min: [1.35]
-                    value: [1.45]
+                    value: [1.47]
             retrieved: true
-            type: real_part_of_refractive_index_constant
+            type: real_part_of_refractive_index_spectral_dependent
         characteristic[4]:
             mode[1]:
                 initial_guess:
-                    index_of_wavelength_involved: [0] 
+                    index_of_wavelength_involved: [1] 
                     max: [0.005]
                     min: [1e-6]
                     value: [0.001]
             mode[2]:
                 initial_guess:
-                    index_of_wavelength_involved: [0]
+                    index_of_wavelength_involved: [1]
                     max: [0.005]
                     min: [1e-6]
                     value: [0.001]
             retrieved: true
-            type: imaginary_part_of_refractive_index_constant
+            type: imaginary_part_of_refractive_index_spectral_dependent            
         characteristic[5]:
             type: surface_water_cox_munk_iso
             retrieved: true
@@ -92,7 +86,7 @@ retrieval:
                 initial_guess:                       #1      #2      #3             
                     value:                          [0.015]  
                     min:                            [0.00406] # 1 m/s
-                    max:                            [0.027] # 10 m/s
+                    max:                            [0.040] # 0.027 -> 10 m/s
                     index_of_wavelength_involved:   [0]
         characteristic[6]: 
             type: vertical_profile_parameter_height
@@ -116,14 +110,14 @@ retrieval:
                     index_of_wavelength_involved: [1] # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
                     max:                               [0.1261, 0.1261, 0.1261, 0.3068, 0.5141, 0.6099, 0.7676, 0.7768]
                     min:                               [0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.1500, 0.1250, 0.1000]
-                    value:                             [0.0800, 0.0800, 0.0800, 0.0500, 0.1000, 0.3100, 0.3000, 0.2000]
+                    value:                             [0.0800, 0.0800, 0.0800, 0.2500, 0.3000, 0.4500, 0.6000, 0.6000]
                 single_pixel:
                     smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
                     max:   [0.7533]
-                    min:   [0.01]
+                    min:   [0.0781]
                     value: [0.40]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
@@ -179,8 +173,8 @@ retrieval:
                     max:                            [3000.0 ]
                     index_of_wavelength_involved:   [0      ]
     convergence: 
-        maximum_iterations_for_stopping: 20
-        maximum_iterations_of_Levenberg-Marquardt: 20
+        maximum_iterations_for_stopping: 40
+        maximum_iterations_of_Levenberg-Marquardt: 40
         minimization_convention: logarithm
         normal_system_solver: sparse_matrix_solver
         scale_for_finite_difference: 1.0e-05 #2.0e-5

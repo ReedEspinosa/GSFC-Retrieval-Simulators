@@ -180,13 +180,13 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
     assert len(mtchInd)==1, 'len(mtchInd)=%d but we expact exactly one match!' % len(mtchInd)
     Rstr = '%4.2f' % rMap[mtchInd[0]]
     # determine other aspects of the filename
-    mtchData = re.match('^case([0-9]+)([a-z])', concase)
+    mtchData = re.match('^case([0-9]+)([a-z][12]*)', concase)
     assert mtchData, 'Could not parse canoncical case name %s' % concase
     caseNum = int(mtchData.group(1))
-    caseLet = mtchData.group(2)
+    caseLet = mtchData.group(2) # can now have tailling number, e.g. 'f2' (required for sept 8k assessment)
     # build full file path, load the data and interpolate
     fnPrms = (caseNum, caseLet, measType, 1000*wavelength, instrument, resolution, Rstr)
-    searchPatern = 'case%1d%c_%s_%d*_L0%d_%s_D_C_0.*_R_%s*.csv' % fnPrms
+    searchPatern = 'case%1d%s_%s_%d*_L0%d_%s_D_C_0.*_R_%s*.csv' % fnPrms
     fnMtch = glob(os.path.join(basePath, orbit, searchPatern))
     if len(fnMtch)==2: # might be M1 and M2; if so, we drop M2
         fnMtch = (np.array(fnMtch)[[not '_M2.csv' in y for y in fnMtch]]).tolist()
@@ -209,6 +209,31 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
     hgt = hgt[np.argsort(hgt)]
     return np.interp(LidarRange, hgt, absErr)
 
-
-
+def readSharonsLidarProfs(fnPtrn, verbose=False):
+    """
+    Takes in a file pattern for glob that should return exactly one match (eg. below)
+    Returns 1D Nlayer and  2D 4xNlayer arrays with altitudes and profiles for 4 modes, respectively
+    The mode index ordering is [TOP_F, TOP_C, BOT_F, BOT_C]
+    fnPtrn ='/Users/wrespino/Synced/A-CCP/Assessment_8K_Sept2020/Case_Definitions/simprofile_vACCP_case8k2_*.csv'
+    """
+    minProf = 3e-9
+    fns = glob(fnPtrn)
+    assert len(fns)==1, '%d files matching patern were found. We expect only one!' % len(fns)
+    if verbose: print('Reading lidar profiles from: %s' % fns[0])
+    data = np.genfromtxt(fns[0], dtype=np.float, names=True, delimiter=',', skip_header=1)
+    data = data[1:] # first non-header row contains the units
+    layAlt = data['MidAltitude']
+    profs = np.full((4, layAlt.shape[0]), minProf)
+    if not data['fine_radius'][0]==data['fine_radius'][-1]: # this is a two layer case
+        layInds = data['fine_radius']==data['fine_radius'][-1]
+        profs[0, layInds] = data['fine_N'][layInds]/data['fine_N'][layInds].max() # TOP_F
+        profs[1, layInds] = data['coarse_N'][layInds]/data['coarse_N'][layInds].max() # TOP_C
+    layInds = data['fine_radius']==data['fine_radius'][0]
+    profs[2, layInds] = data['fine_N'][layInds]/data['fine_N'][layInds].max() # BOT_F
+    profs[3, layInds] = data['coarse_N'][layInds]/data['coarse_N'][layInds].max() # BOT_C
+    profs = np.fliplr(profs)
+    layAlt = 1000*np.flipud(layAlt) # convert to m (this one is just 1D)
+    profs = np.hstack([np.full((4,1), minProf), profs, profs[:,-1][:,None]]) # pad: zeros above, bottom value at ground
+    layAlt = np.r_[layAlt[0]-np.diff(layAlt).mean(), layAlt, 1]
+    return layAlt, profs
  

@@ -1,13 +1,14 @@
 #!/usr/local/bin/bash
 #SBATCH --job-name=GOSSE
 #SBATCH --nodes=1 --constraint=hasw
-#SBATCH --time=01:59:00
+#SBATCH --time=00:59:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0
+#SBATCH --array=0-1
 
 date
 hostname
-echo "---Running Sims---"
-python runRetrievalOSSE.py
+echo "---Running Simulation N="${SLURM_ARRAY_TASK_ID}"---"
+python runRetrievalOSSE.py ${SLURM_ARRAY_TASK_ID}
+
 exit 0
