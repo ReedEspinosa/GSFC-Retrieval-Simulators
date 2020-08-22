@@ -105,7 +105,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=N
             meas = np.block([np.repeat(n*0.001, n) for n in nbvm]) # measurement value should be type/1000
             phi = np.repeat(0, len(thtv))
             errModel = functools.partial(addError, errStr, concase=concase, orbit=orbit, lidErrDir=lidErrDir) # HSRL (LIDAR05/06)
-            nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
+            nowPix.addMeas(wvl, msTyp, nbvm, 0.01, thtv, phi, meas, errModel)
     if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
         msTyp = [31] # must be in ascending order # BUG: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
@@ -116,7 +116,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=N
         errStr = [y for y in archName.lower().split('+') if 'lidar09' in y][0]
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr, concase=concase, orbit=orbit, lidErrDir=lidErrDir) # this must link to an error model in addError() below
-            nowPix.addMeas(wvl, msTyp, nbvm, 0.1, thtv, phi, meas, errModel)
+            nowPix.addMeas(wvl, msTyp, nbvm, 0.01, thtv, phi, meas, errModel)
     assert nowPix.measVals, 'archName did not match any instruments!'
     return nowPix
 

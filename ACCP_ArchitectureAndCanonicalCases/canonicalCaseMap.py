@@ -11,7 +11,10 @@ sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import runGRASP as rg
 
 def conCaseDefinitions(caseStr, nowPix): 
-    """ '+' is used to seperate multiple cases (implemented in splitMultipleCases below) """
+    """ '+' is used to seperate multiple cases (implemented in splitMultipleCases below) 
+        This function should insensitive to trailing characters in caseStr 
+            (e.g. 'smokeDesert' and 'smokeDeserta2' should produce same result)
+    """
     vals = dict()
     wvls = np.unique([mv['wl'] for mv in nowPix.measVals])
     nwl = len(wvls)
@@ -54,7 +57,7 @@ def conCaseDefinitions(caseStr, nowPix):
         rv = [0.12, 0.36]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.02737365], [0.00880117]]) # gives AOD = [0.2165, 0.033499]
+        vals['vol'] = np.array([[0.1094946], [0.03520468]]) # gives AOD=4*[0.2165, 0.033499]=1.0
         vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.54, nwl) # mode 1 
@@ -67,7 +70,7 @@ def conCaseDefinitions(caseStr, nowPix):
         rv = [0.2, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.00477583], [0.07941207]]) # gives AOD=[0.0287, 0.0713]
+        vals['vol'] = np.array([[0.0477583], [0.7941207]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
         vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.415, nwl) # mode 1 
@@ -80,7 +83,7 @@ def conCaseDefinitions(caseStr, nowPix):
         rv = [0.11, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.0141207], [0.0318299]]) # gives AOD=[0.0287, 0.0713]
+        vals['vol'] = np.array([[0.13965681],[0.31480467]]) # gives AOD=9.89*[0.0287, 0.0713]==1.0 total
         vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.45, nwl) # mode 1 
@@ -93,7 +96,7 @@ def conCaseDefinitions(caseStr, nowPix):
         rv = [0.11, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.01787314], [0.00465671]]) # gives AOD=[0.091801 , 0.0082001] but will change if intensive props. change!
+        vals['vol'] = np.array([[0.1787314], [0.0465671]]) # gives AOD=10*[0.091801,0.0082001]=1.0
         vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.45, nwl) # mode 1 
@@ -105,10 +108,10 @@ def conCaseDefinitions(caseStr, nowPix):
         σ = [0.5, 0.75] # mode 1, 2,...
         rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['vol'] = np.array([[0.02164019385230769], [0.3166795960377663]]) # gives AOD= [0.13279, 0.11721] but will change if intensive props. change!)
+        vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
         if 'nonsph' in caseStr.lower():
             vals['sph'] = [[0.99999], [0.00001]] # mode fine sphere, coarse spheroid
-            vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # fix spheroids require scaling to maintain AOD 
+            vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # spheroids require scaling to maintain AOD 
         else:
             vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
@@ -231,73 +234,7 @@ def conCaseDefinitions(caseStr, nowPix):
         del vals['vrtHghtStd']
     return vals, landPrct
 
-def splitMultipleCases(caseStrs, caseLoadFct=1):
-    cases = []
-    loadings = []
-    for case in caseStrs.split('+'): # HINT: reader for sharon's files [TOP_F, TOP_C, BOT_F, BOT_C]
-        if 'case06a' in case.lower():
-            cases.append(case.replace('case06a','smoke')) # smoke base τ550=0.25
-            loadings.append(caseLoadFct)
-            cases.append(case.replace('case06a','marine')) # marine base τ550=0.1
-            loadings.append(caseLoadFct)
-        elif 'case06b' in case.lower():
-            cases.append(case.replace('case06b','smoke'))
-            loadings.append(0.4*caseLoadFct)
-            cases.append(case.replace('case06b','marine')) 
-            loadings.append(2.5*caseLoadFct)
-        elif 'case06c' in case.lower():
-            cases.append(case.replace('case06c','smoke'))
-            loadings.append(caseLoadFct)
-            cases.append(case.replace('case06c','pollution')) # pollution base τ550=0.1
-            loadings.append(caseLoadFct)
-        elif 'case06d' in case.lower():
-            cases.append(case.replace('case06d','smoke')) 
-            loadings.append(0.4*caseLoadFct)
-            cases.append(case.replace('case06d','pollution')) 
-            loadings.append(2.5*caseLoadFct)
-        elif 'case06e' in case.lower():
-            cases.append(case.replace('case06e','dust')) # dust base τ550=0.25
-            loadings.append(caseLoadFct)
-            cases.append(case.replace('case06e','marine'))
-            loadings.append(caseLoadFct)
-        elif 'case06f' in case.lower():
-            cases.append(case.replace('case06f','dust'))
-            loadings.append(0.4*caseLoadFct)
-            cases.append(case.replace('case06f','marine'))
-            loadings.append(2.5*caseLoadFct)
-        elif 'case06g' in case.lower():
-            cases.append(case.replace('case06g','smoke'))
-            loadings.append(0.00001)
-            cases.append(case.replace('case06g','marine'))
-            loadings.append(caseLoadFct)
-        elif 'case06h' in case.lower():
-            cases.append(case.replace('case06h','smoke'))
-            loadings.append(0.00001)
-            cases.append(case.replace('case06h','plltdMrn')) # plltdMrn base τ550=0.1
-            loadings.append(caseLoadFct)
-        elif 'case06i' in case.lower():
-            cases.append(case.replace('case06i','smoke'))
-            loadings.append(0.4*caseLoadFct)
-            cases.append(case.replace('case06i','pollution'))
-            loadings.append(5*caseLoadFct)                    
-        elif 'case06j' in case.lower():
-            cases.append(case.replace('case06j','dustNonsph'))
-            loadings.append(caseLoadFct)
-            cases.append(case.replace('case06j','marine'))
-            loadings.append(caseLoadFct)
-        elif 'case06k' in case.lower():
-            cases.append(case.replace('case06k','dustNonsph'))
-            loadings.append(0.4*caseLoadFct)
-            cases.append(case.replace('case06k','marine'))
-            loadings.append(2.5*caseLoadFct)
-        # TODO: add case08a1,...; need to remove/ignore number at end (only needed for Sharon and Kathy's files)
-        else:
-            cases.append(case)
-            loadings.append(caseLoadFct)
-        # print(cases)
-    return zip(cases, loadings)
-
-def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM=None, simBldProfs=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
+def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=None, simBldProfs=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
     fldNms = {
         'lgrnm':'size_distribution_lognormal',
         'sph':'sphere_fraction',
@@ -323,17 +260,18 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
                     vals[key] = np.vstack([vals[key], valsTmp[key]])
             else: # implies we take the surface parameters from the last case
                 vals[key] = valsTmp[key]
+    nowPix.land_prct = landPrct # [out] – sets nowPix to match ConCase
     randomID = hex(rnd.randint(0, 2**63-1))[2:] # needed to prevent identical FN w/ many parallel runs
     nwl = len(np.unique([mv['wl'] for mv in nowPix.measVals])) 
     newFn = 'settingsYAML_conCase%s_nwl%d_%s.yml' % (caseStrs, nwl, randomID)
     newPathYAML = os.path.join(tempfile.gettempdir(), newFn)
-    if os.path.exists(newPathYAML): return newPathYAML, landPrct # reuse existing YAML file from this exact base YAML, con. case values and NWL
+    if os.path.exists(newPathYAML): return newPathYAML # reuse existing YAML file from this exact base YAML, con. case values and NWL
     yamlObj = rg.graspYAML(baseYAML, newPathYAML)
     yamlObj.adjustLambda(nwl)
-    if simBldProfs:
+    if simBldProfs is not None:
         msg = 'Using sim_builder profiles requires 4 modes ordered [TOP_F, TOP_C, BOT_F, BOT_C]!'
         assert vals['vrtProf'].shape==simBldProfs.shape, msg
-        vrtOrdVld = np.sum(vals['vrtProf'][0,:-1]>1e-4)>np.sum(vals['vrtProf'][2,:-1]>1e-4)
+        vrtOrdVld = vals['vrtProf'][0,-1]<1e-4 and vals['vrtProf'][2,-1]>1e-4 # bottom bin filled in mode 2 but not in mode 0
         modeOrdVld = vals['lgrnm'][0,0]<vals['lgrnm'][1,0] and vals['lgrnm'][2,0]<vals['lgrnm'][3,0]
         assert vrtOrdVld and modeOrdVld, msg
         vals['vrtProf'] = simBldProfs
@@ -349,4 +287,143 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=None, caseHeightKM
                     fldNm = '%s.%d.max' % (fldNms[key], m+1)
                     yamlObj.access(fldNm, newVal=2*np.ones(len(vals[key][m])), write2disk=False)
     yamlObj.access('stop_before_performing_retrieval', True, write2disk=True)    
-    return newPathYAML, landPrct 
+    return newPathYAML
+
+def splitMultipleCases(caseStrs, caseLoadFct=1):
+    cases = []
+    loadings = []
+    for case in caseStrs.split('+'): # HINT: Sharon's files reader output is ordered [TOP_F, TOP_C, BOT_F, BOT_C]
+        if 'case06a' in case.lower():
+            cases.append(case.replace('case06a','smoke')) # smoke base τ550=1.0
+            loadings.append(0.25*caseLoadFct)
+            cases.append(case.replace('case06a','marine')) # marine base τ550=1.0
+            loadings.append(0.1*caseLoadFct)
+        elif 'case06b' in case.lower():
+            cases.append(case.replace('case06b','smoke'))
+            loadings.append(0.1*caseLoadFct)
+            cases.append(case.replace('case06b','marine')) 
+            loadings.append(0.25*caseLoadFct)
+        elif 'case06c' in case.lower():
+            cases.append(case.replace('case06c','smoke'))
+            loadings.append(0.25*caseLoadFct)
+            cases.append(case.replace('case06c','pollution')) # pollution base τ550=1.0
+            loadings.append(0.1*caseLoadFct)
+        elif 'case06d' in case.lower():
+            cases.append(case.replace('case06d','smoke')) 
+            loadings.append(0.1*caseLoadFct)
+            cases.append(case.replace('case06d','pollution')) 
+            loadings.append(0.25*caseLoadFct)
+        elif 'case06e' in case.lower():
+            cases.append(case.replace('case06e','dust')) # dust base τ550=1.0
+            loadings.append(0.25*caseLoadFct)
+            cases.append(case.replace('case06e','marine'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case06f' in case.lower():
+            cases.append(case.replace('case06f','dust'))
+            loadings.append(0.1*caseLoadFct)
+            cases.append(case.replace('case06f','marine'))
+            loadings.append(0.25*caseLoadFct)
+        elif 'case06g' in case.lower():
+            cases.append(case.replace('case06g','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case06g','marine'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case06h' in case.lower():
+            cases.append(case.replace('case06h','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case06h','plltdMrn')) # plltdMrn base τ550=1.0
+            loadings.append(0.1*caseLoadFct)
+        elif 'case06i' in case.lower():
+            cases.append(case.replace('case06i','smoke'))
+            loadings.append(0.1*caseLoadFct)
+            cases.append(case.replace('case06i','pollution'))
+            loadings.append(0.5*caseLoadFct)                    
+        elif 'case06j' in case.lower():
+            cases.append(case.replace('case06j','dustNonsph'))
+            loadings.append(0.25*caseLoadFct)
+            cases.append(case.replace('case06j','marine'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case06k' in case.lower():
+            cases.append(case.replace('case06k','dustNonsph'))
+            loadings.append(0.1*caseLoadFct)
+            cases.append(case.replace('case06k','marine'))
+            loadings.append(0.25*caseLoadFct)
+        elif 'case08a' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.05*caseLoadFct)
+            cases.append(case.replace('case08','marine'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case08b' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.2*caseLoadFct)
+            cases.append(case.replace('case08','marine'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case08c' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.3*caseLoadFct)
+            cases.append(case.replace('case08','marine'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case08d' in case.lower():
+            cases.append(case.replace('case08','smokeDesert'))
+            loadings.append(0.09*caseLoadFct)
+            cases.append(case.replace('case08','pollutionDesert'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case08e' in case.lower():
+            cases.append(case.replace('case08','smokeDesert'))
+            loadings.append(0.4*caseLoadFct)
+            cases.append(case.replace('case08','pollutionDesert'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case08f' in case.lower():
+            cases.append(case.replace('case08','smokeDesert'))
+            loadings.append(0.9*caseLoadFct)
+            cases.append(case.replace('case08','pollutionDesert'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case08g' in case.lower():
+            cases.append(case.replace('case08','dust'))
+            loadings.append(0.11*caseLoadFct)
+            cases.append(case.replace('case08','marine'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case08h' in case.lower():
+            cases.append(case.replace('case08','dust'))
+            loadings.append(0.44*caseLoadFct)
+            cases.append(case.replace('case08','marine'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case08i' in case.lower():
+            cases.append(case.replace('case08','dustDesert'))
+            loadings.append(0.18*caseLoadFct)
+            cases.append(case.replace('case08','pollutionDesert'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case08j' in case.lower():
+            cases.append(case.replace('case08','dustDesert'))
+            loadings.append(0.49*caseLoadFct)
+            cases.append(case.replace('case08','pollutionDesert'))
+            loadings.append(0.1*caseLoadFct)
+        elif 'case08k' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','marine'))
+            loadings.append(0.05*caseLoadFct)
+        elif 'case08l' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','plltdMrn'))
+            loadings.append(0.12*caseLoadFct)
+        elif 'case08m' in case.lower():
+            cases.append(case.replace('case08','smokeDesert'))
+            loadings.append(0.1)
+            cases.append(case.replace('case08','pollutionDesert'))
+            loadings.append(0.09*caseLoadFct)
+        elif 'case08n' in case.lower():
+            cases.append(case.replace('case08','smokeDesert'))
+            loadings.append(0.1)
+            cases.append(case.replace('case08','pollutionDesert'))
+            loadings.append(0.33*caseLoadFct)
+        elif 'case08o' in case.lower():
+            cases.append(case.replace('case08','smokeDesert'))
+            loadings.append(0.1)
+            cases.append(case.replace('case08','pollutionDesert'))
+            loadings.append(0.7*caseLoadFct)        
+        else:
+            cases.append(case)
+            loadings.append(caseLoadFct)
+    return zip(cases, loadings)

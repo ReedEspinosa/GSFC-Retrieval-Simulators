@@ -216,21 +216,24 @@ def readSharonsLidarProfs(fnPtrn, verbose=False):
     The mode index ordering is [TOP_F, TOP_C, BOT_F, BOT_C]
     fnPtrn ='/Users/wrespino/Synced/A-CCP/Assessment_8K_Sept2020/Case_Definitions/simprofile_vACCP_case8k2_*.csv'
     """
+    minProf = 3e-9
     fns = glob(fnPtrn)
     assert len(fns)==1, '%d files matching patern were found. We expect only one!' % len(fns)
     if verbose: print('Reading lidar profiles from: %s' % fns[0])
     data = np.genfromtxt(fns[0], dtype=np.float, names=True, delimiter=',', skip_header=1)
     data = data[1:] # first non-header row contains the units
     layAlt = data['MidAltitude']
-    profs = np.zeros((4, layAlt.shape[0]))
+    profs = np.full((4, layAlt.shape[0]), minProf)
     if not data['fine_radius'][0]==data['fine_radius'][-1]: # this is a two layer case
         layInds = data['fine_radius']==data['fine_radius'][-1]
-        profs[0, layInds] = data['fine_N'][layInds] # TOP_F
-        profs[1, layInds] = data['coarse_N'][layInds] # TOP_C
+        profs[0, layInds] = data['fine_N'][layInds]/data['fine_N'][layInds].max() # TOP_F
+        profs[1, layInds] = data['coarse_N'][layInds]/data['coarse_N'][layInds].max() # TOP_C
     layInds = data['fine_radius']==data['fine_radius'][0]
-    profs[2, layInds] = data['fine_N'][layInds] # BOT_F
-    profs[3, layInds] = data['coarse_N'][layInds] # BOT_C
+    profs[2, layInds] = data['fine_N'][layInds]/data['fine_N'][layInds].max() # BOT_F
+    profs[3, layInds] = data['coarse_N'][layInds]/data['coarse_N'][layInds].max() # BOT_C
     profs = np.fliplr(profs)
     layAlt = 1000*np.flipud(layAlt) # convert to m (this one is just 1D)
+    profs = np.hstack([np.full((4,1), minProf), profs, profs[:,-1][:,None]]) # pad: zeros above, bottom value at ground
+    layAlt = np.r_[layAlt[0]-np.diff(layAlt).mean(), layAlt, 1]
     return layAlt, profs
  

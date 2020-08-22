@@ -112,12 +112,11 @@ else: # Use Polarimeter YAML file
 # RUN SIMULATION
 nowPix = returnPixel(instrmntNow, sza=SZA, relPhi=phi, nowPix=None, concase=paramTple[1], \
                      orbit=orbitNow, lidErrDir=lidErrDir, lidarLayers=layAlt) #(concase & orbit are only needed if using a lidar w/ Kathy's noise model
-cstmFwdYAML, landPrct = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath, \
-                                         caseLoadFctr=paramTple[3], simBldProfs=profs)
+fwdYAML = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath, caseLoadFctr=paramTple[3], simBldProfs=profs)
 nowPix.land_prct = landPrct
 
 if 'lidar' in instrmntNow.lower(): # implement ACCP SIT-A specific RI contraints 
-    fwdYAMLObj = graspYAML(baseYAMLpath=cstmFwdYAML)
+    fwdYAMLObj = graspYAML(baseYAMLpath=fwdYAML)
     # adjust BRDF ranges, which will change for lidar05/09 w/o 355 nm
     if not 'lidar06' in paramTple[0].lower():
         val = bckYAMLObj.access('surface_land_brdf_ross_li.1.min')
@@ -145,7 +144,7 @@ if 'lidar' in instrmntNow.lower(): # implement ACCP SIT-A specific RI contraints
 
 print('n = %d, nAng = %d, Nλ = %d' % (n, nAng, nowPix.nwl))
 simA = rs.simulation(nowPix) # defines new instance for architecture described by nowPix
-gObjFwd, gObjBck = simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
+gObjFwd, gObjBck = simA.runSim(fwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
                                binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, \
                                lightSave=True, rndIntialGuess=rndIntialGuess, dryRun=False, \
                                workingFileSave=False, fixRndmSeed=True, verbose=verbose)

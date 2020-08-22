@@ -32,8 +32,7 @@ seaLevel = True # True -> ROD (corresponding to masl = 0 m) & rayleigh depol. sa
 nowPix = returnPixel(archName)
 rslts = []
 for caseStr in caseStrs:
-    fwdYAMLPath, landPrct = setupConCaseYAML(caseStr, nowPix, baseYAML, caseLoadFctr=tauFactor)
-    nowPix.land_prct = landPrct
+    fwdYAMLPath = setupConCaseYAML(caseStr, nowPix, baseYAML, caseLoadFctr=tauFactor)
     gObjFwd = rg.graspRun(fwdYAMLPath)
     gObjFwd.addPix(nowPix)
     gObjFwd.runGRASP(binPathGRASP=binPathGRASP, krnlPathGRASP=intrnlFileGRASP)
