@@ -163,34 +163,25 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
     measType -> Att, Ext, Bks [string] - Att is returned as relative error, all others absolute
     instrument -> 5, 6, 9 [int]
     wavelength -> λ in μm
-    orbit -> GPM, SS
+    orbit -> GPM, SS – argument is not used in (current) sept. assessment 
     basePath -> .../Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized
     """
-    resolution = '5kmH_500mV'
-    # resolution = '50kmH_500mV'
-    # determine reflectance string
-    wvlMap =   [0.355, 0.532, 1.064]
-    if 'vegetation' in concase.lower(): # Vegetative
-        rMap = [0.250, 0.140, 0.350]
-    elif 'desert' in concase.lower(): # Desert
-        rMap = [0.270, 0.250, 0.440] if instrument==9 else [0.270, 0.250, 0.490]
-    else: # Ocean 
-        rMap = [0.043, 0.050, 0.042] if instrument==9 else [0.043, 0.050, 0.050]
-    mtchInd = np.nonzero(np.isclose(wavelength, wvlMap, atol=0.01))[0]
-    assert len(mtchInd)==1, 'len(mtchInd)=%d but we expact exactly one match!' % len(mtchInd)
-    Rstr = '%4.2f' % rMap[mtchInd[0]]
+    # resolution = '5kmH_500mV'
+    resolution = '50kmH_500mV'
     # determine other aspects of the filename
     mtchData = re.match('^case([0-9]+)([a-z][12]*)', concase)
     assert mtchData, 'Could not parse canoncical case name %s' % concase
     caseNum = int(mtchData.group(1))
-    caseLet = mtchData.group(2) # can now have tailling number, e.g. 'f2' (required for sept 8k assessment)
+    caseLet = mtchData.group(2) # can now have tailling number, e.g. 'f2' (required for sept. assessment)
     # build full file path, load the data and interpolate
-    fnPrms = (caseNum, caseLet, measType, 1000*wavelength, instrument, resolution, Rstr)
-    searchPatern = 'case%1d%s_%s_%d*_L0%d_%s_D_C_0.*_R_%s*.csv' % fnPrms
-    fnMtch = glob(os.path.join(basePath, orbit, searchPatern))
+    fnPrms = (caseNum, caseLet, measType, 1000*wavelength, instrument, resolution)
+    #               case8a1_Att_1064Std_L00_50kmH_500mV_D_C_0.03_R_0.52.csv
+    searchPatern = 'case%1d%s_%s_%d*_L0%d_%s_D_C_0.*_R_*.csv' % fnPrms 
+    instCaseDir = ('Lidar%02d_desert' if 'desert' in concase.lower else 'Lidar%02d_ocean') % instrument
+    fnMtch = glob(os.path.join(basePath, instCaseDir, searchPatern))
     if len(fnMtch)==2: # might be M1 and M2; if so, we drop M2
         fnMtch = (np.array(fnMtch)[[not '_M2.csv' in y for y in fnMtch]]).tolist()
-    assert len(fnMtch)==1, 'We want one file but %d matched the patern .../%s/%s' % (len(fnMtch), orbit, searchPatern)
+    assert len(fnMtch)==1, 'We want one file but %d matched the patern .../%s/%s' % (len(fnMtch), instCaseDir, searchPatern)
     if verbose: print('Reading lidar uncertainty data from: %s' % fnMtch[0])
     hgt = []; absErr = []
     with open(fnMtch[0], newline='') as csvfile:
@@ -201,7 +192,7 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
             if measType == 'Att':
                 absErr.append(float(row[3])) # relative err 
             else:
-                absErr.append(float(row[3])/1) # abs err 1/km/sr -> 1/m/sr
+                absErr.append(float(row[2])/1000) # abs err 1/km/sr -> 1/m/sr
     vldInd = ~np.logical_or(np.isnan(hgt), np.isnan(absErr))
     absErr = np.array(absErr)[vldInd]
     hgt = np.array(hgt)[vldInd]    
@@ -236,4 +227,87 @@ def readSharonsLidarProfs(fnPtrn, verbose=False):
     profs = np.hstack([np.full((4,1), minProf), profs, profs[:,-1][:,None]]) # pad: zeros above, bottom value at ground
     layAlt = np.r_[layAlt[0]-np.diff(layAlt).mean(), layAlt, 1]
     return layAlt, profs
+
+def _boundBackYamlSearch(typeList, nowPix, rngScale=1):
+    lowLimit = 1e-6 # bounds well never go below this value
+    allVals = {'n':[], 'k':[], 'sph':[], 'lgrnm':[]}
+    for typeNow in typeList:
+        valsTmp,_ = conCaseDefinitions(typeNow, nowPix)
+        for key, value in allVals.items():
+            value.append(valsTmp[key])
+    lowVals = dict()
+    uprVals = dict()
+    lowVals['n'] = np.max(allVals['n'], axis=0) + 0.01*rngScale
+    uprVals['n'] = np.min(allVals['n'], axis=0) - 0.01*rngScale
+    lowVals['k'] = np.max(allVals['k'], axis=0) + 0.00025*rngScale
+    uprVals['k'] = np.min(allVals['k'], axis=0) - 0.00025*rngScale
+    lowVals['sph'] = np.max(allVals['sph'], axis=0)*(1 + 0.000001*rngScale)
+    uprVals['sph'] = np.min(allVals['sph'], axis=0)*(1 - 0.000001*rngScale)
+    lowVals['lgrnm'] = np.max(allVals['lgrnm'], axis=0)*(1 + 0.05*rngScale)
+    uprVals['lgrnm'] = np.min(allVals['lgrnm'], axis=0)*(1 - 0.05*rngScale)
+    for key in lowVals.keys(): lowVals[key][lowVals[key]<lowLimit] = lowLimit
+    uprVals['sph'][uprVals['sph']>=1] = 0.999999
+    return lowVals, uprVals
+
+def boundBackYaml(baseYAML, caseStrs, nowPix, profs):
+    """
+    This function assumes runGRASP and is already in the python path.
+    The mode index ordering is [TOP_F, TOP_C, BOT_F, BOT_C].
+    """
+    from canonicalCaseMap import conCaseDefinitions
+    from runGRASP import graspYAML
+    dustAsm1 = np.any(['dust' in caseStr for caseStr,_ in splitMultipleCases(caseStrs)])
+    ocenAsm2 = ~np.all(['desert' in caseStr for caseStr,_ in splitMultipleCases(caseStrs)])
+    hsrlAsm3 = np.any([np.any(mv['meas_type']==36) for mv in nowPix.measVals])
+    lidarPresent = np.any([np.any(mv['meas_type']==31) for mv in nowPix.measVals]) # even HSRL has 31 at 1064nm
+    #   top layer
+    if dustAsm1:
+        print('top layer completely defined by dust')
+        lowVals, uprVals = _boundBackYamlSearch(['dust'], nowPix, rngScale=4)
+    elif ocenAsm2 and not hsrlAsm3: # this is the only layer
+        print('could be smoke, pollution, polluted marine or marine') # NOTE: we ignore that pollution is never in upper layer
+        posTypes = ['smoke','pollution','plltdmrn','marine']
+        lowVals, uprVals = _boundBackYamlSearch(posTypes, nowPix, rngScale=1)
+    else: # HSRL over ocean, or we are over land
+        print('could be smoke or pollution')
+        posTypes = ['smoke','pollution']
+        lowVals, uprVals = _boundBackYamlSearch(posTypes, nowPix, rngScale=1)
+    if lidarPresent and (dustAsm1 or hsrlAsm3): # we retrieve a second, bottom layer
+        if ocenAsm2:
+            print('could be polluted marine or marine')
+            posTypes = ['plltdmrn','marine']
+            lowValsB, uprValsB = _boundBackYamlSearch(posTypes, nowPix, rngScale=1)
+        else: #land
+            print('could be smoke or pollution')
+            posTypes = ['smoke','pollution']
+            lowValsB, uprValsB = _boundBackYamlSearch(posTypes, nowPix, rngScale=1)
+        for key in lowVals: lowVals[key] = np.vstack([lowVals[key], lowValsB[key]])
+        for key in uprVals: uprVals[key] = np.vstack([uprVals[key], uprValsB[key]])
+    if lidarPresent:
+        print('NEED TO ADD vrtProf...')
+    else:
+        print('NEED TO ADD vrtHght AND vrtHghtStd... at least to have correct Nmodes')
+        # We could start from a 2 mode YAML and I guess get out of this in the two mode case
+    initialVal = dict()
+    for key in lowVals: initialVal[key] = (lowVals[key] + uprVals[key])/2
+    yamlObj = graspYAML(baseYAML, newTmpFile=('BCK_%s' % caseStrs))
+    yamlObj.setMultipleCharacteristics(initialVal, setField='value') # must go first or min/max overwritten
+    yamlObj.setMultipleCharacteristics(lowVals, setField='min')
+    yamlObj.setMultipleCharacteristics(uprVals, setField='max')
+    return yamlObj
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
  
