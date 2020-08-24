@@ -237,10 +237,11 @@ def _boundBackYamlSearch(typeList, nowPix, rngScale=1):
             value.append(valsTmp[key])
     lowVals = dict()
     uprVals = dict()
-    lowVals['n'] = np.max(allVals['n'], axis=0) + 0.01*rngScale
-    uprVals['n'] = np.min(allVals['n'], axis=0) - 0.01*rngScale
-    lowVals['k'] = np.max(allVals['k'], axis=0) + 0.00025*rngScale
-    uprVals['k'] = np.min(allVals['k'], axis=0) - 0.00025*rngScale
+    np.asarray(x).max(axis=0).max(axis=1)[:,None]
+    lowVals['nCnst'] = np.max(np.asarray(allVals['n']),axis=0).max(axis=1)[:,None] + 0.01*rngScale
+    uprVals['nCnst'] = np.min(np.asarray(allVals['n']),axis=0).min(axis=1)[:,None] - 0.01*rngScale
+    lowVals['kCnst'] = np.max(np.asarray(allVals['k']),axis=0).max(axis=1)[:,None] + 0.00025*rngScale
+    uprVals['kCnst'] = np.min(np.asarray(allVals['k']),axis=0).min(axis=1)[:,None] - 0.00025*rngScale
     lowVals['sph'] = np.max(allVals['sph'], axis=0)*(1 + 0.000001*rngScale)
     uprVals['sph'] = np.min(allVals['sph'], axis=0)*(1 - 0.000001*rngScale)
     lowVals['lgrnm'] = np.max(allVals['lgrnm'], axis=0)*(1 + 0.05*rngScale)
@@ -260,6 +261,7 @@ def boundBackYaml(baseYAML, caseStrs, nowPix, profs):
     ocenAsm2 = ~np.all(['desert' in caseStr for caseStr,_ in splitMultipleCases(caseStrs)])
     hsrlAsm3 = np.any([np.any(mv['meas_type']==36) for mv in nowPix.measVals])
     lidarPresent = np.any([np.any(mv['meas_type']==31) for mv in nowPix.measVals]) # even HSRL has 31 at 1064nm
+    assert not (lidarPresent and profs is None), 'prof is required if lidar data is present!'
     #   top layer
     if dustAsm1:
         print('top layer completely defined by dust')
@@ -283,11 +285,14 @@ def boundBackYaml(baseYAML, caseStrs, nowPix, profs):
             lowValsB, uprValsB = _boundBackYamlSearch(posTypes, nowPix, rngScale=1)
         for key in lowVals: lowVals[key] = np.vstack([lowVals[key], lowValsB[key]])
         for key in uprVals: uprVals[key] = np.vstack([uprVals[key], uprValsB[key]])
-    if lidarPresent:
-        print('NEED TO ADD vrtProf...')
-    else:
-        print('NEED TO ADD vrtHght AND vrtHghtStd... at least to have correct Nmodes')
-        # We could start from a 2 mode YAML and I guess get out of this in the two mode case
+    if lidarPresent: # set vertical profile, assume polar-only YAML template has 2 modes covering correct vertical range 
+        if dustAsm1 or hsrlAsm3: # retrieving four layers, and we know the boundary
+            lowVals['vrtProf'] = np.full(profs.shape, profs.min())
+            uprVals['vrtProf'] = 2*(profs>profs.min())+lowVals['vrtProf']
+        else: # retrieving just two layers spanning full column
+            lowVals['vrtProf'] = np.full((2, profs.shape[1]), profs.min())
+            uprVals['vrtProf'] = np.full((2, profs.shape[1]), 2.0)
+            uprVals['vrtProf'][:,0] = 2*profs.min() # force top bin to zero
     initialVal = dict()
     for key in lowVals: initialVal[key] = (lowVals[key] + uprVals[key])/2
     yamlObj = graspYAML(baseYAML, newTmpFile=('BCK_%s' % caseStrs))

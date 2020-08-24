@@ -51,7 +51,7 @@ else: # MacBook Air
     Nsims = 2
     maxCPU = 2
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
-bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_4modes.yml')
+bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes.yml') # will get bumped to 4 modes if needed
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 
@@ -87,7 +87,7 @@ else:
 savePath = saveStart + '%s_%s_tFct%4.2f_orb%s_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (orbitNow, SZA, phi, n, nAng))
 savePath = savePath.replace(spaSetup, 'SPA')
 print('-- Processing ' + os.path.basename(savePath) + ' --')
-# setup forward and back yaml objects and now pixel
+# setup forward and back YAML objects and now pixel
 nowPix = returnPixel(instrmntNow, sza=SZA, relPhi=phi, nowPix=None, concase=paramTple[1], \
                      orbit=orbitNow, lidErrDir=lidErrDir, lidarLayers=layAlt) #(concase & orbit are only needed if using a lidar w/ Kathy's noise model
 print('n = %d, nAng = %d, Nλ = %d' % (n, nAng, nowPix.nwl))
@@ -95,7 +95,7 @@ fwdModelYAMLpath = fwdModelYAMLpathLID if 'lidar' in instrmntNow.lower() else fw
 bckYAMLpath = bckYAMLpathLID if 'lidar' in instrmntNow.lower() else bckYAMLpathPOL
 fwdYAML = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath, caseLoadFctr=paramTple[2], simBldProfs=profs)
 bckYAML = boundBackYaml(bckYAMLpath, paramTple[1], nowPix, profs)
-# run simulation
+# run simulation    
 simA = rs.simulation(nowPix) # defines new instance for architecture described by nowPix
 gObjFwd, gObjBck = simA.runSim(fwdYAML, bckYAML, Nsims, maxCPU=maxCPU, savePath=savePath, \
                                binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, \
