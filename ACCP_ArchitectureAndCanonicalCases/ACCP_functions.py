@@ -17,15 +17,15 @@ import csv
 
 def normalizeError(rmse, bias, true, enhanced=False):
     ssaTrg = 0.02 if enhanced else 0.04 # this (and rEff below) is for integrated quantities, not profiles!
-    trgt = {'aod':0.0, 'aodMode_fine':0.0, 'aodMode_PBLFT':0.0, 'aodMode_finePBL':0.0, \
-            'ssa':ssaTrg, 'ssaMode_fine':ssaTrg, 'ssaMode_PBLFT':ssaTrg, \
-            'rEffCalc':0.1, 'rEffMode_fine':0.1, 'rEffMode_PBLFT':0.1, \
-            'n':0.025, 'n_fine':0.025, 'n_PBLFT':0.025, \
-            'k':0.002, 'k_fine':0.002, 'k_PBLFT':0.002, \
-            'g':0.02, 'LidarRatio':0.0, \
-            'βext_PBL':20.0, 'βext_FT':20.0, 'βextFine_PBL':20.0, 'βextFine_FT':20.0, \
-            'ssaPrf_PBL':0.03, 'ssaPrf_FT':0.03} 
-    trgtRel = {'LidarRatio':0.25, 'rEffCalc':0.1, 
+    trgt = {'aod':0.0, 'aodMode_fine':0.0, 'aodMode_PBLFT':0.0, 'aodMode_finePBL':0.0,
+            'ssa':ssaTrg, 'ssaMode_fine':ssaTrg, 'ssaMode_PBLFT':ssaTrg,
+            'rEffCalc':0.1, 'rEffMode_fine':0.1, 'rEffMode_PBLFT':0.1,
+            'n':0.025, 'n_fine':0.025, 'n_PBLFT':0.025,
+            'k':0.002, 'k_fine':0.002, 'k_PBLFT':0.002,
+            'g':0.02, 'LidarRatio':0.0,
+            'βext_PBL':20.0, 'βext_FT':20.0, 'βextFine_PBL':20.0, 'βextFine_FT':20.0,
+            'ssaPrf_PBL':0.03, 'ssaPrf_FT':0.03}
+    trgtRel = {'LidarRatio':0.25, 'rEffCalc':0.1,
                'βext_PBL':0.20, 'βext_FT':0.20, 'βextFine_PBL':0.20, 'βextFine_FT':0.20}
     aodTrgt = lambda τ: 0.02 + 0.05*τ # this needs to tolerate a 2D array
     qScore = dict()
@@ -47,11 +47,12 @@ def normalizeError(rmse, bias, true, enhanced=False):
         mBias[av] = np.mean(bias[av], axis=0)
     return qScore, mBias, σScore
 
+
 def prepHarvest(simFwd, rmse, lInd, GVs, bias):
     """ Note - we pull the indices that match below, ex. 'n_fine' key value has one element so we only pull the first of n_fine """
-    trgt = {'aod':[0.04], 'ssa':[0.02], 'g':[0.02], 'aodMode_fine':[0.01], 'aodMode_PBLFT':[0.04], \
-            'rEffMode_PBLFT':[0.1],'ssaMode_fine':[0.03], 'n':[0.02], 'n_fine':[0.02], \
-                'LidarRatio':[0.0], 'rEffCalc':[0.1]} # look at total and fine/coarse 
+    trgt = {'aod':[0.04], 'ssa':[0.02], 'g':[0.02], 'aodMode_fine':[0.01], 'aodMode_PBLFT':[0.04],
+            'rEffMode_PBLFT':[0.1],'ssaMode_fine':[0.03], 'n':[0.02], 'n_fine':[0.02],
+            'LidarRatio':[0.0], 'rEffCalc':[0.1]} # look at total and fine/coarse
     trgtRel = {'aod':0.05, 'aodMode_fine':0.05, 'LidarRatio':0.25, 'rEffCalc':0.0} # this part must be same for every mode but absolute component above can change
     assert np.all([not type(x) is list for x in trgtRel.values()]), 'All entries in trgtRel should be scalars (not lists)'
     i=0
@@ -180,7 +181,7 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
     instCaseDir = ('Lidar%02d_desert' if 'desert' in concase.lower else 'Lidar%02d_ocean') % instrument
     fnMtch = glob(os.path.join(basePath, instCaseDir, searchPatern))
     if len(fnMtch)==2: # might be M1 and M2; if so, we drop M2
-        fnMtch = (np.array(fnMtch)[[not '_M2.csv' in y for y in fnMtch]]).tolist()
+        fnMtch = (np.array(fnMtch)[['_M2.csv' not in y for y in fnMtch]]).tolist()
     assert len(fnMtch)==1, 'We want one file but %d matched the patern .../%s/%s' % (len(fnMtch), instCaseDir, searchPatern)
     if verbose: print('Reading lidar uncertainty data from: %s' % fnMtch[0])
     hgt = []; absErr = []
@@ -190,15 +191,16 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
         for row in csvReadObj:
             hgt.append(float(row[0])*1000) # range km->m
             if measType == 'Att':
-                absErr.append(float(row[3])) # relative err 
+                absErr.append(float(row[3])) # relative err
             else:
                 absErr.append(float(row[2])/1000) # abs err 1/km/sr -> 1/m/sr
     vldInd = ~np.logical_or(np.isnan(hgt), np.isnan(absErr))
     absErr = np.array(absErr)[vldInd]
-    hgt = np.array(hgt)[vldInd]    
+    hgt = np.array(hgt)[vldInd]
     absErr = absErr[np.argsort(hgt)]
     hgt = hgt[np.argsort(hgt)]
     return np.interp(LidarRange, hgt, absErr)
+
 
 def readSharonsLidarProfs(fnPtrn, verbose=False):
     """
@@ -222,13 +224,17 @@ def readSharonsLidarProfs(fnPtrn, verbose=False):
     layInds = data['fine_radius']==data['fine_radius'][0]
     profs[2, layInds] = data['fine_N'][layInds]/data['fine_N'][layInds].max() # BOT_F
     profs[3, layInds] = data['coarse_N'][layInds]/data['coarse_N'][layInds].max() # BOT_C
+    profs[profs<minProf] = 2*minProf # needed b/c sim_builder can produce zeros but doubled so we can distinguish zeros from outside the layer
     profs = np.fliplr(profs)
     layAlt = 1000*np.flipud(layAlt) # convert to m (this one is just 1D)
     profs = np.hstack([np.full((4,1), minProf), profs, profs[:,-1][:,None]]) # pad: zeros above, bottom value at ground
     layAlt = np.r_[layAlt[0]-np.diff(layAlt).mean(), layAlt, 1]
     return layAlt, profs
 
-def _boundBackYamlSearch(typeList, nowPix, rngScale=1):
+
+def _boundBackYamlSearch(typeList, nowPix, rngScale=1, rngScaleVol=1):
+    """ helper function designed to be called exclusively by boundBackYaml"""
+    from canonicalCaseMap import conCaseDefinitions
     lowLimit = 1e-6 # bounds well never go below this value
     allVals = {'n':[], 'k':[], 'sph':[], 'lgrnm':[]}
     for typeNow in typeList:
@@ -237,62 +243,72 @@ def _boundBackYamlSearch(typeList, nowPix, rngScale=1):
             value.append(valsTmp[key])
     lowVals = dict()
     uprVals = dict()
-    np.asarray(x).max(axis=0).max(axis=1)[:,None]
-    lowVals['nCnst'] = np.max(np.asarray(allVals['n']),axis=0).max(axis=1)[:,None] + 0.01*rngScale
-    uprVals['nCnst'] = np.min(np.asarray(allVals['n']),axis=0).min(axis=1)[:,None] - 0.01*rngScale
-    lowVals['kCnst'] = np.max(np.asarray(allVals['k']),axis=0).max(axis=1)[:,None] + 0.00025*rngScale
-    uprVals['kCnst'] = np.min(np.asarray(allVals['k']),axis=0).min(axis=1)[:,None] - 0.00025*rngScale
-    lowVals['sph'] = np.max(allVals['sph'], axis=0)*(1 + 0.000001*rngScale)
-    uprVals['sph'] = np.min(allVals['sph'], axis=0)*(1 - 0.000001*rngScale)
-    lowVals['lgrnm'] = np.max(allVals['lgrnm'], axis=0)*(1 + 0.05*rngScale)
-    uprVals['lgrnm'] = np.min(allVals['lgrnm'], axis=0)*(1 - 0.05*rngScale)
+    lowVals['nCnst'] = np.min(np.asarray(allVals['n']),axis=0).min(axis=1)[:,None] - 0.01*rngScale
+    uprVals['nCnst'] = np.max(np.asarray(allVals['n']),axis=0).max(axis=1)[:,None] + 0.01*rngScale
+    lowVals['kCnst'] = np.min(np.asarray(allVals['k']),axis=0).min(axis=1)[:,None] - 0.00025*rngScale
+    uprVals['kCnst'] = np.max(np.asarray(allVals['k']),axis=0).max(axis=1)[:,None] + 0.00025*rngScale
+    lowVals['sph'] = np.min(allVals['sph'], axis=0)*(1 - 0.000001*rngScale)
+    uprVals['sph'] = np.max(allVals['sph'], axis=0)*(1 + 0.000001*rngScale)
+    lowVals['lgrnm'] = np.min(allVals['lgrnm'], axis=0)*(1 - 0.05*rngScale)
+    uprVals['lgrnm'] = np.max(allVals['lgrnm'], axis=0)*(1 + 0.05*rngScale)
     for key in lowVals.keys(): lowVals[key][lowVals[key]<lowLimit] = lowLimit
     uprVals['sph'][uprVals['sph']>=1] = 0.999999
     return lowVals, uprVals
 
-def boundBackYaml(baseYAML, caseStrs, nowPix, profs):
+def boundBackYaml(baseYAML, caseStrs, nowPix, profs, verbose=False):
     """
     This function assumes runGRASP and is already in the python path.
     The mode index ordering is [TOP_F, TOP_C, BOT_F, BOT_C].
     """
-    from canonicalCaseMap import conCaseDefinitions
+    from canonicalCaseMap import splitMultipleCases, conCaseDefinitions
     from runGRASP import graspYAML
     dustAsm1 = np.any(['dust' in caseStr for caseStr,_ in splitMultipleCases(caseStrs)])
     ocenAsm2 = ~np.all(['desert' in caseStr for caseStr,_ in splitMultipleCases(caseStrs)])
     hsrlAsm3 = np.any([np.any(mv['meas_type']==36) for mv in nowPix.measVals])
     lidarPresent = np.any([np.any(mv['meas_type']==31) for mv in nowPix.measVals]) # even HSRL has 31 at 1064nm
     assert not (lidarPresent and profs is None), 'prof is required if lidar data is present!'
+    quadLayer = lidarPresent and (dustAsm1 or hsrlAsm3)
     #   top layer
+    msg = ' layer – search space includes: '
     if dustAsm1:
-        print('top layer completely defined by dust')
+        if verbose: print('Top'+msg+'dust')
         lowVals, uprVals = _boundBackYamlSearch(['dust'], nowPix, rngScale=4)
     elif ocenAsm2 and not hsrlAsm3: # this is the only layer
-        print('could be smoke, pollution, polluted marine or marine') # NOTE: we ignore that pollution is never in upper layer
-        posTypes = ['smoke','pollution','plltdmrn','marine']
+        posTypes = ['smoke','pollution','plltdmrn','marine'] # NOTE: we ignore that pollution is never in upper layer
+        if verbose: print('Top'+msg+', '.join(posTypes))
         lowVals, uprVals = _boundBackYamlSearch(posTypes, nowPix, rngScale=1)
     else: # HSRL over ocean, or we are over land
-        print('could be smoke or pollution')
         posTypes = ['smoke','pollution']
+        if verbose: print('Top'+msg+', '.join(posTypes))
         lowVals, uprVals = _boundBackYamlSearch(posTypes, nowPix, rngScale=1)
-    if lidarPresent and (dustAsm1 or hsrlAsm3): # we retrieve a second, bottom layer
+    if quadLayer: # we retrieve a second, bottom layer
         if ocenAsm2:
-            print('could be polluted marine or marine')
             posTypes = ['plltdmrn','marine']
+            if verbose: print('Bottom'+msg+', '.join(posTypes))
             lowValsB, uprValsB = _boundBackYamlSearch(posTypes, nowPix, rngScale=1)
-        else: #land
-            print('could be smoke or pollution')
+        else: # land
             posTypes = ['smoke','pollution']
+            if verbose: print('Bottom'+msg+', '.join(posTypes))
             lowValsB, uprValsB = _boundBackYamlSearch(posTypes, nowPix, rngScale=1)
         for key in lowVals: lowVals[key] = np.vstack([lowVals[key], lowValsB[key]])
         for key in uprVals: uprVals[key] = np.vstack([uprVals[key], uprValsB[key]])
-    if lidarPresent: # set vertical profile, assume polar-only YAML template has 2 modes covering correct vertical range 
-        if dustAsm1 or hsrlAsm3: # retrieving four layers, and we know the boundary
-            lowVals['vrtProf'] = np.full(profs.shape, profs.min())
-            uprVals['vrtProf'] = 2*(profs>profs.min())+lowVals['vrtProf']
+    if lidarPresent: # set vertical profile, assume polar-only YAML template has 2 modes covering correct vertical range
+        if quadLayer: # retrieving four layers, and we know the boundary
+            lowVals['vrtProf'] = np.full(profs.shape, profs.min()/2)
+            uprVals['vrtProf'] = 2*(profs>profs.min())+2*lowVals['vrtProf']
         else: # retrieving just two layers spanning full column
-            lowVals['vrtProf'] = np.full((2, profs.shape[1]), profs.min())
+            lowVals['vrtProf'] = np.full((2, profs.shape[1]), profs.min()/2)
             uprVals['vrtProf'] = np.full((2, profs.shape[1]), 2.0)
             uprVals['vrtProf'][:,0] = 2*profs.min() # force top bin to zero
+    # set bounds on vol
+    vol = []
+    for caseStr,loading in splitMultipleCases(caseStrs): # loop over all cases and add them together
+        valsTmp = conCaseDefinitions(caseStr, nowPix)[0]
+        vol.append(loading*valsTmp['vol'])
+    vol = np.vstack(vol) if quadLayer else np.sum(vol,axis=0)
+    lowVals['vol'] = vol/10
+    uprVals['vol'] = vol*10    
+    # find initial values (midpoints) and write YAML
     initialVal = dict()
     for key in lowVals: initialVal[key] = (lowVals[key] + uprVals[key])/2
     yamlObj = graspYAML(baseYAML, newTmpFile=('BCK_%s' % caseStrs))
@@ -300,19 +316,3 @@ def boundBackYaml(baseYAML, caseStrs, nowPix, profs):
     yamlObj.setMultipleCharacteristics(lowVals, setField='min')
     yamlObj.setMultipleCharacteristics(uprVals, setField='max')
     return yamlObj
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
