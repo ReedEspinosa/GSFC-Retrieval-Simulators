@@ -19,12 +19,12 @@ import tempfile
 
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
-    nAng = int(sys.argv[2]) # index of angles to select from PCA
+#    nAng = int(sys.argv[2]) # index of angles to select from PCA
 #     run1: ***nSLURM=0-239***, stackSLURM -> 0, 14
 #     run2: ***nSLURM=0-239***, stackSLURM -> 28, 42
 #     ...
-    nAng = int(n/120)*14+nAng
-    n = n%120 
+#    nAng = int(n/120)*14+nAng
+    nAng = 0
 
     basePath = os.environ['NOBACKUP']
     saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V10_')
@@ -35,7 +35,7 @@ if checkDiscover(): # DISCOVER
     PCAslctMatFilePath = os.path.join(basePath, 'synced/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat')
     lidErrDir = os.path.join(basePath, 'synced/A-CCP/Assessment_8K_Sept2020/accp_lidar_uncertainties_20200821_day_50kmH_500mV')
     simBuildPtrn = os.path.join(basePath, 'synced/A-CCP/Assessment_8K_Sept2020/Case_Definitions/simprofile_vACCP_case%s_*.csv') #%s for case str (e.g. '8b2') and wildcard * for creation time stamp
-    Nsims = 2 # number of runs (if initial guess is not random this just varies the random noise)
+    Nsims = 4 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 2 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
     n = 22
@@ -55,8 +55,8 @@ bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 
-instruments = ['Lidar05+polar07','Lidar09+polar07','Lidar09+polar07GPM','Lidar06+polar07',
-                'polar07', 'Lidar09','Lidar05','Lidar06'] # 8 N=30*1*8=240
+instruments = ['Lidar050+polar07','Lidar090+polar07','Lidar090+polar07GPM','Lidar060+polar07',
+                'polar07', 'Lidar090','Lidar050','Lidar060'] # 8 N=30*1*8=240
 spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
 # τFactor = [0.07, 0.08, 0.09, 0.1, 0.11] #5
 # conCases = [spaSetup+surf for surf in ['', 'Desert']] # 2
