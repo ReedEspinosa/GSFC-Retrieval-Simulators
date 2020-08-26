@@ -38,7 +38,7 @@ if checkDiscover(): # DISCOVER
     Nsims = 2 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 2 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
-    n = 22
+    n = 0
     nAng = 11
     saveStart = '/Users/wrespino/Desktop/TEST_V03_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
@@ -56,7 +56,7 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 
 instruments = ['Lidar05+polar07','Lidar09+polar07','Lidar09+polar07GPM','Lidar06+polar07',
-                'polar07', 'Lidar09','Lidar05','Lidar06'] # 8 N=30*1*8=240
+               'polar07','Lidar09','Lidar05','Lidar06'] # 8 N=30*1*8=240
 spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
 # τFactor = [0.07, 0.08, 0.09, 0.1, 0.11] #5
 # conCases = [spaSetup+surf for surf in ['', 'Desert']] # 2

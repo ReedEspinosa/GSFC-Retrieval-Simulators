@@ -178,7 +178,7 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
     fnPrms = (caseNum, caseLet, measType, 1000*wavelength, instrument, resolution)
     #               case8a1_Att_1064Std_L00_50kmH_500mV_D_C_0.03_R_0.52.csv
     searchPatern = 'case%1d%s_%s_%d*_L0%d_%s_D_C_0.*_R_*.csv' % fnPrms 
-    instCaseDir = ('Lidar%02d_desert' if 'desert' in concase.lower else 'Lidar%02d_ocean') % instrument
+    instCaseDir = ('Lidar%02d_desert' if 'desert' in concase.lower() else 'Lidar%02d_ocean') % instrument
     fnMtch = glob(os.path.join(basePath, instCaseDir, searchPatern))
     if len(fnMtch)==2: # might be M1 and M2; if so, we drop M2
         fnMtch = (np.array(fnMtch)[['_M2.csv' not in y for y in fnMtch]]).tolist()
@@ -306,13 +306,14 @@ def boundBackYaml(baseYAML, caseStrs, nowPix, profs, verbose=False):
         valsTmp = conCaseDefinitions(caseStr, nowPix)[0]
         vol.append(loading*valsTmp['vol'])
     vol = np.vstack(vol) if quadLayer else np.sum(vol,axis=0)
+    Nλ = valsTmp['cxMnk'].shape[1] if 'cxMnk' in valsTmp else valsTmp['brdf'].shape[1]
     lowVals['vol'] = vol/10
     uprVals['vol'] = vol*10    
     # find initial values (midpoints) and write YAML
     initialVal = dict()
     for key in lowVals: initialVal[key] = (lowVals[key] + uprVals[key])/2
     yamlObj = graspYAML(baseYAML, newTmpFile=('BCK_%s' % caseStrs))
-    yamlObj.setMultipleCharacteristics(initialVal, setField='value') # must go first or min/max overwritten
+    yamlObj.setMultipleCharacteristics(initialVal, setField='value', Nlambda=Nλ) # must go first or min/max overwritten
     yamlObj.setMultipleCharacteristics(lowVals, setField='min')
     yamlObj.setMultipleCharacteristics(uprVals, setField='max')
     return yamlObj

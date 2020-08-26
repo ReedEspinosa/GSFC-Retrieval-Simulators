@@ -17,7 +17,7 @@ retrieval:
                     min: [0.00000001]
                     value: [0.05]
             retrieved: true
-            type: aerosol_concentration    
+            type: aerosol_concentration
         characteristic[2]:
             mode[1]:
                 initial_guess:
@@ -106,8 +106,8 @@ retrieval:
 #        DESERT (exact mins)
         characteristic[7]:
             mode[1]:
-                initial_guess:
-                    index_of_wavelength_involved: [1] # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
+                initial_guess:                         # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
+                    index_of_wavelength_involved:      [1     , 2     , 3     , 4     , 5     , 6     , 7     , 8     ] 
                     max:                               [0.1261, 0.1261, 0.1261, 0.3068, 0.5141, 0.6099, 0.7676, 0.7768]
                     min:                               [0.0457, 0.0457, 0.0457, 0.1612, 0.2717, 0.3207, 0.4656, 0.4792]
                     value:                             [0.0800, 0.0800, 0.0800, 0.0500, 0.1000, 0.3100, 0.3000, 0.2000]
@@ -156,8 +156,8 @@ retrieval:
                     min:    [0.0000001]
                     value: [0.9999998]
             retrieved: false
-            type: sphere_fraction             
-        characteristic[10]: 
+            type: sphere_fraction
+        characteristic[10]:
             type: vertical_profile_parameter_standard_deviation
             retrieved: false
             mode[1]:
