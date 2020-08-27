@@ -183,7 +183,8 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
                 assert False, 'Lidar ID number %d not recognized!' % mtch.group(2)
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca)) # works w/ relErr as scalar or vector
             fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
-            fwdSimβscaNrm = np.r_[fwdSimβsca]/simps(fwdSimβsca, x=-vertRange) # normalize profile to unity (GRASP requirement)
+#            fwdSimβscaNrm = np.r_[fwdSimβsca]/simps(fwdSimβsca, x=-vertRange) # normalize profile to unity (GRASP requirement)
+            fwdSimβscaNrm = np.r_[fwdSimβsca]
             return fwdSimβscaNrm # safe because of ascending order check in simulateRetrieval.py
         elif not (np.isnan(rsltFwd['fit_VBS'][:,l]).any() or np.isnan(rsltFwd['fit_VExt'][:,l]).any()): # HSRL
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39

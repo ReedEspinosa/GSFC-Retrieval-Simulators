@@ -24,10 +24,10 @@ if checkDiscover(): # DISCOVER
 #     run2: ***nSLURM=0-239***, stackSLURM -> 28, 42
 #     ...
 #    nAng = int(n/120)*14+nAng
-    nAng = 0
+    nAng = 2
 
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V10_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/TEST_V01_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -55,7 +55,7 @@ bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 
-instruments = ['Lidar050+polar07','Lidar090+polar07','Lidar090+polar07GPM','Lidar060+polar07',
+instruments = ['Lidar090+polar07','Lidar050+polar07','Lidar090+polar07GPM','Lidar060+polar07',
                 'polar07', 'Lidar090','Lidar050','Lidar060'] # 8 N=30*1*8=240
 spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
 # τFactor = [0.07, 0.08, 0.09, 0.1, 0.11] #5
