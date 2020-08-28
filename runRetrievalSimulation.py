@@ -29,7 +29,7 @@ if checkDiscover(): # DISCOVER
     nAng = int(sys.argv[2])
 
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/TEST_V02_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/TEST_V03_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -37,7 +37,7 @@ if checkDiscover(): # DISCOVER
     PCAslctMatFilePath = os.path.join(basePath, 'synced/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat')
     lidErrDir = os.path.join(basePath, 'synced/A-CCP/Assessment_8K_Sept2020/accp_lidar_uncertainties_20200821_day_50kmH_500mV')
     simBuildPtrn = os.path.join(basePath, 'synced/A-CCP/Assessment_8K_Sept2020/Case_Definitions/simprofile_vACCP_case%s_*.csv') #%s for case str (e.g. '8b2') and wildcard * for creation time stamp
-    Nsims = 4 # number of runs (if initial guess is not random this just varies the random noise)
+    Nsims = 6 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 2 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
     n = 239
