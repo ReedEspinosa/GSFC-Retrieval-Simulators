@@ -180,6 +180,8 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
                 relErr = readKathysLidarσ(lidErrDir, orbit=orbit, wavelength=rsltFwd['lambda'][l], \
                                  instrument=int(mtch.group(2))/10, concase=concase, \
                                  LidarRange=vertRange, measType='Att', verbose=verbose)
+                relErr = np.abs(relErr)
+                relErr[relErr>10]=10                         
             else:
                 assert False, 'Lidar ID number %d not recognized!' % mtch.group(2)
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca)) # works w/ relErr as scalar or vector
@@ -202,7 +204,9 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
                 absErrβsca = readKathysLidarσ(lidErrDir, orbit=orbit, wavelength=rsltFwd['lambda'][l], \
                                  instrument=int(mtch.group(2))/10, concase=concase, \
                                  LidarRange=vertRange, measType='Bks', verbose=verbose)
-                relErrβsca = absErrβsca/trueSimβsca
+                relErrβsca = absErrβsca/trueSimβsca # not sure why I didn't just read relative error from Kathy's files...
+                relErrβsca = np.abs(relErrβsca)
+                relErrβsca[relErrβsca>10]=10                         
             elif int(mtch.group(2)) in [5, 6]: # use normal noise model
                 if np.isclose(rsltFwd['lambda'][l], 0.355):
                     relErrβsca = 0.08548621115220849 #
