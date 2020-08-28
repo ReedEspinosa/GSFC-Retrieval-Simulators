@@ -1,10 +1,10 @@
 #!/usr/local/bin/bash
 #SBATCH --job-name=GCC
 #SBATCH --nodes=1 --constraint=hasw
-#SBATCH --time=02:00:00
+#SBATCH --time=01:30:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-240:14
+#SBATCH --array=0-240:7
 
 date
 hostname
@@ -16,12 +16,12 @@ python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+3)) $nAng &
 python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+4)) $nAng &
 python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+5)) $nAng &
 python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+6)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+7)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+8)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+9)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+10)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+11)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+12)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+13)) $nAng &
+# python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+7)) $nAng &
+# python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+8)) $nAng &
+# python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+9)) $nAng &
+# python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+10)) $nAng &
+# python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+11)) $nAng &
+# python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+12)) $nAng &
+# python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+13)) $nAng &
 wait
 exit 0
