@@ -203,7 +203,7 @@ retrieval:
             measurement_type[1]:
                 index_of_wavelength_involved: [1]
                 type: VEXT
-            standard_deviation: 0.034e-03
+            standard_deviation: 0.60e-03
             standard_deviation_synthetic: 0.0
         noise[5]:
             error_type: relative
@@ -211,7 +211,7 @@ retrieval:
             measurement_type[1]:
                 index_of_wavelength_involved: [1]
                 type: VBS
-            standard_deviation: 0.1
+            standard_deviation: 0.08
 #            standard_deviation: 0.2e-6
             standard_deviation_synthetic: 0.0
 
