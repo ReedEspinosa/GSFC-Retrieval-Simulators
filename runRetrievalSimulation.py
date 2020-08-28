@@ -38,7 +38,7 @@ if checkDiscover(): # DISCOVER
     Nsims = 4 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 2 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
-    n = 0
+    n = 239
     nAng = 11
     saveStart = '/Users/wrespino/Desktop/TEST_V03_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/'
