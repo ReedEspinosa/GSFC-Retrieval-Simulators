@@ -125,6 +125,7 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
     wrngNumMeasMsg = 'Current error models assume that each measurement type has the same number of measurements at each wavelength!'
     βextLowLim = 0.01/1e6
     βscaLowLim = 2.0e-10
+    βscaUprLim = 0.999
     mtch = re.match('^([A-z]+)([0-9]+)$', measNm)
     if mtch.group(1).lower() == 'polar': # measNm should be string w/ format 'polarN', where N is polarimeter number
         if int(mtch.group(2)) in [4, 7, 8]: # S-Polar04 (a-d), S-Polar07, S-Polar08
@@ -217,6 +218,7 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
             fwdSimβext = trueSimβext + absErrβext*np.random.normal(size=len(trueSimβext)) # works w/ absErrβext as scalar or vector
             fwdSimβext[fwdSimβext<βextLowLim] = βextLowLim
             fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
+            fwdSimβsca[fwdSimβsca>βscaUprLim] = βscaUprLim
             return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
         else:
             assert False, 'Lidar data type not VBS, VExt or LS!' % mtch.group(2)
