@@ -262,8 +262,8 @@ def boundBackYaml(baseYAML, caseStrs, nowPix, profs, verbose=False):
     """
     from canonicalCaseMap import splitMultipleCases, conCaseDefinitions
     from runGRASP import graspYAML
-    dustAsm1 = np.any(['dust' in caseStr for caseStr,_ in splitMultipleCases(caseStrs)])
-    ocenAsm2 = ~np.all(['desert' in caseStr for caseStr,_ in splitMultipleCases(caseStrs)])
+    dustAsm1 = np.any(['dust' in caseStr.lower() for caseStr,_ in splitMultipleCases(caseStrs)])
+    ocenAsm2 = ~np.all(['desert' in caseStr.lower() for caseStr,_ in splitMultipleCases(caseStrs)])
     hsrlAsm3 = np.any([np.any(mv['meas_type']==36) for mv in nowPix.measVals])
     lidarPresent = np.any([np.any(mv['meas_type']==31) for mv in nowPix.measVals]) # even HSRL has 31 at 1064nm
     assert not (lidarPresent and profs is None), 'prof is required if lidar data is present!'
