@@ -244,13 +244,13 @@ def _boundBackYamlSearch(typeList, nowPix, rngScale=1, rngScaleVol=1):
     lowVals = dict()
     uprVals = dict()
     lowVals['nCnst'] = np.min(np.asarray(allVals['n']),axis=0).min(axis=1)[:,None] - 0.01*rngScale
-    uprVals['nCnst'] = np.max(np.asarray(allVals['n']),axis=0).max(axis=1)[:,None] + 0.01*rngScale
-    lowVals['kCnst'] = np.min(np.asarray(allVals['k']),axis=0).min(axis=1)[:,None] - 0.00025*rngScale
-    uprVals['kCnst'] = np.max(np.asarray(allVals['k']),axis=0).max(axis=1)[:,None] + 0.00025*rngScale
+    uprVals['nCnst'] = np.max(np.asarray(allVals['n']),axis=0).max(axis=1)[:,None] + 0.02*rngScale
+    lowVals['kCnst'] = np.min(np.asarray(allVals['k']),axis=0).min(axis=1)[:,None] - 0.0003*rngScale
+    uprVals['kCnst'] = np.max(np.asarray(allVals['k']),axis=0).max(axis=1)[:,None] + 0.0003*rngScale
     lowVals['sph'] = np.min(allVals['sph'], axis=0)*(1 - 0.000001*rngScale)
     uprVals['sph'] = np.max(allVals['sph'], axis=0)*(1 + 0.000001*rngScale)
-    lowVals['lgrnm'] = np.min(allVals['lgrnm'], axis=0)*(1 - 0.05*rngScale)
-    uprVals['lgrnm'] = np.max(allVals['lgrnm'], axis=0)*(1 + 0.05*rngScale)
+    lowVals['lgrnm'] = np.min(allVals['lgrnm'], axis=0)*(1 - 0.15*rngScale)
+    uprVals['lgrnm'] = np.max(allVals['lgrnm'], axis=0)*(1 + 0.15*rngScale)
     for key in lowVals.keys(): lowVals[key][lowVals[key]<lowLimit] = lowLimit
     uprVals['sph'][uprVals['sph']>=1] = 0.999999
     return lowVals, uprVals
@@ -262,8 +262,8 @@ def boundBackYaml(baseYAML, caseStrs, nowPix, profs, verbose=False):
     """
     from canonicalCaseMap import splitMultipleCases, conCaseDefinitions
     from runGRASP import graspYAML
-    dustAsm1 = np.any(['dust' in caseStr for caseStr,_ in splitMultipleCases(caseStrs)])
-    ocenAsm2 = ~np.all(['desert' in caseStr for caseStr,_ in splitMultipleCases(caseStrs)])
+    dustAsm1 = np.any(['dust' in caseStr.lower() for caseStr,_ in splitMultipleCases(caseStrs)])
+    ocenAsm2 = ~np.all(['desert' in caseStr.lower() for caseStr,_ in splitMultipleCases(caseStrs)])
     hsrlAsm3 = np.any([np.any(mv['meas_type']==36) for mv in nowPix.measVals])
     lidarPresent = np.any([np.any(mv['meas_type']==31) for mv in nowPix.measVals]) # even HSRL has 31 at 1064nm
     assert not (lidarPresent and profs is None), 'prof is required if lidar data is present!'
@@ -308,7 +308,7 @@ def boundBackYaml(baseYAML, caseStrs, nowPix, profs, verbose=False):
     vol = np.vstack(vol) if quadLayer else np.sum(vol,axis=0)
     Nλ = valsTmp['cxMnk'].shape[1] if 'cxMnk' in valsTmp else valsTmp['brdf'].shape[1]
     lowVals['vol'] = vol/10
-    uprVals['vol'] = vol*10    
+    uprVals['vol'] = vol*10 
     # find initial values (midpoints) and write YAML
     initialVal = dict()
     for key in lowVals: initialVal[key] = (lowVals[key] + uprVals[key])/2
