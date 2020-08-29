@@ -203,7 +203,7 @@ retrieval:
             measurement_type[1]:
                 index_of_wavelength_involved: [1]
                 type: VEXT
-            standard_deviation: 0.60e-03
+            standard_deviation: 0.65e-03
             standard_deviation_synthetic: 0.0
         noise[5]:
             error_type: relative
@@ -211,7 +211,7 @@ retrieval:
             measurement_type[1]:
                 index_of_wavelength_involved: [1]
                 type: VBS
-            standard_deviation: 0.08
+            standard_deviation: 0.09
 #            standard_deviation: 0.2e-6
             standard_deviation_synthetic: 0.0
 
@@ -223,7 +223,7 @@ retrieval:
             mode[2]: {max: 15.0, min: 0.05}
         size_binning_method_for_triangle_bins: logarithm
     products:
-        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: false, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}
+        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: true, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}
         error_estimation:
             aerosol: {lidar: false, optical_properties: false}
             parameters: false
