@@ -30,8 +30,8 @@ tauVals = [1.0]
 N = len(conCases)*len(tauVals)
 barVals = instruments # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
 
-trgtλ =  0.355
-χthresh= 3.0 # χ^2 threshold on points
+trgtλ =  0.550
+χthresh= 200.0 # χ^2 threshold on points
 
 def lgTxtTransform(lgTxt):
     if re.match('.*Coarse[A-z]*Nonsph', lgTxt): # conCase in leg
@@ -45,17 +45,20 @@ def lgTxtTransform(lgTxt):
     return 'Fine[Sphere]\nCoarse[Sphere]' # conCase in leg
 
     
-#totVars = ['aod', 'ssa', 'n', 'aodMode_fine', 'ssaMode_fine', 'n_fine', 'rEffCalc','g','height'] # must match to keys in rmse dict
-# totVars = np.flipud(['aod', 'ssa', 'n', 'rEff', 'LidarRatio'])
-totVars = np.flipud(['aod', 'ssa', 'n'])
+""" totVars – a list of retrieved variables to include in the plot; options are:
+    'ssaMode_fine', 'rEffCalc', 'aodMode_PBL[FT]', 'n_PBL[FT]', 'rEffMode_PBL[FT]', 
+    'k_fine', 'n', 'n_fine', 'k', 'k_PBL[FT]', 'rEffMode_fine', 'aod', 'ssa', 
+    'ssaMode_PBL[FT]', 'LidarRatio', 'aodMode_fine' """
 
-saveStart = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/TEST_V02_'
+totVars = np.flipud(['aod', 'ssa', 'n_PBL', 'aodMode_PBL','aodMode_fine', 'ssaMode_fine', 'rEffCalc'])
+
+saveStart = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/DRS_V01_'
 
 cm = pylab.get_cmap('viridis')
 
 # def getGVlabels(totVars, modVars)
 gvNames = copy.copy(totVars)
-gvNames = ['$'+mv.replace('Mode','').replace('_fine','_{fine}').replace('rEffCalc','r_{eff}').replace('ssa', 'SSA').replace('aod','AOD').replace('PBLFT','{PBL}')+'$' for mv in gvNames]
+gvNames = ['$'+mv.replace('Mode','').replace('_fine','_{fine}').replace('_coarse','_{coarse}').replace('rEffCalc','r_{eff}').replace('ssa', 'SSA').replace('aod','AOD').replace('PBL','{PBL}').replace('FT','{FT}')+'$' for mv in gvNames]
 
 Nvars = len(gvNames)
 barLeg = []
@@ -80,33 +83,33 @@ for barInd, barVal in enumerate(barVals):
         Nsims = len(simB.rsltBck)
         print("<><><><><><>")
         print(savePath)
-        print('AODf=%4.2f, AODc=%4.2f, Nsim=%d' % (simB.rsltFwd[0]['aodMode'][0,lInd], simB.rsltFwd[0]['aodMode'][1,lInd], Nsims))
+        print('AOD=%4.2f, Nsim=%d' % (simB.rsltFwd[0]['aod'][lInd], Nsims))
         print(paramTple[0])
         print('Spectral variables for λ = %4.2f μm'% simB.rsltFwd[0]['lambda'][lInd])        
-        simB.conerganceFilter(χthresh=χthresh, verbose=True)
+        simB.conerganceFilter(χthresh=χthresh, forceχ2Calc=True, verbose=True)
         fineIndFwd = np.nonzero(['fine' in typ.lower() for typ in paramTple[1].split('+')])[0] 
         if len(fineIndFwd)==0: fineIndFwd = np.nonzero(simB.rsltFwd[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
         assert len(fineIndFwd)>0, 'No obvious fine mode could be found in fwd data!'
-        fineIndBck = [0]
+        fineIndBck = np.nonzero(['fine' in typ.lower() for typ in paramTple[1].split('+')])[0] 
+        if len(fineIndBck)==0: fineIndBck = np.nonzero(simB.rsltBck[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
+        assert len(fineIndBck)>0, 'No obvious fine mode could be found in fwd data!'
         if ['polar07'] == barVal:
-            rmse, bias, true = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck)
-            rmse['aodMode_PBLFT'] = np.nan
-            rmse['rEffMode_PBLFT'] = np.nan
-            # bias['aodMode_PBLFT'] = [[np.nan]]
-            # bias['rEffMode_PBLFT'] = [[np.nan]]
+            hghtCut=2100
         else:
-            rmse, bias, true = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=2100)
-            rmse['aodMode_PBLFT'] = rmse['aodMode_PBLFT'][0]
-            rmse['rEffMode_PBLFT'] = rmse['rEffMode_PBLFT'][0]
-        harvest[n, :], harvestQ, rmseVal = af.prepHarvest(simB.rsltFwd[0], rmse, lInd, totVars, bias) # TODO: replace with new normalizeError function 
-        # for vInd, key in enumerate(totVars):
-        #     harvest[vInd] = harvest[vInd] + np.abs(bias[key].T[0]).tolist()
+            lowLayInd = simB.rsltFwd[0]['βext'][0,1:]-simB.rsltFwd[0]['βext'][-1,1:] < 1e-5 # skip the first (top) index cause it is always zero
+            hghtCut = np.sum(simB.rsltFwd[0]['range'][0,1:]*np.gradient(np.float64(lowLayInd))) # second factor is array with 0.5 at bottom of top and 0.5 at top of bottom
+            if hghtCut==0: hghtCut = simB.rsltFwd[0]['range'][0,0] # single layer case
+        strInputs = (','.join(str(x) for x in fineIndFwd), ','.join(str(x) for x in fineIndBck), hghtCut)
+        rmse, bias, true = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=hghtCut)
+        print('fwd fine mode inds: %s | bck fine mode inds: %s | bot/top layer split: %d m' % strInputs)
+        qScore, mBias, σScore = af.normalizeError(rmse, bias, true, enhanced=True)
+        harvest[n, :] = af.prepHarvest(σScore, totVars) # takes any of qScore, mBias or σScore from normalizeError() above (this is what is plotted)
         print('--------------------')
-    # harvest = np.array(harvest).squeeze().T
     plt.rcParams.update({'font.size': 12})
     if barInd==0: 
         figB, axB = plt.subplots(figsize=(4.8,6)) # THIS IS THE BOXPLOT
-        axB.plot([1,1], [0,5*(Nvars+1)], ':', color=0.65*np.ones(3)) # vertical line at unity
+        yAxMax = Nbar*Nvars-1.5 # UPPER BOUND OF Y-AXIS
+        axB.plot([1,1], [-1, yAxMax], ':', color=0.65*np.ones(3)) # vertical line at unity
     pos = Nbar*np.r_[0:harvest.shape[1]]+0.7*barInd
     hnd = axB.boxplot(harvest, vert=0, patch_artist=True, positions=pos[0:Nvars], sym='.')
     [hnd['boxes'][i].set_facecolor(cm((barInd)/(Nbar))) for i in range(len(hnd['boxes']))]
@@ -114,7 +117,7 @@ for barInd, barVal in enumerate(barVals):
     barLeg.append(hnd['boxes'][0])
 axB.set_xscale('log')
 axB.set_xlim([0.08,31])
-axB.set_ylim([-0.8, Nbar*Nvars-1.5])
+axB.set_ylim([-0.8, yAxMax])
 plt.sca(axB)
 plt.yticks(Nbar*(np.r_[0:Nvars]+0.1*Nbar-0.2), gvNames)
 lgTxt = [lgTxtTransform('%s' % τ) for τ in np.array(barVals)[:,0]]

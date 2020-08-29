@@ -48,38 +48,21 @@ def normalizeError(rmse, bias, true, enhanced=False):
     return qScore, mBias, σScore
 
 
-def prepHarvest(simFwd, rmse, lInd, GVs, bias):
-    """ Note - we pull the indices that match below, ex. 'n_fine' key value has one element so we only pull the first of n_fine """
-    trgt = {'aod':[0.04], 'ssa':[0.02], 'g':[0.02], 'aodMode_fine':[0.01], 'aodMode_PBLFT':[0.04],
-            'rEffMode_PBLFT':[0.1],'ssaMode_fine':[0.03], 'n':[0.02], 'n_fine':[0.02],
-            'LidarRatio':[0.0], 'rEffCalc':[0.1]} # look at total and fine/coarse
-    trgtRel = {'aod':0.05, 'aodMode_fine':0.05, 'LidarRatio':0.25, 'rEffCalc':0.0} # this part must be same for every mode but absolute component above can change
-    assert np.all([not type(x) is list for x in trgtRel.values()]), 'All entries in trgtRel should be scalars (not lists)'
-    i=0
+def prepHarvest(score, GVs):
+    """
+    Functions to pull appropriate scores from dicts returned by normalizeError()
+    score – one of qScore, mBias or σScore from normalizeError() above
+    GVs – a list of variables to include in harvest; options are:
+    'ssaMode_fine', 'rEffCalc', 'aodMode_PBL[FT]', 'n_PBL[FT]', 'rEffMode_PBL[FT]', 
+    'k_fine', 'n', 'n_fine', 'k', 'k_PBL[FT]', 'rEffMode_fine', 'aod', 'ssa', 
+    'ssaMode_PBL[FT]', 'LidarRatio', 'aodMode_fine
+    '"""
     harvest = []
-    harvestQ = []
-    rmseVal = []
     for vr in GVs:
-        tg = trgt[vr]
-        if vr in trgtRel.keys():     
-            rsltFwdVr = vr.replace('Mode_fine','') # NOTE: we work relative to the total in the modal variables (e.g. Δτ_fine = ±(0.2 + 0.05*τ_total)
-            if np.isscalar(simFwd[rsltFwdVr]):
-                true = simFwd[rsltFwdVr]
-            elif simFwd[rsltFwdVr].ndim==1:
-                true = simFwd[rsltFwdVr][lInd]
-            else:
-                true = simFwd[vr][0,lInd]
-            harvest.append((tg+trgtRel[vr]*true)/np.atleast_1d(rmse[vr])[0])
-            harvestQ.append(np.sum((tg+trgtRel[vr]*true)>=np.abs(bias[vr][:,0]))/len(bias[vr][:,0]))
-        else:
-            harvest.append(tg/np.atleast_1d(rmse[vr])[0])
-            try:
-                harvestQ.append(np.sum(tg>=np.abs(bias[vr][:,0]))/len(bias[vr][:,0]))
-            except:
-                harvestQ.append(np.nan)
-        rmseVal.append(np.atleast_1d(rmse[vr])[0])
-        i+=1
-    return harvest, harvestQ, rmseVal
+        ind = 1 if 'coarse' in vr.lower() or 'ft' in vr.lower() else 0
+        vr = vr.replace('PBL', 'FT').replace('FT', 'PBLFT') # not a typo: PBL->FT->PBLFT OR FT->PBLFT
+        harvest.append(score[vr][ind])
+    return harvest
 
 def writeConcaseVars(rslt):
     """
