@@ -18,8 +18,11 @@ from simulateRetrieval import simulation
 import miscFunctions as mf
 import ACCP_functions as af
 
-instruments = ['Lidar090','Lidar050','Lidar060', 'polar07', \
-                'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
+# instruments = ['Lidar090','Lidar050','Lidar060', 'polar07', \
+#                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
+instruments = ['polar07', 'polar07GPM', \
+                'Lidar090+polar07','Lidar090+polar07GPM',]
+
 
 # casLets = ['a', 'b', 'c', 'd', 'e', 'f','i']
 # conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['','Desert', 'Vegetation']]
@@ -31,7 +34,8 @@ N = len(conCases)*len(tauVals)
 barVals = instruments # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
 
 trgtλ =  0.550
-χthresh= 200.0 # χ^2 threshold on points
+χthresh= None # χ^2 threshold on points
+forceχ2Calc = False
 
 def lgTxtTransform(lgTxt):
     if re.match('.*Coarse[A-z]*Nonsph', lgTxt): # conCase in leg
@@ -70,7 +74,7 @@ for barInd, barVal in enumerate(barVals):
     runNames = []    
     for n in range(N*len(barVal)):
         paramTple = list(itertools.product(*[barVal,conCases,tauVals]))[n]
-        instrument = paramTple[0].replace('GPM','')
+        instrument = paramTple[0]
         orbitStr = 'GPM' if 'GPM' in paramTple[0] else 'SS'
         caseStr = paramTple[1]
         tauVal = paramTple[2]
@@ -86,18 +90,12 @@ for barInd, barVal in enumerate(barVals):
         print('AOD=%4.2f, Nsim=%d' % (simB.rsltFwd[0]['aod'][lInd], Nsims))
         print(paramTple[0])
         print('Spectral variables for λ = %4.2f μm'% simB.rsltFwd[0]['lambda'][lInd])        
-        simB.conerganceFilter(χthresh=χthresh, forceχ2Calc=True, verbose=True)
-        fineIndFwd = np.nonzero(['fine' in typ.lower() for typ in paramTple[1].split('+')])[0] 
-        if len(fineIndFwd)==0: fineIndFwd = np.nonzero(simB.rsltFwd[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
-        assert len(fineIndFwd)>0, 'No obvious fine mode could be found in fwd data!'
-        fineIndBck = np.nonzero(['fine' in typ.lower() for typ in paramTple[1].split('+')])[0] 
-        if len(fineIndBck)==0: fineIndBck = np.nonzero(simB.rsltBck[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
-        assert len(fineIndBck)>0, 'No obvious fine mode could be found in fwd data!'
+        simB.conerganceFilter(χthresh=χthresh, forceχ2Calc=forceχ2Calc, verbose=True)
+        fineIndFwd, fineIndBck = findFineModes(simB)
         hghtCut = af.findLayerSeperation(simB.rsltFwd[0], defaultVal=2100)
         strInputs = (','.join(str(x) for x in fineIndFwd), ','.join(str(x) for x in fineIndBck), hghtCut)
         rmse, bias, true = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=hghtCut)
         print('fwd fine mode inds: %s | bck fine mode inds: %s | bot/top layer split: %d m' % strInputs)
-        sys.exit()
         qScore, mBias, σScore = af.normalizeError(rmse, bias, true, enhanced=True)
         harvest[n, :] = af.prepHarvest(σScore, totVars) # takes any of qScore, mBias or σScore from normalizeError() above (this is what is plotted)
         print('--------------------')

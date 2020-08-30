@@ -39,7 +39,6 @@ bad1 = 999 # bad data value
 
 # ¡¡¡NEED TO WORK ON THESE ONES...!!!
 finePBLind = 2 
-fineModeInd = [0,2]
 
 
 def main():
@@ -93,18 +92,16 @@ def run1case(instrument, caseID, PathFrmt, polOnlyPlat=0):
 
 def prep4normError(rmse, bs, tr, prfRMSE, prfBias, prfTrue, upLayInd, lowLayInd):
     lidScale = 1e6 # m-1 -> Mm-1
-    if polarOnly: # REMOVE THIS ONCE NEW SIMULATION METHOD IS BUILT
-        nanVars = ['aodMode_finePBL', 'βext_PBL', 'βext_FT', 'βextFine_PBL', 'βextFine_FT', 'ssaPrf_PBL', 'ssaPrf_FT']
-        for vr in nanVars:
-            rmse[vr] = np.r_[bad1]
-            bs[vr] = np.r_[bad1]
-            tr[vr] = np.r_[bad1]
-        return rmse, bs, tr
     # lower layer
-    rmse['aodMode_finePBL'] = np.r_[rmse['aodMode'][finePBLind]]
-    bs['aodMode_finePBL'] = np.r_[[bs['aodMode'][:,finePBLind]]].T
-    tr['aodMode_finePBL'] = np.r_[[tr['aodMode'][:,finePBLind]]].T
-    rmse['βext_PBL'] = np.r_[np.sqrt(np.mean(prfRMSE['βext'][lowLayInd]**2))]*lidScale
+    if 'aodMode' in rmse and len(rmse['aodMode'])==4:
+        rmse['aodMode_finePBL'] = np.r_[rmse['aodMode'][finePBLind]]
+        bs['aodMode_finePBL'] = np.r_[[bs['aodMode'][:,finePBLind]]].T
+        tr['aodMode_finePBL'] = np.r_[[tr['aodMode'][:,finePBLind]]].T
+    else:
+        rmse['aodMode_finePBL'] = np.r_[bad1]
+        bs['aodMode_finePBL'] = np.r_[bad1] # THIS SHOULD 85x1, but bellow suggests a single values is okay?
+        tr['aodMode_finePBL'] = np.r_[bad1]
+    rmse['βext_PBL'] = np.r_[np.sqrt(np.mean(prfRMSE['βext'][lowLayInd]**2))]*lidScale # THESE CONFUSE ME...
     rmse['βextFine_PBL'] = np.r_[np.sqrt(np.mean(prfRMSE['βextFine'][lowLayInd]**2))]*lidScale
     rmse['ssaPrf_PBL'] = np.r_[np.sqrt(np.mean(prfRMSE['ssa'][lowLayInd]**2))]
     bs['βext_PBL'] = prfBias['βext'][:,lowLayInd].reshape(-1,1)*lidScale
@@ -154,23 +151,23 @@ def buildContents(cntnts, simA):
     lIndNIR = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλNIR))
     
     hghtCut = af.findLayerSeperation(simB.rsltFwd[0], defaultVal=2100)
-    simA.buildβprofile(rangeBins) # NEED TO BUILD OUT THIS FUNCTION
-    lowLayInd = np.where(simB.rsltFwd[0]['range'][0,:]<=2000)[0]
-    upLayInd = np.where(simB.rsltFwd[0]['range'][0,:]>=2000)[0]
+    lowLayInd = np.where(simB.rsltFwd[0]['range'][0,:]<=hghtCut)[0]
+    upLayInd = np.where(simB.rsltFwd[0]['range'][0,:]>=hghtCut)[0]
+    fineModeInd, fineModeIndBck = findFineModes(simB)
     #VIS
-    rmseVis,bs,tr = simA.analyzeSim(lIndVIS, fineModesFwd=fineModeInd, fineModesBck=fineModeInd, hghtCut=hghtCut)
+    rmseVis,bs,tr = simA.analyzeSim(lIndVIS, fineModesFwd=fineModeInd, fineModesBck=fineModeIndBck, hghtCut=hghtCut)
     prfRMSE, prfBias, prfTrue = simA.analyzeSimProfile(wvlnthInd=lIndVIS)
     rmseVis,bs,tr = prep4normError(rmseVis, bs, tr, prfRMSE, prfBias, prfTrue, upLayInd, lowLayInd)
     qScrVis, mBsVis, _ = normalizeError(rmseVis,bs,tr)
     qScrVis_EN, _0, _ = normalizeError(rmseVis,bs,tr, enhanced=True)
     #NIR
-    rmseNIR,bs,tr = simA.analyzeSim(lIndNIR, fineModesFwd=fineModeInd, fineModesBck=fineModeInd, hghtCut=hghtCut)
+    rmseNIR,bs,tr = simA.analyzeSim(lIndNIR, fineModesFwd=fineModeInd, fineModesBck=fineModeIndBck, hghtCut=hghtCut)
     prfRMSE, prfBias, prfTrue = simA.analyzeSimProfile(wvlnthInd=lIndNIR)
     rmseNIR,bs,tr = prep4normError(rmseNIR, bs, tr, prfRMSE, prfBias, prfTrue, upLayInd, lowLayInd)
     qScrNIR, mBsNIR, _ = normalizeError(rmseNIR,bs,tr)
     #UV - find error stats for column and PBL and profiles 
     if simA.rsltFwd[0]['lambda'][lIndUV] < 0.4: # we have at least one UV channel
-        rmseUV,bs,tr = simA.analyzeSim(lIndUV, fineModesFwd=fineModeInd, fineModesBck=fineModeInd, hghtCut=hghtCut)
+        rmseUV,bs,tr = simA.analyzeSim(lIndUV, fineModesFwd=fineModeInd, fineModesBck=fineModeIndBck, hghtCut=hghtCut)
         prfRMSE, prfBias, prfTrue = simA.analyzeSimProfile(wvlnthInd=lIndUV)
         rmseUV,bs,tr = prep4normError(rmseUV, bs, tr, prfRMSE, prfBias, prfTrue, upLayInd, lowLayInd)
         qScrUV, mBsUV, _ = normalizeError(rmseUV,bs,tr)

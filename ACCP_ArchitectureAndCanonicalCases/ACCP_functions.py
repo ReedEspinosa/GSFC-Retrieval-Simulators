@@ -53,8 +53,8 @@ def prepHarvest(score, GVs):
     Functions to pull appropriate scores from dicts returned by normalizeError()
     score – one of qScore, mBias or σScore from normalizeError() above
     GVs – a list of variables to include in harvest; options are:
-    'ssaMode_fine', 'rEffCalc', 'aodMode_PBL[FT]', 'n_PBL[FT]', 'rEffMode_PBL[FT]', 
-    'k_fine', 'n', 'n_fine', 'k', 'k_PBL[FT]', 'rEffMode_fine', 'aod', 'ssa', 
+    'ssaMode_fine', 'rEffCalc', 'aodMode_PBL[FT]', 'n_PBL[FT]', 'rEffMode_PBL[FT]',
+    'k_fine', 'n', 'n_fine', 'k', 'k_PBL[FT]', 'rEffMode_fine', 'aod', 'ssa',
     'ssaMode_PBL[FT]', 'LidarRatio', 'aodMode_fine
     '"""
     harvest = []
@@ -63,6 +63,24 @@ def prepHarvest(score, GVs):
         vr = vr.replace('PBL', 'FT').replace('FT', 'PBLFT') # not a typo: PBL->FT->PBLFT OR FT->PBLFT
         harvest.append(score[vr][ind])
     return harvest
+
+
+def findLayerSeperation(rsltFwd, defaultVal=None):
+    """ Find seperation alt. between 2 layers; designed w/ canoncical cases in mind... mileage may vary"""
+    if 'βext' not in rsltFwd:
+        assert defaultVal is not None, 'We need either βext or a default value...'
+        return defaultVal
+    lowLayInd = rsltFwd['βext'][0,1:] - rsltFwd['βext'][-1,1:] < 1e-5 # skip the first (top) index cause it is always zero
+    hghtCut = np.sum(rsltFwd['range'][0,1:]*np.gradient(np.float64(lowLayInd))) # second factor is array with 0.5 at bottom of top and 0.5 at top of bottom
+    if hghtCut==0: hghtCut = rsltFwd['range'][0,0] # single layer case
+    return hghtCut
+    
+def findFineModes(simB):
+    fineIndFwd = np.nonzero(simB.rsltFwd[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
+    assert len(fineIndFwd)>0, 'No obvious fine mode could be found in fwd data!'
+    fineIndBck = np.nonzero(simB.rsltBck[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
+    assert len(fineIndBck)>0, 'No obvious fine mode could be found in fwd data!'
+    return fineIndFwd, fineIndBck
 
 def writeConcaseVars(rslt):
     """
