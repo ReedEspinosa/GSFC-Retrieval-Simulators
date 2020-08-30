@@ -93,15 +93,11 @@ for barInd, barVal in enumerate(barVals):
         fineIndBck = np.nonzero(['fine' in typ.lower() for typ in paramTple[1].split('+')])[0] 
         if len(fineIndBck)==0: fineIndBck = np.nonzero(simB.rsltBck[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
         assert len(fineIndBck)>0, 'No obvious fine mode could be found in fwd data!'
-        if ['polar07'] == barVal:
-            hghtCut=2100
-        else:
-            lowLayInd = simB.rsltFwd[0]['βext'][0,1:]-simB.rsltFwd[0]['βext'][-1,1:] < 1e-5 # skip the first (top) index cause it is always zero
-            hghtCut = np.sum(simB.rsltFwd[0]['range'][0,1:]*np.gradient(np.float64(lowLayInd))) # second factor is array with 0.5 at bottom of top and 0.5 at top of bottom
-            if hghtCut==0: hghtCut = simB.rsltFwd[0]['range'][0,0] # single layer case
+        hghtCut = af.findLayerSeperation(simB.rsltFwd[0], defaultVal=2100)
         strInputs = (','.join(str(x) for x in fineIndFwd), ','.join(str(x) for x in fineIndBck), hghtCut)
         rmse, bias, true = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=hghtCut)
         print('fwd fine mode inds: %s | bck fine mode inds: %s | bot/top layer split: %d m' % strInputs)
+        sys.exit()
         qScore, mBias, σScore = af.normalizeError(rmse, bias, true, enhanced=True)
         harvest[n, :] = af.prepHarvest(σScore, totVars) # takes any of qScore, mBias or σScore from normalizeError() above (this is what is plotted)
         print('--------------------')

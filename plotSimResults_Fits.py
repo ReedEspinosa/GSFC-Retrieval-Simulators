@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
 # simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment/TEST_V06_Lidar090+polar07_case08h1_tFct1.00_orbSS*_n*_nAng1.pkl'
-simRsltFile = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/DRS_V01_Lidar050_case08l2_tFct1.00_orbSS_multiAngles_n203_nAngALL.pkl'
+simRsltFile = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/DRS_V01_Lidar090+polar07_case08l2_tFct1.00_orbSS_multiAngles_n203_nAngALL.pkl'
 trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
 trgtλPolar = 0.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
 extErrPlot = True
