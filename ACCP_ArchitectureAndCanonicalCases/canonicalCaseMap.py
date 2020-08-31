@@ -235,18 +235,6 @@ def conCaseDefinitions(caseStr, nowPix):
     return vals, landPrct
 
 def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=None, simBldProfs=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
-    fldNms = {
-        'lgrnm':'size_distribution_lognormal',
-        'sph':'sphere_fraction',
-        'vol':'aerosol_concentration',
-        'vrtHght':'vertical_profile_parameter_height',
-        'vrtHghtStd':'vertical_profile_parameter_standard_deviation',
-        'vrtProf':'vertical_profile_normalized',
-        'n':'real_part_of_refractive_index_spectral_dependent',
-        'k':'imaginary_part_of_refractive_index_spectral_dependent',
-        'brdf':'surface_land_brdf_ross_li',
-        'bpdf':'surface_land_polarized_maignan_breon',
-        'cxMnk':'surface_water_cox_munk_iso'}
     aeroKeys = ['lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k']
     vals = dict()
     for caseStr,loading in splitMultipleCases(caseStrs, caseLoadFctr): # loop over all cases and add them together
@@ -261,13 +249,6 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=No
             else: # implies we take the surface parameters from the last case
                 vals[key] = valsTmp[key]
     nowPix.land_prct = landPrct # [out] – sets nowPix to match ConCase
-    randomID = hex(rnd.randint(0, 2**63-1))[2:] # needed to prevent identical FN w/ many parallel runs
-    nwl = len(np.unique([mv['wl'] for mv in nowPix.measVals])) 
-    newFn = 'settingsYAML_conCase%s_nwl%d_%s.yml' % (caseStrs, nwl, randomID)
-    newPathYAML = os.path.join(tempfile.gettempdir(), newFn)
-    if os.path.exists(newPathYAML): return newPathYAML # reuse existing YAML file from this exact base YAML, con. case values and NWL
-    yamlObj = rg.graspYAML(baseYAML, newPathYAML)
-    yamlObj.adjustLambda(nwl)
     if simBldProfs is not None:
         msg = 'Using sim_builder profiles requires 4 modes ordered [TOP_F, TOP_C, BOT_F, BOT_C]!'
         assert vals['vrtProf'].shape==simBldProfs.shape, msg
@@ -275,19 +256,10 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=No
         modeOrdVld = vals['lgrnm'][0,0]<vals['lgrnm'][1,0] and vals['lgrnm'][2,0]<vals['lgrnm'][3,0]
         assert vrtOrdVld and modeOrdVld, msg
         vals['vrtProf'] = simBldProfs
-    for key in vals.keys():
-        for m in range(np.array(vals[key]).shape[0]): # loop over aerosol modes
-                fldNm = '%s.%d.value' % (fldNms[key], m+1)
-                yamlObj.access(fldNm, newVal=vals[key][m], write2disk=False, verbose=False) # verbose=False -> no wanrnings about creating a new mode
-                if key=='vrtProf':
-                    fldNm = '%s.%d.index_of_wavelength_involved' % (fldNms[key], m+1)
-                    yamlObj.access(fldNm, newVal=np.zeros(len(vals[key][m]), dtype=int), write2disk=False) 
-                    fldNm = '%s.%d.min' % (fldNms[key], m+1)
-                    yamlObj.access(fldNm, newVal=1e-9*np.ones(len(vals[key][m])), write2disk=False)
-                    fldNm = '%s.%d.max' % (fldNms[key], m+1)
-                    yamlObj.access(fldNm, newVal=2*np.ones(len(vals[key][m])), write2disk=False)
+    yamlObj = rg.graspYAML(baseYAML, newTmpFile=('FWD_%s' % caseStrs))
+    yamlObj.setMultipleCharacteristics(vals)
     yamlObj.access('stop_before_performing_retrieval', True, write2disk=True)    
-    return newPathYAML
+    return yamlObj
 
 def splitMultipleCases(caseStrs, caseLoadFct=1):
     cases = []
