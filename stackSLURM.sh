@@ -3,14 +3,14 @@
 STARTnAng=0
 date
 hostname
-while [ $STARTnAng -lt 100 ]
+while [ $STARTnAng -lt 60 ]
 do
-    if [ $(squeue -u wrespino | wc -l) -lt 12 ]
+    if [ $(squeue -u wrespino | wc -l) -lt 25 ]
     then
         echo "<><><><><><>"
         date
-        echo "Running Command: sbatch --export=ALL,nAng='$STARTnAng' SLURM_runSimulation.sh"
-        sbatch --export=ALL,nAng='$STARTnAng' SLURM_runSimulation.sh
+        echo "Running Command: sbatch --export=ALL,nAng=$STARTnAng SLURM_runSimulation.sh"
+        sbatch --export=ALL,nAng=$STARTnAng SLURM_runSimulation.sh
         squeue -u wrespino
         STARTnAng=$(($STARTnAng+1))
         echo "<><><><><><>"

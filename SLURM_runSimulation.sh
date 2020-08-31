@@ -1,10 +1,10 @@
 #!/usr/local/bin/bash
 #SBATCH --job-name=GCC
 #SBATCH --nodes=1 --constraint=hasw
-#SBATCH --time=01:30:00
+#SBATCH --time=00:10:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-240:7
+#SBATCH --array=0-90:7
 
 date
 hostname
