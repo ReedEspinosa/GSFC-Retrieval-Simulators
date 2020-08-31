@@ -18,11 +18,12 @@ from simulateRetrieval import simulation
 import miscFunctions as mf
 import ACCP_functions as af
 
-# instruments = ['Lidar090','Lidar050','Lidar060', 'polar07', \
-#                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
-instruments = ['polar07', 'polar07GPM', \
-                'Lidar090+polar07','Lidar090+polar07GPM',]
-
+instruments = ['Lidar090','Lidar090Night','Lidar050Night','Lidar050','Lidar060Night','Lidar060', 'polar07', 'polar07GPM', \
+                'Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
+instruments = ['polar07', \
+                'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
+# instruments = ['Lidar090','Lidar090Night','Lidar050Night','Lidar050','Lidar060Night','Lidar060'] # 7 N=231
+        
 
 # casLets = ['a', 'b', 'c', 'd', 'e', 'f','i']
 # conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['','Desert', 'Vegetation']]
@@ -33,9 +34,10 @@ tauVals = [1.0]
 N = len(conCases)*len(tauVals)
 barVals = instruments # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
 
-trgtλ =  0.550
-χthresh= None # χ^2 threshold on points
-forceχ2Calc = False
+trgtλ =  0.532
+χthresh= 2.2 # χ^2 threshold on points
+forceχ2Calc = True
+minSaved=13
 
 def lgTxtTransform(lgTxt):
     if re.match('.*Coarse[A-z]*Nonsph', lgTxt): # conCase in leg
@@ -54,7 +56,7 @@ def lgTxtTransform(lgTxt):
     'k_fine', 'n', 'n_fine', 'k', 'k_PBL[FT]', 'rEffMode_fine', 'aod', 'ssa', 
     'ssaMode_PBL[FT]', 'LidarRatio', 'aodMode_fine' """
 
-totVars = np.flipud(['aod', 'ssa', 'n_PBL', 'aodMode_PBL','aodMode_fine', 'ssaMode_fine', 'rEffCalc'])
+totVars = np.flipud(['aod', 'ssa', 'n_PBL', 'aodMode_PBL','aodMode_fine', 'ssaMode_PBL', 'ssaMode_fine', 'rEffCalc', 'g', 'LidarRatio'])
 
 saveStart = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/DRS_V01_'
 
@@ -90,8 +92,8 @@ for barInd, barVal in enumerate(barVals):
         print('AOD=%4.2f, Nsim=%d' % (simB.rsltFwd[0]['aod'][lInd], Nsims))
         print(paramTple[0])
         print('Spectral variables for λ = %4.2f μm'% simB.rsltFwd[0]['lambda'][lInd])        
-        simB.conerganceFilter(χthresh=χthresh, forceχ2Calc=forceχ2Calc, verbose=True)
-        fineIndFwd, fineIndBck = findFineModes(simB)
+        simB.conerganceFilter(χthresh=χthresh, forceχ2Calc=forceχ2Calc, minSaved=minSaved, verbose=True)
+        fineIndFwd, fineIndBck = af.findFineModes(simB)
         hghtCut = af.findLayerSeperation(simB.rsltFwd[0], defaultVal=2100)
         strInputs = (','.join(str(x) for x in fineIndFwd), ','.join(str(x) for x in fineIndBck), hghtCut)
         rmse, bias, true = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=hghtCut)
