@@ -159,7 +159,7 @@ retrieval:
                     max:   [0.9999999]
                     min:    [0.0000001]
                     value: [0.9999998]
-            retrieved: false
+            retrieved: true
             type: sphere_fraction                                    
     convergence: 
         maximum_iterations_for_stopping: 40
