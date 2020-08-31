@@ -125,6 +125,7 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
     wrngNumMeasMsg = 'Current error models assume that each measurement type has the same number of measurements at each wavelength!'
     βextLowLim = 0.01/1e6
     βscaLowLim = 2.0e-10
+    βscaUprLim = 0.999
     mtch = re.match('^([A-z]+)([0-9]+)$', measNm)
     if mtch.group(1).lower() == 'polar': # measNm should be string w/ format 'polarN', where N is polarimeter number
         if int(mtch.group(2)) in [4, 7, 8]: # S-Polar04 (a-d), S-Polar07, S-Polar08
@@ -179,11 +180,14 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
                 relErr = readKathysLidarσ(lidErrDir, orbit=orbit, wavelength=rsltFwd['lambda'][l], \
                                  instrument=int(mtch.group(2))/10, concase=concase, \
                                  LidarRange=vertRange, measType='Att', verbose=verbose)
+                relErr = np.abs(relErr)
+                relErr[relErr>10]=10                         
             else:
                 assert False, 'Lidar ID number %d not recognized!' % mtch.group(2)
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca)) # works w/ relErr as scalar or vector
             fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
-            fwdSimβscaNrm = np.r_[fwdSimβsca]/simps(fwdSimβsca, x=-vertRange) # normalize profile to unity (GRASP requirement)
+#            fwdSimβscaNrm = np.r_[fwdSimβsca]/simps(fwdSimβsca, x=-vertRange) # normalize profile to unity (GRASP requirement)
+            fwdSimβscaNrm = np.r_[fwdSimβsca]
             return fwdSimβscaNrm # safe because of ascending order check in simulateRetrieval.py
         elif not (np.isnan(rsltFwd['fit_VBS'][:,l]).any() or np.isnan(rsltFwd['fit_VExt'][:,l]).any()): # HSRL
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
@@ -200,7 +204,9 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
                 absErrβsca = readKathysLidarσ(lidErrDir, orbit=orbit, wavelength=rsltFwd['lambda'][l], \
                                  instrument=int(mtch.group(2))/10, concase=concase, \
                                  LidarRange=vertRange, measType='Bks', verbose=verbose)
-                relErrβsca = absErrβsca/trueSimβsca
+                relErrβsca = absErrβsca/trueSimβsca # not sure why I didn't just read relative error from Kathy's files...
+                relErrβsca = np.abs(relErrβsca)
+                relErrβsca[relErrβsca>10]=10                         
             elif int(mtch.group(2)) in [5, 6]: # use normal noise model
                 if np.isclose(rsltFwd['lambda'][l], 0.355):
                     relErrβsca = 0.08548621115220849 #
@@ -216,6 +222,7 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
             fwdSimβext = trueSimβext + absErrβext*np.random.normal(size=len(trueSimβext)) # works w/ absErrβext as scalar or vector
             fwdSimβext[fwdSimβext<βextLowLim] = βextLowLim
             fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
+            fwdSimβsca[fwdSimβsca>βscaUprLim] = βscaUprLim
             return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
         else:
             assert False, 'Lidar data type not VBS, VExt or LS!' % mtch.group(2)

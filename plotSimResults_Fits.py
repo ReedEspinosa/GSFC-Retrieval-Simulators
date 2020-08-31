@@ -16,17 +16,17 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
-# simRsltFile = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/gpm-g5nr.leV01.GRASP.YAMLaaaac641.polar07+lidar09NONOISE.20060801_0000z.pkl'
-simRsltFile = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/gpm-g5nr.leV01.GRASP.YAMLf005a5f6.polar07NONOISE.20060801_0000z.pkl'
+# simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment/TEST_V06_Lidar090+polar07_case08h1_tFct1.00_orbSS*_n*_nAng1.pkl'
+simRsltFile = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/DRS_V01_Lidar060+polar07_case08a2_tFct1.00_orbSS_multiAngles_n*_nAngALL.pkl'
 trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
-trgtλPolar = 1.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
+trgtλPolar = 0.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
 extErrPlot = True
 
 # --END INPUT SETTINGS--
 posFiles = glob(simRsltFile)
 assert len(posFiles)==1, 'glob found %d files but we expect exactly 1' % len(posFiles)
 simA = simulation(picklePath=posFiles[0])
-simA.conerganceFilter(χthresh=200.0, verbose=True)
+simA.conerganceFilter(χthresh=2000.0, verbose=True, forceχ2Calc=True)
 lIndL = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλLidar))
 lIndP = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλPolar))
 alphVal = 1/np.sqrt(len(simA.rsltBck))
@@ -62,8 +62,7 @@ if POLARpresent:
     figP, axP = plt.subplots(1,len(measTypesP),figsize=(12,6))
     if not type(axP)==np.ndarray: axP=[axP]
 # Plot LIDAR and Polar measurements and fits
-# NfwdModes = simA.rsltFwd[0]['aodMode'].shape[0]
-NfwdModes = 1
+NfwdModes = simA.rsltFwd[0]['aodMode'].shape[0]
 NbckModes = simA.rsltBck[0]['aodMode'].shape[0]
 frstPass = True
 for rb in simA.rsltBck:
@@ -83,10 +82,10 @@ if LIDARpresent:
     mdHnd = []
     lgTxt = []
     for i in range(NfwdModes):
-#         βprof = norm2absExtProf(simA.rsltFwd[0]['βext'][i,:], simA.rsltFwd[0]['range'][i,:], simA.rsltFwd[0]['aodMode'][i,lIndL])
-#         mdHnd.append(axL[0].plot(1e6*βprof, simA.rsltFwd[0]['range'][i,:]/1e3, 'o-', color=color1[i]/2))
-        mdHnd.append(axL[0].plot([], [], 'o-', color=color1[i]/2))
-        lgTxt.append('Mode %d' % i)
+        βprof = norm2absExtProf(simA.rsltFwd[0]['βext'][i,:], simA.rsltFwd[0]['range'][i,:], simA.rsltFwd[0]['aodMode'][i,lIndL])
+        mdHnd.append(axL[0].plot(1e6*βprof, simA.rsltFwd[0]['range'][i,:]/1e3, 'o-', color=color1[i]/2))
+        axL[0].plot([], [], 'o-', color=color1[i]/2)
+        lgTxt.append('Mode %d' % (i+1))
     for i,mt in enumerate(measTypesL): # Lidar fwd fit
         axL[i+1].plot(1e6*simA.rsltFwd[0]['fit_'+mt][:,lIndL], simA.rsltFwd[0]['RangeLidar'][:,lIndL]/1e3, 'ko-')
         axL[i+1].legend(['Measured', 'Retrieved']) # there are many lines but the first two should be these
@@ -126,9 +125,10 @@ if POLARpresent: # touch up Polarimeter plots
     figP.suptitle(ttlTxt)
     figP.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-plt.show()
+plt.show(block=False)
 
-
+print(simA.analyzeSim(lIndP)[0])
+print('Total AOD: %f' % simA.rsltFwd[0]['aod'][lIndP])
 
 # For X11 on Discover
 # plt.ioff()
