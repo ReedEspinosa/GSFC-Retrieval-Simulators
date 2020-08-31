@@ -16,11 +16,9 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
-# simRsltFile = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/gpm-g5nr.leV01.GRASP.YAMLaaaac641.polar07+lidar09NONOISE.20060801_0000z.pkl'
-simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment/TEST_V02_Lidar050_case08i2_tFct1.00_orbSS_*_n197_nAng1.pkl'
-# simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment/TEST_V00_Lidar090_case08a1_tFct1.00_orbSS_sza22_phi104_n0_nAng0.pkl'
-# simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment/TEST_V01_Lidar090_case08d1_tFct1.00_orbSS_sza22_phi104_n*_nAng0.pkl'
-trgtλLidar = 0.355 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
+# simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment/TEST_V06_Lidar090+polar07_case08h1_tFct1.00_orbSS*_n*_nAng1.pkl'
+simRsltFile = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/DRS_V01_Lidar060+polar07_case08a2_tFct1.00_orbSS_multiAngles_n*_nAngALL.pkl'
+trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
 trgtλPolar = 0.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
 extErrPlot = True
 
@@ -28,7 +26,7 @@ extErrPlot = True
 posFiles = glob(simRsltFile)
 assert len(posFiles)==1, 'glob found %d files but we expect exactly 1' % len(posFiles)
 simA = simulation(picklePath=posFiles[0])
-simA.conerganceFilter(χthresh=200.0, verbose=True)
+simA.conerganceFilter(χthresh=2000.0, verbose=True, forceχ2Calc=True)
 lIndL = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλLidar))
 lIndP = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλPolar))
 alphVal = 1/np.sqrt(len(simA.rsltBck))

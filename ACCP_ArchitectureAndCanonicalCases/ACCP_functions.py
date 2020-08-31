@@ -24,9 +24,10 @@ def normalizeError(rmse, bias, true, enhanced=False):
             'k':0.002, 'k_fine':0.002, 'k_PBLFT':0.002,
             'g':0.02, 'LidarRatio':0.0,
             'βext_PBL':20.0, 'βext_FT':20.0, 'βextFine_PBL':20.0, 'βextFine_FT':20.0,
-            'ssaPrf_PBL':0.03, 'ssaPrf_FT':0.03}
+            'ssaPrf_PBL':0.03, 'ssaPrf_FT':0.03, 'LRPrf_PBL':0.0, 'LRPrf_FT':0.0}
     trgtRel = {'LidarRatio':0.25, 'rEffCalc':0.1,
-               'βext_PBL':0.20, 'βext_FT':0.20, 'βextFine_PBL':0.20, 'βextFine_FT':0.20}
+               'βext_PBL':0.20, 'βext_FT':0.20, 'βextFine_PBL':0.20, 'βextFine_FT':0.20,
+               'LRPrf_PBL':0.25, 'LRPrf_FT':0.25}
     aodTrgt = lambda τ: 0.02 + 0.05*τ # this needs to tolerate a 2D array
     qScore = dict()
     σScore = dict()
@@ -48,38 +49,39 @@ def normalizeError(rmse, bias, true, enhanced=False):
     return qScore, mBias, σScore
 
 
-def prepHarvest(simFwd, rmse, lInd, GVs, bias):
-    """ Note - we pull the indices that match below, ex. 'n_fine' key value has one element so we only pull the first of n_fine """
-    trgt = {'aod':[0.04], 'ssa':[0.02], 'g':[0.02], 'aodMode_fine':[0.01], 'aodMode_PBLFT':[0.04],
-            'rEffMode_PBLFT':[0.1],'ssaMode_fine':[0.03], 'n':[0.02], 'n_fine':[0.02],
-            'LidarRatio':[0.0], 'rEffCalc':[0.1]} # look at total and fine/coarse
-    trgtRel = {'aod':0.05, 'aodMode_fine':0.05, 'LidarRatio':0.25, 'rEffCalc':0.0} # this part must be same for every mode but absolute component above can change
-    assert np.all([not type(x) is list for x in trgtRel.values()]), 'All entries in trgtRel should be scalars (not lists)'
-    i=0
+def prepHarvest(score, GVs):
+    """
+    Functions to pull appropriate scores from dicts returned by normalizeError()
+    score – one of qScore, mBias or σScore from normalizeError() above
+    GVs – a list of variables to include in harvest; options are:
+    'ssaMode_fine', 'rEffCalc', 'aodMode_PBL[FT]', 'n_PBL[FT]', 'rEffMode_PBL[FT]',
+    'k_fine', 'n', 'n_fine', 'k', 'k_PBL[FT]', 'rEffMode_fine', 'aod', 'ssa',
+    'ssaMode_PBL[FT]', 'LidarRatio', 'aodMode_fine
+    '"""
     harvest = []
-    harvestQ = []
-    rmseVal = []
     for vr in GVs:
-        tg = trgt[vr]
-        if vr in trgtRel.keys():     
-            rsltFwdVr = vr.replace('Mode_fine','') # NOTE: we work relative to the total in the modal variables (e.g. Δτ_fine = ±(0.2 + 0.05*τ_total)
-            if np.isscalar(simFwd[rsltFwdVr]):
-                true = simFwd[rsltFwdVr]
-            elif simFwd[rsltFwdVr].ndim==1:
-                true = simFwd[rsltFwdVr][lInd]
-            else:
-                true = simFwd[vr][0,lInd]
-            harvest.append((tg+trgtRel[vr]*true)/np.atleast_1d(rmse[vr])[0])
-            harvestQ.append(np.sum((tg+trgtRel[vr]*true)>=np.abs(bias[vr][:,0]))/len(bias[vr][:,0]))
-        else:
-            harvest.append(tg/np.atleast_1d(rmse[vr])[0])
-            try:
-                harvestQ.append(np.sum(tg>=np.abs(bias[vr][:,0]))/len(bias[vr][:,0]))
-            except:
-                harvestQ.append(np.nan)
-        rmseVal.append(np.atleast_1d(rmse[vr])[0])
-        i+=1
-    return harvest, harvestQ, rmseVal
+        ind = 1 if 'coarse' in vr.lower() or 'ft' in vr.lower() else 0
+        vr = vr.replace('PBL', 'FT').replace('FT', 'PBLFT') # not a typo: PBL->FT->PBLFT OR FT->PBLFT
+        harvest.append(score[vr][ind])
+    return harvest
+
+
+def findLayerSeperation(rsltFwd, defaultVal=None):
+    """ Find seperation alt. between 2 layers; designed w/ canoncical cases in mind... mileage may vary"""
+    if 'βext' not in rsltFwd:
+        assert defaultVal is not None, 'We need either βext or a default value...'
+        return defaultVal
+    lowLayInd = rsltFwd['βext'][0,1:] - rsltFwd['βext'][-1,1:] < 1e-5 # skip the first (top) index cause it is always zero
+    hghtCut = np.sum(rsltFwd['range'][0,1:]*np.gradient(np.float64(lowLayInd))) # second factor is array with 0.5 at bottom of top and 0.5 at top of bottom
+    if hghtCut==0: hghtCut = rsltFwd['range'][0,0] # single layer case
+    return hghtCut
+    
+def findFineModes(simB):
+    fineIndFwd = np.nonzero(simB.rsltFwd[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
+    assert len(fineIndFwd)>0, 'No obvious fine mode could be found in fwd data!'
+    fineIndBck = np.nonzero(simB.rsltBck[0]['rv']<0.5)[0] # fine wasn't in case name, guess from rv
+    assert len(fineIndBck)>0, 'No obvious fine mode could be found in fwd data!'
+    return fineIndFwd, fineIndBck
 
 def writeConcaseVars(rslt):
     """
