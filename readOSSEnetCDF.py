@@ -22,7 +22,8 @@ FINE_MODE_THESH = 0.5 # inclusive[exclusive] upper[lower] bound of fine[coarse] 
 
 
 class osseData(object):
-    def __init__(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, wvls=None, lidarVersion=None, maxSZA=None, verbose=False):
+    def __init__(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, wvls=None, \
+                 lidarVersion=None, maxSZA=None, oceanOnly=False, loadDust=True, verbose=False):
         """
         IN: orbit - 'ss450' or 'gpm'
             year, month, day - integers specifying data of pixels to load
@@ -39,17 +40,19 @@ class osseData(object):
         self.loadingCalls = []
         self.pblInds = None
         self.maxSZA = maxSZA
+        self.oceanOnly = oceanOnly 
         self.verbose = verbose
         self.vldPolarλind = None # needed b/c measData at lidar data λ is missing some variables
         self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random, lidarVersion)
-        self.wvls = list(wvls) if wvls is not None else self.λSearch() # wvls should be a list
+        self.wvls = self.λSearch() if wvls is None else list(wvls) # wvls should be a list
         if lidarVersion is None or lidarVersion==0:
             if self.verbose: print('Lidar version not provided, not attempting to load any lidar data')
-            self.loadAllData(loadLidar=False)
+            self.wvls = [wvl for wvl in self.wvls if wvl not in [0.355,0.532,1.064]] # Remove lidar wavelengths in case caller provided them
+            self.loadAllData(loadLidar=False, loadDust=loadDust)
         else:
-            self.loadAllData(loadLidar=True)
+            self.loadAllData(loadLidar=True, loadDust=loadDust)
 
-    def loadAllData(self, loadLidar=True):
+    def loadAllData(self, loadLidar=True, loadDust=True):
         """Loads NetCDF OSSE data into memory, see buildFpDict below for variable descriptions"""
         assert self.readPolarimeterNetCDF(), 'This class currently requires a polarNc4FP file to be present.' # reads polarNc4FP
         self.readasmData() # reads asmNc4FP
@@ -57,9 +60,9 @@ class osseData(object):
         self.readaerData() # reads aerNc4FP
         self.readStateVars() # reads lcExt
 #         self.readStateVars(finemode=True) # reads lcExt (finemode version)
-        self.readPSD() # reads aerSD
+        self.readPSD(incldDust=loadDust) # reads aerSD
         if loadLidar: self.readlidarData() # reads lc2Lidar
-        self.purgeInvldInd(self.maxSZA)
+        self.purgeInvldInd(self.maxSZA, self.oceanOnly)
 
     def buildFpDict(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, lidarVer=0):
         """
@@ -118,7 +121,7 @@ class osseData(object):
             warnings.warn('No wavelengths found for the patterns:\n%s' % "\n".join(posPaths))
         return wvls
 
-    def osse2graspRslts(self, NpixMax=None, newLayers=None):
+    def osse2graspRslts(self, NpixMax=None, newLayers=None, NpixMin=0):
         """ osse2graspRslts will convert that data in measData to the format used to store GRASP's output
                 IN: NpixMax -> no more than this many pixels will be returned in rslts list (primarly for testing)
                     newLidarLayers -> a list of layer heights (in meters) at which to return the lidar signal
@@ -137,7 +140,7 @@ class osseData(object):
             'OSSE observable and state variable data structures contain a differnt number of wavelengths!'
         Npix = min(self.Npix, NpixMax) if NpixMax else self.Npix
         rslts = []
-        for k,rd in enumerate(self.rtrvdData[0:Npix]): # loop over pixels
+        for k,rd in zip(np.r_[NpixMin:Npix], self.rtrvdData[NpixMin:Npix]): # loop over pixels
             rslt = dict()
             for rv,mv in zip(rsltVars,mdVars): # loop over potential variables
                 for l, md in enumerate(measData): # loop over λ -- HINT: we assume all λ have the same # of measurements for each msType
@@ -214,6 +217,8 @@ class osseData(object):
         levB_data = loadVARSnetCDF(levBFN, varNames=['FRLAND', 'FRLANDICE'], verbose=self.verbose)
         icePix = np.nonzero(levB_data['FRLANDICE'] > 1e-5)[0]
         self.invldInd = np.append(self.invldInd, icePix).astype(int)
+        levB_data['FRLAND'][levB_data['FRLAND']>0.99] = 1.0
+        levB_data['FRLAND'][levB_data['FRLAND']<0.01] = 0.0        
         for md in self.measData: md['land_prct'] = levB_data['FRLAND']
 
     def readmetData(self):
@@ -328,9 +333,10 @@ class osseData(object):
                     termFine = rd['tau_fine'+ls]/rd['tau_coarse'+ls]*rd[ri+'_fine'+ls]
                     rd[ri+'_coarse'+ls] = termTot - termFine # nc = τ/τc*n - τf/τc*nf (uses τ weighted averaging)
 
-    def readPSD(self):
+    def readPSD(self, incldDust=True):
         """ Read in size distribution data and separate by mode/height(PBL vs FT) """
-        dists2pull = ['TOTdist', 'DUdist'] # could add SUdist, SSdist, OCPHOBICdist, OCPHILICdist, etc.
+        dists2pull = ['TOTdist'] # could add SUdist, SSdist, OCPHOBICdist, OCPHILICdist, etc.
+        if incldDust: dists2pull.append('DUdist')
         levBFN = self.fpDict['psdNc4FP']
         preReqs = ['readPolarimeterNetCDF','readmetData']
         if not self._loadingChecks(prereqCalls=preReqs, filename=levBFN, functionName='readPSD'): return
@@ -351,6 +357,7 @@ class osseData(object):
                 self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=~pblInd, modeInds=fineInd)
                 self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
                 self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
+        if not incldDust: return
         for pstFx in ['', '_fine', '_coarse']:
             for pstFx2 in ['', 'PBL', 'FT']:
                 fullFx = pstFx+'_'+pstFx2 if not pstFx2=='' and pstFx=='' else pstFx+pstFx2
@@ -488,7 +495,7 @@ class osseData(object):
         if self.verbose and filename: print('Processing data from %s' % filename)
         return True
 
-    def purgeInvldInd(self, maxSZA=None):
+    def purgeInvldInd(self, maxSZA=None, oceanOnly=False):
         """ The method will remove all invldInd from measData """
         timeInvariantVars = ['ocean_refractive_index','x', 'y', 'RangeLidar', 'lev', 'rayleigh_depol_ratio']
         if self.invldIndPurged:
@@ -500,6 +507,10 @@ class osseData(object):
                 if not np.all(np.isnan(sza)) and np.any(sza>maxSZA): overSZAInds.append(ind)            
             self.invldInd = np.append(self.invldInd, overSZAInds).astype(int)
             if self.verbose: print('%d pixels exlcuded for SZA>%4.1f°' % (len(overSZAInds), maxSZA))
+        if oceanOnly:
+            landInd = np.where(self.measData[0]['land_prct']>0)[0].tolist()
+            self.invldInd = np.append(self.invldInd, landInd).astype(int)
+            if self.verbose: print('%d pixels containing land were excluded' % len(landInd))            
         self.invldInd = np.array(np.unique(self.invldInd), dtype='int')
         if self.verbose:
             allKeys = np.unique(sum([list(md.keys()) for md in self.measData],[]))

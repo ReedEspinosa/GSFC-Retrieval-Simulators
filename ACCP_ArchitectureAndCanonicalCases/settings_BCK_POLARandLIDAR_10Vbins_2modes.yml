@@ -11,7 +11,7 @@ retrieval:
                     min: [1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09]
                     value: [0.634669718378219, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669718378219]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.000001}
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.00001}
             mode[2]: # COARSE
                 initial_guess:
                     index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -19,7 +19,7 @@ retrieval:
                     min: [1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09]
                     value: [0.634669718378219, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669718378219]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.000001}
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.00001}
             retrieved: true
             type: vertical_profile_normalized
         characteristic[2]:
@@ -56,34 +56,50 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [1.65]
-                    min: [1.35]
-                    value: [1.45]
+                    max: [1.6]
+                    min: [1.33]
+                    value: [1.4]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [1.52]
-                    min: [1.35]
-                    value: [1.47]
+                    max: [1.6]
+                    min: [1.33]
+                    value: [1.4]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             retrieved: true
             type: real_part_of_refractive_index_spectral_dependent
         characteristic[5]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1] 
-                    max: [0.005]
+                    max: [0.01]
                     min: [1e-6]
-                    value: [0.001]
+                    value: [0.002]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [0.005]
+                    max: [0.01]
                     min: [1e-6]
-                    value: [0.001]
+                    value: [0.002]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent            
         characteristic[6]:
-            type: surface_water_cox_munk_iso
+            type: surface_water_CxMnk_iso_noPol
             retrieved: true
             mode[1]:    
                 initial_guess:                       #1      #2      #3      
@@ -112,25 +128,25 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1] # 0.355L, 0.3600, 0.3800, 0.4100, 0.532L, 0.5500, 0.6700, 0.8700, 1.064L, 1.5500, 1.6500 μm
-                    max:                               [0.1261, 0.1261, 0.1261, 0.1261, 0.3068, 0.3068, 0.5141, 0.6099, 0.7676, 0.7676, 0.7768]
-                    min:                               [0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.1500, 0.1450, 0.1250, 0.1000]
+                    max:                               [0.2000, 0.2000, 0.2000, 0.2000, 0.5000, 0.5000, 0.6000, 0.9000, 1.5000, 1.5000, 1.5000]
+                    min:                               [0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0500, 0.0250, 0.0250, 0.0250]
                     value:                             [0.0800, 0.0800, 0.0800, 0.0800, 0.2500, 0.2500, 0.3000, 0.4500, 0.6000, 0.6000, 0.6000]
                 single_pixel:
                     smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max:   [0.7533]
-                    min:   [0.0781]
-                    value: [0.40]
+                    max:   [2.0 ]
+                    min:   [0.001]
+                    value: [0.1 ]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
             mode[3]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max:   [0.1322]
-                    min:   [0.00001]
-                    value: [0.05]
+                    max:   [1.0]
+                    min:   [0.0001]
+                    value: [0.1]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
             retrieved: true
@@ -138,17 +154,6 @@ retrieval:
         characteristic[8]:
             mode[1]:
                 initial_guess:
-                    index_of_wavelength_involved: [1]
-                    max:   [7.895]
-                    min:   [5.460]
-                    value: [6.0]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
-            retrieved: true
-            type: surface_land_polarized_maignan_breon
-        characteristic[9]:
-            mode[1]:
-                initial_guess:
                     index_of_wavelength_involved: [0]
                     max:   [0.9999999]
                     min:    [0.0000001]
@@ -160,7 +165,18 @@ retrieval:
                     min:    [0.0000001]
                     value: [0.9999998]
             retrieved: true
-            type: sphere_fraction                                    
+            type: sphere_fraction
+        characteristic[9]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max:   [0.000003]
+                    min:   [0.000001]
+                    value: [0.000002]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
+            retrieved: false
+            type: surface_land_polarized_maignan_breon                                    
     convergence: 
         maximum_iterations_for_stopping: 40
         maximum_iterations_of_Levenberg-Marquardt: 40
@@ -248,4 +264,4 @@ retrieval:
             order_of_scattering: multiple_scattering
     regime_of_measurement_fitting: {polarization: relative_polarization_components}
     regime_of_multipixel_constraints: {inversion_regime: single_pixel}
-settings: {strict: false}
+settings: {strict: true}
