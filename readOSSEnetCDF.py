@@ -80,13 +80,13 @@ class osseData(object):
         """
         assert osseDataPath is not None, 'osseDataPath, Year, month and orbit must be provided to build fpDict'
         if lidarVer is None: lidarVer=0
-        tmStr = '%04d%02d%02d_%02d00z' % (year, month, day, hour)
         ldStr = 'LIDAR%02d' % (np.floor(lidarVer/100) if lidarVer >= 100 else lidarVer)
         if random:
-            tmStr = 'random.'+tmStr
+            tmStr = 'random.%04d%02d01_0000z' % (year, month)
             dtTple = (year, month)
             pathFrmt = os.path.join(osseDataPath, orbit.upper(), 'Level%s', 'Y%04d','M%02d', '%s')
         else:
+            tmStr = '%04d%02d%02d_%02d00z' % (year, month, day, hour)
             dtTple = (year, month, day)
             pathFrmt = os.path.join(osseDataPath, orbit.upper(), 'Level%s', 'Y%04d','M%02d', 'D%02d', '%s')
         self.fpDict = {
@@ -101,6 +101,8 @@ class osseData(object):
         }
         self.fpDict['dateTime'] = dt.datetime(year, month, day, hour)
         self.fpDict['noisyLidar'] = lidarVer < 100 # e.g. 0900 is noise free, but 09 is not
+        if random: 
+            self.fpDict['lc2Lidar'] = self.fpDict['lc2Lidar'].replace('random.','').replace('nc4','RANDOM.7000m.nc4')
         return self.fpDict
 
     def λSearch(self):
@@ -309,7 +311,7 @@ class osseData(object):
             rEffTot = np.sum(V[hInd])/np.sum(V[hInd]/rEff[hInd]) # see bottom of this method for derivation
             if firstλ:
                 rd['rEff'+km] = rEffTot
-            elif not np.isclose(rd['rEff'+km], rEffTot):
+            elif not np.isclose(rd['rEff'+km], rEffTot) and not np.isnan(rEffTot):
                 warnings.warn('The current rEff (%8.5f μm) differs from the first rEff (%8.5f μm) derived.' % (rEffTot, rd['rEff'+km]))
             rd['g'+km][λ] = np.sum(τ[hInd]*ω[hInd]*g[hInd])/np.sum(τ[hInd]*ω[hInd]) # see bottom of this method for derivation
             rd['LidarRatio'+km][λ] = np.sum(τ[hInd])/np.sum(τ[hInd]/S[hInd]) # S=τ/F11[180] & F11h[180]=τh/Sh => S=Στh/Σ(τh/Sh)
