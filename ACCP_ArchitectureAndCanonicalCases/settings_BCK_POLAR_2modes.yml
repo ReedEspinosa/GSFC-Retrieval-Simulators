@@ -15,16 +15,16 @@ retrieval:
                     index_of_wavelength_involved: [0]
                     max: [2.0] # τfactor should not exceed unity
                     min: [0.00000001]
-                    value: [0.05]
+                    value: [0.002]
             retrieved: true
             type: aerosol_concentration    
         characteristic[2]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max: [0.5, 0.75]
-                    min: [0.14, 0.3] # case2 goes down to ~0.11 but this covers smoke, marine, pol, dust 
-                    value: [0.2, 0.4]
+                    max: [0.34, 0.60]
+                    min: [0.13, 0.35]
+                    value: [0.17, 0.4]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
@@ -37,34 +37,50 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [1.65]
-                    min: [1.35]
-                    value: [1.45]
+                    max: [1.6]
+                    min: [1.33]
+                    value: [1.4]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [1.52]
-                    min: [1.35]
-                    value: [1.47]
+                    max: [1.6]
+                    min: [1.33]
+                    value: [1.4]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             retrieved: true
             type: real_part_of_refractive_index_spectral_dependent
         characteristic[4]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1] 
-                    max: [0.005]
+                    max: [0.01]
                     min: [1e-6]
-                    value: [0.001]
+                    value: [0.002]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [0.005]
+                    max: [0.01]
                     min: [1e-6]
-                    value: [0.001]
+                    value: [0.002]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent            
         characteristic[5]:
-            type: surface_water_cox_munk_iso
+            type: surface_water_CxMnk_iso_noPol
             retrieved: true
             mode[1]:    
                 initial_guess:                       #1      #2      #3      
@@ -108,25 +124,25 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1] # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
-                    max:                               [0.1261, 0.1261, 0.1261, 0.3068, 0.5141, 0.6099, 0.7676, 0.7768]
-                    min:                               [0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.1500, 0.1250, 0.1000]
+                    max:                               [0.2,     0.2,    0.2,    0.5,   0.6,    0.9,    1.5,    1.5]
+                    min:                               [0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0500, 0.0250, 0.020]
                     value:                             [0.0800, 0.0800, 0.0800, 0.2500, 0.3000, 0.4500, 0.6000, 0.6000]
                 single_pixel:
                     smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max:   [0.7533]
-                    min:   [0.0781]
-                    value: [0.40]
+                    max:   [2.0 ]
+                    min:   [0.001]
+                    value: [0.1 ]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
             mode[3]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max:   [0.1322]
-                    min:   [0.00001]
-                    value: [0.05]
+                    max:   [1.0]
+                    min:   [0.0001]
+                    value: [0.1]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
             retrieved: true
@@ -134,20 +150,9 @@ retrieval:
         characteristic[8]:
             mode[1]:
                 initial_guess:
-                    index_of_wavelength_involved: [1]
-                    max:   [7.895]
-                    min:   [5.460]
-                    value: [6.0]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
-            retrieved: true
-            type: surface_land_polarized_maignan_breon
-        characteristic[9]:
-            mode[1]:
-                initial_guess:
                     index_of_wavelength_involved: [0]
                     max:   [0.9999999]
-                    min:    [0.0000001]
+                    min:   [0.6000000]
                     value: [0.9999998]
             mode[2]:
                 initial_guess:
@@ -156,7 +161,18 @@ retrieval:
                     min:    [0.0000001]
                     value: [0.9999998]
             retrieved: true
-            type: sphere_fraction             
+            type: sphere_fraction
+        characteristic[9]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max:   [0.000003]
+                    min:   [0.000001]
+                    value: [0.000002]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
+            retrieved: false
+            type: surface_land_polarized_maignan_breon
         characteristic[10]: 
             type: vertical_profile_parameter_standard_deviation
             retrieved: false
