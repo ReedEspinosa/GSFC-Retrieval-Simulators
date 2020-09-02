@@ -54,7 +54,7 @@ def run1case(instrument, caseID, PathFrmt, polOnlyPlat=0):
     TYP=simType + caseID.lower()
     PLTF = 'UNSET'
     if 'gpm' in instrument.lower():
-        PLTF='SSPG3'
+        PLTF='SSG3'
     elif 'lidar05' in instrument.lower(): 
         PLTF='SSP0'
     elif 'lidar06' in instrument.lower(): 
