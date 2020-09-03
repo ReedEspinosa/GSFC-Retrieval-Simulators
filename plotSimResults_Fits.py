@@ -19,12 +19,12 @@ import matplotlib.pyplot as plt
 # simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment/TEST_V06_Lidar090+polar07_case08h1_tFct1.00_orbSS*_n*_nAng1.pkl'
 nn = int(sys.argv[1])
 mm = int(sys.argv[2])
-simRsltFile = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/gpm-g5nr.leV13.GRASP.YAML*-n%dm%d.polar07*.2006080*_1700z.pkl' % (nn,mm)
+simRsltFile = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/ss450-g5nr.leV30.GRASP.YAML*-n%dpixStrt%d.polar07*.random.20060801_0000z.pkl' % (nn,mm*28)
 trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
 trgtλPolar = 0.55 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
 extErrPlot = True
-χthresh = .2
-minSaved = 13
+χthresh = 222222.2
+minSaved = 5
 fineModesBck = [0]
 
 # --END INPUT SETTINGS--
@@ -32,6 +32,8 @@ posFiles = glob(simRsltFile)
 assert len(posFiles)==1, 'glob found %d files but we expect exactly 1' % len(posFiles)
 simA = simulation(picklePath=posFiles[0])
 simA.conerganceFilter(χthresh=χthresh, minSaved=minSaved, verbose=True, forceχ2Calc=True)
+simA.rsltFwd = simA.rsltFwd[0:3]
+simA.rsltBck = simA.rsltBck[0:3]
 lIndL = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλLidar))
 lIndP = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλPolar))
 alphVal = 1/np.sqrt(len(simA.rsltBck))
@@ -94,7 +96,7 @@ if LIDARpresent:
     for i,mt in enumerate(measTypesL): # Lidar fwd fit
         if len(simA.rsltFwd)==1: axL[i+1].plot(1e6*simA.rsltFwd[0]['fit_'+mt][:,lIndL], simA.rsltFwd[0]['RangeLidar'][:,lIndL]/1e3, 'ko-')
         axL[i+1].legend(['Measured', 'Retrieved']) # there are many lines but the first two should be these
-    axL[i+1].set_xlim([0,2*1e6*simA.rsltFwd[0]['fit_'+mt][:,lIndL].max()])
+    axL[i+1].set_xlim([0,1.05*np.max([1e6*rf['fit_'+mt][:,lIndL] for rf in simA.rsltFwd])])
 if POLARpresent:
     for i,mt in enumerate(measTypesP): # Polarimeter fwd fit
         if 'fit_'+mt not in simA.rsltFwd[0] and 'oI' in mt: # fwd calculation performed with aboslute Q and U

@@ -18,12 +18,10 @@ from simulateRetrieval import simulation
 import miscFunctions as mf
 import ACCP_functions as af
 
-instruments = ['Lidar090','Lidar090Night','Lidar050Night','Lidar050','Lidar060Night','Lidar060', 'polar07', 'polar07GPM', \
-                'Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
-instruments = ['polar07', \
-                'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
-# instruments = ['Lidar090','Lidar090Night','Lidar050Night','Lidar050','Lidar060Night','Lidar060'] # 7 N=231
-        
+# instruments = ['Lidar090','Lidar090Night','Lidar050Night','Lidar050','Lidar060Night','Lidar060', 'polar07', 'polar07GPM', \
+#                 'Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
+
+instruments = ['polar07', 'polar07+lidar09','polar07+lidar05','polar07+lidar06']
 
 # casLets = ['a', 'b', 'c', 'd', 'e', 'f','i']
 # conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['','Desert', 'Vegetation']]
@@ -35,9 +33,9 @@ N = len(conCases)*len(tauVals)
 barVals = instruments # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
 
 trgtλ =  0.532
-χthresh= 2.2 # χ^2 threshold on points
+χthresh= 2.0 # χ^2 threshold on points
 forceχ2Calc = True
-minSaved=13
+minSaved=3
 
 def lgTxtTransform(lgTxt):
     if re.match('.*Coarse[A-z]*Nonsph', lgTxt): # conCase in leg
@@ -56,9 +54,10 @@ def lgTxtTransform(lgTxt):
     'k_fine', 'n', 'n_fine', 'k', 'k_PBL[FT]', 'rEffMode_fine', 'aod', 'ssa', 
     'ssaMode_PBL[FT]', 'LidarRatio', 'aodMode_fine' """
 
-totVars = np.flipud(['aod', 'ssa', 'n_PBL', 'aodMode_PBL','aodMode_fine', 'ssaMode_PBL', 'ssaMode_fine', 'rEffCalc', 'g', 'LidarRatio'])
+totVars = np.flipud(['aod', 'ssa', 'n_PBL', 'n_FT', 'n_PBL', 'n_FT', 'rEff', 'LidarRatio'])
+totVars = np.flipud(['aod', 'ssa', 'n_PBL', 'n_FT', 'n_PBL', 'n_FT'])
 
-saveStart = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/DRS_V01_'
+savePtrn = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/ss450-g5nr.leV30.GRASP.YAML*-n*pixStrt*.%s.random.20060801_0000z.pkl'
 
 cm = pylab.get_cmap('viridis')
 
@@ -72,32 +71,28 @@ totBias = dict([]) # only valid for last of whatever we itterate through on the 
 Nbar = len(barVals)
 barVals = [y if type(y) is list else [y] for y in barVals] # barVals should be a list of lists
 for barInd, barVal in enumerate(barVals):
+    savePaths = glob.glob(savePtrn % barVal[0])
+    N = len(savePaths)
+    if N<2: assert False, 'Less than two files found for search string %s!' % savePtrn
     harvest = np.zeros([N*len(barVal), Nvars])
     runNames = []    
     for n in range(N*len(barVal)):
-        paramTple = list(itertools.product(*[barVal,conCases,tauVals]))[n]
-        instrument = paramTple[0]
-        orbitStr = 'GPM' if 'GPM' in paramTple[0] else 'SS'
-        caseStr = paramTple[1]
-        tauVal = paramTple[2]
-        savePtrn = saveStart + '%s_%s_tFct%4.2f_orb%s_multiAngles_n*_nAngALL.pkl' % (instrument,caseStr,tauVal,orbitStr)
-        savePath = glob.glob(savePtrn)
-        if not len(savePath)==1: assert False, 'Wrong number of files found (i.e. not one) for search string %s!' % savePtrn
-        simB = simulation(picklePath=savePath[0])
+        simB = simulation(picklePath=savePaths[n])
+        # WE SHOULD DO THIS RIGHT LATER - it is reasonable to expect some back retrievals will fail, need to remove corresponding fwd
+        simB.rsltFwd = simB.rsltFwd[[rf['datetime'] in [rb['datetime'] for rb in simB.rsltBck] for rf in  simB.rsltFwd]]
         NsimsFull = len(simB.rsltBck)
         lInd = np.argmin(np.abs(simB.rsltFwd[0]['lambda']-trgtλ))
         Nsims = len(simB.rsltBck)
         print("<><><><><><>")
-        print(savePath)
+        print(savePaths[n])
         print('AOD=%4.2f, Nsim=%d' % (simB.rsltFwd[0]['aod'][lInd], Nsims))
-        print(paramTple[0])
         print('Spectral variables for λ = %4.2f μm'% simB.rsltFwd[0]['lambda'][lInd])        
         simB.conerganceFilter(χthresh=χthresh, forceχ2Calc=forceχ2Calc, minSaved=minSaved, verbose=True)
-        fineIndFwd, fineIndBck = af.findFineModes(simB)
-        hghtCut = af.findLayerSeperation(simB.rsltFwd[0], defaultVal=2100)
-        strInputs = (','.join(str(x) for x in fineIndFwd), ','.join(str(x) for x in fineIndBck), hghtCut)
-        rmse, bias, true = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=hghtCut)
-        print('fwd fine mode inds: %s | bck fine mode inds: %s | bot/top layer split: %d m' % strInputs)
+#         fineIndFwd, fineIndBck = af.findFineModes(simB)
+#         hghtCut = af.findLayerSeperation(simB.rsltFwd[0], defaultVal=2100)
+#         strInputs = (','.join(str(x) for x in fineIndFwd), ','.join(str(x) for x in fineIndBck), hghtCut)
+        rmse, bias, true = simB.analyzeSim(lInd, modeCut=0.5)
+#         print('fwd fine mode inds: %s | bck fine mode inds: %s | bot/top layer split: %d m' % strInputs)
         qScore, mBias, σScore = af.normalizeError(rmse, bias, true, enhanced=True)
         harvest[n, :] = af.prepHarvest(σScore, totVars) # takes any of qScore, mBias or σScore from normalizeError() above (this is what is plotted)
         print('--------------------')
