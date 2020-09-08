@@ -19,15 +19,16 @@ def normalizeError(rmse, bias, true, enhanced=False):
     ssaTrg = 0.02 if enhanced else 0.04 # this (and rEff below) is for integrated quantities, not profiles!
     trgt = {'aod':0.0, 'aodMode_fine':0.0, 'aodMode_PBLFT':0.0, 'aodMode_finePBL':0.0,
             'ssa':ssaTrg, 'ssaMode_fine':ssaTrg, 'ssaMode_PBLFT':ssaTrg,
-            'rEffCalc':0.1, 'rEffMode_fine':0.1, 'rEffMode_PBLFT':0.1,
+            'rEffCalc':0.0, 'rEffMode_fine':0.0, 'rEffMode_PBLFT':0.0,
             'n':0.025, 'n_fine':0.025, 'n_PBLFT':0.025,
             'k':0.002, 'k_fine':0.002, 'k_PBLFT':0.002,
             'g':0.02, 'LidarRatio':0.0,
             'βext_PBL':20.0, 'βext_FT':20.0, 'βextFine_PBL':20.0, 'βextFine_FT':20.0,
             'ssaPrf_PBL':0.03, 'ssaPrf_FT':0.03, 'LRPrf_PBL':0.0, 'LRPrf_FT':0.0}
+    # currently this do not tolerate 2D variables (e.g. rEffMode_PBL which is Nbck x 2 will throw exception)
     trgtRel = {'LidarRatio':0.25, 'rEffCalc':0.1,
                'βext_PBL':0.20, 'βext_FT':0.20, 'βextFine_PBL':0.20, 'βextFine_FT':0.20,
-               'LRPrf_PBL':0.25, 'LRPrf_FT':0.25}
+               'LRPrf_PBL':0.25, 'LRPrf_FT':0.25, 'rEffMode_fine':0.1, 'rEffMode_PBL':0.1, 'rEffMode_FT':0.1}
     aodTrgt = lambda τ: 0.02 + 0.05*τ # this needs to tolerate a 2D array
     qScore = dict()
     σScore = dict()
