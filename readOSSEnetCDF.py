@@ -17,7 +17,7 @@ SCALE_HGHT = 8000 # scale height (meters) for presure to alt. conversion, 8 km i
 STAND_PRES = 1.01e5 # standard pressure (Pa)
 MIN_ALT = -100 # defualt GRASP build complains below -100m
 λFRMT = ' %5.3f μm'
-βscaLowLim = 2.0e-10 # lower bound for lidar backscatter values to be passed into rslt dict, and ultimatly to GRASP
+βLowLim = 2.0e-10 # lower bound for lidar backscatter and extinction values to be passed into rslt dict, and ultimatly to GRASP
 FINE_MODE_THESH = 0.5 # inclusive[exclusive] upper[lower] bound of fine[coarse] mode (μm)
 
 
@@ -41,15 +41,17 @@ class osseData(object):
         self.pblInds = None
         self.maxSZA = maxSZA
         self.oceanOnly = oceanOnly 
+        self.lidarVersion = lidarVersion
         self.verbose = verbose
         self.vldPolarλind = None # needed b/c measData at lidar data λ is missing some variables
-        self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random, lidarVersion)
+        self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random, self.lidarVersion)
         self.wvls = self.λSearch() if wvls is None else list(wvls) # wvls should be a list
-        if lidarVersion is None or lidarVersion==0:
+        if self.lidarVersion is None or self.lidarVersion==0:
             if self.verbose: print('Lidar version not provided, not attempting to load any lidar data')
             self.wvls = [wvl for wvl in self.wvls if wvl not in [0.355,0.532,1.064]] # Remove lidar wavelengths in case caller provided them
             self.loadAllData(loadLidar=False, loadDust=loadDust)
         else:
+            if not self.lidarVersion==6: self.wvls = [wvl for wvl in self.wvls if not wvl==0.355] # Remove lidar wavelengths in case caller provided them
             self.loadAllData(loadLidar=True, loadDust=loadDust)
 
     def loadAllData(self, loadLidar=True, loadDust=True):
@@ -350,15 +352,15 @@ class osseData(object):
                 if 'r' not in rd: rd['r'] = psdData['radius']*1e6
                 dvdr = dvdr/1e6
                 prfx = '' if getKey=='TOTdist' else '_'+getKey.replace('dist','')
-                self._calcPSDvals(rd, dvdr, prfx, 'fine', modeInds=fineInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'coarse', modeInds=crseInd)
+#                 self._calcPSDvals(rd, dvdr, prfx, 'fine', modeInds=fineInd)
+#                 self._calcPSDvals(rd, dvdr, prfx, 'coarse', modeInds=crseInd)
                 self._calcPSDvals(rd, dvdr, prfx, '')
-                self._calcPSDvals(rd, dvdr, prfx, 'finePBL', hgtInds=pblInd, modeInds=fineInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'coarsePBL', hgtInds=pblInd, modeInds=crseInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'PBL', hgtInds=pblInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=~pblInd, modeInds=fineInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
+#                 self._calcPSDvals(rd, dvdr, prfx, 'finePBL', hgtInds=pblInd, modeInds=fineInd)
+#                 self._calcPSDvals(rd, dvdr, prfx, 'coarsePBL', hgtInds=pblInd, modeInds=crseInd)
+#                 self._calcPSDvals(rd, dvdr, prfx, 'PBL', hgtInds=pblInd)
+#                 self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=~pblInd, modeInds=fineInd)
+#                 self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
+#                 self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
         if not incldDust: return
         for pstFx in ['', '_fine', '_coarse']:
             for pstFx2 in ['', 'PBL', 'FT']:
@@ -391,17 +393,31 @@ class osseData(object):
         rd['vol'+rdSetKey] = rd['volProf'+rdSetKey].sum()
 
     def readlidarData(self):
-        ncDataVar = 'INSTRUMENT_ATB_NOISE' if self.fpDict['noisyLidar'] else 'INSTRUMENT_ATB'
+        ncDataVars09   = {'LS':'INSTRUMENT_ATB'}
+        ncDataVarsHSRL = {'VBS':'HSRL_BACKSCAT', 'VExt':'HSRL_EXTINCTION'}
         call1st = 'readPolarimeterNetCDF'
         if not self._loadingChecks(prereqCalls=call1st, functionName='readlidarData'): return # removing this prereq requires factoring out creation of measData and setting some keys (e.g. time, dtObj) in polarimeter reader
         for i,wvl in enumerate(self.wvls):
-            lidarFN = self.fpDict['lc2Lidar'] % (wvl*1000)
+            hsrlAtnBck = self.lidarVersion in [5, 6] and np.isclose(wvl, 1.064, atol=0.01)
+            if self.lidarVersion==9 or hsrlAtnBck:
+                ncDataVars = copy.copy(ncDataVars09) # we may add "_NOISE" but need to preserve unaltered defintion
+                filePath = self.fpDict['lc2Lidar'].replace('LIDAR05','LIDAR09').replace('LIDAR06','LIDAR09') # HACK: no 1064nm HSRL simulations – use lidar09 noise free data
+            elif self.lidarVersion in [5, 6]:
+                ncDataVars = copy.copy(ncDataVarsHSRL)
+                filePath = self.fpDict['lc2Lidar'].replace('nc4','30m.nc4') # 30m is on end of HSRL files, but not lidar09
+                if self.lidarVersion == 6: filePath = filePath.replace('7000m','50000m') # lidar 6 only has 50km res
+            else:
+                assert False, '%d is not a valid lidarVersion!' % self.lidarVersion
+            if self.fpDict['noisyLidar'] and not hsrlAtnBck: 
+                for k in ncDataVars.keys(): ncDataVars[k] = ncDataVars[k]+'_NOISE'
+            lidarFN = filePath % (wvl*1000)
             if os.path.exists(lidarFN): # data is there, load it
                 if self.verbose: print('Processing data from %s' % lidarFN)
-                lidar_data = loadVARSnetCDF(lidarFN, varNames=['lev', 'SURFACE_ALT', ncDataVar], verbose=self.verbose)
+                lidar_data = loadVARSnetCDF(lidarFN, varNames=['lev', 'SURFACE_ALT']+list(ncDataVars.values()), verbose=self.verbose)
                 self.measData[i]['RangeLidar'] = lidar_data['lev']*1e3 # km -> m
                 self.measData[i]['SurfaceAlt'] = lidar_data['SURFACE_ALT']*1e3 # km -> m
-                self.measData[i]['LS'] = lidar_data[ncDataVar]/1e3 # km-1 sr-1 -> m-1 sr-1
+                for mdKey, ldKey in ncDataVars.items():
+                    self.measData[i][mdKey] = lidar_data[ldKey]/1e3 # km-1 [sr-1] -> m-1 [sr-1]
             elif self.verbose:
                 print('No lidar data found at' + λFRMT % wvl)
         return
@@ -424,7 +440,7 @@ class osseData(object):
                     for key in [k for k in ['LS', 'VExt', 'VBS',' DP'] if k in md]: # loop over lidar measurement types
                         tempSig = np.empty((self.Npix, len(newLayers)))
                         for t in range(self.Npix):
-                            vldInd = np.logical_and(md['RangeLidar'][t,:]>=0, ~np.isnan(md['LS'][t,:]))  # we will remove lidar returns corresponding to below ground (background subtraction)
+                            vldInd = np.logical_and(md['RangeLidar'][t,:]>30, ~np.isnan(md[key][t,:]))  # we will remove lidar returns corresponding to below ground (background subtraction)
                             alt = md['RangeLidar'][t, vldInd]
                             sig = md[key][t, vldInd]
                             tempSig[t,:] = downsample1d(alt[::-1], sig[::-1], newLayers)[::-1] # alt and sig where in descending order (relative to alt)
@@ -433,7 +449,8 @@ class osseData(object):
                 if 'LS' in md: # normalize att. backscatter signal
                     normConstants = -np.trapz(md['LS'], x=md['RangeLidar'], axis=1) # sign flip needed since Range is in descending order
                     md['LS'] = md['LS']/normConstants[:,None]
-                md['LS'][md['LS'] < βscaLowLim] = βscaLowLim # GRASP will not tolerate negative backscatter values
+                for mdKey in ['LS','VBS','VExt']:
+                    if mdKey in md: md[mdKey][md[mdKey] < βLowLim] = βLowLim # GRASP will not tolerate negative backscatter values
             elif self.verbose:
                 print('No lidar data to convert at' + λFRMT % wvl)
         return measData

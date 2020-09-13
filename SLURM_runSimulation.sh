@@ -1,10 +1,10 @@
 #!/usr/local/bin/bash
 #SBATCH --job-name=GOSSE
 #SBATCH --nodes=1 --constraint=hasw
-#SBATCH --time=00:35:00
+#SBATCH --time=00:15:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-183
+#SBATCH --array=0-531
 
 date
 hostname
