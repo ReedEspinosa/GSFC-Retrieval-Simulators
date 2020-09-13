@@ -148,14 +148,14 @@ retrieval:
                     index_of_wavelength_involved: [0]
                     max:   [0.9999999]
                     min:   [0.0000001]
-                    value: [0.9999998]
+                    value: [0.000001]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
                     max:   [0.9999999]
-                    min:   [0.0000001]
-                    value: [0.9999998]
-            retrieved: false
+                    min:    [0.0000001]
+                    value:  [0.000001]
+            retrieved: true
             type: sphere_fraction
         characteristic[10]:
             type: vertical_profile_parameter_standard_deviation

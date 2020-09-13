@@ -270,12 +270,17 @@ def boundBackYaml(baseYAML, caseStrs, nowPix, profs, verbose=False):
     dustAsm1 = np.any(['dust' in caseStr.lower() for caseStr,_ in splitMultipleCases(caseStrs)])
     ocenAsm2 = ~np.all(['desert' in caseStr.lower() for caseStr,_ in splitMultipleCases(caseStrs)])
     hsrlAsm3 = np.any([np.any(mv['meas_type']==36) for mv in nowPix.measVals])
+    rosesNIP4 = 'NIP' in caseStrs
     lidarPresent = np.any([np.any(mv['meas_type']==31) for mv in nowPix.measVals]) # even HSRL has 31 at 1064nm
     assert not (lidarPresent and profs is None), 'prof is required if lidar data is present!'
-    quadLayer = lidarPresent and (dustAsm1 or hsrlAsm3)
+    quadLayer = lidarPresent and (dustAsm1 or hsrlAsm3) and not rosesNIP4
     #   top layer
     msg = ' layer – search space includes: '
-    if dustAsm1:
+    if rosesNIP4:
+        posTypes = ['smoke','pollution','plltdmrn','marine','dust']
+        if verbose: print('Top'+msg+', '.join(posTypes))
+        lowVals, uprVals = _boundBackYamlSearch(posTypes, nowPix, rngScale=1)
+    elif dustAsm1:
         if verbose: print('Top'+msg+'dust')
         lowVals, uprVals = _boundBackYamlSearch(['dust'], nowPix, rngScale=4)
     elif ocenAsm2 and not hsrlAsm3: # this is the only layer
