@@ -130,11 +130,10 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
     if mtch.group(1).lower() == 'polar': # measNm should be string w/ format 'polarN', where N is polarimeter number
         if int(mtch.group(2)) in [4, 7, 8]: # S-Polar04 (a-d), S-Polar07, S-Polar08
             relErr = 0.03
-#             relDoLPErr = 0.005
-            relDoLPErr = 0.02
+            relDoLPErr = 0.005
         elif int(mtch.group(2)) in [700]: # "perfect" version of polarimeter 7 (1e-4 standard noise)
-            relErr = 0.03
-            relDoLPErr = 0.002
+            relErr = 0.000003
+            relDoLPErr = 0.0000005
         elif int(mtch.group(2)) in [1, 2, 3]: # S-Polar01, S-Polar2 (a-b), S-Polar3 [1st two state ΔI as "4% to 6%" in RFI]
             relErr = 0.05
             relDoLPErr = 0.005
