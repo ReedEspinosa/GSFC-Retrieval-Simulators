@@ -19,15 +19,16 @@ def normalizeError(rmse, bias, true, enhanced=False):
     ssaTrg = 0.02 if enhanced else 0.04 # this (and rEff below) is for integrated quantities, not profiles!
     trgt = {'aod':0.0, 'aodMode_fine':0.0, 'aodMode_PBLFT':0.0, 'aodMode_finePBL':0.0,
             'ssa':ssaTrg, 'ssaMode_fine':ssaTrg, 'ssaMode_PBLFT':ssaTrg,
-            'rEffCalc':0.1, 'rEffMode_fine':0.1, 'rEffMode_PBLFT':0.1,
+            'rEffCalc':0.0, 'rEffMode_fine':0.0, 'rEffMode_PBLFT':0.0,
             'n':0.025, 'n_fine':0.025, 'n_PBLFT':0.025,
             'k':0.002, 'k_fine':0.002, 'k_PBLFT':0.002,
             'g':0.02, 'LidarRatio':0.0,
             'βext_PBL':20.0, 'βext_FT':20.0, 'βextFine_PBL':20.0, 'βextFine_FT':20.0,
             'ssaPrf_PBL':0.03, 'ssaPrf_FT':0.03, 'LRPrf_PBL':0.0, 'LRPrf_FT':0.0}
+    # currently this do not tolerate 2D variables (e.g. rEffMode_PBL which is Nbck x 2 will throw exception)
     trgtRel = {'LidarRatio':0.25, 'rEffCalc':0.1,
                'βext_PBL':0.20, 'βext_FT':0.20, 'βextFine_PBL':0.20, 'βextFine_FT':0.20,
-               'LRPrf_PBL':0.25, 'LRPrf_FT':0.25}
+               'LRPrf_PBL':0.25, 'LRPrf_FT':0.25, 'rEffMode_fine':0.1, 'rEffMode_PBL':0.1, 'rEffMode_FT':0.1}
     aodTrgt = lambda τ: 0.02 + 0.05*τ # this needs to tolerate a 2D array
     qScore = dict()
     σScore = dict()
@@ -269,12 +270,17 @@ def boundBackYaml(baseYAML, caseStrs, nowPix, profs, verbose=False):
     dustAsm1 = np.any(['dust' in caseStr.lower() for caseStr,_ in splitMultipleCases(caseStrs)])
     ocenAsm2 = ~np.all(['desert' in caseStr.lower() for caseStr,_ in splitMultipleCases(caseStrs)])
     hsrlAsm3 = np.any([np.any(mv['meas_type']==36) for mv in nowPix.measVals])
+    rosesNIP4 = 'NIP' in caseStrs
     lidarPresent = np.any([np.any(mv['meas_type']==31) for mv in nowPix.measVals]) # even HSRL has 31 at 1064nm
     assert not (lidarPresent and profs is None), 'prof is required if lidar data is present!'
-    quadLayer = lidarPresent and (dustAsm1 or hsrlAsm3)
+    quadLayer = lidarPresent and (dustAsm1 or hsrlAsm3) and not rosesNIP4
     #   top layer
     msg = ' layer – search space includes: '
-    if dustAsm1:
+    if rosesNIP4:
+        posTypes = ['smoke','pollution','plltdmrn','marine','dust']
+        if verbose: print('Top'+msg+', '.join(posTypes))
+        lowVals, uprVals = _boundBackYamlSearch(posTypes, nowPix, rngScale=1)
+    elif dustAsm1:
         if verbose: print('Top'+msg+'dust')
         lowVals, uprVals = _boundBackYamlSearch(['dust'], nowPix, rngScale=4)
     elif ocenAsm2 and not hsrlAsm3: # this is the only layer
