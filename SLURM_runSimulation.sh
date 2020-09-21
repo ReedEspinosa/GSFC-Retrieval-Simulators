@@ -1,10 +1,10 @@
 #!/usr/local/bin/bash
 #SBATCH --job-name=GCC
 #SBATCH --nodes=1 --constraint=hasw
-#SBATCH --time=00:10:00
+#SBATCH --time=01:20:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-90:7
+#SBATCH --array=0
 
 date
 hostname
@@ -15,7 +15,7 @@ python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+2)) $nAng &
 python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+3)) $nAng &
 python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+4)) $nAng &
 python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+5)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+6)) $nAng &
+#python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+6)) $nAng &
 # python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+7)) $nAng &
 # python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+8)) $nAng &
 # python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+9)) $nAng &

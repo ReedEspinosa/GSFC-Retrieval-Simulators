@@ -20,16 +20,10 @@ import tempfile
 assert sys.version_info.major==3, 'This script requires Python 3'
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
-    if n>=90: sys.exit()
-#    nAng = int(sys.argv[2]) # index of angles to select from PCA
-#     run1: ***nSLURM=0-239***, stackSLURM -> 0, 14
-#     run2: ***nSLURM=0-239***, stackSLURM -> 28, 42
-#     ...
-#    nAng = int(n/120)*14+nAng
     nAng = int(sys.argv[2])
 
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V01_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM18_SITA_Oct/DRS_V01_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -57,13 +51,14 @@ bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 
-instruments = ['Lidar090','Lidar050','Lidar060']
+instruments = ['Lidar090','Lidar090+polar07','Lidar050+polar07','Lidar060+polar07']
 #instruments = ['Lidar090+polar07','Lidar050+polar07','Lidar090+polar07GPM','Lidar060+polar07',
 #                'polar07', 'Lidar090','Lidar050','Lidar060'] # 8 N=30*1*3=90
 spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
 # τFactor = [0.07, 0.08, 0.09, 0.1, 0.11] #5
 # conCases = [spaSetup+surf for surf in ['', 'Desert']] # 2
-conCases = ['case08%c%d' % (let,num) for let in map(chr, range(97, 112)) for num in [1,2]] # a1,a2,b1,..,o2 #30
+# conCases = ['case08%c%d' % (let,num) for let in map(chr, range(97, 112)) for num in [1,2]] # a1,a2,b1,..,o2 #30
+conCases = ['case08i1', 'case08i2']
 τFactor = [1.0] #1 - Syntax error on this line? Make sure you are running python 3!
 
 rndIntialGuess = 0.90 # initial guess falls in middle 25% of min/max range
@@ -103,5 +98,5 @@ simA = rs.simulation(nowPix) # defines new instance for architecture described b
 gObjFwd, gObjBck = simA.runSim(fwdYAML, bckYAML, Nsims, maxCPU=maxCPU, savePath=savePath, \
                                binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, \
                                lightSave=True, rndIntialGuess=rndIntialGuess, dryRun=False, \
-                               workingFileSave=False, fixRndmSeed=True, verbose=verbose)
+                               workingFileSave=True, fixRndmSeed=True, verbose=verbose)
 
