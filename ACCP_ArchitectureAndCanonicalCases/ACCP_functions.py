@@ -175,13 +175,14 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
     # determine other aspects of the filename
     mtchData = re.match('^case([0-9]+)([a-z][12]*)', concase)
     assert mtchData, 'Could not parse canoncical case name %s' % concase
+    mtch = re.match('.*_Cirrus([0-9])$', basePath)
+    caseType = 'case' if mtch is None else 'cir' + mtch.group(1)
     caseNum = int(mtchData.group(1))
     caseLet = mtchData.group(2) # can now have tailling number, e.g. 'f2' (required for sept. assessment)
     # build full file path, load the data and interpolate
     dayNghtChar = 'N' if '_night_' in basePath else 'D'
-    fnPrms = (caseNum, caseLet, measType, 1000*wavelength, instrument, resolution, dayNghtChar)
-    #               case8a1_Att_1064Std_L00_50kmH_500mV_D_C_0.03_R_0.52.csv
-    searchPatern = 'case%1d%s_%s_%d*_L0%d_%s_%c_C_0.*_R_*.csv' % fnPrms 
+    fnPrms = (caseType, caseNum, caseLet, measType, 1000*wavelength, instrument, resolution, dayNghtChar)
+    searchPatern = '%s%1d%s_%s_%d*_L0%d_%s_%c_C_0.*_R_*.csv' % fnPrms 
     instCaseDir = 'Lidar%02d' % instrument
     if '_night_' not in basePath: instCaseDir = instCaseDir+('_desert' if 'desert' in concase.lower() else '_ocean')
     fnMtch = glob(os.path.join(basePath, instCaseDir, searchPatern))

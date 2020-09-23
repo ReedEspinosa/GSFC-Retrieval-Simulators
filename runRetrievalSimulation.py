@@ -21,15 +21,14 @@ assert sys.version_info.major==3, 'This script requires Python 3'
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2])
-
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/SIM18_SITA_Oct/DRS_V01_')
+    saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V01_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     rawAngleDir = os.path.join(basePath, 'synced/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs')
     PCAslctMatFilePath = os.path.join(basePath, 'synced/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat')
-    lidErrDir = os.path.join(basePath, 'synced/A-CCP/Assessment_8K_Sept2020/accp_lidar_uncertainties_20200821_night_50kmH_500mV')
+    lidErrDir = os.path.join(basePath, 'synced/A-CCP/Assessment_8K_Sept2020/accp_lidar_uncertainties_20200821_%s_50kmH_500mV')
     simBuildPtrn = os.path.join(basePath, 'synced/A-CCP/Assessment_8K_Sept2020/Case_Definitions/simprofile_vACCP_case%s_*.csv') #%s for case str (e.g. '8b2') and wildcard * for creation time stamp
     Nsims = 4 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 4 # number of cores to divide above Nsims over... we might need to do some restructuring here
@@ -41,7 +40,7 @@ else: # MacBook Air
     dirGRASP = '/usr/local/bin/grasp'
     rawAngleDir = '/Users/wrespino/Synced/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs'
     PCAslctMatFilePath = '/Users/wrespino/Synced/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
-    lidErrDir = '/Users/wrespino/Synced/A-CCP/Assessment_8K_Sept2020/accp_lidar_uncertainties_20200821_day_50kmH_500mV'
+    lidErrDir = '/Users/wrespino/Synced/A-CCP/Assessment_8K_Sept2020/accp_lidar_uncertainties_20200821_%s_50kmH_500mV'
     simBuildPtrn = '/Users/wrespino/Synced/A-CCP/Assessment_8K_Sept2020/Case_Definitions/simprofile_vACCP_case%s_*.csv' #%s for case str (e.g. '8b2') and wildcard * for creation time stamp
     krnlPath = None
     Nsims = 2
@@ -50,17 +49,16 @@ fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.y
 bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes.yml') # will get bumped to 4 modes if needed
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
+spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
 
-instruments = ['Lidar090','Lidar090+polar07','Lidar050+polar07','Lidar060+polar07']
+instruments = ['Lidar090','Lidar050','Lidar060']
 #instruments = ['Lidar090+polar07','Lidar050+polar07','Lidar090+polar07GPM','Lidar060+polar07',
 #                'polar07', 'Lidar090','Lidar050','Lidar060'] # 8 N=30*1*3=90
-spaSetup = 'variableFineLofted+variableCoarseLofted+variableFine+variableCoarse'
-# τFactor = [0.07, 0.08, 0.09, 0.1, 0.11] #5
-# conCases = [spaSetup+surf for surf in ['', 'Desert']] # 2
-# conCases = ['case08%c%d' % (let,num) for let in map(chr, range(97, 112)) for num in [1,2]] # a1,a2,b1,..,o2 #30
-conCases = ['case08i1', 'case08i2']
+conCases = ['case08%c%d' % (let,num) for let in map(chr, range(97, 112)) for num in [1,2]] # a1,a2,b1,..,o2 #30
+# conCases = ['case08i1', 'case08i2']
 τFactor = [1.0] #1 - Syntax error on this line? Make sure you are running python 3!
-
+observeMode = 'night' # 'night' or 'day' (for lidar error file only)
+cirrus = 1 # 0 -> no cirrus, 1 or 2 -> cirrus with τ=0.5 and 1.0, respectively (for lidar error file only)
 rndIntialGuess = 0.90 # initial guess falls in middle 25% of min/max range
 verbose = True
 # more specific simulation options in runSim call below... 
@@ -70,19 +68,18 @@ verbose = True
 # parse input argument n to instrument/case
 paramTple = list(itertools.product(*[instruments, conCases, τFactor]))[n] 
 # Pull PCA geometry for GPM or SS and read sim_builder profiles
-if 'GPM' in paramTple[0]:
-    instrmntNow = paramTple[0].replace('GPM','')
-    orbitNow = 'GPM'
-else:
-    instrmntNow = paramTple[0].replace('SS','') # SS [default] in instrument string is optional
-    orbitNow = 'SS'
+orbitNow = 'GPM' if 'GPM' in paramTple[0] else 'SS'
+instrmntNow = paramTple[0].replace('SS','').replace('GPM','').replace('
 SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbitNow, verbose=verbose)
 if 'case08' in paramTple[1] and 'lidar' in instrmntNow.lower():
     layAlt, profs = readSharonsLidarProfs(simBuildPtrn % paramTple[1].replace('case0',''), verbose)
 else:
     layAlt, profs = (None, None)
 # building pickle save path 
-savePath = saveStart + '%sNight_%s_tFct%4.2f_orb%s_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (orbitNow, SZA, phi, n, nAng))
+lidErrDir = lidErrDir % observeMode + ('' if cirrus>0 else '_Cirrus%d' % cirrus)
+if observeMode=='night': paramTple[0] = paramTple[0] + 'Night' # paramTple[0] only used in save path
+if cirrus>0: paramTple[0] = paramTple[0] + ('Cirrus%d' % cirrus) 
+savePath = saveStart + '%s_%s_tFct%4.2f_orb%s_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (orbitNow, SZA, phi, n, nAng))
 savePath = savePath.replace(spaSetup, 'SPA')
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 # setup forward and back YAML objects and now pixel
