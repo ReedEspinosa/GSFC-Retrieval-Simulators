@@ -28,7 +28,7 @@ if checkDiscover(): # DISCOVER
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     rawAngleDir = os.path.join(basePath, 'synced/A-CCP/angularSampling/colarco_20200520_g5nr_pdfs')
     PCAslctMatFilePath = os.path.join(basePath, 'synced/A-CCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat')
-    lidErrDir = os.path.join(basePath, 'synced/A-CCP/Assessment_8K_Sept2020/accp_lidar_uncertainties_20200821_%s_50kmH_500mV')
+    lidErrDir = os.path.join(basePath, 'synced/A-CCP/Assessment_8K_Sept2020/accp_lidar_uncertainties_2020*_%s_50kmH_500mV')
     simBuildPtrn = os.path.join(basePath, 'synced/A-CCP/Assessment_8K_Sept2020/Case_Definitions/simprofile_vACCP_case%s_*.csv') #%s for case str (e.g. '8b2') and wildcard * for creation time stamp
     Nsims = 4 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 4 # number of cores to divide above Nsims over... we might need to do some restructuring here
@@ -57,7 +57,7 @@ instruments = ['Lidar090','Lidar050','Lidar060']
 conCases = ['case08%c%d' % (let,num) for let in map(chr, range(97, 112)) for num in [1,2]] # a1,a2,b1,..,o2 #30
 # conCases = ['case08i1', 'case08i2']
 τFactor = [1.0] #1 - Syntax error on this line? Make sure you are running python 3!
-observeMode = 'night' # 'night' or 'day' (for lidar error file only)
+observeMode = 'day' # 'night' or 'day' (for lidar error file only)
 cirrus = 1 # 0 -> no cirrus, 1 or 2 -> cirrus with τ=0.5 and 1.0, respectively (for lidar error file only)
 rndIntialGuess = 0.90 # initial guess falls in middle 25% of min/max range
 verbose = True
@@ -69,17 +69,19 @@ verbose = True
 paramTple = list(itertools.product(*[instruments, conCases, τFactor]))[n] 
 # Pull PCA geometry for GPM or SS and read sim_builder profiles
 orbitNow = 'GPM' if 'GPM' in paramTple[0] else 'SS'
-instrmntNow = paramTple[0].replace('SS','').replace('GPM','').replace('
+instrumentLabel = paramTple[0]
+instrmntNow = paramTple[0].replace('SS','').replace('GPM','')
 SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbitNow, verbose=verbose)
 if 'case08' in paramTple[1] and 'lidar' in instrmntNow.lower():
     layAlt, profs = readSharonsLidarProfs(simBuildPtrn % paramTple[1].replace('case0',''), verbose)
 else:
     layAlt, profs = (None, None)
 # building pickle save path 
-lidErrDir = lidErrDir % observeMode + ('' if cirrus>0 else '_Cirrus%d' % cirrus)
-if observeMode=='night': paramTple[0] = paramTple[0] + 'Night' # paramTple[0] only used in save path
-if cirrus>0: paramTple[0] = paramTple[0] + ('Cirrus%d' % cirrus) 
-savePath = saveStart + '%s_%s_tFct%4.2f_orb%s_sza%d_phi%d_n%d_nAng%d.pkl' % (paramTple + (orbitNow, SZA, phi, n, nAng))
+lidErrDir = lidErrDir % observeMode + ('' if cirrus==0 else '_Cirrus%d' % cirrus)
+instrumentLabel = paramTple[0] + 'Night' if observeMode=='night' else paramTple[0] # paramTple[0] only used in save path
+if cirrus>0: instrumentLabel = instrumentLabel + ('Cirrus%d' % cirrus) 
+savePathInputTuple = (instrumentLabel,) + paramTple[1:3] + (orbitNow, SZA, phi, n, nAng)
+savePath = saveStart + '%s_%s_tFct%4.2f_orb%s_sza%d_phi%d_n%d_nAng%d.pkl' % savePathInputTuple 
 savePath = savePath.replace(spaSetup, 'SPA')
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 # setup forward and back YAML objects and now pixel
