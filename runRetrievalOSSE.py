@@ -30,12 +30,13 @@ if checkDiscover(): # DISCOVER
     osseDataPath = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/'
     maxCPU = 28
 else: # MacBook Air
-    n=0
+    basePath = '/Users/wrespino/'
+    nn=0
     bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_POLARandLIDAR_10Vbins_2modes.yml'
     bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_POLAR_2modes.yml'
     dirGRASP = '/usr/local/bin/grasp'
     krnlPath = None
-    maxCPU = 3
+    maxCPU = 1
     osseDataPath = '/Users/wrespino/Synced/MADCAP_CAPER/testCase_Aug01_0000Z_VersionJune2020/'
 rndIntialGuess = False # randomize initial guess before retrieving
 
@@ -43,26 +44,25 @@ year = 2006
 month = 8
 random = True # if true then day and hour below can be ignored
 day = 1
-hour = 17
+hour = 0
 orbit = 'gpm' # gpm OR ss450
-maxSZA = 50
-oceanOnly = True
-archNames = ['polar07+lidar09', 'polar07'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
+maxSZA = 950
+oceanOnly = False
+archNames = ['polar07+lidar09','polar07+lidar05','polar07+lidar06','polar07'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
 hghtBins = np.round(np.cumsum(np.diff(np.logspace(-2,np.log2(2e4),30, base=2))+30)) # 30 bins, starting at 30m with exponentially increasing seperation up to 20km
 vrsn = 20 # general version tag to distinguish runs
 wvls = [0.36, 0.38, 0.41, 0.532, 0.55, 0.67, 0.87, 1.064, 1.55, 1.65] # (μm) if we only want specific λ set it here, otherwise use all netCDF files found
 noiseFrees = [False] # do not add noise to the observations
-firstPix2Process = 0+mm*maxCPU
-lastPix2Process = firstPix2Process+maxCPU
+pixInd = [3524, 4094, 1840, 3510, 2957, 4530, 9793, 1865]
 
-customOutDir = os.path.join(basePath, 'synced', 'Working', 'SIM_OSSE_Test') # save output here instead of within osseDataPath (None to disable)
+customOutDir = os.path.join(basePath, 'Synced', 'Working', 'OSSE_4_Lille') # save output here instead of within osseDataPath (None to disable)
 #customOutDir = '/Users/wrespino/Desktop/'
 verbose=True
 
 archName, noiseFree = list(itertools.product(*[archNames,noiseFrees]))[nn]
 # choose YAML flavor, derive save file path and setup/run retrievals
 YAMLpth = bckYAMLpathLID if 'lidar' in archName.lower() else bckYAMLpathPOL
-yamlTag = 'YAML%s-n%dpixStrt%d' % (hashFileSHA1(YAMLpth)[0:8], nn, firstPix2Process)
+yamlTag = 'YAML%s-n%dpixStrt%d' % (hashFileSHA1(YAMLpth)[0:8], nn, len(pixInd))
 lidMtch = re.match('[A-z0-9]+\+lidar0([0-9])', archName.lower())
 lidVer = int(lidMtch[1])*100**noiseFree if lidMtch else None
 od = osseData(osseDataPath, orbit, year, month, day, hour, random=random, wvls=wvls, 
@@ -71,12 +71,12 @@ saveArchNm = archName+'NONOISE' if noiseFree else archName
 savePath = od.fpDict['savePath'] % (vrsn, yamlTag, saveArchNm)
 if customOutDir: savePath = os.path.join(customOutDir, os.path.basename(savePath))
 print('-- Generating ' + os.path.basename(savePath) + ' --')
-fwdData = od.osse2graspRslts(NpixMin=firstPix2Process, NpixMax=lastPix2Process, newLayers=hghtBins)
+fwdData = od.osse2graspRslts(pixInd=pixInd, newLayers=hghtBins)
 radNoiseFun = None if noiseFree else functools.partial(addError, 'polar07')
 
 simA = rs.simulation() # defines new instance corresponding to this architecture
 
-yamlObj = graspYAML(YAMLpth, newTmpFile=('BCK_n%dm%d' % (nn, mm)))
+yamlObj = graspYAML(YAMLpth, newTmpFile=('BCK_n%d' % nn))
 # PLAY WITH SMOOTHNESS
 # val_n = 0.1*3**(1-nn)
 # val_m = mm+1
@@ -100,7 +100,8 @@ yamlObj = graspYAML(YAMLpth, newTmpFile=('BCK_n%dm%d' % (nn, mm)))
 
 simA.runSim(fwdData, yamlObj, maxCPU=maxCPU, maxT=20, savePath=savePath, 
             binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, 
-            rndIntialGuess=rndIntialGuess, radianceNoiseFun=radNoiseFun, verbose=verbose)
+            rndIntialGuess=rndIntialGuess, radianceNoiseFun=radNoiseFun,
+            workingFileSave=True, dryRun=True, verbose=verbose)
 
 
 

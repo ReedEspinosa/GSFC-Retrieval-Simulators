@@ -23,7 +23,7 @@ FINE_MODE_THESH = 0.5 # inclusive[exclusive] upper[lower] bound of fine[coarse] 
 
 class osseData(object):
     def __init__(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, wvls=None, \
-                 lidarVersion=None, maxSZA=None, oceanOnly=False, loadDust=True, verbose=False):
+                 lidarVersion=None, maxSZA=None, oceanOnly=False, loadDust=True, loadPSD=True, verbose=False):
         """
         IN: orbit - 'ss450' or 'gpm'
             year, month, day - integers specifying data of pixels to load
@@ -48,11 +48,11 @@ class osseData(object):
         if lidarVersion is None or lidarVersion==0:
             if self.verbose: print('Lidar version not provided, not attempting to load any lidar data')
             self.wvls = [wvl for wvl in self.wvls if wvl not in [0.355,0.532,1.064]] # Remove lidar wavelengths in case caller provided them
-            self.loadAllData(loadLidar=False, loadDust=loadDust)
+            self.loadAllData(loadLidar=False, loadDust=loadDust, loadPSD=loadPSD)
         else:
-            self.loadAllData(loadLidar=True, loadDust=loadDust)
+            self.loadAllData(loadLidar=True, loadDust=loadDust, loadPSD=loadPSD)
 
-    def loadAllData(self, loadLidar=True, loadDust=True):
+    def loadAllData(self, loadLidar=True, loadDust=True, loadPSD=True):
         """Loads NetCDF OSSE data into memory, see buildFpDict below for variable descriptions"""
         assert self.readPolarimeterNetCDF(), 'This class currently requires a polarNc4FP file to be present.' # reads polarNc4FP
         self.readasmData() # reads asmNc4FP
@@ -60,7 +60,7 @@ class osseData(object):
         self.readaerData() # reads aerNc4FP
         self.readStateVars() # reads lcExt
 #         self.readStateVars(finemode=True) # reads lcExt (finemode version)
-        self.readPSD(incldDust=loadDust) # reads aerSD
+        if loadPSD: self.readPSD(incldDust=loadDust) # reads aerSD
         if loadLidar: self.readlidarData() # reads lc2Lidar
         self.purgeInvldInd(self.maxSZA, self.oceanOnly)
 
@@ -123,7 +123,7 @@ class osseData(object):
             warnings.warn('No wavelengths found for the patterns:\n%s' % "\n".join(posPaths))
         return wvls
 
-    def osse2graspRslts(self, NpixMax=None, newLayers=None, NpixMin=0):
+    def osse2graspRslts(self, pixInd=None, newLayers=None):
         """ osse2graspRslts will convert that data in measData to the format used to store GRASP's output
                 IN: NpixMax -> no more than this many pixels will be returned in rslts list (primarly for testing)
                     newLidarLayers -> a list of layer heights (in meters) at which to return the lidar signal
@@ -140,9 +140,10 @@ class osseData(object):
             'OSSE observable and state variable data structures contain a differnt number of pixels!'
         assert ('aod' not in self.rtrvdData[0]) or (len(self.rtrvdData[0]['aod']) == Nλ), \
             'OSSE observable and state variable data structures contain a differnt number of wavelengths!'
-        Npix = min(self.Npix, NpixMax) if NpixMax else self.Npix
+        if pixInd==None: pixInd = np.r_[0:len(self.rtrvdData)]
+        Npix = len(pixInd)
         rslts = []
-        for k,rd in zip(np.r_[NpixMin:Npix], self.rtrvdData[NpixMin:Npix]): # loop over pixels
+        for k,rd in zip(pixInd, self.rtrvdData[pixInd]): # loop over pixels
             rslt = dict()
             for rv,mv in zip(rsltVars,mdVars): # loop over potential variables
                 for l, md in enumerate(measData): # loop over λ -- HINT: we assume all λ have the same # of measurements for each msType
@@ -206,6 +207,7 @@ class osseData(object):
             elif self.verbose:
                 print('No polarimeter data found at' + λFRMT % wvl)
         NpixByλ = np.array([len(md['dtObj']) for md in self.measData if 'dtObj' in md])
+        assert len(NpixByλ)>0, 'Polarimeter data was not found at any wavelength!'
         assert np.all(NpixByλ[0] == NpixByλ), 'This class assumes that all λ have the same number of pixels.'
         self.Npix = NpixByλ[0]
         self.rtrvdData = np.array([{} for _ in range(self.Npix)])
@@ -536,6 +538,23 @@ class osseData(object):
         self.Npix = len(self.measData[self.vldPolarλind]['dtObj']) # this assumes all λ have the same # of pixels
         if self.verbose:
             print('%d pixels with negative reflectances, bad-data-flag or excluded SZAs were purged from all variables.' % len(self.invldInd))
+
+    def plotGlobe(self, colorVar='ssa', sizeVar='tau', indLabel=True):
+        os.environ["PROJ_LIB"] = "/Users/wrespino/anaconda3/share/proj" # fix for "KeyError: 'PROJ_LIB'" bug
+        from mpl_toolkits.basemap import Basemap
+        from matplotlib import pyplot as plt
+        plt.figure(figsize=(12, 6))
+        m = Basemap(projection='merc', resolution='c', llcrnrlon=-81, llcrnrlat=-57.6, urcrnrlon=65, urcrnrlat=47)
+        m.bluemarble(scale=1);
+        #m.shadedrelief(scale=0.2)
+        #m.fillcontinents(color=np.r_[176,204,180]/255,lake_color='white')
+        x, y = m(lon, lat)
+        plt.scatter(x, y, c='r', s=30, facecolors='none', edgecolors='r', cmap='plasma')
+        [plt.text(x0,y0,'%d'%ID, color='r') for x0,y0,ID in zip(x,y,siteID)]
+        plt.title('AERONET Sites')
+        cbar = plt.colorbar()
+        cbar.set_label("Elevation (m)", FontSize=14)
+
 
     def rot2scatplane(self):
         """
