@@ -20,6 +20,7 @@ import tempfile
 assert sys.version_info.major==3, 'This script requires Python 3'
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
+    if n>=90: sys.exit()
     nAng = int(sys.argv[2])
     basePath = os.environ['NOBACKUP']
     saveStart = os.path.join(basePath, 'synced/Working/SIM16_SITA_JuneAssessment/DRS_V01_')
@@ -57,7 +58,7 @@ instruments = ['Lidar090','Lidar050','Lidar060']
 conCases = ['case08%c%d' % (let,num) for let in map(chr, range(97, 112)) for num in [1,2]] # a1,a2,b1,..,o2 #30
 # conCases = ['case08i1', 'case08i2']
 τFactor = [1.0] #1 - Syntax error on this line? Make sure you are running python 3!
-observeMode = 'day' # 'night' or 'day' (for lidar error file only)
+observeMode = 'night' # 'night' or 'day' (for lidar error file only)
 cirrus = 1 # 0 -> no cirrus, 1 or 2 -> cirrus with τ=0.5 and 1.0, respectively (for lidar error file only)
 rndIntialGuess = 0.90 # initial guess falls in middle 25% of min/max range
 verbose = True
