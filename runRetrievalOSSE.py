@@ -27,7 +27,7 @@ if checkDiscover(): # DISCOVER
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     osseDataPath = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/'
-    maxCPU = 28
+    maxCPU = 1
 else: # MacBook Air
     basePath = '/Users/wrespino/'
     nn=0
@@ -47,14 +47,14 @@ hour = 0
 orbit = 'gpm' # gpm OR ss450
 maxSZA = 950
 oceanOnly = False
-archNames = ['polar07+lidar09','polar07+lidar05','polar07+lidar06','polar07'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
-hghtBins = np.round(np.cumsum(np.diff(np.logspace(-2,np.log2(2e4),30, base=2))+30)) # 30 bins, starting at 30m with exponentially increasing seperation up to 20km
-vrsn = 30 # general version tag to distinguish runs
+archNames = ['polar07+lidar09','polar07'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
+hghtBins = np.round(np.cumsum(np.diff(np.logspace(-2,np.log2(2e4),25, base=2))+120)) # 25 bins, starting at 120m with exponentially increasing seperation up to 20km
+vrsn = 31 # general version tag to distinguish runs
 wvls = [0.355, 0.36, 0.38, 0.41, 0.532, 0.55, 0.67, 0.87, 1.064, 1.55, 1.65] # (μm) if we only want specific λ set it here, otherwise use all netCDF files found
-noiseFrees = [False] # do not add noise to the observations
+noiseFrees = [True, False] # do not add noise to the observations
 pixInd = [3524, 4094, 1840, 3510, 2957, 4530, 9793, 1865]
 
-customOutDir = os.path.join(basePath, 'Synced', 'Working', 'OSSE_4_Lille') # save output here instead of within osseDataPath (None to disable)
+customOutDir = os.path.join(basePath, 'synced', 'Working', 'OSSE_4_Lille') # save output here instead of within osseDataPath (None to disable)
 #customOutDir = '/Users/wrespino/Desktop/'
 verbose=True
 
@@ -100,7 +100,7 @@ yamlObj = graspYAML(YAMLpth, newTmpFile=('BCK_n%d' % nn))
 simA.runSim(fwdData, yamlObj, maxCPU=maxCPU, maxT=20, savePath=savePath, 
             binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, 
             rndIntialGuess=rndIntialGuess, radianceNoiseFun=radNoiseFun,
-            workingFileSave=True, dryRun=True, verbose=verbose)
+            workingFileSave=True, dryRun=False, verbose=verbose)
 
 
 
