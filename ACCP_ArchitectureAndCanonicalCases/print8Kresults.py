@@ -14,10 +14,13 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..
 from simulateRetrieval import simulation
 from ACCP_functions import normalizeError, findLayerSeperation, findFineModes
 
-instruments = ['polar07','polar07GPM','Lidar090+polar07GPM', 'Lidar090','Lidar050','Lidar060', \
-               'Lidar090Night','Lidar050Night','Lidar060Night','Lidar090+polar07','Lidar050+polar07','Lidar060+polar07']
+# instruments = ['polar07','polar07GPM','Lidar090+polar07GPM', 'Lidar090','Lidar050','Lidar060', \
+#                'Lidar090Night','Lidar050Night','Lidar060Night','Lidar090+polar07','Lidar050+polar07','Lidar060+polar07']
+instruments = ['Lidar090','Lidar090Night','Lidar050','Lidar050Night','Lidar060','Lidar060Night'] # 7 N=231
+instruments = [ins+'Cirrus1' for ins in instruments]
+
 caseIDs = ['8%c%d' % (let,num) for let in map(chr, range(97, 112)) for num in [1,2]] # a1,a2,b1,..,o2 #30
-destDir = '/Users/wrespino/Desktop/NGE_Sept_V01'
+destDir = '/Users/wrespino/Desktop/NGE_Sept_V01_Cirrus1'
 srcPath = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/'
 filePatrn = 'DRS_V01_%s_case0%s_tFct1.00_orb*_multiAngles_n*_nAngALL.pkl' # % (instrument, caseID) [wildcards allowed]
 lidarRefInst = 'Lidar090' # instrument to pull sim with fwd profile in polarimeter cases

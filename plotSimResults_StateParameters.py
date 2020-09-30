@@ -18,12 +18,12 @@ from simulateRetrieval import simulation
 import miscFunctions as mf
 import ACCP_functions as af
 
-instruments = ['Lidar090','Lidar090Night','Lidar050Night','Lidar050','Lidar060Night','Lidar060', 'polar07', 'polar07GPM', \
-                'Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
-instruments = ['polar07', \
-                'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
-# instruments = ['Lidar090','Lidar090Night','Lidar050Night','Lidar050','Lidar060Night','Lidar060'] # 7 N=231
-        
+# instruments = ['Lidar090','Lidar090Night','Lidar050Night','Lidar050','Lidar060Night','Lidar060', 'polar07', 'polar07GPM', \
+#                 'Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
+# instruments = ['polar07', \
+#                 'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
+instruments = ['Lidar090','Lidar090Night','Lidar050','Lidar050Night','Lidar060','Lidar060Night'] # 7 N=231
+instruments = [ins+'Cirrus1' for ins in instruments]
 
 # casLets = ['a', 'b', 'c', 'd', 'e', 'f','i']
 # conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['','Desert', 'Vegetation']]
