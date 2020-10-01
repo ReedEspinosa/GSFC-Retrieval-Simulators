@@ -142,7 +142,7 @@ class osseData(object):
             'OSSE observable and state variable data structures contain a differnt number of pixels!'
         assert ('aod' not in self.rtrvdData[0]) or (len(self.rtrvdData[0]['aod']) == Nλ), \
             'OSSE observable and state variable data structures contain a differnt number of wavelengths!'
-        if pixInd==None: pixInd = np.r_[0:len(self.rtrvdData)]
+        if pixInd is None: pixInd = np.r_[0:len(self.rtrvdData)]
         Npix = len(pixInd)
         rslts = []
         for k,rd in zip(pixInd, self.rtrvdData[pixInd]): # loop over pixels

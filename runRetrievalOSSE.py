@@ -30,7 +30,8 @@ if checkDiscover(): # DISCOVER
     maxCPU = 1
 else: # MacBook Air
     basePath = '/Users/wrespino/'
-    nn=0
+    inInt = int(sys.argv[1])
+    nn = inInt
     bckYAMLpathLID = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_POLARandLIDAR_10Vbins_2modes.yml'
     bckYAMLpathPOL = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases/settings_BCK_POLAR_2modes.yml'
     dirGRASP = '/usr/local/bin/grasp'
@@ -44,18 +45,18 @@ month = 8
 random = True # if true then day and hour below can be ignored
 day = 1
 hour = 0
-orbit = 'gpm' # gpm OR ss450
+orbit = 'ss450' # gpm OR ss450
 maxSZA = 950
 oceanOnly = False
-archNames = ['polar07+lidar09','polar07'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
+archNames = ['polar07','polar07+lidar09','polar07+lidar05','polar07+lidar06'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
 hghtBins = np.round(np.cumsum(np.diff(np.logspace(-2,np.log2(2e4),25, base=2))+120)) # 25 bins, starting at 120m with exponentially increasing seperation up to 20km
 vrsn = 31 # general version tag to distinguish runs
 wvls = [0.355, 0.36, 0.38, 0.41, 0.532, 0.55, 0.67, 0.87, 1.064, 1.55, 1.65] # (μm) if we only want specific λ set it here, otherwise use all netCDF files found
 noiseFrees = [True, False] # do not add noise to the observations
-pixInd = [3524, 4094, 1840, 3510, 2957, 4530, 9793, 1865]
+pixInd = [7375, 1444, 1359, 929, 4654, 6574, 2786, 6461, 6897, 2010] # SS Aug 2006
 
 customOutDir = os.path.join(basePath, 'synced', 'Working', 'OSSE_4_Lille') # save output here instead of within osseDataPath (None to disable)
-#customOutDir = '/Users/wrespino/Desktop/'
+# customOutDir = '/Users/wrespino/Desktop/lilleDump'
 verbose=True
 
 archName, noiseFree = list(itertools.product(*[archNames,noiseFrees]))[nn]
@@ -100,7 +101,7 @@ yamlObj = graspYAML(YAMLpth, newTmpFile=('BCK_n%d' % nn))
 simA.runSim(fwdData, yamlObj, maxCPU=maxCPU, maxT=20, savePath=savePath, 
             binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, 
             rndIntialGuess=rndIntialGuess, radianceNoiseFun=radNoiseFun,
-            workingFileSave=True, dryRun=False, verbose=verbose)
+            workingFileSave=True, dryRun=True, verbose=verbose)
 
 
 
