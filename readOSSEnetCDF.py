@@ -61,7 +61,7 @@ class osseData(object):
         self.readmetData() # reads metNc4FP
         self.readaerData() # reads aerNc4FP
         self.readStateVars() # reads lcExt
-#         self.readStateVars(finemode=True) # reads lcExt (finemode version)
+        self.readStateVars(finemode=True) # reads lcExt (finemode version)
         if loadPSD: self.readPSD(incldDust=loadDust) # reads aerSD
         if loadLidar: self.readlidarData() # reads lc2Lidar
         self.purgeInvldInd(self.maxSZA, self.oceanOnly)
@@ -76,7 +76,7 @@ class osseData(object):
             'metNc4FP'* (string) - gpm-g5nr.lb2.met_Nv.YYYYMMDD_HH00z.nc4 file path (PS for surface alt.)
             'aerNc4FP'* (string) - gpm-g5nr.lb2.aer_Nv.YYYYMMDD_HH00z.nc4 file path (DELP/AIRDEN for level heights)
             'psdNc4FP'* (string) - gpm-g5nr.lb2.aer_SD.YYYYMMDD_HH00z.nc4 file path (contains speciated & total size distributions)
-            'lcExt'* (string)    - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ and SSA)
+            'lcExt'* (string)    - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ, SSA, CRI, etc.)
             'lc2Lidar'* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
         All of the above files should contain noise free data, except lc2Lidar -
         """
@@ -354,15 +354,15 @@ class osseData(object):
                 if 'r' not in rd: rd['r'] = psdData['radius']*1e6
                 dvdr = dvdr/1e6
                 prfx = '' if getKey=='TOTdist' else '_'+getKey.replace('dist','')
-#                 self._calcPSDvals(rd, dvdr, prfx, 'fine', modeInds=fineInd)
-#                 self._calcPSDvals(rd, dvdr, prfx, 'coarse', modeInds=crseInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'fine', modeInds=fineInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'coarse', modeInds=crseInd)
                 self._calcPSDvals(rd, dvdr, prfx, '')
-#                 self._calcPSDvals(rd, dvdr, prfx, 'finePBL', hgtInds=pblInd, modeInds=fineInd)
-#                 self._calcPSDvals(rd, dvdr, prfx, 'coarsePBL', hgtInds=pblInd, modeInds=crseInd)
-#                 self._calcPSDvals(rd, dvdr, prfx, 'PBL', hgtInds=pblInd)
-#                 self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=~pblInd, modeInds=fineInd)
-#                 self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
-#                 self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'finePBL', hgtInds=pblInd, modeInds=fineInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'coarsePBL', hgtInds=pblInd, modeInds=crseInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'PBL', hgtInds=pblInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=~pblInd, modeInds=fineInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
+                self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
         if not incldDust: return
         for pstFx in ['', '_fine', '_coarse']:
             for pstFx2 in ['', 'PBL', 'FT']:
@@ -571,87 +571,3 @@ class osseData(object):
         plt.title('AERONET Sites')
         cbar = plt.colorbar()
         cbar.set_label("Elevation (m)", FontSize=14)
-
-
-    def rot2scatplane(self):
-        """
-        PATRICIA's CODE – NOT YET ADAPTED TO THIS CLASS
-        Rotate meridonal plane (VLIDORT) outputs to scattering plane (GRASP)
-        adapted from Kirk's code rot2scatplane.pro
-        """
-        assert False, 'REUSED CODE, NOT YET ADAPTED TO THIS CLASS'
-
-        # define RAA according to photon travel direction
-        saa = self.SAA + 180.0
-        I = saa >= 360.
-        saa[I] = saa[I] - 360.
-        self.RAA = self.VAA - saa
-
-        nvza = len(self.VZA)
-        nraa = len(self.VAA)
-
-        # raa = np.radians(self.VAA - self.SAA)
-        raa = np.radians(self.RAA)
-        razi_pm = np.ones(nraa)
-        razi_pm[np.sin(raa) >= 0] = -1.0
-        cos_razi = np.cos(raa)
-
-        u_s = np.cos(np.radians(self.SZA[0]))
-        u_v = np.cos(np.radians(self.VZA))
-
-        root_s = np.sqrt(1.0-u_s**2)
-        self.Q_out = np.zeros([nvza,nraa])
-        self.U_out = np.zeros([nvza,nraa])
-        self.Qsurf_out = np.zeros([nvza,nraa])
-        self.Usurf_out = np.zeros([nvza,nraa])
-        for ivza in range(nvza):
-            for iraa in range(nraa):
-                # print 'ivza,iraa',ivza,iraa
-                root_v = np.sqrt(1.0-u_v[ivza]**2)
-
-                cos_theta= -1.0*u_s*u_v[ivza] + root_v*root_s*cos_razi[iraa]
-                root_theta= np.sqrt(1.0 - cos_theta**2)
-                scatang = np.arccos(cos_theta) # scattering angle for output (not used below) # FLAKE SAYS VARIABLE IS NOT USED
-
-                # equation 3.16 in Hansen and Travis --------------------------
-                # Special limit case --------------------
-                # if np.abs(cos_theta) > 0.999999:
-                if np.abs(cos_theta) == 1.0:
-                    cosi1 = 0.0
-                    cosi2 = 0.0
-                else:
-                    cosi1= razi_pm[iraa]*(-1.0*u_v[ivza]*root_s - u_s*root_v*cos_razi[iraa])/root_theta
-                    cosi2= razi_pm[iraa]*(u_s*root_v + u_v[ivza]*root_s*cos_razi[iraa])/root_theta
-
-                # equation (10) in Hovenier ------------------------
-                # error correction for high cos(i)^2 values ------------
-                # if (cosi1**2.0) > 0.999999:
-                if (cosi1**2.0) >= 1.0:
-                    cos2i1 = 1.0 # FLAKE SAYS VARIABLE IS NOT USED
-                    sin2i1 = 0.0 # FLAKE SAYS VARIABLE IS NOT USED
-                else:
-                    sin2i1= 2.0*np.sqrt(1.0-(cosi1**2.0))*cosi1
-                    cos2i1= 2.0*(cosi1**2.0)-1.0
-                # if (cosi2**2.0) > 0.999999:
-                if (cosi2**2.0) >= 1.0:
-                    cos2i2 = 1.0
-                    sin2i2 = 0.0
-                else:
-                    sin2i2= 2.0*np.sqrt(1.0-(cosi2**2.0))*cosi2
-                    cos2i2= 2.0*(cosi2**2.0)-1.0
-
-                # rotate into scattering plane as shown in (2) of Hovenier
-                q_in = self.Q[ivza,iraa]
-                u_in = self.U[ivza,iraa]
-                q_out= q_in*cos2i2 - u_in*sin2i2
-                u_out= q_in*sin2i2 + u_in*cos2i2
-
-                self.Q_out[ivza,iraa] = -1.*q_out
-                self.U_out[ivza,iraa] = -1.*u_out
-
-                q_in = self.BR_Q[ivza,iraa]
-                u_in = self.BR_U[ivza,iraa]
-                q_out= q_in*cos2i2 - u_in*sin2i2
-                u_out= q_in*sin2i2 + u_in*cos2i2
-                self.Qsurf_out[ivza,iraa] = -1.*q_out
-                self.Usurf_out[ivza,iraa] = -1.*u_out
