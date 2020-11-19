@@ -1,27 +1,23 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=GCC
+#SBATCH --job-name=SITA
 #SBATCH --nodes=1 --constraint=sky
-#SBATCH --time=01:30:00
+#SBATCH --time=01:10:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-90:10
+#SBATCH --array=0-180
 
 date
 hostname
-echo "---Running Simulation N0="${SLURM_ARRAY_TASK_ID}", nAng="$nAng"---"
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+1)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+2)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+3)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+4)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+5)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+6)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+7)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+8)) $nAng &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+9)) $nAng &
-# python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+10)) $nAng &
-# python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+11)) $nAng &
-# python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+12)) $nAng &
-# python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+13)) $nAng &
+echo "---Running Simulation N="${SLURM_ARRAY_TASK_ID}", nAng0="$nAng"---"
+python runRetrievalSimulation.py ${SLURM_ARRAY_TASK_ID} $(($nAng+0)) &
+python runRetrievalSimulation.py ${SLURM_ARRAY_TASK_ID} $(($nAng+1)) &
+python runRetrievalSimulation.py ${SLURM_ARRAY_TASK_ID} $(($nAng+2)) &
+python runRetrievalSimulation.py ${SLURM_ARRAY_TASK_ID} $(($nAng+3)) &
+python runRetrievalSimulation.py ${SLURM_ARRAY_TASK_ID} $(($nAng+4)) &
+python runRetrievalSimulation.py ${SLURM_ARRAY_TASK_ID} $(($nAng+5)) &
+python runRetrievalSimulation.py ${SLURM_ARRAY_TASK_ID} $(($nAng+6)) &
+python runRetrievalSimulation.py ${SLURM_ARRAY_TASK_ID} $(($nAng+7)) &
+python runRetrievalSimulation.py ${SLURM_ARRAY_TASK_ID} $(($nAng+8)) &
+python runRetrievalSimulation.py ${SLURM_ARRAY_TASK_ID} $(($nAng+9)) &
 wait
 exit 0
