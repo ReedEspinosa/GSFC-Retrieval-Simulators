@@ -171,7 +171,7 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
     basePath -> .../Remote_Sensing_Projects/A-CCP/lidarUncertainties/organized
     """
     # resolution = '5kmH_500mV'
-    resolution = '50kmH_500mV'
+    resolution = '5kmH_500mV'
     # determine other aspects of the filename
     mtchData = re.match('^case([0-9]+)([a-z][12]*)', concase)
     assert mtchData, 'Could not parse canoncical case name %s' % concase
@@ -188,8 +188,10 @@ def readKathysLidarσ(basePath, orbit, wavelength, instrument, concase, LidarRan
     if '_night_' not in basePath: instCaseDir = instCaseDir+('_desert' if 'desert' in concase.lower() else '_ocean')
     searchPath = os.path.join(basePath, instCaseDir, searchPatern)
     fnMtch = glob(searchPath)
-    if len(fnMtch)==2: # might be M1 and M2; if so, we drop M2
-        fnMtch = (np.array(fnMtch)[['_M2.csv' not in y for y in fnMtch]]).tolist()
+#     if len(fnMtch)==2: # might be M1 and M2; if so, we drop M2
+#         fnMtch = (np.array(fnMtch)[['_M2.csv' not in y for y in fnMtch]]).tolist()
+    if len(fnMtch)==2: # might be M1 and M2; if so, we drop M1
+        fnMtch = (np.array(fnMtch)[['_M1.csv' not in y for y in fnMtch]]).tolist()
     assert len(fnMtch)==1, 'We want one file but %d matched the patern ...%s' % (len(fnMtch), searchPath)
     if verbose: print('Reading lidar uncertainty data from: %s' % fnMtch[0])
     hgt = []; absErr = []
