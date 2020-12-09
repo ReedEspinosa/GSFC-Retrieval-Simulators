@@ -18,12 +18,10 @@ from simulateRetrieval import simulation
 import miscFunctions as mf
 import ACCP_functions as af
 
-instruments = ['Lidar090','Lidar090Night','Lidar050Night','Lidar050','Lidar060Night','Lidar060', 'polar07', 'polar07GPM', \
-                'Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
-instruments = ['polar07', \
-                'Lidar090+polar07','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
-# instruments = ['Lidar090','Lidar090Night','Lidar050Night','Lidar050','Lidar060Night','Lidar060'] # 7 N=231
-        
+# instruments = ['Lidar090','Lidar090Night','Lidar050Night','Lidar050','Lidar060Night','Lidar060', 'polar07', 'polar07GPM', \
+#                 'Lidar090+polar07','Lidar090+polar07GPM','Lidar050+polar07','Lidar060+polar07'] # 7 N=231
+
+instruments = ['polar07-G5NR', 'polar07-DRS']
 
 # casLets = ['a', 'b', 'c', 'd', 'e', 'f','i']
 # conCases = ['case06'+caseLet+surf for caseLet in casLets for surf in ['','Desert', 'Vegetation']]
@@ -35,7 +33,7 @@ N = len(conCases)*len(tauVals)
 barVals = instruments # each bar will represent on of this category, also need to update definition of N above and the definition of paramTple (~ln75)
 
 trgtλ =  0.532
-χthresh= 2.2 # χ^2 threshold on points
+χthresh= 2 # χ^2 threshold on points
 forceχ2Calc = True
 minSaved=13
 
@@ -56,9 +54,14 @@ def lgTxtTransform(lgTxt):
     'k_fine', 'n', 'n_fine', 'k', 'k_PBL[FT]', 'rEffMode_fine', 'aod', 'ssa', 
     'ssaMode_PBL[FT]', 'LidarRatio', 'aodMode_fine' """
 
-totVars = np.flipud(['aod', 'ssa', 'n_PBL', 'aodMode_PBL','aodMode_fine', 'ssaMode_PBL', 'ssaMode_fine', 'rEffCalc', 'g', 'LidarRatio'])
+totVars = np.flipud(['aod', 'ssa', 'n_PBL', 'n_FT', 'n_PBL', 'n_FT', 'rEff', 'LidarRatio'])
+totVars = np.flipud(['aod', 'ssa', 'n_PBL', 'n_FT', 'k_PBL', 'k_FT', 'rEffCalc'])
+totVars = np.flipud(['aod', 'ssa', 'n_PBL', 'n_FT', 'k_PBL', 'k_FT'])
+totVars = np.flipud(['aod', 'ssa', 'n', 'k'])
 
-saveStart = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/DRS_V01_'
+savePtrnNR = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/ss450-g5nr.leV30.GRASP.YAML*-n*pixStrt*.polar07.random.20060801_0000z.pkl'
+savePtrnDRS = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/DRS_V01_polar07GPM_case08*_tFct1.00_orbGPM_multiAngles_n*_nAngALL.pkl'
+
 
 cm = pylab.get_cmap('viridis')
 
@@ -72,41 +75,46 @@ totBias = dict([]) # only valid for last of whatever we itterate through on the 
 Nbar = len(barVals)
 barVals = [y if type(y) is list else [y] for y in barVals] # barVals should be a list of lists
 for barInd, barVal in enumerate(barVals):
+    savePtrn = savePtrnDRS if 'drs' in barVal[0].lower() else savePtrnNR
+    savePaths = glob.glob(savePtrn)
+#     savePaths = savePaths[0:5] # HACK
+    N = len(savePaths)
+    if N<2: assert False, 'Less than two files found for search string %s!' % savePtrn
     harvest = np.zeros([N*len(barVal), Nvars])
     runNames = []    
     for n in range(N*len(barVal)):
-        paramTple = list(itertools.product(*[barVal,conCases,tauVals]))[n]
-        instrument = paramTple[0]
-        orbitStr = 'GPM' if 'GPM' in paramTple[0] else 'SS'
-        caseStr = paramTple[1]
-        tauVal = paramTple[2]
-        savePtrn = saveStart + '%s_%s_tFct%4.2f_orb%s_multiAngles_n*_nAngALL.pkl' % (instrument,caseStr,tauVal,orbitStr)
-        savePath = glob.glob(savePtrn)
-        if not len(savePath)==1: assert False, 'Wrong number of files found (i.e. not one) for search string %s!' % savePtrn
-        simB = simulation(picklePath=savePath[0])
+        simB = simulation(picklePath=savePaths[n])
+        # WE SHOULD DO THIS RIGHT LATER - it is reasonable to expect some back retrievals will fail, need to remove corresponding fwd
+        if 'drs' not in barVal[0].lower():
+            simB.rsltFwd = simB.rsltFwd[[rf['datetime'] in [rb['datetime'] for rb in simB.rsltBck] for rf in  simB.rsltFwd]]
         NsimsFull = len(simB.rsltBck)
         lInd = np.argmin(np.abs(simB.rsltFwd[0]['lambda']-trgtλ))
         Nsims = len(simB.rsltBck)
+        for rf in simB.rsltFwd:
+            if 'rEffCalc' not in rf: rf['rEffCalc'] = rf['rEff']
+            if 'aodMode' not in rf and 'drs' not in barVal[0].lower(): rf['aodMode'] = rf['aod'][None,:] # OSSE only has one mode
         print("<><><><><><>")
-        print(savePath)
+        print(savePaths[n])
         print('AOD=%4.2f, Nsim=%d' % (simB.rsltFwd[0]['aod'][lInd], Nsims))
-        print(paramTple[0])
         print('Spectral variables for λ = %4.2f μm'% simB.rsltFwd[0]['lambda'][lInd])        
         simB.conerganceFilter(χthresh=χthresh, forceχ2Calc=forceχ2Calc, minSaved=minSaved, verbose=True)
-        fineIndFwd, fineIndBck = af.findFineModes(simB)
-        hghtCut = af.findLayerSeperation(simB.rsltFwd[0], defaultVal=2100)
-        strInputs = (','.join(str(x) for x in fineIndFwd), ','.join(str(x) for x in fineIndBck), hghtCut)
-        rmse, bias, true = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=hghtCut)
-        print('fwd fine mode inds: %s | bck fine mode inds: %s | bot/top layer split: %d m' % strInputs)
+        if 'drs' in barVal[0].lower():
+            fineIndFwd, fineIndBck = af.findFineModes(simB)
+            hghtCut = af.findLayerSeperation(simB.rsltFwd[0], defaultVal=2100)
+            strInputs = (','.join(str(x) for x in fineIndFwd), ','.join(str(x) for x in fineIndBck), hghtCut)
+            rmse, bias, true = simB.analyzeSim(lInd, fineModesFwd=fineIndFwd, fineModesBck=fineIndBck, hghtCut=hghtCut)
+            print('fwd fine mode inds: %s | bck fine mode inds: %s | bot/top layer split: %d m' % strInputs)
+        else:
+            rmse, bias, true = simB.analyzeSim(lInd, modeCut=0.5)
         qScore, mBias, σScore = af.normalizeError(rmse, bias, true, enhanced=True)
         harvest[n, :] = af.prepHarvest(σScore, totVars) # takes any of qScore, mBias or σScore from normalizeError() above (this is what is plotted)
         print('--------------------')
     plt.rcParams.update({'font.size': 12})
     if barInd==0: 
         figB, axB = plt.subplots(figsize=(4.8,6)) # THIS IS THE BOXPLOT
-        yAxMax = Nbar*Nvars-1.5 # UPPER BOUND OF Y-AXIS
+        yAxMax = Nbar*Nvars-1.3 # UPPER BOUND OF Y-AXIS
         axB.plot([1,1], [-1, yAxMax], ':', color=0.65*np.ones(3)) # vertical line at unity
-    pos = Nbar*np.r_[0:harvest.shape[1]]+0.7*barInd
+    pos = Nbar*np.r_[0:harvest.shape[1]]+0.635*barInd-0.4
     hnd = axB.boxplot(harvest, vert=0, patch_artist=True, positions=pos[0:Nvars], sym='.')
     [hnd['boxes'][i].set_facecolor(cm((barInd)/(Nbar))) for i in range(len(hnd['boxes']))]
     [hf.set_markeredgecolor(cm((barInd)/(Nbar))) for hf in hnd['fliers']]

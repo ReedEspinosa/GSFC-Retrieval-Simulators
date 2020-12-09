@@ -1,20 +1,16 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=GCC
+#SBATCH --job-name=GOSSE
 #SBATCH --nodes=1 --constraint=hasw
-#SBATCH --time=00:30:00
+#SBATCH --time=02:00:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-400:7
+#SBATCH --array=0
 
 date
 hostname
 echo "---Running Simulation N="${SLURM_ARRAY_TASK_ID}"---"
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+0)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+1)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+2)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+3)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+4)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+5)) &
-python runRetrievalSimulation.py $((${SLURM_ARRAY_TASK_ID}+6)) &
-wait
+python runRetrievalOSSE.py 0
+python runRetrievalOSSE.py 1
+python runRetrievalOSSE.py 2
+python runRetrievalOSSE.py 3
 exit 0

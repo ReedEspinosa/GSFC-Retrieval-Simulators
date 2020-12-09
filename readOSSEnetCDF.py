@@ -17,12 +17,13 @@ SCALE_HGHT = 8000 # scale height (meters) for presure to alt. conversion, 8 km i
 STAND_PRES = 1.01e5 # standard pressure (Pa)
 MIN_ALT = -100 # defualt GRASP build complains below -100m
 λFRMT = ' %5.3f μm'
-βscaLowLim = 2.0e-10 # lower bound for lidar backscatter values to be passed into rslt dict, and ultimatly to GRASP
+βLowLim = 2.0e-10 # lower bound for lidar backscatter and extinction values to be passed into rslt dict, and ultimatly to GRASP
 FINE_MODE_THESH = 0.5 # inclusive[exclusive] upper[lower] bound of fine[coarse] mode (μm)
 
 
 class osseData(object):
-    def __init__(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, wvls=None, lidarVersion=None, maxSZA=None, verbose=False):
+    def __init__(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, wvls=None, \
+                 lidarVersion=None, maxSZA=None, oceanOnly=False, loadDust=True, loadPSD=True, verbose=False):
         """
         IN: orbit - 'ss450' or 'gpm'
             year, month, day - integers specifying data of pixels to load
@@ -39,27 +40,31 @@ class osseData(object):
         self.loadingCalls = []
         self.pblInds = None
         self.maxSZA = maxSZA
+        self.oceanOnly = oceanOnly 
+        self.lidarVersion = lidarVersion
         self.verbose = verbose
         self.vldPolarλind = None # needed b/c measData at lidar data λ is missing some variables
-        self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random, lidarVersion)
-        self.wvls = list(wvls) if wvls is not None else self.λSearch() # wvls should be a list
-        if lidarVersion is None or lidarVersion==0:
+        self.buildFpDict(osseDataPath, orbit, year, month, day, hour, random, self.lidarVersion)
+        self.wvls = self.λSearch() if wvls is None else list(wvls) # wvls should be a list
+        if self.lidarVersion is None or self.lidarVersion==0:
             if self.verbose: print('Lidar version not provided, not attempting to load any lidar data')
-            self.loadAllData(loadLidar=False)
+            self.wvls = [wvl for wvl in self.wvls if wvl not in [0.355,0.532,1.064]] # Remove lidar wavelengths in case caller provided them
+            self.loadAllData(loadLidar=False, loadDust=loadDust, loadPSD=loadPSD)
         else:
-            self.loadAllData(loadLidar=True)
+            if not self.lidarVersion==6: self.wvls = [wvl for wvl in self.wvls if not wvl==0.355] # Remove lidar wavelengths in case caller provided them
+            self.loadAllData(loadLidar=True, loadDust=loadDust, loadPSD=loadPSD)
 
-    def loadAllData(self, loadLidar=True):
+    def loadAllData(self, loadLidar=True, loadDust=True, loadPSD=True):
         """Loads NetCDF OSSE data into memory, see buildFpDict below for variable descriptions"""
         assert self.readPolarimeterNetCDF(), 'This class currently requires a polarNc4FP file to be present.' # reads polarNc4FP
         self.readasmData() # reads asmNc4FP
         self.readmetData() # reads metNc4FP
         self.readaerData() # reads aerNc4FP
         self.readStateVars() # reads lcExt
-#         self.readStateVars(finemode=True) # reads lcExt (finemode version)
-        self.readPSD() # reads aerSD
+        self.readStateVars(finemode=True) # reads lcExt (finemode version)
+        if loadPSD: self.readPSD(incldDust=loadDust) # reads aerSD
         if loadLidar: self.readlidarData() # reads lc2Lidar
-        self.purgeInvldInd(self.maxSZA)
+        self.purgeInvldInd(self.maxSZA, self.oceanOnly)
 
     def buildFpDict(self, osseDataPath, orbit, year, month, day=1, hour=0, random=False, lidarVer=0):
         """
@@ -71,19 +76,19 @@ class osseData(object):
             'metNc4FP'* (string) - gpm-g5nr.lb2.met_Nv.YYYYMMDD_HH00z.nc4 file path (PS for surface alt.)
             'aerNc4FP'* (string) - gpm-g5nr.lb2.aer_Nv.YYYYMMDD_HH00z.nc4 file path (DELP/AIRDEN for level heights)
             'psdNc4FP'* (string) - gpm-g5nr.lb2.aer_SD.YYYYMMDD_HH00z.nc4 file path (contains speciated & total size distributions)
-            'lcExt'* (string)    - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ and SSA)
+            'lcExt'* (string)    - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ, SSA, CRI, etc.)
             'lc2Lidar'* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
         All of the above files should contain noise free data, except lc2Lidar -
         """
         assert osseDataPath is not None, 'osseDataPath, Year, month and orbit must be provided to build fpDict'
         if lidarVer is None: lidarVer=0
-        tmStr = '%04d%02d%02d_%02d00z' % (year, month, day, hour)
         ldStr = 'LIDAR%02d' % (np.floor(lidarVer/100) if lidarVer >= 100 else lidarVer)
         if random:
-            tmStr = 'random.'+tmStr
+            tmStr = 'random.%04d%02d01_0000z' % (year, month)
             dtTple = (year, month)
             pathFrmt = os.path.join(osseDataPath, orbit.upper(), 'Level%s', 'Y%04d','M%02d', '%s')
         else:
+            tmStr = '%04d%02d%02d_%02d00z' % (year, month, day, hour)
             dtTple = (year, month, day)
             pathFrmt = os.path.join(osseDataPath, orbit.upper(), 'Level%s', 'Y%04d','M%02d', 'D%02d', '%s')
         self.fpDict = {
@@ -98,6 +103,8 @@ class osseData(object):
         }
         self.fpDict['dateTime'] = dt.datetime(year, month, day, hour)
         self.fpDict['noisyLidar'] = lidarVer < 100 # e.g. 0900 is noise free, but 09 is not
+        if random: 
+            self.fpDict['lc2Lidar'] = self.fpDict['lc2Lidar'].replace('random.','').replace('nc4','RANDOM.7000m.nc4')
         return self.fpDict
 
     def λSearch(self):
@@ -118,7 +125,7 @@ class osseData(object):
             warnings.warn('No wavelengths found for the patterns:\n%s' % "\n".join(posPaths))
         return wvls
 
-    def osse2graspRslts(self, NpixMax=None, newLayers=None):
+    def osse2graspRslts(self, pixInd=None, newLayers=None):
         """ osse2graspRslts will convert that data in measData to the format used to store GRASP's output
                 IN: NpixMax -> no more than this many pixels will be returned in rslts list (primarly for testing)
                     newLidarLayers -> a list of layer heights (in meters) at which to return the lidar signal
@@ -135,9 +142,10 @@ class osseData(object):
             'OSSE observable and state variable data structures contain a differnt number of pixels!'
         assert ('aod' not in self.rtrvdData[0]) or (len(self.rtrvdData[0]['aod']) == Nλ), \
             'OSSE observable and state variable data structures contain a differnt number of wavelengths!'
-        Npix = min(self.Npix, NpixMax) if NpixMax else self.Npix
+        if pixInd is None: pixInd = np.r_[0:len(self.rtrvdData)]
+        Npix = len(pixInd)
         rslts = []
-        for k,rd in enumerate(self.rtrvdData[0:Npix]): # loop over pixels
+        for k,rd in zip(pixInd, self.rtrvdData[pixInd]): # loop over pixels
             rslt = dict()
             for rv,mv in zip(rsltVars,mdVars): # loop over potential variables
                 for l, md in enumerate(measData): # loop over λ -- HINT: we assume all λ have the same # of measurements for each msType
@@ -201,6 +209,7 @@ class osseData(object):
             elif self.verbose:
                 print('No polarimeter data found at' + λFRMT % wvl)
         NpixByλ = np.array([len(md['dtObj']) for md in self.measData if 'dtObj' in md])
+        assert len(NpixByλ)>0, 'Polarimeter data was not found at any wavelength!'
         assert np.all(NpixByλ[0] == NpixByλ), 'This class assumes that all λ have the same number of pixels.'
         self.Npix = NpixByλ[0]
         self.rtrvdData = np.array([{} for _ in range(self.Npix)])
@@ -214,6 +223,8 @@ class osseData(object):
         levB_data = loadVARSnetCDF(levBFN, varNames=['FRLAND', 'FRLANDICE'], verbose=self.verbose)
         icePix = np.nonzero(levB_data['FRLANDICE'] > 1e-5)[0]
         self.invldInd = np.append(self.invldInd, icePix).astype(int)
+        levB_data['FRLAND'][levB_data['FRLAND']>0.99] = 1.0
+        levB_data['FRLAND'][levB_data['FRLAND']<0.01] = 0.0        
         for md in self.measData: md['land_prct'] = levB_data['FRLAND']
 
     def readmetData(self):
@@ -304,7 +315,7 @@ class osseData(object):
             rEffTot = np.sum(V[hInd])/np.sum(V[hInd]/rEff[hInd]) # see bottom of this method for derivation
             if firstλ:
                 rd['rEff'+km] = rEffTot
-            elif not np.isclose(rd['rEff'+km], rEffTot):
+            elif not np.isclose(rd['rEff'+km], rEffTot) and not np.isnan(rEffTot):
                 warnings.warn('The current rEff (%8.5f μm) differs from the first rEff (%8.5f μm) derived.' % (rEffTot, rd['rEff'+km]))
             rd['g'+km][λ] = np.sum(τ[hInd]*ω[hInd]*g[hInd])/np.sum(τ[hInd]*ω[hInd]) # see bottom of this method for derivation
             rd['LidarRatio'+km][λ] = np.sum(τ[hInd])/np.sum(τ[hInd]/S[hInd]) # S=τ/F11[180] & F11h[180]=τh/Sh => S=Στh/Σ(τh/Sh)
@@ -328,9 +339,10 @@ class osseData(object):
                     termFine = rd['tau_fine'+ls]/rd['tau_coarse'+ls]*rd[ri+'_fine'+ls]
                     rd[ri+'_coarse'+ls] = termTot - termFine # nc = τ/τc*n - τf/τc*nf (uses τ weighted averaging)
 
-    def readPSD(self):
+    def readPSD(self, incldDust=True):
         """ Read in size distribution data and separate by mode/height(PBL vs FT) """
-        dists2pull = ['TOTdist', 'DUdist'] # could add SUdist, SSdist, OCPHOBICdist, OCPHILICdist, etc.
+        dists2pull = ['TOTdist'] # could add SUdist, SSdist, OCPHOBICdist, OCPHILICdist, etc.
+        if incldDust: dists2pull.append('DUdist')
         levBFN = self.fpDict['psdNc4FP']
         preReqs = ['readPolarimeterNetCDF','readmetData']
         if not self._loadingChecks(prereqCalls=preReqs, filename=levBFN, functionName='readPSD'): return
@@ -351,6 +363,7 @@ class osseData(object):
                 self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=~pblInd, modeInds=fineInd)
                 self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
                 self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
+        if not incldDust: return
         for pstFx in ['', '_fine', '_coarse']:
             for pstFx2 in ['', 'PBL', 'FT']:
                 fullFx = pstFx+'_'+pstFx2 if not pstFx2=='' and pstFx=='' else pstFx+pstFx2
@@ -382,17 +395,31 @@ class osseData(object):
         rd['vol'+rdSetKey] = rd['volProf'+rdSetKey].sum()
 
     def readlidarData(self):
-        ncDataVar = 'INSTRUMENT_ATB_NOISE' if self.fpDict['noisyLidar'] else 'INSTRUMENT_ATB'
+        ncDataVars09   = {'LS':'INSTRUMENT_ATB'}
+        ncDataVarsHSRL = {'VBS':'HSRL_BACKSCAT', 'VExt':'HSRL_EXTINCTION'}
         call1st = 'readPolarimeterNetCDF'
         if not self._loadingChecks(prereqCalls=call1st, functionName='readlidarData'): return # removing this prereq requires factoring out creation of measData and setting some keys (e.g. time, dtObj) in polarimeter reader
         for i,wvl in enumerate(self.wvls):
-            lidarFN = self.fpDict['lc2Lidar'] % (wvl*1000)
+            hsrlAtnBck = self.lidarVersion in [5, 6] and np.isclose(wvl, 1.064, atol=0.01)
+            if self.lidarVersion==9 or hsrlAtnBck:
+                ncDataVars = copy.copy(ncDataVars09) # we may add "_NOISE" but need to preserve unaltered defintion
+                filePath = self.fpDict['lc2Lidar'].replace('LIDAR05','LIDAR09').replace('LIDAR06','LIDAR09') # HACK: no 1064nm HSRL simulations – use lidar09 noise free data
+            elif self.lidarVersion in [5, 6]:
+                ncDataVars = copy.copy(ncDataVarsHSRL)
+                filePath = self.fpDict['lc2Lidar'].replace('nc4','30m.nc4') # 30m is on end of HSRL files, but not lidar09
+                if self.lidarVersion == 6: filePath = filePath.replace('7000m','50000m') # lidar 6 only has 50km res
+            else:
+                assert False, '%d is not a valid lidarVersion!' % self.lidarVersion
+            if self.fpDict['noisyLidar'] and not hsrlAtnBck: 
+                for k in ncDataVars.keys(): ncDataVars[k] = ncDataVars[k]+'_NOISE'
+            lidarFN = filePath % (wvl*1000)
             if os.path.exists(lidarFN): # data is there, load it
                 if self.verbose: print('Processing data from %s' % lidarFN)
-                lidar_data = loadVARSnetCDF(lidarFN, varNames=['lev', 'SURFACE_ALT', ncDataVar], verbose=self.verbose)
+                lidar_data = loadVARSnetCDF(lidarFN, varNames=['lev', 'SURFACE_ALT']+list(ncDataVars.values()), verbose=self.verbose)
                 self.measData[i]['RangeLidar'] = lidar_data['lev']*1e3 # km -> m
                 self.measData[i]['SurfaceAlt'] = lidar_data['SURFACE_ALT']*1e3 # km -> m
-                self.measData[i]['LS'] = lidar_data[ncDataVar]/1e3 # km-1 sr-1 -> m-1 sr-1
+                for mdKey, ldKey in ncDataVars.items():
+                    self.measData[i][mdKey] = lidar_data[ldKey]/1e3 # km-1 [sr-1] -> m-1 [sr-1]
             elif self.verbose:
                 print('No lidar data found at' + λFRMT % wvl)
         return
@@ -415,7 +442,7 @@ class osseData(object):
                     for key in [k for k in ['LS', 'VExt', 'VBS',' DP'] if k in md]: # loop over lidar measurement types
                         tempSig = np.empty((self.Npix, len(newLayers)))
                         for t in range(self.Npix):
-                            vldInd = np.logical_and(md['RangeLidar'][t,:]>=0, ~np.isnan(md['LS'][t,:]))  # we will remove lidar returns corresponding to below ground (background subtraction)
+                            vldInd = np.logical_and(md['RangeLidar'][t,:]>30, ~np.isnan(md[key][t,:]))  # we will remove lidar returns corresponding to below ground (background subtraction)
                             alt = md['RangeLidar'][t, vldInd]
                             sig = md[key][t, vldInd]
                             tempSig[t,:] = downsample1d(alt[::-1], sig[::-1], newLayers)[::-1] # alt and sig where in descending order (relative to alt)
@@ -424,7 +451,8 @@ class osseData(object):
                 if 'LS' in md: # normalize att. backscatter signal
                     normConstants = -np.trapz(md['LS'], x=md['RangeLidar'], axis=1) # sign flip needed since Range is in descending order
                     md['LS'] = md['LS']/normConstants[:,None]
-                md['LS'][md['LS'] < βscaLowLim] = βscaLowLim # GRASP will not tolerate negative backscatter values
+                for mdKey in ['LS','VBS','VExt']:
+                    if mdKey in md: md[mdKey][md[mdKey] < βLowLim] = βLowLim # GRASP will not tolerate negative backscatter values
             elif self.verbose:
                 print('No lidar data to convert at' + λFRMT % wvl)
         return measData
@@ -488,7 +516,7 @@ class osseData(object):
         if self.verbose and filename: print('Processing data from %s' % filename)
         return True
 
-    def purgeInvldInd(self, maxSZA=None):
+    def purgeInvldInd(self, maxSZA=None, oceanOnly=False):
         """ The method will remove all invldInd from measData """
         timeInvariantVars = ['ocean_refractive_index','x', 'y', 'RangeLidar', 'lev', 'rayleigh_depol_ratio']
         if self.invldIndPurged:
@@ -500,6 +528,10 @@ class osseData(object):
                 if not np.all(np.isnan(sza)) and np.any(sza>maxSZA): overSZAInds.append(ind)            
             self.invldInd = np.append(self.invldInd, overSZAInds).astype(int)
             if self.verbose: print('%d pixels exlcuded for SZA>%4.1f°' % (len(overSZAInds), maxSZA))
+        if oceanOnly:
+            landInd = np.where(self.measData[0]['land_prct']>0)[0].tolist()
+            self.invldInd = np.append(self.invldInd, landInd).astype(int)
+            if self.verbose: print('%d pixels containing land were excluded' % len(landInd))            
         self.invldInd = np.array(np.unique(self.invldInd), dtype='int')
         if self.verbose:
             allKeys = np.unique(sum([list(md.keys()) for md in self.measData],[]))
@@ -524,85 +556,18 @@ class osseData(object):
         if self.verbose:
             print('%d pixels with negative reflectances, bad-data-flag or excluded SZAs were purged from all variables.' % len(self.invldInd))
 
-    def rot2scatplane(self):
-        """
-        PATRICIA's CODE – NOT YET ADAPTED TO THIS CLASS
-        Rotate meridonal plane (VLIDORT) outputs to scattering plane (GRASP)
-        adapted from Kirk's code rot2scatplane.pro
-        """
-        assert False, 'REUSED CODE, NOT YET ADAPTED TO THIS CLASS'
-
-        # define RAA according to photon travel direction
-        saa = self.SAA + 180.0
-        I = saa >= 360.
-        saa[I] = saa[I] - 360.
-        self.RAA = self.VAA - saa
-
-        nvza = len(self.VZA)
-        nraa = len(self.VAA)
-
-        # raa = np.radians(self.VAA - self.SAA)
-        raa = np.radians(self.RAA)
-        razi_pm = np.ones(nraa)
-        razi_pm[np.sin(raa) >= 0] = -1.0
-        cos_razi = np.cos(raa)
-
-        u_s = np.cos(np.radians(self.SZA[0]))
-        u_v = np.cos(np.radians(self.VZA))
-
-        root_s = np.sqrt(1.0-u_s**2)
-        self.Q_out = np.zeros([nvza,nraa])
-        self.U_out = np.zeros([nvza,nraa])
-        self.Qsurf_out = np.zeros([nvza,nraa])
-        self.Usurf_out = np.zeros([nvza,nraa])
-        for ivza in range(nvza):
-            for iraa in range(nraa):
-                # print 'ivza,iraa',ivza,iraa
-                root_v = np.sqrt(1.0-u_v[ivza]**2)
-
-                cos_theta= -1.0*u_s*u_v[ivza] + root_v*root_s*cos_razi[iraa]
-                root_theta= np.sqrt(1.0 - cos_theta**2)
-                scatang = np.arccos(cos_theta) # scattering angle for output (not used below) # FLAKE SAYS VARIABLE IS NOT USED
-
-                # equation 3.16 in Hansen and Travis --------------------------
-                # Special limit case --------------------
-                # if np.abs(cos_theta) > 0.999999:
-                if np.abs(cos_theta) == 1.0:
-                    cosi1 = 0.0
-                    cosi2 = 0.0
-                else:
-                    cosi1= razi_pm[iraa]*(-1.0*u_v[ivza]*root_s - u_s*root_v*cos_razi[iraa])/root_theta
-                    cosi2= razi_pm[iraa]*(u_s*root_v + u_v[ivza]*root_s*cos_razi[iraa])/root_theta
-
-                # equation (10) in Hovenier ------------------------
-                # error correction for high cos(i)^2 values ------------
-                # if (cosi1**2.0) > 0.999999:
-                if (cosi1**2.0) >= 1.0:
-                    cos2i1 = 1.0 # FLAKE SAYS VARIABLE IS NOT USED
-                    sin2i1 = 0.0 # FLAKE SAYS VARIABLE IS NOT USED
-                else:
-                    sin2i1= 2.0*np.sqrt(1.0-(cosi1**2.0))*cosi1
-                    cos2i1= 2.0*(cosi1**2.0)-1.0
-                # if (cosi2**2.0) > 0.999999:
-                if (cosi2**2.0) >= 1.0:
-                    cos2i2 = 1.0
-                    sin2i2 = 0.0
-                else:
-                    sin2i2= 2.0*np.sqrt(1.0-(cosi2**2.0))*cosi2
-                    cos2i2= 2.0*(cosi2**2.0)-1.0
-
-                # rotate into scattering plane as shown in (2) of Hovenier
-                q_in = self.Q[ivza,iraa]
-                u_in = self.U[ivza,iraa]
-                q_out= q_in*cos2i2 - u_in*sin2i2
-                u_out= q_in*sin2i2 + u_in*cos2i2
-
-                self.Q_out[ivza,iraa] = -1.*q_out
-                self.U_out[ivza,iraa] = -1.*u_out
-
-                q_in = self.BR_Q[ivza,iraa]
-                u_in = self.BR_U[ivza,iraa]
-                q_out= q_in*cos2i2 - u_in*sin2i2
-                u_out= q_in*sin2i2 + u_in*cos2i2
-                self.Qsurf_out[ivza,iraa] = -1.*q_out
-                self.Usurf_out[ivza,iraa] = -1.*u_out
+    def plotGlobe(self, colorVar='ssa', sizeVar='tau', indLabel=True):
+        os.environ["PROJ_LIB"] = "/Users/wrespino/anaconda3/share/proj" # fix for "KeyError: 'PROJ_LIB'" bug
+        from mpl_toolkits.basemap import Basemap
+        from matplotlib import pyplot as plt
+        plt.figure(figsize=(12, 6))
+        m = Basemap(projection='merc', resolution='c', llcrnrlon=-81, llcrnrlat=-57.6, urcrnrlon=65, urcrnrlat=47)
+        m.bluemarble(scale=1);
+        #m.shadedrelief(scale=0.2)
+        #m.fillcontinents(color=np.r_[176,204,180]/255,lake_color='white')
+        x, y = m(lon, lat)
+        plt.scatter(x, y, c='r', s=30, facecolors='none', edgecolors='r', cmap='plasma')
+        [plt.text(x0,y0,'%d'%ID, color='r') for x0,y0,ID in zip(x,y,siteID)]
+        plt.title('AERONET Sites')
+        cbar = plt.colorbar()
+        cbar.set_label("Elevation (m)", FontSize=14)
