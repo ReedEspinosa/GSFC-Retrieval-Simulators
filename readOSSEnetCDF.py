@@ -474,15 +474,15 @@ class osseData(object):
                     if 'Q' in md.keys() and 'U' in md.keys():
                         md['DOLP'] = np.sqrt(md['Q']**2+md['U']**2)/md['I']
                 if 'surf_reflectance' in md:
-                    md['I_surf'] = md['surf_reflectance']*np.cos(30*np.pi/180)
+                    md['I_surf'] = md['surf_reflectance']*np.cos(md['solar_zenith']*np.pi/180)
                     with np.errstate(invalid='ignore'): # ignore runtime warnings, bug in anaconda Numpy w/ zeros stored as float32 (see https://github.com/numpy/numpy/issues/11448)
                         if 'surf_reflectance_Q_scatplane' in md:
-                            md['Q_surf'] = md['surf_reflectance_Q_scatplane']*np.cos(30*np.pi/180)
-                            md['U_surf'] = md['surf_reflectance_U_scatplane']*np.cos(30*np.pi/180)
+                            md['Q_surf'] = md['surf_reflectance_Q_scatplane']*np.cos(md['solar_zenith']*np.pi/180)
+                            md['U_surf'] = md['surf_reflectance_U_scatplane']*np.cos(md['solar_zenith'])
                             if self.verbose: print('    %5f μm Q[U]_surf derived from surf_reflectance_Q[U]_scatplane (scat. plane system)' % wvl)
                         else:
-                            md['Q_surf'] = md['surf_reflectance_Q']*np.cos(30*np.pi/180)
-                            md['U_surf'] = md['surf_reflectance_U']*np.cos(30*np.pi/180)
+                            md['Q_surf'] = md['surf_reflectance_Q']*np.cos(md['solar_zenith']*np.pi/180)
+                            md['U_surf'] = md['surf_reflectance_U']*np.cos(md['solar_zenith']*np.pi/180)
                             if self.verbose: print('    %5f μm Q[U]_surf derived from surf_reflectance_Q[U] (meridian system)' % wvl)
                         if (md['I_surf'] > 0).all():
                             md['DOLP_surf'] = np.sqrt(md['Q_surf']**2+md['U_surf']**2)/md['I_surf']
