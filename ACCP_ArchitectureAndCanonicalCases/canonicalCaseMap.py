@@ -37,7 +37,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.015)[None,:] # mode 1 # linear w/ λ
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'Huambo' in caseStr.lower():
-        vals yingxiProposalSmokeModels('Huambo', wvls)
+        vals = yingxiProposalSmokeModels('Huambo', wvls)
         landPrct = 0 if 'ocean' in caseStr.lower() else 100
     elif 'clean' in caseStr.lower():
         σ = [0.4, 0.68] # mode 1, 2,...
@@ -403,35 +403,43 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(caseLoadFct)
     return zip(cases, loadings)
     
-def yingxiProposalSmokeModels(siteName, wvls)
+def yingxiProposalSmokeModels(siteName, wvls):
     vals = dict()
-    aeronetWvls = [440, 0.675, 0.870, 1.020]
+    aeronetWvls = [0.440, 0.675, 0.870, 1.020]
     if siteName=='Huambo':
         #                       rvF     std(rvF)                    rvC  std(rvC)
-        rv = [np.random.normal(0.13776, 0.0176), np.random.normal(3.669, 0.2308)] #         rvVar = [0.017691875, 0.230835572]
-        σ = [np.random.normal(0.38912, 0.0272),	np.random.normal(0.6254, 0.0355)] #         σVar = [0.027237159, 0.035588349]
-        volFine = max(np.random.normal(0.07974, 0.256), 1e-8) #         volVar = [0.025625888, 0.013701423]
-        volCoarse = max(np.random.normal(0.03884, 0.013701423), 1e-8)
-        vals['vol'] = np.array([[volFine],[volCoarse]]) 
+        rv = np.r_[np.random.normal(0.13776, 0.0176), np.random.normal(3.669, 0.2308)] #         rvVar = [0.017691875, 0.230835572]
+        σ = np.r_[np.random.normal(0.38912, 0.0272),	np.random.normal(0.6254, 0.0355)] #         σVar = [0.027237159, 0.035588349]
+        volFine = np.random.lognormal(np.log(0.07974), 0.3) #         volVar = [0.025625888, 0.013701423]
+        volCoarse = np.random.lognormal(np.log(0.03884), 0.4)
         aeronet_n = [1.475, 1.504, 1.512, 1.513] # std 0.05±~0.005
         aeronet_k = [0.026, 0.022, 0.023, 0.023] # std 0.0055±0.002
     elif siteName=='NASA_Ames':
-        assert False, 'Not filled in yet'
+        rv = np.r_[np.random.normal(0.17271, 0.03808), np.random.normal(3.00286, 0.5554)] 
+        σ = np.r_[np.random.normal(0.46642, 0.05406), np.random.normal(0.67840, 0.079605)]
+        volFine = np.random.lognormal(np.log(0.077829268), 1) # mean(vol)≈std(vol) => 2nd argument = 1 
+        volCoarse = np.random.lognormal(np.log(0.045731707), 1)
+        aeronet_n = [1.4939, 1.5131, 1.5149, 1.5079] # std 0.05±~0.013
+        aeronet_k = [0.00646, 0.00487, 0.00510, 0.00515] # std 0.003±0.0008
     else:
         assert False, 'Unkown siteName string!'
+    volFine = max(volFine, 1e-8)
+    volCoarse = max(volCoarse, 1e-8)
+    vals['vol'] = np.array([[volFine],[volCoarse]]) 
+    rv[rv<0.08] = 0.08
+    rv[rv>6.0] = 6.0
+    σ[σ<0.25] = 0.25
+    σ[σ>0.8] = 0.8
     vals['lgrnm'] = np.vstack([rv, σ]).T
-    vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-    vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
-    vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
     n = np.interp(wvls, aeronetWvls, aeronet_n) + np.random.normal(0, 0.05)
     n[n<1.35] = 1.35
     n[n>1.69] = 1.69
-    k = np.interp(wvls, aeronetWvls, aeronet_k) + np.random.normal(0, 0.0055)
-    k[k<1e-5] = 1e-5
+    k = np.interp(wvls, aeronetWvls, aeronet_k) + np.random.normal(0, 0.004) # 0.004 is average of Huambo and Ames std(k) above
+    k[k<1e-6] = 1e-6
     k[k>0.1]  = 0.1
     vals['n'] = np.array([[n], [n]])
     vals['k'] = np.array([[k], [k]])
+    vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+    vals['vrtHght'] = [[3000],  [3000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+    vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
     return vals
-    
-    
-    
