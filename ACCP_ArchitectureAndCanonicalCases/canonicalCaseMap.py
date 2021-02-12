@@ -36,8 +36,11 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.36+rnd.random(2)*0.15)[None,:] # mode 1 # linear w/ λ
         vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.015)[None,:] # mode 1 # linear w/ λ
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
-    elif 'Huambo' in caseStr.lower():
+    elif 'huambo' in caseStr.lower():
         vals = yingxiProposalSmokeModels('Huambo', wvls)
+        landPrct = 0 if 'ocean' in caseStr.lower() else 100
+    elif 'nasaames' in caseStr.lower():
+        vals = yingxiProposalSmokeModels('NASA_Ames', wvls)
         landPrct = 0 if 'ocean' in caseStr.lower() else 100
     elif 'clean' in caseStr.lower():
         σ = [0.4, 0.68] # mode 1, 2,...
@@ -437,8 +440,8 @@ def yingxiProposalSmokeModels(siteName, wvls):
     k = np.interp(wvls, aeronetWvls, aeronet_k) + np.random.normal(0, 0.004) # 0.004 is average of Huambo and Ames std(k) above
     k[k<1e-6] = 1e-6
     k[k>0.1]  = 0.1
-    vals['n'] = np.array([[n], [n]])
-    vals['k'] = np.array([[k], [k]])
+    vals['n'] = np.array([n, n])
+    vals['k'] = np.array([k, k])
     vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
     vals['vrtHght'] = [[3000],  [3000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
     vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
