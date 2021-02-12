@@ -407,19 +407,21 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
     return zip(cases, loadings)
     
 def yingxiProposalSmokeModels(siteName, wvls):
+    dampFact = 1414 # basically saying half the variability comes from AERONET retrieval error... (does not apply to concentration)
+#     dampFact = 1.414 # basically saying half the variability comes from AERONET retrieval error... (does not apply to concentration)
     vals = dict()
     aeronetWvls = [0.440, 0.675, 0.870, 1.020]
     if siteName=='Huambo':
         #                       rvF     std(rvF)                    rvC  std(rvC)
-        rv = np.r_[np.random.normal(0.13776, 0.0176), np.random.normal(3.669, 0.2308)] #         rvVar = [0.017691875, 0.230835572]
-        σ = np.r_[np.random.normal(0.38912, 0.0272),	np.random.normal(0.6254, 0.0355)] #         σVar = [0.027237159, 0.035588349]
+        rv = np.r_[np.random.normal(0.13776, 0.0176/dampFact), np.random.normal(3.669, 0.2308/dampFact)] #         rvVar = [0.017691875, 0.230835572]
+        σ = np.r_[np.random.normal(0.38912, 0.0272/dampFact),	np.random.normal(0.6254, 0.0355/dampFact)] #         σVar = [0.027237159, 0.035588349]
         volFine = np.random.lognormal(np.log(0.07974), 0.3) #         volVar = [0.025625888, 0.013701423]
         volCoarse = np.random.lognormal(np.log(0.03884), 0.4)
         aeronet_n = [1.475, 1.504, 1.512, 1.513] # std 0.05±~0.005
         aeronet_k = [0.026, 0.022, 0.023, 0.023] # std 0.0055±0.002
     elif siteName=='NASA_Ames':
-        rv = np.r_[np.random.normal(0.17271, 0.03808), np.random.normal(3.00286, 0.5554)] 
-        σ = np.r_[np.random.normal(0.46642, 0.05406), np.random.normal(0.67840, 0.079605)]
+        rv = np.r_[np.random.normal(0.17271, 0.03808/dampFact), np.random.normal(3.00286, 0.5554/dampFact)] 
+        σ = np.r_[np.random.normal(0.46642, 0.05406/dampFact), np.random.normal(0.67840, 0.079605/dampFact)]
         volFine = np.random.lognormal(np.log(0.077829268), 1) # mean(vol)≈std(vol) => 2nd argument = 1 
         volCoarse = np.random.lognormal(np.log(0.045731707), 1)
         aeronet_n = [1.4939, 1.5131, 1.5149, 1.5079] # std 0.05±~0.013
@@ -434,11 +436,11 @@ def yingxiProposalSmokeModels(siteName, wvls):
     σ[σ<0.25] = 0.25
     σ[σ>0.8] = 0.8
     vals['lgrnm'] = np.vstack([rv, σ]).T
-    n = np.interp(wvls, aeronetWvls, aeronet_n) + np.random.normal(0, 0.05)
+    n = np.interp(wvls, aeronetWvls, aeronet_n) + np.random.normal(0, 0.05/dampFact)
     n[n<1.35] = 1.35
     n[n>1.69] = 1.69
-    k = np.interp(wvls, aeronetWvls, aeronet_k) + np.random.normal(0, 0.004) # 0.004 is average of Huambo and Ames std(k) above
-    k[k<1e-6] = 1e-6
+    k = np.interp(wvls, aeronetWvls, aeronet_k) + np.random.normal(0, 0.004/1) # 0.004 is average of Huambo and Ames std(k) above
+    k[k<1e-3] = 1e-3
     k[k>0.1]  = 0.1
     vals['n'] = np.array([n, n])
     vals['k'] = np.array([k, k])
