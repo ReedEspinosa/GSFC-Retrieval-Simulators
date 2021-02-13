@@ -407,7 +407,7 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
     return zip(cases, loadings)
     
 def yingxiProposalSmokeModels(siteName, wvls):
-    dampFact = 1414 # basically saying half the variability comes from AERONET retrieval error... (does not apply to concentration)
+    dampFact = 1414 # HACK!!!
 #     dampFact = 1.414 # basically saying half the variability comes from AERONET retrieval error... (does not apply to concentration)
     vals = dict()
     aeronetWvls = [0.440, 0.675, 0.870, 1.020]
@@ -439,11 +439,14 @@ def yingxiProposalSmokeModels(siteName, wvls):
     n = np.interp(wvls, aeronetWvls, aeronet_n) + np.random.normal(0, 0.05/dampFact)
     n[n<1.35] = 1.35
     n[n>1.69] = 1.69
-    k = np.interp(wvls, aeronetWvls, aeronet_k) + np.random.normal(0, 0.004/1) # 0.004 is average of Huambo and Ames std(k) above
+    # HACK: no dampFacts on these guys AND an extra special-k coarse AND we 2.5'ed std(k_fine)
+#     k = np.interp(wvls, aeronetWvls, aeronet_k) + np.random.normal(0, 0.004) # 0.004 is average of Huambo and Ames std(k) above
+    k = np.interp(wvls, aeronetWvls, aeronet_k) + np.random.normal(0, 2.5*0.004) # 0.004 is average of Huambo and Ames std(k) above
+    kCoarse = np.interp(wvls, aeronetWvls, aeronet_k) # 0.004 is average of Huambo and Ames std(k) above
     k[k<1e-3] = 1e-3
     k[k>0.1]  = 0.1
     vals['n'] = np.array([n, n])
-    vals['k'] = np.array([k, k])
+    vals['k'] = np.array([k, kCoarse])
     vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
     vals['vrtHght'] = [[3000],  [3000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
     vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters

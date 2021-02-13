@@ -24,23 +24,26 @@ retrieval:
                     index_of_wavelength_involved: [1] 
                     max: [0.04]
                     min: [1e-3]
-                    value: [0.005]
+                    value: [0.03] # 0.005 worked well (slight high bias in SSA)
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
                         lagrange_multiplier: 0.5
+#                    a_priori_estimates:
+#                        lagrange_multiplier:      [1.0e-11]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [0.04]
-                    min: [1e-3]
-                    value: [0.005]
+                    max:   [0.026]
+                    min:   [0.023]
+                    value: [0.024539]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
                         lagrange_multiplier: 0.5
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
+#            type: imaginary_part_of_refractive_index_constant ––– BUG: Many spectral variables do not print right. Does this happen in V1.0?
         characteristic[3]: 
             type: vertical_profile_parameter_height
             retrieved: false
@@ -94,6 +97,7 @@ retrieval:
                         lagrange_multiplier: 0.5
             retrieved: false
             type: real_part_of_refractive_index_spectral_dependent
+#            type: real_part_of_refractive_index_constant            
 #        VEGITATION INSPIRED 
         characteristic[6]:
             mode[1]:
@@ -194,7 +198,7 @@ retrieval:
         maximum_iterations_of_Levenberg-Marquardt: 40
         minimization_convention: logarithm
         normal_system_solver: sparse_matrix_solver
-        scale_for_finite_difference: 1.0e-05 #2.0e-5
+        scale_for_finite_difference: 5.0e-05 #2.0e-5
         shift_for_applying_logarithm_to_negative_values: 1.1
         threshold_for_stopping: 1.0e-9 #0.001
         threshold_for_stopping_Q_iterations: 1.0e-09 #1.0e-06
