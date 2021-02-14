@@ -1,3 +1,5 @@
+# PSD and n set to match DT absorbing aerosol model (used over central Africa in summer)
+# SOURCE: https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2006JD007815
 input: {driver: sdata, file: inversionBACK.sdat}
 output:
     segment: {function: classic, stream: bench_inversionRslts.txt}
@@ -9,8 +11,7 @@ retrieval:
                     index_of_wavelength_involved: [0]
                     max: [0.15]
                     min: [0.00000001]
-                    value: [0.07974] # TRUE mean
-#                    value: [0.05]
+                    value: [0.07974]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier:      [8.0e-5] # NOT TESTED IN IDEAL (only k and Vol unfixed) case
@@ -106,22 +107,22 @@ retrieval:
                     index_of_wavelength_involved: [0, 0]
                     max: [0.34, 0.70]
                     min: [0.07, 0.25]
-                    value: [0.13776, 0.38912]
+                    value: [0.13842, 0.41956747]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
                     max: [6.0, 0.8]
                     min: [0.65, 0.25]
-                    value: [3.669, 0.6254]
+                    value: [3.885, 0.76183639]
             retrieved: false
             type: size_distribution_lognormal
         characteristic[6]:
             mode[1]:
                 initial_guess:
-                    index_of_wavelength_involved: [1]
-                    max: [  1.49,       1.49,       1.50,       1.51,       1.52,      1.52,      1.52]
+                    index_of_wavelength_involved: [1] # this should be 1,...,7, what happens with current version?
+                    max: [  1.52,       1.52,       1.52,       1.52,       1.52,      1.52,      1.52]
                     min: [  1.47,       1.47,       1.48,       1.49,       1.50,      1.50,      1.50]
-                    value: [1.47497788, 1.47867788, 1.48855341, 1.50089341, 1.51197788, 1.51297788, 1.51297788]
+                    value: [1.51, 1.51, 1.51, 1.51, 1.51, 1.51, 1.51]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
@@ -129,9 +130,9 @@ retrieval:
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [  1.49,       1.49,       1.50,       1.51,       1.52,      1.52,      1.52]
+                    max: [  1.52,       1.52,       1.52,       1.52,       1.52,      1.52,      1.52]
                     min: [  1.47,       1.47,       1.48,       1.49,       1.50,      1.50,      1.50]
-                    value: [1.47497788, 1.47867788, 1.48855341, 1.50089341, 1.51197788, 1.51297788, 1.51297788]
+                    value: [1.51, 1.51, 1.51, 1.51, 1.51, 1.51, 1.51]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1

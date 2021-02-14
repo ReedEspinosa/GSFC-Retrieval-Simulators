@@ -408,7 +408,7 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
     return zip(cases, loadings)
     
 def yingxiProposalSmokeModels(siteName, wvls):
-    dampFact = 1414 # HACK!!!
+    dampFact = 2 # HACK!!!
 #     dampFact = 1.414 # basically saying half the variability comes from AERONET retrieval error... (does not apply to concentration)
     vals = dict()
     aeronetWvls = [0.440, 0.675, 0.870, 1.020]
@@ -449,6 +449,8 @@ def yingxiProposalSmokeModels(siteName, wvls):
     vals['n'] = np.array([n, n])
     vals['k'] = np.array([k, kCoarse])
     vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-    vals['vrtHght'] = [[3000],  [3000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+#     hgt = 1500+4500*np.random.rand()
+    hgt = 3000
+    vals['vrtHght'] = [[hgt],  [hgt]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
     vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
     return vals
