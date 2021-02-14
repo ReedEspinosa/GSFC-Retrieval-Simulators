@@ -24,6 +24,7 @@ if checkDiscover(): # DISCOVER
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     geomFile = os.path.join(basePath, 'synced/Working/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt')
+    Nangles = 16
     Nsims = 4 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 4 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
@@ -34,7 +35,8 @@ else: # MacBook Air
     dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
     geomFile = '/Users/wrespino/Synced/Proposals/ROSES_TASNPP_Yingxi_2020/retrievalSimulation/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt'
     krnlPath = None
-    Nsims = 2
+    Nangles = 3
+    Nsims = 3
     maxCPU = 2
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
 bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes.yml') # will get bumped to 4 modes if needed
@@ -54,21 +56,21 @@ verbose = True
 # parse input argument n to instrument/case
 paramTple = list(itertools.product(*[instruments, conCases, τFactor]))[n] 
 
-# SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbitNow, verbose=verbose)
-SZA, phi, vza = selectGeometryEntryModis(geomFile, nAng)
-
 # building pickle save path 
-savePathInputTuple = paramTple[0:3] + (SZA, phi, n, nAng)
-savePath = saveStart + '%s_%s_tFct%5.3f_sza%d_phi%d_n%d_nAng%d.pkl' % savePathInputTuple 
+savePathInputTuple = paramTple[0:3] + (n,nAng)
+savePath = saveStart + '%s_%s_tFct%5.3f_n%d_nAng%d.pkl' % savePathInputTuple 
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 
 # setup forward and back YAML objects and now pixel
-nowPix = returnPixel(paramTple[0], sza=SZA, relPhi=phi, vza=vza, nowPix=None, concase=paramTple[1])
-print('n = %d, nAng = %d, Nλ = %d' % (n, nAng, nowPix.nwl))
+nowPix = []
+for i in range(nAng, nAng+Nangles):
+    SZA, phi, vza = selectGeometryEntryModis(geomFile, i)
+    nowPix.append(returnPixel(paramTple[0], sza=SZA, relPhi=phi, vza=vza, nowPix=None, concase=paramTple[1]))
+
+print('n = %d, nAng = %d, Nλ = %d' % (n, nAng, nowPix[0].nwl))
 fwdModelYAMLpath = fwdModelYAMLpathLID if 'lidar' in paramTple[0].lower() else fwdModelYAMLpathPOL
 bckYAML = bckYAMLpathLID if 'lidar' in paramTple[0].lower() else bckYAMLpathPOL
-fwdYAML = setupConCaseYAML(paramTple[1], nowPix, fwdModelYAMLpath, caseLoadFctr=paramTple[2])
-# bckYAML = boundBackYaml(bckYAMLpath, paramTple[1], nowPix, verbose=verbose)
+fwdYAML = [setupConCaseYAML(paramTple[1], nowPix[i], fwdModelYAMLpath, caseLoadFctr=paramTple[2]) for i in range(Nangles)]
 
 # run simulation    
 simA = rs.simulation(nowPix) # defines new instance for architecture described by nowPix
