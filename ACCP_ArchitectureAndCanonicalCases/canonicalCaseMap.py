@@ -241,6 +241,7 @@ def conCaseDefinitions(caseStr, nowPix):
     return vals, landPrct
 
 def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=None, simBldProfs=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
+    """ nowPix needed to: 1) set land percentage of nowPix and 2) get number of wavelengths """
     aeroKeys = ['lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k']
     vals = dict()
     for caseStr,loading in splitMultipleCases(caseStrs, caseLoadFctr): # loop over all cases and add them together
@@ -439,9 +440,9 @@ def yingxiProposalSmokeModels(siteName, wvls):
     n = np.interp(wvls, aeronetWvls, aeronet_n) + np.random.normal(0, 0.05/dampFact)
     n[n<1.35] = 1.35
     n[n>1.69] = 1.69
-    # HACK: no dampFacts on these guys AND an extra special-k coarse AND we 2.5'ed std(k_fine)
+    # HACK: no dampFacts on these guys AND an extra special-k coarse AND we doubled std(k_fine)
 #     k = np.interp(wvls, aeronetWvls, aeronet_k) + np.random.normal(0, 0.004) # 0.004 is average of Huambo and Ames std(k) above
-    k = np.interp(wvls, aeronetWvls, aeronet_k) + np.random.normal(0, 2.5*0.004) # 0.004 is average of Huambo and Ames std(k) above
+    k = np.interp(wvls, aeronetWvls, aeronet_k) + np.random.normal(0, 2*0.004) # 0.004 is average of Huambo and Ames std(k) above
     kCoarse = np.interp(wvls, aeronetWvls, aeronet_k) # 0.004 is average of Huambo and Ames std(k) above
     k[k<1e-3] = 1e-3
     k[k>0.1]  = 0.1

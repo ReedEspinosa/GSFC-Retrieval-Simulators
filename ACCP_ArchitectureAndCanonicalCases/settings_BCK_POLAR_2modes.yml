@@ -9,13 +9,19 @@ retrieval:
                     index_of_wavelength_involved: [0]
                     max: [0.15]
                     min: [0.00000001]
-                    value: [0.001]
+                    value: [0.07974]
+                single_pixel:
+                    a_priori_estimates:
+                        lagrange_multiplier:      [8.0e-5]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
                     max: [0.09]
                     min: [0.00000001]
-                    value: [0.002]
+                    value: [0.03884]
+                single_pixel:
+                    a_priori_estimates:
+                        lagrange_multiplier:      [8.0e-5]
             retrieved: true
             type: aerosol_concentration    
         characteristic[2]:
@@ -24,13 +30,13 @@ retrieval:
                     index_of_wavelength_involved: [1] 
                     max: [0.04]
                     min: [1e-3]
-                    value: [0.03] # 0.005 worked well (slight high bias in SSA)
+                    value: [0.035] # 0.025 worked well (slight high bias in SSA)
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
                         lagrange_multiplier: 0.5
-#                    a_priori_estimates:
-#                        lagrange_multiplier:      [1.0e-11]
+                    a_priori_estimates:
+                        lagrange_multiplier:      [4.0e-5,4.0e-5,4.0e-5,4.0e-5,4.0e-5,4.0e-5,4.0e-5] # seems less needed with looser land... maybe cut down a bit in multipixel?
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -44,22 +50,50 @@ retrieval:
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
 #            type: imaginary_part_of_refractive_index_constant ––– BUG: Many spectral variables do not print right. Does this happen in V1.0?
-        characteristic[3]: 
+#        VEGITATION INSPIRED 
+        characteristic[3]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1] #[0.415,  0.470,  0.555,  0.659,  0.865,  1.64,   2.13] μm
+                    max:                               [0.029625, 0.04, 0.09025 , 0.072, 0.527875, 0.307125, 0.141]
+                    min:                               [0.017775, 0.0276, 0.05415, 0.0432, 0.316725, 0.184275, 0.0846]
+                    value:                             [0.0237, 0.0368, 0.0722, 0.0576, 0.4223, 0.2457, 0.1128]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max:   [0.6200]
+                    min:   [0.5900]
+                    value: [0.6073]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 5}
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max:   [0.1600]
+                    min:   [0.1200]
+                    value: [0.1411]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 5}
+            retrieved: true
+            type: surface_land_brdf_ross_li
+        characteristic[4]: 
             type: vertical_profile_parameter_height
-            retrieved: false
+            retrieved: true
             mode[1]:
                 initial_guess:                      #1          
                     value:                          [3000.0 ]
-                    min:                            [2500.0] 
-                    max:                            [3500.0]
+                    min:                            [1000.0] 
+                    max:                            [7000.0]
                     index_of_wavelength_involved:   [0      ]
             mode[2]:
                 initial_guess:                      #1          
                     value:                          [3000.0 ]
-                    min:                            [2500.0] 
-                    max:                            [3500.0]
+                    min:                            [1000.0] 
+                    max:                            [7000.0]
                     index_of_wavelength_involved:   [0      ]
-        characteristic[4]:
+        characteristic[5]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
@@ -74,7 +108,7 @@ retrieval:
                     value: [3.669, 0.6254]
             retrieved: false
             type: size_distribution_lognormal
-        characteristic[5]:
+        characteristic[6]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -98,34 +132,6 @@ retrieval:
             retrieved: false
             type: real_part_of_refractive_index_spectral_dependent
 #            type: real_part_of_refractive_index_constant            
-#        VEGITATION INSPIRED 
-        characteristic[6]:
-            mode[1]:
-                initial_guess:
-                    index_of_wavelength_involved: [1] # λ=[0.415, 0.470, 0.555, 0.659, 0.865, 1.64, 2.13] μm
-                    max:                               [0.2,     0.2,    0.2,      0.5,      0.6,      1.5,    1.5]
-                    min:                               [0.0005, 0.0005, 0.0005,   0.0005,   0.0500,   0.0250, 0.020]
-                    value:                             [0.0237, 0.0368, 0.072282, 0.057601, 0.42234,  0.2457, 0.1128]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
-            mode[2]:
-                initial_guess:
-                    index_of_wavelength_involved: [1]
-                    max:   [2.0 ]
-                    min:   [0.001]
-                    value: [0.6073 ]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
-            mode[3]:
-                initial_guess:
-                    index_of_wavelength_involved: [1]
-                    max:   [1.0]
-                    min:   [0.0001]
-                    value: [0.1411]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
-            retrieved: false
-            type: surface_land_brdf_ross_li
         characteristic[7]:
             mode[1]:
                 initial_guess:
@@ -198,7 +204,7 @@ retrieval:
         maximum_iterations_of_Levenberg-Marquardt: 40
         minimization_convention: logarithm
         normal_system_solver: sparse_matrix_solver
-        scale_for_finite_difference: 5.0e-05 #2.0e-5
+        scale_for_finite_difference: 1.0e-05 #2.0e-5
         shift_for_applying_logarithm_to_negative_values: 1.1
         threshold_for_stopping: 1.0e-9 #0.001
         threshold_for_stopping_Q_iterations: 1.0e-09 #1.0e-06
