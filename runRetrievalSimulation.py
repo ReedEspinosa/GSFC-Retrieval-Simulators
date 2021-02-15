@@ -19,12 +19,12 @@ if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2])
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/TASNPP_simulation00/Test52_')
+    saveStart = os.path.join(basePath, 'synced/Working/TASNPP_simulation00/Test62_')
     ymlDir = os.path.join(basePath, 'MADCAP_scripts/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     geomFile = os.path.join(basePath, 'synced/Working/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt')
-    Nangles = 16
+    Nangles = 1
     Nsims = 4 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 4 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air

@@ -9,10 +9,10 @@
 date
 hostname
 echo "---Running Simulation N="${SLURM_ARRAY_TASK_ID}"---"
-python runRetrievalSimulation.py 0 ${SLURM_ARRAY_TASK_ID}
-python runRetrievalSimulation.py 0 1${SLURM_ARRAY_TASK_ID}
-python runRetrievalSimulation.py 0 2${SLURM_ARRAY_TASK_ID}
-python runRetrievalSimulation.py 0 3${SLURM_ARRAY_TASK_ID}
-python runRetrievalSimulation.py 0 4${SLURM_ARRAY_TASK_ID}
-python runRetrievalSimulation.py 0 5${SLURM_ARRAY_TASK_ID}
+python runRetrievalSimulation.py 0 1${SLURM_ARRAY_TASK_ID} &
+python runRetrievalSimulation.py 0 2${SLURM_ARRAY_TASK_ID} &
+python runRetrievalSimulation.py 0 3${SLURM_ARRAY_TASK_ID} &
+python runRetrievalSimulation.py 0 4${SLURM_ARRAY_TASK_ID} &
+python runRetrievalSimulation.py 0 5${SLURM_ARRAY_TASK_ID} &
+wait
 exit 0
