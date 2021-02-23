@@ -9,11 +9,11 @@ retrieval:
                     index_of_wavelength_involved: [0]
                     max: [0.15]
                     min: [0.00000001]
-                    value: [0.07974] # TRUE mean
-#                    value: [0.05]
-                single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier:      [8.0e-5] # NOT TESTED IN IDEAL (only k and Vol unfixed) case
+#                    value: [0.07974] # TRUE mean
+                    value: [0.05]
+#                single_pixel:
+#                    a_priori_estimates:
+#                        lagrange_multiplier:      [8.0e-5] # NOT TESTED IN IDEAL (only k and Vol unfixed) case
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
@@ -95,7 +95,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 1.0}
                     a_priori_estimates:
-                        lagrange_multiplier:      [1.5e-5,1.5e-5,1.5e-5,1.5e-5,1.5e-5,1.5e-5,1.5e-5] # seems less needed with looser land... maybe cut down a bit in multipixel?
+                        lagrange_multiplier:      [1.5e-4,1.5e-4,1.5e-4,1.5e-4,1.5e-4,1.5e-4,1.5e-4] # seems less needed with looser land... maybe cut down a bit in multipixel?
                 multi_pixel:
                     smoothness_constraints:
                         derivative_order_of_T_variability:    1

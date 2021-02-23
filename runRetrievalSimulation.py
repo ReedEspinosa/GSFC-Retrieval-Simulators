@@ -19,7 +19,7 @@ if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2])
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/TASNPP_simulation00/MultiPix10_')
+    saveStart = os.path.join(basePath, 'synced/Working/TASNPP_simulation00/MultiPix12_')
     ymlDir = os.path.join(basePath, 'MADCAP_Analysis_multiPix/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
