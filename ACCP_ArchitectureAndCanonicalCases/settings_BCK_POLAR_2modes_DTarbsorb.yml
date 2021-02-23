@@ -40,7 +40,7 @@ retrieval:
                         difference_order: 1
                         lagrange_multiplier: 0.5
                     a_priori_estimates:
-                         lagrange_multiplier:      [3.0e-4,3.0e-4,3.0e-4,3.0e-4,3.0e-4,3.0e-4,3.0e-4] # seems less needed with looser land... maybe cut down a bit in multipixel?
+                         lagrange_multiplier:      [7.0e-4,7.0e-4,7.0e-4,7.0e-4,7.0e-4,7.0e-4,7.0e-4] # seems less needed with looser land... maybe cut down a bit in multipixel?
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]

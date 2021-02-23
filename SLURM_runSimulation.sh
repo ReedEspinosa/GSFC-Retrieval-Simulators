@@ -1,10 +1,10 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=BASIC
+#SBATCH --job-name=BASiC
 #SBATCH --nodes=1 --constraint=hasw
 #SBATCH --time=00:25:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=1-2
+#SBATCH --array=0-2
 
 date
 hostname
