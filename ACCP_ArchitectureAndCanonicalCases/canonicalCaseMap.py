@@ -449,8 +449,8 @@ def yingxiProposalSmokeModels(siteName, wvls):
     vals['n'] = np.array([n, n])
     vals['k'] = np.array([k, kCoarse])
     vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-#     hgt = 1500+4500*np.random.rand()
-    hgt = 3000
+    hgt = 1500+4500*np.random.rand()
+#     hgt = 3000
     vals['vrtHght'] = [[hgt],  [hgt]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
     vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
     return vals

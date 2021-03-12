@@ -11,7 +11,8 @@ retrieval:
                     index_of_wavelength_involved: [0]
                     max: [0.15]
                     min: [0.00000001]
-                    value: [0.07974]
+#                    value: [0.07974]
+                    value: [0.075]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier:      [8.0e-5] # NOT TESTED IN IDEAL (only k and Vol unfixed) case
@@ -21,7 +22,7 @@ retrieval:
                     max: [0.09]
                     min: [0.00000001]
 #                    value: [0.03884]
-                    value: [0.07]
+                    value: [0.03]
                 single_pixel:
                     a_priori_estimates:
                         lagrange_multiplier:      [2.0e-4]
@@ -33,13 +34,13 @@ retrieval:
                     index_of_wavelength_involved: [1] 
                     max: [0.04]
                     min: [1e-3]
-                    value: [0.035] # 0.025 worked well (slight high bias in SSA)
+                    value: [0.02] # 0.025 worked well (slight high bias in SSA)
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
                         lagrange_multiplier: 0.5
                     a_priori_estimates:
-                        lagrange_multiplier:      [4.0e-5,4.0e-5,4.0e-5,4.0e-5,4.0e-5,4.0e-5,4.0e-5] # seems less needed with looser land... maybe cut down a bit in multipixel?
+                         lagrange_multiplier:      [7.0e-4,7.0e-4,7.0e-4,7.0e-4,7.0e-4,7.0e-4,7.0e-4] # seems less needed with looser land... maybe cut down a bit in multipixel?
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -73,29 +74,28 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1] #[0.415,  0.470,  0.555,  0.659,  0.865,  1.64,   2.13] μm
-                    max:                               [0.027255, 0.04232, 0.08303, 0.060,   0.45,     0.25,     0.12]
-                    min:                               [0.01659, 0.02576, 0.05054, 0.04032, 0.29561, 0.17199, 0.07896]
-                    value:                             [0.0237,   0.0368,  0.0722,  0.057,  0.42,    0.24,    0.100]
-#                    value:                             [0.0237,   0.0368,  0.0722,  0.0576,  0.4223,   0.2457,   0.1128] # TRUE
+                    max:                               [0.0237237, 0.0368368, 0.0722722, 0.0576576, 0.4227223, 0.2459457, 0.1129128]
+                    min:                               [0.0236763, 0.0367632, 0.0721278, 0.0575424, 0.4218777, 0.2454543, 0.1126872]
+                    value:                             [0.0237,   0.0368,  0.0722,  0.0576,  0.4223,   0.2457,   0.1128] # TRUE
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 2
                         lagrange_multiplier: 0
-                    a_priori_estimates:
-                        lagrange_multiplier:      [4.0e-9,4.0e-9,4.0e-9,2.0e-5,4.0e-3,9.0e-3,6.0e-2] # seems less needed with looser land... maybe cut down a bit in multipixel?
+#                    a_priori_estimates:
+#                        lagrange_multiplier:      [4.0e-9,4.0e-9,4.0e-9,2.0e-5,4.0e-3,9.0e-3,6.0e-2] # seems less needed with looser land... maybe cut down a bit in multipixel?
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max:   [0.6100]
-                    min:   [0.6000]
+                    max:   [2.000]
+                    min:   [0.001]
                     value: [0.6073]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 5}
             mode[3]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max:   [0.145]
-                    min:   [0.135]
+                    max:   [0.142]
+                    min:   [0.140]
                     value: [0.1411]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 5}
