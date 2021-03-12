@@ -19,7 +19,7 @@ if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
     nAng = int(sys.argv[2])
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/TASNPP_simulation00/MultiPix12_')
+    saveStart = os.path.join(basePath, 'synced/Working/TASNPP_simulation00/MultiPix31_')
     ymlDir = os.path.join(basePath, 'MADCAP_Analysis_multiPix/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -76,6 +76,6 @@ fwdYAML = [setupConCaseYAML(paramTple[1], nowPix[i], fwdModelYAMLpath, caseLoadF
 simA = rs.simulation(nowPix) # defines new instance for architecture described by nowPix
 gObjFwd, gObjBck = simA.runSim(fwdYAML, bckYAML, Nsims, maxCPU=maxCPU, savePath=savePath, \
                                binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, \
-                               lightSave=True, rndIntialGuess=rndIntialGuess, dryRun=False, \
+                               lightSave=False, rndIntialGuess=rndIntialGuess, dryRun=False, \
                                workingFileSave=False, fixRndmSeed=False, verbose=verbose)
 

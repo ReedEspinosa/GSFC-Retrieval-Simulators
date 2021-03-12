@@ -1,7 +1,7 @@
 #!/usr/local/bin/bash
 #SBATCH --job-name=MULTI
 #SBATCH --nodes=1 --constraint=hasw
-#SBATCH --time=00:45:00
+#SBATCH --time=00:55:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
 #SBATCH --array=0-2
@@ -17,8 +17,6 @@ python runRetrievalSimulation.py 0 $((${SLURM_ARRAY_TASK_ID}+12)) &
 python runRetrievalSimulation.py 0 $((${SLURM_ARRAY_TASK_ID}+15)) &
 python runRetrievalSimulation.py 0 $((${SLURM_ARRAY_TASK_ID}+18)) &
 python runRetrievalSimulation.py 0 $((${SLURM_ARRAY_TASK_ID}+21)) &
-python runRetrievalSimulation.py 0 $((${SLURM_ARRAY_TASK_ID}+24)) &
-python runRetrievalSimulation.py 0 $((${SLURM_ARRAY_TASK_ID}+27)) &
 python runRetrievalSimulation.py 0 $((${SLURM_ARRAY_TASK_ID}+31)) &
 python runRetrievalSimulation.py 0 $((${SLURM_ARRAY_TASK_ID}+34)) &
 python runRetrievalSimulation.py 0 $((${SLURM_ARRAY_TASK_ID}+37)) &
