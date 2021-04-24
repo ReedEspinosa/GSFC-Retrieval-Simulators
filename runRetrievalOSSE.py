@@ -48,7 +48,8 @@ hour = 0
 orbit = 'ss450' # gpm OR ss450
 maxSZA = 950
 oceanOnly = False
-archNames = ['polar07','polar07+lidar09','polar07+lidar05','polar07+lidar06'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
+archNames = ['polar07'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
+# archNames = ['polar07','polar07+lidar09','polar07+lidar05','polar07+lidar06'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
 hghtBins = np.round(np.cumsum(np.diff(np.logspace(-2,np.log2(2e4),25, base=2))+120)) # 25 bins, starting at 120m with exponentially increasing seperation up to 20km
 vrsn = 31 # general version tag to distinguish runs
 wvls = [0.355, 0.36, 0.38, 0.41, 0.532, 0.55, 0.67, 0.87, 1.064, 1.55, 1.65] # (μm) if we only want specific λ set it here, otherwise use all netCDF files found
