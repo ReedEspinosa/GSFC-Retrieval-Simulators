@@ -27,7 +27,7 @@ if checkDiscover(): # DISCOVER
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     osseDataPath = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/'
-    maxCPU = 1
+    maxCPU = 2
 else: # MacBook Air
     basePath = '/Users/wrespino/'
     inInt = int(sys.argv[1])
@@ -48,10 +48,9 @@ hour = 0
 orbit = 'ss450' # gpm OR ss450
 maxSZA = 950
 oceanOnly = False
-archNames = ['polar07'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
-# archNames = ['polar07','polar07+lidar09','polar07+lidar05','polar07+lidar06'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
+archNames = ['polar07','polar07+lidar09','polar07+lidar05','polar07+lidar06'] # name of instrument (never 100x, e.g. don't use 'polar0700' or 'lidar0900' – that is set w/ noiseFree below)
 hghtBins = np.round(np.cumsum(np.diff(np.logspace(-2,np.log2(2e4),25, base=2))+120)) # 25 bins, starting at 120m with exponentially increasing seperation up to 20km
-vrsn = 31 # general version tag to distinguish runs
+vrsn = 100 # general version tag to distinguish runs
 wvls = [0.355, 0.36, 0.38, 0.41, 0.532, 0.55, 0.67, 0.87, 1.064, 1.55, 1.65] # (μm) if we only want specific λ set it here, otherwise use all netCDF files found
 noiseFrees = [True, False] # do not add noise to the observations
 pixInd = [7375, 1444, 1359, 929, 4654, 6574, 2786, 6461, 6897, 2010] # SS Aug 2006
@@ -102,7 +101,7 @@ yamlObj = graspYAML(YAMLpth, newTmpFile=('BCK_n%d' % nn))
 simA.runSim(fwdData, yamlObj, maxCPU=maxCPU, maxT=20, savePath=savePath, 
             binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, 
             rndIntialGuess=rndIntialGuess, radianceNoiseFun=radNoiseFun,
-            workingFileSave=True, dryRun=True, verbose=verbose)
+            workingFileSave=True, dryRun=False, verbose=verbose)
 
 
 

@@ -31,7 +31,11 @@ class osseData(object):
             random - logical, use 10,000 randomly selected pixels for that month (day & hour not needed if random=true)
             'wvls'* (_list_ [not np.array] of floats) - wavelengths to process in μm, not present or None -> determine them from polarNc4FP
             lidarVersion - int w/ lidar instrument version (e.g. 9), x100 for instrument w/o noise (e.g. 900), None to not load lidar
-        Note: buildFpDict() method below will setup file paths mirroring paths on DISCOVER
+            maxSZA - filter out pixels with mean SZA above this value (degrees)
+            oceanOnly - true to skip retrievals on land pixels
+            loadDust - load size distributions of dust, as well as for total aerosol (ignored if loadPSD==False)
+            loadPSD - skip reading and converting of PSD data to save processing time
+        Note: buildFpDict() method below will setup file paths mirroring the path structure on DISCOVER (more details in its header comment)
         """
         self.measData = None # measData has observational netCDF data
         self.rtrvdData = None # rtrvdData has state variables from netCDF data
@@ -62,7 +66,7 @@ class osseData(object):
         self.readaerData() # reads aerNc4FP
         self.readStateVars() # reads lcExt
         self.readStateVars(finemode=True) # reads lcExt (finemode version)
-        if loadPSD: self.readPSD(incldDust=loadDust) # reads aerSD
+        if loadPSD: self.readPSD(incldDust=loadDust, baseSDparamsOnly=False) # reads aerSD
         if loadLidar: self.readlidarData() # reads lc2Lidar
         self.purgeInvldInd(self.maxSZA, self.oceanOnly)
 
@@ -339,7 +343,7 @@ class osseData(object):
                     termFine = rd['tau_fine'+ls]/rd['tau_coarse'+ls]*rd[ri+'_fine'+ls]
                     rd[ri+'_coarse'+ls] = termTot - termFine # nc = τ/τc*n - τf/τc*nf (uses τ weighted averaging)
 
-    def readPSD(self, incldDust=True):
+    def readPSD(self, incldDust=True, baseSDparamsOnly=False):
         """ Read in size distribution data and separate by mode/height(PBL vs FT) """
         dists2pull = ['TOTdist'] # could add SUdist, SSdist, OCPHOBICdist, OCPHILICdist, etc.
         if incldDust: dists2pull.append('DUdist')
@@ -357,12 +361,13 @@ class osseData(object):
                 self._calcPSDvals(rd, dvdr, prfx, 'fine', modeInds=fineInd)
                 self._calcPSDvals(rd, dvdr, prfx, 'coarse', modeInds=crseInd)
                 self._calcPSDvals(rd, dvdr, prfx, '')
-                self._calcPSDvals(rd, dvdr, prfx, 'finePBL', hgtInds=pblInd, modeInds=fineInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'coarsePBL', hgtInds=pblInd, modeInds=crseInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'PBL', hgtInds=pblInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=~pblInd, modeInds=fineInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
+                if not baseSDparamsOnly:
+                    self._calcPSDvals(rd, dvdr, prfx, 'finePBL', hgtInds=pblInd, modeInds=fineInd)
+                    self._calcPSDvals(rd, dvdr, prfx, 'coarsePBL', hgtInds=pblInd, modeInds=crseInd)
+                    self._calcPSDvals(rd, dvdr, prfx, 'PBL', hgtInds=pblInd)
+                    self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=~pblInd, modeInds=fineInd)
+                    self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
+                    self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
         if not incldDust: return
         for pstFx in ['', '_fine', '_coarse']:
             for pstFx2 in ['', 'PBL', 'FT']:
