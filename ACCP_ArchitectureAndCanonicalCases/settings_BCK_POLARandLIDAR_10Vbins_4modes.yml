@@ -138,7 +138,7 @@ retrieval:
             retrieved: true
             type: imaginary_part_of_refractive_index_constant
         characteristic[6]:
-            type: surface_water_cox_munk_iso
+            type: surface_water_CxMnk_iso_noPol
             retrieved: true
             mode[1]:
                 initial_guess:                       #1

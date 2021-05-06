@@ -44,7 +44,7 @@ class osseData(object):
         self.loadingCalls = []
         self.pblInds = None
         self.maxSZA = maxSZA
-        self.oceanOnly = oceanOnly 
+        self.oceanOnly = oceanOnly
         self.lidarVersion = lidarVersion
         self.verbose = verbose
         self.vldPolarλind = None # needed b/c measData at lidar data λ is missing some variables
@@ -107,7 +107,7 @@ class osseData(object):
         }
         self.fpDict['dateTime'] = dt.datetime(year, month, day, hour)
         self.fpDict['noisyLidar'] = lidarVer < 100 # e.g. 0900 is noise free, but 09 is not
-        if random: 
+        if random:
             self.fpDict['lc2Lidar'] = self.fpDict['lc2Lidar'].replace('random.','').replace('nc4','RANDOM.7000m.nc4')
         return self.fpDict
 
@@ -129,13 +129,13 @@ class osseData(object):
             warnings.warn('No wavelengths found for the patterns:\n%s' % "\n".join(posPaths))
         return wvls
 
-    def osse2graspRslts(self, pixInd=None, newLayers=None):
+    def osse2graspRslts(self, pixInd=None, newLayers=None, dateTimeSorted=True):
         """ osse2graspRslts will convert that data in measData to the format used to store GRASP's output
-                IN: NpixMax -> no more than this many pixels will be returned in rslts list (primarly for testing)
+                IN: pixInd -> idices of pixels to be returned in rslts list of dicts (None => return all pixels)
                     newLidarLayers -> a list of layer heights (in meters) at which to return the lidar signal
-                OUT: a list of Npixels dicts with all the keys mapping measData as rslts[nPix][var][nAng, λ]
-                    keys in output dictionary:
-                NOTE: GRASP can only use one SZA value & simulator just takes 1st value. Maybe just make them all equal to the average? """
+                    dateTimeSorted -> rslts will be sorted by datetime (as GRASP requires), but will lose alignment with order of pixels in this object
+                OUT: a list of nPix dicts with all the keys mapping measData as rslts[nPix][var][nAng, λ]
+                NOTE: GRASP SDATA only takes one SZA value but all rslt dicts have one for each view angle (SZA of first angle will be pulled by nowPix.populateFromRslt()) """
         assert self.measData, 'self.measData must be set (e.g through readPolarimeterNetCDF()) before calling this method!'
         rsltVars = ['fit_I','fit_Q','fit_U','fit_VBS','fit_VExt','fit_DP','fit_LS',          'vis','fis',         'sza', 'RangeLidar', 'range']
         mdVars   = [    'I',    'Q',    'U',    'VBS',    'VExt',    'DP',    'LS','sensor_zenith','fis','solar_zenith', 'RangeLidar', 'range']
@@ -147,7 +147,7 @@ class osseData(object):
         assert ('aod' not in self.rtrvdData[0]) or (len(self.rtrvdData[0]['aod']) == Nλ), \
             'OSSE observable and state variable data structures contain a differnt number of wavelengths!'
         if pixInd is None: pixInd = np.r_[0:len(self.rtrvdData)]
-        Npix = len(pixInd)
+        if dateTimeSorted: pixInd = np.take(pixInd, np.argsort(measData[self.vldPolarλind]['dtObj'][pixInd]))
         rslts = []
         for k,rd in zip(pixInd, self.rtrvdData[pixInd]): # loop over pixels
             rslt = dict()
@@ -228,7 +228,7 @@ class osseData(object):
         icePix = np.nonzero(levB_data['FRLANDICE'] > 1e-5)[0]
         self.invldInd = np.append(self.invldInd, icePix).astype(int)
         levB_data['FRLAND'][levB_data['FRLAND']>0.99] = 1.0
-        levB_data['FRLAND'][levB_data['FRLAND']<0.01] = 0.0        
+        levB_data['FRLAND'][levB_data['FRLAND']<0.01] = 0.0
         for md in self.measData: md['land_prct'] = levB_data['FRLAND']
 
     def readmetData(self):
@@ -299,7 +299,7 @@ class osseData(object):
                 print(msg + λFRMT % wvl)
 
     def _rtrvdDataSetPixels(self, timeLoopVars, λ, hghtInds=None, km=''):
-        """ hghtInd is a logical 2D array [Npix X Nlayer] with true at index of values to use """ 
+        """ hghtInd is a logical 2D array [Npix X Nlayer] with true at index of values to use """
         if hghtInds is None: hghtInds = np.ones((self.Npix, self.Nlayers), dtype=np.bool)
         firstλ = 'aod'+km not in timeLoopVars[-1][0]
         for τ,ω,n,k,rEff,V,g,S,rd,hInd in zip(*timeLoopVars, hghtInds): # loop over each pixel and vertically average
@@ -415,7 +415,7 @@ class osseData(object):
                 if self.lidarVersion == 6: filePath = filePath.replace('7000m','50000m') # lidar 6 only has 50km res
             else:
                 assert False, '%d is not a valid lidarVersion!' % self.lidarVersion
-            if self.fpDict['noisyLidar'] and not hsrlAtnBck: 
+            if self.fpDict['noisyLidar'] and not hsrlAtnBck:
                 for k in ncDataVars.keys(): ncDataVars[k] = ncDataVars[k]+'_NOISE'
             lidarFN = filePath % (wvl*1000)
             if os.path.exists(lidarFN): # data is there, load it
@@ -530,13 +530,13 @@ class osseData(object):
         if maxSZA is not None:
             overSZAInds = []
             for ind, sza in enumerate(self.measData[self.vldPolarλind]['solar_zenith']):
-                if not np.all(np.isnan(sza)) and np.any(sza>maxSZA): overSZAInds.append(ind)            
+                if not np.all(np.isnan(sza)) and np.any(sza>maxSZA): overSZAInds.append(ind)
             self.invldInd = np.append(self.invldInd, overSZAInds).astype(int)
             if self.verbose: print('%d pixels exlcuded for SZA>%4.1f°' % (len(overSZAInds), maxSZA))
         if oceanOnly:
             landInd = np.where(self.measData[0]['land_prct']>0)[0].tolist()
             self.invldInd = np.append(self.invldInd, landInd).astype(int)
-            if self.verbose: print('%d pixels containing land were excluded' % len(landInd))            
+            if self.verbose: print('%d pixels containing land were excluded' % len(landInd))
         self.invldInd = np.array(np.unique(self.invldInd), dtype='int')
         if self.verbose:
             allKeys = np.unique(sum([list(md.keys()) for md in self.measData],[]))
