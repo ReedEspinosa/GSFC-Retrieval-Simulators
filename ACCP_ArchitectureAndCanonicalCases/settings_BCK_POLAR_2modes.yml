@@ -49,16 +49,16 @@ retrieval:
             aerosol_profile_vertical_type: gaussian
             molecular_profile_vertical_type: exponential
             number_of_layers: 50
-            reference_plane_for_polarization: principal_plane
+            reference_plane_for_polarization: meridian
             simulating_derivatives:
                 number_of_fourier_expansion_coefficients: 6
-                number_of_gaussian_quadratures_for_expansion_coefficients: 10
-                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
+                number_of_gaussian_quadratures_for_expansion_coefficients: 8
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 12
                 order_of_scattering: derivatives
             simulating_observation:
                 number_of_fourier_expansion_coefficients: 6
-                number_of_gaussian_quadratures_for_expansion_coefficients: 10
-                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
+                number_of_gaussian_quadratures_for_expansion_coefficients: 8
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 12
                 order_of_scattering: multiple_scattering
 
     debug:
@@ -130,8 +130,8 @@ retrieval:
                     value: [1.4]
                 single_pixel:
                     smoothness_constraints:
-                        difference_order: 2
-                        lagrange_multiplier: 0.1
+                        difference_order: 1
+                        lagrange_multiplier: 5.0
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -140,8 +140,8 @@ retrieval:
                     value: [1.4]
                 single_pixel:
                     smoothness_constraints:
-                        difference_order: 2
-                        lagrange_multiplier: 0.1
+                        difference_order: 1
+                        lagrange_multiplier: 5.0
             retrieved: true
             type: real_part_of_refractive_index_spectral_dependent
         characteristic[4]:
@@ -154,7 +154,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 2
-                        lagrange_multiplier: 0.05
+                        lagrange_multiplier: 0.085
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -164,7 +164,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 2
-                        lagrange_multiplier: 0.05
+                        lagrange_multiplier: 0.085
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
         characteristic[5]:
@@ -219,20 +219,20 @@ retrieval:
                     smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
             mode[2]:
                 initial_guess:
-                    index_of_wavelength_involved: [1]
+                    index_of_wavelength_involved: [0]
                     max:   [2.0 ]
                     min:   [0.001]
                     value: [0.1 ]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 3}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             mode[3]:
                 initial_guess:
-                    index_of_wavelength_involved: [1]
+                    index_of_wavelength_involved: [0]
                     max:   [1.0]
                     min:   [0.0001]
                     value: [0.1]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 3}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             retrieved: true
             type: surface_land_brdf_ross_li
         characteristic[8]:
@@ -266,13 +266,13 @@ retrieval:
             retrieved: false
             mode[1]:
                 initial_guess:                      #1
-                    value:                          [500.0 ]
+                    value:                          [700.0 ]
                     min:                            [250.0  ]
                     max:                            [1500.0 ]
                     index_of_wavelength_involved:   [0      ]
             mode[2]:
                 initial_guess:                      #1
-                    value:                          [500.0 ]
+                    value:                          [700.0 ]
                     min:                            [250.0  ]
                     max:                            [1500.0 ]
                     index_of_wavelength_involved:   [0      ]
