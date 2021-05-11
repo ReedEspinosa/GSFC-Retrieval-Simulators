@@ -174,7 +174,7 @@ class osseData(object):
                 vφa, Δvφa = self.angleVals(rslt['fis'])
                 with np.errstate(invalid='ignore'): vza, Δvza = self.angleVals(rslt['vis']*(1-2*(rslt['fis']>180))) # need with statement b/c fis could be NaN at lidar λ
                 frmStr = frmStr + ', θs=%4.1f° (±%4.1f°), φ=%4.1f° (±%4.1f°), θv=%4.1f° (±%4.1f°)'
-                print(frmStr % (k, ds, rslt['latitude'], rslt['longitude'], 100*rslt['land_prct'],
+                print(frmStr % (k, ds, rslt['latitude'], rslt['longitude'], rslt['land_prct'],
                                 rd['masl'], sza, Δsza, vφa, Δvφa, vza, Δvza))
         # TODO: USE norm2absExtProf TO ADD 'βext' to rslts... but actually that is normalized and independent of λ
         #          'βext' should really be the mode resolved 'volProf'...
@@ -229,7 +229,7 @@ class osseData(object):
         self.invldInd = np.append(self.invldInd, icePix).astype(int)
         levB_data['FRLAND'][levB_data['FRLAND']>0.99] = 1.0
         levB_data['FRLAND'][levB_data['FRLAND']<0.01] = 0.0
-        for md in self.measData: md['land_prct'] = levB_data['FRLAND']
+        for md in self.measData: md['land_prct'] = 100*levB_data['FRLAND'] # OSSE data is 0-1 but GRASP wants true percentage (0-100)
 
     def readmetData(self):
         """ Read in levelB data to obtain pressure and then surface altitude along w/ PBL height
