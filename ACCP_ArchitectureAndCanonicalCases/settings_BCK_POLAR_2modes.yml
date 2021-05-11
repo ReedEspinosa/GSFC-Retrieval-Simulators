@@ -95,13 +95,13 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [1.0] # τfactor should not exceed unity
+                    max: [0.75]
                     min: [0.00000001]
                     value: [0.001]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [2.0] # τfactor should not exceed unity
+                    max: [1.5]
                     min: [0.00000001]
                     value: [0.002]
             retrieved: true
@@ -110,15 +110,15 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max: [0.34, 0.60]
-                    min: [0.13, 0.35]
+                    max:   [0.34, 0.65]
+                    min:   [0.12, 0.35]
                     value: [0.17, 0.4]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max: [6.0, 0.77]
-                    min: [0.65, 0.3]
-                    value: [1.0, 0.45]
+                    max:   [5.0,  0.75]
+                    min:   [0.65, 0.3]
+                    value: [1.0,  0.45]
             retrieved: true
             type: size_distribution_lognormal
         characteristic[3]:
@@ -148,23 +148,23 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [0.01]
-                    min: [1e-6]
+                    max: [0.025]
+                    min: [1e-5]
                     value: [0.002]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 2
-                        lagrange_multiplier: 0.1
+                        lagrange_multiplier: 0.05
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [0.01]
-                    min: [1e-6]
+                    max: [0.025]
+                    min: [1e-5]
                     value: [0.002]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 2
-                        lagrange_multiplier: 0.1
+                        lagrange_multiplier: 0.05
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
         characteristic[5]:
@@ -212,8 +212,8 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1] # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
-                    max:                               [0.2,     0.2,    0.2,    0.5,   0.6,    0.9,    1.5,    1.5]
-                    min:                               [0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0500, 0.0250, 0.020]
+                    max:                               [0.2,     0.2,    0.2,    0.5,   0.7,    0.9,    1.4,    1.4]
+                    min:                               [0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0500, 0.0250, 0.020]
                     value:                             [0.0800, 0.0800, 0.0800, 0.2500, 0.3000, 0.4500, 0.6000, 0.6000]
                 single_pixel:
                     smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
@@ -224,7 +224,7 @@ retrieval:
                     min:   [0.001]
                     value: [0.1 ]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 3}
             mode[3]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -232,7 +232,7 @@ retrieval:
                     min:   [0.0001]
                     value: [0.1]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 3}
             retrieved: true
             type: surface_land_brdf_ross_li
         characteristic[8]:
@@ -267,12 +267,12 @@ retrieval:
             mode[1]:
                 initial_guess:                      #1
                     value:                          [500.0 ]
-                    min:                            [200.0  ]
-                    max:                            [3000.0 ]
+                    min:                            [250.0  ]
+                    max:                            [1500.0 ]
                     index_of_wavelength_involved:   [0      ]
             mode[2]:
                 initial_guess:                      #1
                     value:                          [500.0 ]
-                    min:                            [200.0  ]
-                    max:                            [3000.0 ]
+                    min:                            [250.0  ]
+                    max:                            [1500.0 ]
                     index_of_wavelength_involved:   [0      ]
