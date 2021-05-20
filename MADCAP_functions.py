@@ -15,8 +15,9 @@ from glob import glob
 import os
 
 
-def loadVARSnetCDF(filePath, varNames=None, verbose=False):
+def loadVARSnetCDF(filePath, varNames=None, verbose=False, keepTimeInd=None):
     badDataCuttoff = 1e12 # float values larger than this will be replaced with NaNs
+    nonTimeVars = ['x','y','rayleigh_depol_ratio','ocean_refractive_index','lev'] # variables we skip when subselecting for keepTimeInd
     if varNames: assert isinstance(varNames, (list, np.ndarray)), 'varNames must be a list or numpy array!'
     measData = dict()
     netCDFobj = Dataset(filePath)
@@ -25,7 +26,10 @@ def loadVARSnetCDF(filePath, varNames=None, verbose=False):
         if varName in netCDFobj.variables.keys():
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore', category=UserWarning) # ignore missing_value not cast warning
-                measData[varName] = np.array(netCDFobj.variables[varName])
+                if keepTimeInd is not None and varName not in nonTimeVars:
+                    measData[varName] = np.array(netCDFobj.variables[varName][keepTimeInd])
+                else:
+                    measData[varName] = np.array(netCDFobj.variables[varName])
             if np.issubdtype(measData[varName].dtype, np.integer) and np.any(measData[varName] > badDataCuttoff):
                 if verbose:
                     msg = '%s had type INT with value(s) above badDataCuttoff (%g), converting to FLOAT for NaN compatibility.'
