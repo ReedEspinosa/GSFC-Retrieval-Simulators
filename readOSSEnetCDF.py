@@ -53,10 +53,10 @@ class osseData(object):
         if self.lidarVersion is None or self.lidarVersion==0:
             if self.verbose: print('Lidar version not provided, not attempting to load any lidar data')
             self.wvls = [wvl for wvl in self.wvls if wvl not in [0.355,0.532,1.064]] # Remove lidar wavelengths in case caller provided them
-            self.loadAllData(loadLidar=False, loadDust=loadDust, loadPSD=loadPSD)
+            self.loadAllData(loadLidar=False, loadDust=loadDust, loadPSD=loadPSD, pixInd=pixInd)
         else:
             if not self.lidarVersion==6: self.wvls = [wvl for wvl in self.wvls if not wvl==0.355] # Remove lidar wavelengths in case caller provided them
-            self.loadAllData(loadLidar=True, loadDust=loadDust, loadPSD=loadPSD)
+            self.loadAllData(loadLidar=True, loadDust=loadDust, loadPSD=loadPSD, pixInd=pixInd)
 
     def loadAllData(self, loadLidar=True, loadDust=True, loadPSD=True, pixInd=None):
         """Loads NetCDF OSSE data into memory, see buildFpDict below for variable descriptions"""
@@ -129,10 +129,9 @@ class osseData(object):
             warnings.warn('No wavelengths found for the patterns:\n%s' % "\n".join(posPaths))
         return wvls
 
-    def osse2graspRslts(self, pixInd=None, newLayers=None, dateTimeSorted=True):
+    def osse2graspRslts(self, newLayers=None, dateTimeSorted=True):
         """ osse2graspRslts will convert that data in measData to the format used to store GRASP's output
-                IN: pixInd -> idices of pixels to be returned in rslts list of dicts (None => return all pixels)
-                    newLidarLayers -> a list of layer heights (in meters) at which to return the lidar signal
+                IN: newLidarLayers -> a list of layer heights (in meters) at which to return the lidar signal
                     dateTimeSorted -> rslts will be sorted by datetime (as GRASP requires), but will lose alignment with order of pixels in this object
                 OUT: a list of nPix dicts with all the keys mapping measData as rslts[nPix][var][nAng, λ]
                 NOTE: GRASP SDATA only takes one SZA value but all rslt dicts have one for each view angle (SZA of first angle will be pulled by nowPix.populateFromRslt()) """
@@ -146,7 +145,7 @@ class osseData(object):
             'OSSE observable and state variable data structures contain a differnt number of pixels!'
         assert ('aod' not in self.rtrvdData[0]) or (len(self.rtrvdData[0]['aod']) == Nλ), \
             'OSSE observable and state variable data structures contain a differnt number of wavelengths!'
-        if pixInd is None: pixInd = np.r_[0:len(self.rtrvdData)]
+        pixInd = np.r_[0:len(self.rtrvdData)]
         if dateTimeSorted: pixInd = np.take(pixInd, np.argsort(measData[self.vldPolarλind]['dtObj'][pixInd]))
         rslts = []
         for k,rd in zip(pixInd, self.rtrvdData[pixInd]): # loop over pixels
@@ -156,14 +155,14 @@ class osseData(object):
                     if mv in md: # this is an observable
                         if rv not in rslt: rslt[rv] = np.empty([len(md[mv][k,:]), Nλ])*np.nan # len(md[mv][k,:]) will change between imagers(Nang) & LIDAR(Nhght)
                         rslt[rv][:,l] = md[mv][k,:]
-                        if k==0 and self.verbose: print(('%s at '+λFRMT+' found in OSSE observables') % (mv, self.wvls[l]))
-                if k==0 and rv not in rslt and self.verbose: print('%s NOT found in OSSE data' % mv)
+                        if k==pixInd[0] and self.verbose>1: print(('%s at '+λFRMT+' found in OSSE observables') % (mv, self.wvls[l]))
+                if k==pixInd[0] and rv not in rslt and self.verbose>1: print('%s NOT found in OSSE data' % mv)
             rslt['lambda'] = np.asarray(self.wvls)
             rslt['datetime'] = measData[self.vldPolarλind]['dtObj'][k] # we keep using md b/c all λ should be the same for these vars
             rslt['latitude'] = self.checkReturnField(measData[self.vldPolarλind], 'trjLat', k)
             rslt['longitude'] = self.checkReturnField(measData[self.vldPolarλind], 'trjLon', k)
             rslt['land_prct'] = self.checkReturnField(measData[self.vldPolarλind], 'land_prct', k, 100)
-            if k==0 and self.verbose:
+            if k==pixInd[0] and self.verbose>1:
                 for mv in rd.keys(): print('%s found in OSSE state variables' % mv)
             rslt = {**rslt, **rd}
             rslts.append(rslt)
@@ -260,7 +259,7 @@ class osseData(object):
                     md['range'] = np.full([self.Npix, len(delp)], np.nan)
                 md['range'][k,:] = rng
 
-    def readStateVars(self, finemode=False, pixInd=None)):
+    def readStateVars(self, finemode=False, pixInd=None):
         """ readStateVars will read OSSE state variable file(s) and convert to the format used to store GRASP's output
             IN: dictionary stateVarFNs containing key 'lcExt' with path to lidar "truth" file
             RESULT: sets self.rtrvdData, numpy array of Npixels dicts -> rtrvdData[nPix][varKey][mode, λ]"""

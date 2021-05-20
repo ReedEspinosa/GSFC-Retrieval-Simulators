@@ -17,7 +17,7 @@ import os
 
 def loadVARSnetCDF(filePath, varNames=None, verbose=False, keepTimeInd=None):
     badDataCuttoff = 1e12 # float values larger than this will be replaced with NaNs
-    nonTimeVars = ['x','y','rayleigh_depol_ratio','ocean_refractive_index','lev'] # variables we skip when subselecting for keepTimeInd
+    nonTimeVars = ['x','y','rayleigh_depol_ratio','ocean_refractive_index','lev','radius','dradius','rlow','rup'] # variables we skip when subselecting for keepTimeInd
     if varNames: assert isinstance(varNames, (list, np.ndarray)), 'varNames must be a list or numpy array!'
     measData = dict()
     netCDFobj = Dataset(filePath)
