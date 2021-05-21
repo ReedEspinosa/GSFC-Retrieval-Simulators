@@ -15,7 +15,7 @@ DUMMY MEASUREMENTS: (determined by architecture, should ultimatly move to sepera
   len(msrments)=len(thtv)=len(phi)=sum(nbvm); len(msTyp)=len(nbvm) \n\
   msrments=[meas[msTyp[0],thtv[0],phi[0]], meas[msTyp[0],thtv[1],phi[1]],...,meas[msTyp[0],thtv[nbvm[0]],phi[nbvm[0]]],meas[msTyp[1],thtv[nbvm[0]+1],phi[nbvm[0]+1]],...]'
 """
-def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=None, orbit=None, lidErrDir=None, lidarLayers=None):
+def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None, concase=None, orbit=None, lidErrDir=None, lidarLayers=None):
     """Multiple instruments by archName='arch1+arch2+arch3+...' OR multiple calls with nowPix argument (tacking on extra instrument each time)"""
     if not nowPix: nowPix = rg.pixel(dt.datetime.now(), 1, 1, 0, 0, 0, landPrct) # can be called for multiple instruments, BUT they must all have unqiue wavelengths
     assert nowPix.land_prct == landPrct, 'landPrct provided did not match land percentage in nowPix'
@@ -43,8 +43,10 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=N
         msTyp = [41, 42, 43] if 'polar' in archName.lower() else [41] # must be in ascending order
         if 'misr' in archName.lower():
             thtv = np.tile([-70.5,  -60.0,  -45.6 ,  -26.1 ,  0.1,  26.1,  45.6,  60.0,  70.5], len(msTyp))
-        else: # we only use modis viewing angle
+        elif vza is None: # we only use modis viewing angle
             thtv = np.tile([0.1], len(msTyp))
+        else: # we only use modis viewing angle
+            thtv = np.tile([vza], len(msTyp))
         if 'modis' in archName.lower():
             wvls = [0.41, 0.47, 0.55, 0.65, 0.87, 1.64, 2.13] # Nλ=7
         else: # we only use misr wavelengths
@@ -78,6 +80,17 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, nowPix=None, concase=N
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         errStr = [y for y in archName.lower().split('+') if 'polar07' in y][0]
+        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
+            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
+    if 'polarx' in archName.lower():
+        msTyp = [41, 42, 43] # must be in ascending order
+        thtv = np.tile(np.linspace(0,70,30), len(msTyp)) # corresponds to 450 km orbit
+        wvls = [0.550] # Nλ=8
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
+        errStr = 'polar07'
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
