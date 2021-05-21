@@ -8,7 +8,7 @@ MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpa
 sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
 import runGRASP as rg
 from ACCP_functions import readKathysLidarσ
-import functools 
+import functools
 """
 DUMMY MEASUREMENTS: (determined by architecture, should ultimatly move to seperate scripts)
   For more than one measurement type or viewing geometry pass msTyp, nbvm, thtv, phi and msrments as vectors: \n\
@@ -24,23 +24,23 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         botLayer = 10 # bottom layer in meters
         topLayer = 4510
         Nlayers = 10
-        singProf = np.linspace(botLayer, topLayer, Nlayers)[::-1] 
+        singProf = np.linspace(botLayer, topLayer, Nlayers)[::-1]
     else: # we use user input
         Nlayers = len(lidarLayers)
         singProf = lidarLayers
     if 'harp02' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
-        wvls = [0.441, 0.549, 0.669, 0.873] 
+        wvls = [0.441, 0.549, 0.669, 0.873]
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
-        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errStr = 'polar0700' if 'harp0200' in archName.lower() else 'polar07'
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
     if 'modis' in archName.lower() or 'misr' in archName.lower(): # -- ModisMisrPolar --
-        msTyp = [41, 42, 43] if 'polar' in archName.lower() else [41] # must be in ascending order 
+        msTyp = [41, 42, 43] if 'polar' in archName.lower() else [41] # must be in ascending order
         if 'misr' in archName.lower():
             thtv = np.tile([-70.5,  -60.0,  -45.6 ,  -26.1 ,  0.1,  26.1,  45.6,  60.0,  70.5], len(msTyp))
         elif vza is None: # we only use modis viewing angle
@@ -52,7 +52,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         else: # we only use misr wavelengths
             wvls = [0.446, 0.558, 0.672, 0.867] # Nλ=7
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
-        meas = np.r_[np.repeat(0.1, nbvm[0])] 
+        meas = np.r_[np.repeat(0.1, nbvm[0])]
         if 'polar' in archName.lower(): meas = np.r_[meas, np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
@@ -61,13 +61,13 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
     if 'polarhemi' in archName.lower():
         msTyp = [41, 42, 43] # must be in ascending order
-        azmthΑng = np.r_[0:180:10] # 0,10,...,170 
+        azmthΑng = np.r_[0:180:10] # 0,10,...,170
         thtv = np.tile([57.0,  44.0,  32.0 ,  19.0 ,  6.0 ,  -6.0,  -19.0,  -32.0,  -44.0,  -57.0], len(msTyp)*len(azmthΑng))
-        phi = np.concatenate([np.repeat(φ, 10) for φ in azmthΑng]) # 0,10,...,90 
+        phi = np.concatenate([np.repeat(φ, 10) for φ in azmthΑng]) # 0,10,...,90
         phi = np.tile(phi, len(msTyp))
         wvls = [0.355, 0.360, 0.380, 0.410, 0.532, 0.550, 0.670, 0.870, 1.064, 1.550, 1.650] # Nλ=8
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
-        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         errStr = 'polar07'
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
@@ -77,7 +77,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         thtv = np.tile([-63.88,  -48.42,  -34.19 ,  -20.4 ,  -6.78 ,  6.78,  20.4,  34.19,  48.42,  63.88], len(msTyp)) # corresponds to 450 km orbit
         wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 1.550, 1.650] # Nλ=8
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
-        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         errStr = [y for y in archName.lower().split('+') if 'polar07' in y][0]
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
@@ -99,13 +99,13 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         thtv = np.tile([-60, 0.001, 60], len(msTyp))
         wvls = [0.380, 0.410, 0.550, 0.670, 0.865] #
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
-        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         errStr = [y for y in archName.lower().split('+') if 'polar09' in y][0]
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
-    if 'lidar05' in archName.lower() or 'lidar06' in archName.lower(): 
+    if 'lidar05' in archName.lower() or 'lidar06' in archName.lower():
         msTyp = [[36, 39],[31]] # must be in ascending order # BUG: we took out depol (msTyp=35) b/c GRASP was throwing error (& canonical cases are spherical)
         wvls = [0.532, 1.064] # Nλ=2
         if 'lidar06' in archName.lower():
@@ -171,21 +171,21 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
         dpRnd = np.random.normal(size=len(trueSimI))*relDoLPErr
         fwdSimQ = fwdSimQ*(1+dpRnd*dPol)
         dpRnd = np.random.normal(size=len(trueSimI))*relDoLPErr # Q and U errors are NOT correlated here (this is what we want)
-        fwdSimU = fwdSimU*(1+dpRnd*dPol) 
-        return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py 
+        fwdSimU = fwdSimU*(1+dpRnd*dPol)
+        return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
-        vertRange = rsltFwd['RangeLidar'][:,l] 
+        vertRange = rsltFwd['RangeLidar'][:,l]
         if not np.isnan(rsltFwd['fit_LS'][:,l]).any(): # atten. backscatter
-            trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 31    
+            trueSimβsca = rsltFwd['fit_LS'][:,l] # measurement type: 31
             if int(mtch.group(2)) in [500, 600, 900]:
                 relErr = 0.000005 # else 1e-4 standard noise
             elif int(mtch.group(2)) in [5, 6, 9]:
                 if np.isclose(rsltFwd['lambda'][l], 0.532): # must be lidar09
-                    relErr = 0.07780750097002524 
+                    relErr = 0.07780750097002524
                 elif np.isclose(rsltFwd['lambda'][l], 1.064) and int(mtch.group(2)) in [9]:
-                    relErr = 0.16634947070811995 
+                    relErr = 0.16634947070811995
                 elif np.isclose(rsltFwd['lambda'][l], 1.064) and int(mtch.group(2)) in [5, 6]:
-                    relErr = 0.031179547685912617 
+                    relErr = 0.031179547685912617
                 else:
                     assert False, 'No error values available for lidar %s wavelength %5.3 μm' % (mtch.group(2),rsltFwd['lmabda'][l])
             elif int(mtch.group(2)) in [50, 60, 90]: # Kathy's uncertainty models
@@ -194,7 +194,7 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
                                  instrument=int(mtch.group(2))/10, concase=concase, \
                                  LidarRange=vertRange, measType='Att', verbose=verbose)
                 relErr = np.abs(relErr)
-                relErr[relErr>10]=10                         
+                relErr[relErr>10]=10
             else:
                 assert False, 'Lidar ID number %d not recognized!' % mtch.group(2)
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca)) # works w/ relErr as scalar or vector
@@ -204,7 +204,7 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
             return fwdSimβscaNrm # safe because of ascending order check in simulateRetrieval.py
         elif not (np.isnan(rsltFwd['fit_VBS'][:,l]).any() or np.isnan(rsltFwd['fit_VExt'][:,l]).any()): # HSRL
             trueSimβsca = rsltFwd['fit_VBS'][:,l] # measurement type: 39
-            trueSimβext = rsltFwd['fit_VExt'][:,l] # 36    
+            trueSimβext = rsltFwd['fit_VExt'][:,l] # 36
             assert len(trueSimβsca)==len(trueSimβext), wrngNumMeasMsg
             if int(mtch.group(2)) in [600, 500]:# 1e-4 standard noise
                 relErrβsca = 0.000005 # fraction (unitless)
@@ -219,7 +219,7 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
                                  LidarRange=vertRange, measType='Bks', verbose=verbose)
                 relErrβsca = absErrβsca/trueSimβsca # not sure why I didn't just read relative error from Kathy's files...
                 relErrβsca = np.abs(relErrβsca)
-                relErrβsca[relErrβsca>10]=10                         
+                relErrβsca[relErrβsca>10]=10
             elif int(mtch.group(2)) in [5, 6]: # use normal noise model
                 if np.isclose(rsltFwd['lambda'][l], 0.355):
                     relErrβsca = 0.08548621115220849 #
@@ -228,7 +228,7 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
                     relErrβsca = 0.035656705986020394 #
                     absErrβext = 0.19721356280281252*trueSimβext # m-1
                 else:
-                    assert False, 'No error values available for lidar wavelength %5.3 μm' % rsltFwd['lmabda'][l]   
+                    assert False, 'No error values available for lidar wavelength %5.3 μm' % rsltFwd['lmabda'][l]
             else:
                 assert False, 'Lidar ID number %d not recognized!' % mtch.group(2)
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErrβsca), size=len(trueSimβsca)) # works w/ relErrβsca as scalar or vector
@@ -244,5 +244,5 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
         trueSimI = rsltFwd['fit_I'][:,l]
         noiseVctI = np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimI))
         fwdSimI = trueSimI*noiseVctI
-        return np.r_[fwdSimI] # safe because of ascending order check in simulateRetrieval.py 
+        return np.r_[fwdSimI] # safe because of ascending order check in simulateRetrieval.py
     assert False, 'No error model found for %s!' % measNm # S-Polar06 has DoLP dependent ΔDoLP
