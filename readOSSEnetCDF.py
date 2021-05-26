@@ -38,7 +38,7 @@ class osseData(object):
         Note: buildFpDict() method below will setup file paths mirroring the path structure on DISCOVER (more details in its header comment)
         """
         if loadPSD and random:
-            warnings.warn('As of 05/22/21 there is a bug in 10k random cases OSSE PSD files. PSD, SPH & VOL parameters my not be correct!')
+            warnings.warn('As of 05/22/21 there is a bug in 10k random cases OSSE aer_SD files. PSD, SPH & VOL parameters my be incorrect.')
         self.measData = None # measData has observational netCDF data
         self.rtrvdData = None # rtrvdData has state variables from netCDF data
         self.invldInd = np.array([])
@@ -325,11 +325,11 @@ class osseData(object):
         riStrs = ['n', 'k']
         for rd in self.rtrvdData: # loop over pixels
             for ls in layerStrs: # loop over vertical layers
-                tauTotKey = 'tau' if ls=='' else 'tau_'+ls # we only need it in FT or PBL case
-                rd['tau_coarse'+ls] = rd[tauTotKey] - rd['tau_fine'+ls]
+                aodTotKey = 'aod' if ls=='' else 'aod_'+ls # we only need it in FT or PBL case
+                rd['aod_coarse'+ls] = rd[aodTotKey] - rd['aod_fine'+ls]
                 for ri in riStrs: # loop over n & k
-                    termTot = rd[tauTotKey]/rd['tau_coarse'+ls]*rd[ri]
-                    termFine = rd['tau_fine'+ls]/rd['tau_coarse'+ls]*rd[ri+'_fine'+ls]
+                    termTot = rd[aodTotKey]/rd['aod_coarse'+ls]*rd[ri]
+                    termFine = rd['aod_fine'+ls]/rd['aod_coarse'+ls]*rd[ri+'_fine'+ls]
                     rd[ri+'_coarse'+ls] = termTot - termFine # nc = τ/τc*n - τf/τc*nf (uses τ weighted averaging)
 
     def readPSD(self, incldDust=True, baseSDparamsOnly=False, pixInd=None):
