@@ -31,10 +31,10 @@ retrieval:
             retrieved: true
             type: vertical_profile_normalized
         characteristic[2]:
-            mode[1]: 
+            mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [1.0] 
+                    max: [1.0]
                     min: [0.00000001]
                     value: [0.001]
             mode[2]:
@@ -46,7 +46,7 @@ retrieval:
             mode[3]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [1.0] 
+                    max: [1.0]
                     min: [0.00000001]
                     value: [0.001]
             mode[4]:
@@ -55,13 +55,13 @@ retrieval:
                     min: [0.00000001]
                     value: [0.05]
             retrieved: true
-            type: aerosol_concentration   
+            type: aerosol_concentration
         characteristic[3]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
                     max: [0.5, 0.75]
-                    min: [0.14, 0.3] # case2 goes down to ~0.11 but this covers smoke, marine, pol, dust 
+                    min: [0.14, 0.3] # case2 goes down to ~0.11 but this covers smoke, marine, pol, dust
                     value: [0.2, 0.4]
             mode[2]:
                 initial_guess:
@@ -73,13 +73,13 @@ retrieval:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
                     max: [0.6, 0.75]
-                    min: [0.15, 0.3] # case2 goes down to ~0.11 but this covers smoke, marine, pol, dust 
+                    min: [0.15, 0.3] # case2 goes down to ~0.11 but this covers smoke, marine, pol, dust
                     value: [0.2, 0.36]
             mode[4]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
                     max: [6.0, 0.77]
-                    min: [0.65, 0.3] 
+                    min: [0.65, 0.3]
                     value: [1.0, 0.64]
             retrieved: true
             type: size_distribution_lognormal
@@ -113,7 +113,7 @@ retrieval:
         characteristic[5]:
             mode[1]:
                 initial_guess:
-                    index_of_wavelength_involved: [0] 
+                    index_of_wavelength_involved: [0]
                     max: [0.05]
                     min: [1e-6]
                     value: [0.04]
@@ -136,12 +136,12 @@ retrieval:
                     min: [1e-6]
                     value: [0.01]
             retrieved: true
-            type: imaginary_part_of_refractive_index_constant            
+            type: imaginary_part_of_refractive_index_constant
         characteristic[6]:
-            type: surface_water_cox_munk_iso
+            type: surface_water_CxMnk_iso_noPol
             retrieved: true
-            mode[1]:    
-                initial_guess:                       #1      #2      #3      
+            mode[1]:
+                initial_guess:                       #1
                     value:                          [0.000000002]
                     min:                            [0.000000001]
                     max:                            [0.000000003]
@@ -151,16 +151,16 @@ retrieval:
                         difference_order: 1
                         lagrange_multiplier: 0.0
             mode[2]:
-                initial_guess:                       #1      #2      #3 
+                initial_guess:                       #1
                     value:                          [0.999999]
                     min:                            [0.999998]
                     max:                            [1.000000]
                     index_of_wavelength_involved:   [0]
             mode[3]:
-                initial_guess:                       #1      #2      #3             
-                    value:                          [0.015]  
+                initial_guess:                       #1
+                    value:                          [0.015]
                     min:                            [0.00406] # 1 m/s
-                    max:                            [0.027] # 10 m/s
+                    max:                            [0.027] # 0.027 -> 10 m/s
                     index_of_wavelength_involved:   [0]
 #        VEGETATION
 #        characteristic[7]:
@@ -266,70 +266,91 @@ retrieval:
                     min:    [0.0000001]
                     value: [0.9999998]
             retrieved: false
-            type: sphere_fraction                                    
-    convergence: 
-        maximum_iterations_for_stopping: 40
-        maximum_iterations_of_Levenberg-Marquardt: 40
-        minimization_convention: logarithm
-        normal_system_solver: sparse_matrix_solver
-        scale_for_finite_difference: 7.0e-05 #2.0e-5
-        shift_for_applying_logarithm_to_negative_values: 1.1
-        threshold_for_stopping: 1.0e-9 #0.001
-        threshold_for_stopping_Q_iterations: 1.0e-09 #1.0e-06
-        stop_before_performing_retrieval: false
+            type: sphere_fraction
+
     debug: {additional_information: false, verbose: true}
     general: {path_to_internal_files: /usr/local/share/grasp/kernels/}
-    noises:
-        noise[1]:
-            error_type: relative
-            measurement_type[1]:
-                index_of_wavelength_involved: [1]
-                type: I
-            standard_deviation: 0.03
-            standard_deviation_synthetic: 0.0
-        noise[2]:
-            error_type: absolute
-            measurement_type[1]:
-                index_of_wavelength_involved: [1]
-                type: Q
-            measurement_type[2]:
-                index_of_wavelength_involved: [1]
-                type: U
-            standard_deviation: 0.005
-            standard_deviation_synthetic: 0.0            
-        noise[3]:
-            error_type: relative
-            measurement_type[1]:
-                index_of_wavelength_involved: [1]
-                type: LS
-            standard_deviation: 0.1
-            standard_deviation_synthetic: 0.0
-        noise[4]:
-            error_type: absolute
-            measurement_type[1]:
-                index_of_wavelength_involved: [1]
-                type: VEXT
-            standard_deviation: 0.034e-03
-            standard_deviation_synthetic: 0.0
-        noise[5]:
-            error_type: relative
-#            error_type: absolute
-            measurement_type[1]:
-                index_of_wavelength_involved: [1]
-                type: VBS
-            standard_deviation: 0.1
-#            standard_deviation: 0.2e-6
-            standard_deviation_synthetic: 0.0
+    inversion:
+        regime: single_pixel
+        measurement_fitting: {polarization: relative_polarization_components}
+        convergence:
+            maximum_iterations_for_stopping: 40
+            maximum_iterations_of_Levenberg-Marquardt: 40
+            minimization_convention: logarithm
+            normal_system_solver: sparse_matrix_solver
+            scale_for_finite_difference: 7.0e-05 #2.0e-5
+            shift_for_applying_logarithm_to_negative_values: 1.1
+            threshold_for_stopping: 1.0e-9 #0.001
+            threshold_for_stopping_Q_iterations: 1.0e-09 #1.0e-06
+            stop_before_performing_retrieval: false
+        noises:
+            noise[1]:
+                error_type: relative
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1]
+                    type: I
+                standard_deviation: 0.03
+                standard_deviation_synthetic: 0.0
+            noise[2]:
+                error_type: absolute
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1]
+                    type: Q
+                measurement_type[2]:
+                    index_of_wavelength_involved: [1]
+                    type: U
+                standard_deviation: 0.005
+                standard_deviation_synthetic: 0.0
+            noise[3]:
+                error_type: relative
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1]
+                    type: LS
+                standard_deviation: 0.2
+                standard_deviation_synthetic: 0.0
+            noise[4]:
+                error_type: absolute
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1]
+                    type: VEXT
+                standard_deviation: 0.05e-03
+                standard_deviation_synthetic: 0.0
+            noise[5]:
+                error_type: relative
+    #            error_type: absolute
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1]
+                    type: VBS
+                standard_deviation: 0.1
+    #            standard_deviation: 0.2e-6
+                standard_deviation_synthetic: 0.0
+    forward_model:
+        phase_matrix:
+            kernels_folder: KERNELS_BASE/
+            number_of_elements: 4
+            radius:
+                mode[1]: {max: 15.0, min: 0.05}
+                mode[2]: {max: 15.0, min: 0.05}
+                mode[3]: {max: 15.0, min: 0.05}
+                mode[4]: {max: 15.0, min: 0.05}
+            size_binning_method_for_triangle_bins: logarithm
+        radiative_transfer:
+            absolute_error_rt_calculations: 1.0e-06
+            aerosol_profile_vertical_type: gaussian
+            molecular_profile_vertical_type: exponential
+            number_of_layers: 50
+            reference_plane_for_polarization: meridian
+            simulating_derivatives:
+                number_of_fourier_expansion_coefficients: 6
+                number_of_gaussian_quadratures_for_expansion_coefficients: 10
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
+                order_of_scattering: derivatives
+            simulating_observation:
+                number_of_fourier_expansion_coefficients: 6
+                number_of_gaussian_quadratures_for_expansion_coefficients: 10
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
+                order_of_scattering: multiple_scattering
 
-    phase_matrix:
-        kernels_folder: KERNELS_BASE/
-        number_of_elements: 4
-        radius:
-            mode[1]: {max: 15.0, min: 0.05}
-            mode[2]: {max: 15.0, min: 0.05}
-            mode[3]: {max: 15.0, min: 0.05}
-            mode[4]: {max: 15.0, min: 0.05}
-        size_binning_method_for_triangle_bins: logarithm
     products:
         aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: false, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: true, type: false}
         error_estimation:
@@ -338,22 +359,4 @@ retrieval:
         forcing: {broadband_flux: false, forcing: false}
         retrieval: {fitting: true, parameters: true, residual: true}
         surface: true
-    radiative_transfer:
-        absolute_error_rt_calculations: 1.0e-06
-        aerosol_profile_vertical_type: gaussian
-        molecular_profile_vertical_type: exponential
-        number_of_layers: 50
-        reference_plane_for_polarization: principal_plane
-        simulating_derivatives:
-            number_of_fourier_expansion_coefficients: 6
-            number_of_gaussian_quadratures_for_expansion_coefficients: 10
-            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
-            order_of_scattering: derivatives
-        simulating_observation:
-            number_of_fourier_expansion_coefficients: 6
-            number_of_gaussian_quadratures_for_expansion_coefficients: 10
-            number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
-            order_of_scattering: multiple_scattering
-    regime_of_measurement_fitting: {polarization: relative_polarization_components}
-    regime_of_multipixel_constraints: {inversion_regime: single_pixel}
 settings: {strict: false}

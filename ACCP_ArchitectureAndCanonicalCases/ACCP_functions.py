@@ -122,7 +122,12 @@ def writeConcaseVars(rslt):
         valVect.append(rslt['gMode'][m,lInd])
     valVect.append(rslt['g'][lInd])
     print(', '.join([str(x) for x in valVect]))
-    
+
+def selectGeometryEntryModis(geomFile, ind):
+    with open(geomFile, "r") as fid:
+        geomVals = np.loadtxt(fid)
+    return geomVals[ind,0], geomVals[ind,2], geomVals[ind,1] # θs, φ, θv
+
 def selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA, \
                         orbit=None, pcaVarPtrn='n_row_best_107sets_%s', verbose=False):
     """
