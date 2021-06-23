@@ -363,7 +363,7 @@ class osseData(object):
             for pstFx2 in ['', 'PBL', 'FT']:
                 fullFx = pstFx+'_'+pstFx2 if not pstFx2=='' and pstFx=='' else pstFx+pstFx2
                 for rd in self.rtrvdData: # loop over pixels & find sphere fraction (assumes dust is only (and completely) non-spherical type)
-                    rd['sph'+fullFx] = 1 - rd['vol_DU'+fullFx]/rd['vol'+fullFx]
+                    rd['sph'+fullFx] = 100*(1 - rd['vol_DU'+fullFx]/rd['vol'+fullFx])
 
     def _calcPSDvals(self, rd, dvdr, prfx, var, hgtInds=None, modeInds=slice(None)):
         """ Note hgtInds and modeInds should be logical (although ints may also work)"""
