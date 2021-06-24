@@ -18,7 +18,7 @@ STAND_PRES = 1.01e5 # standard pressure (Pa)
 MIN_ALT = -100 # defualt GRASP build complains below -100m
 λFRMT = ' %5.3f μm'
 βLowLim = 2.0e-10 # lower bound for lidar backscatter and extinction values to be passed into rslt dict, and ultimatly to GRASP
-FINE_MODE_THESH = 0.5 # inclusive[exclusive] upper[lower] bound of fine[coarse] mode (μm)
+FINE_MODE_THESH = 0.7 # upper[lower] bound of fine[coarse] mode will be minimum in dvdr closest to this radius (μm)
 
 
 class osseData(object):
@@ -68,7 +68,7 @@ class osseData(object):
         self.readaerData(pixInd=pixInd) # reads aerNc4FP
         self.readStateVars(pixInd=pixInd) # reads lcExt
         self.readStateVars(finemode=True, pixInd=pixInd) # reads lcExt (finemode version)
-        if loadPSD: self.readPSD(incldDust=loadDust, baseSDparamsOnly=False, pixInd=pixInd) # reads aerSD
+        if loadPSD: self.readPSD(incldDust=loadDust, pixInd=pixInd) # reads aerSD
         if loadLidar: self.readlidarData(pixInd=pixInd) # reads lc2Lidar
         self.purgeInvldInd(self.maxSZA, self.oceanOnly)
 
@@ -332,62 +332,35 @@ class osseData(object):
                     termFine = rd['aod_fine'+ls]/rd['aod_coarse'+ls]*rd[ri+'_fine'+ls]
                     rd[ri+'_coarse'+ls] = termTot - termFine # nc = τ/τc*n - τf/τc*nf (uses τ weighted averaging)
 
-    def readPSD(self, incldDust=True, baseSDparamsOnly=False, pixInd=None):
+    def readPSD(self, incldDust=True, pixInd=None):
         """ Read in size distribution data and separate by mode/height(PBL vs FT) """
-        dists2pull = ['TOTdist'] # could add SUdist, SSdist, OCPHOBICdist, OCPHILICdist, etc.
-        if incldDust: dists2pull.append('DUdist')
+        dists2pull = ['colTOTdist'] # could add SUdist, SSdist, OCPHOBICdist, OCPHILICdist, etc.
+        if incldDust: dists2pull.append('colDUdist')
         levBFN = self.fpDict['psdNc4FP']
         preReqs = ['readPolarimeterNetCDF','readmetData']
         if not self._loadingChecks(prereqCalls=preReqs, filename=levBFN, functionName='readPSD'): return
         psdData = loadVARSnetCDF(levBFN, varNames=['radius']+dists2pull, keepTimeInd=pixInd, verbose=self.verbose) # radius [m], dv/dr [m^3/m]
-        fineInd = psdData['radius'] <= FINE_MODE_THESH/1e6
-        crseInd = psdData['radius'] > FINE_MODE_THESH/1e6
         for getKey in dists2pull:
             for dvdr,rd,pblInd in zip(psdData[getKey], self.rtrvdData, self.pblInds): # loop over pixels
                 if 'r' not in rd: rd['r'] = psdData['radius']*1e6
-                # BUG: the unit conversion argument below is giving PSD_OSSE*1e2≈PSD_GRASP...
-                # dvdr = dvdr/1e6*1e6 # starts as m^3/m^2/m (I think?), divide by 1e6 -> m^3/m^2/μm, multiply by 1e6 -> μm^3/μm^2/μm
-                prfx = '' if getKey=='TOTdist' else '_'+getKey.replace('dist','')
-                self._calcPSDvals(rd, dvdr, prfx, 'fine', modeInds=fineInd)
-                self._calcPSDvals(rd, dvdr, prfx, 'coarse', modeInds=crseInd)
-                self._calcPSDvals(rd, dvdr, prfx, '')
-                if not baseSDparamsOnly:
-                    self._calcPSDvals(rd, dvdr, prfx, 'finePBL', hgtInds=pblInd, modeInds=fineInd)
-                    self._calcPSDvals(rd, dvdr, prfx, 'coarsePBL', hgtInds=pblInd, modeInds=crseInd)
-                    self._calcPSDvals(rd, dvdr, prfx, 'PBL', hgtInds=pblInd)
-                    self._calcPSDvals(rd, dvdr, prfx, 'fineFT', hgtInds=~pblInd, modeInds=fineInd)
-                    self._calcPSDvals(rd, dvdr, prfx, 'coarseFT', hgtInds=~pblInd, modeInds=crseInd)
-                    self._calcPSDvals(rd, dvdr, prfx, 'FT', hgtInds=~pblInd)
+                minima = np.nonzero(np.diff(np.sign(np.diff(dvdr))) > 0)[0]+1 # indices of all local minima in dvdr
+                if len(minima)>0:
+                    minInd = minima[np.abs(rd['r'][minima] - FINE_MODE_THESH).argmin()] # find the local minima closest to FINE_MODE_THESH
+                else:
+                    warnings.warn('No minimum found... The PSD is monotonic over the entire range of radii provided? The bin closest to FINE_MODE_THESH will be used to demarcate fine/coarse modes.')
+                    minInd = np.abs(rd['r'][minima] - FINE_MODE_THESH).argmin()
+                fineInd = np.r_[0:(minInd+1)]
+                crseInd = np.r_[minInd:len(dvdr)]
+                prfx = '' if getKey=='colTOTdist' else '_'+getKey.replace('dist','').replace('col','')
+                rd['modeSeperationIndex'+prfx] = minInd # note this is minimum in dvdr (not dVdlnr)
+                rd['dVdlnr'+prfx] = dvdr*rd['r'] # dvdr -> dvdlnr; dvdr = dvdr/1e6*1e6 # starts as m^3/m^2/m (I think?), divide by 1e6 -> m^3/m^2/μm, multiply by 1e6 -> μm^3/μm^2/μm
+                rd['vol'+prfx] = np.trapz(dvdr, x=rd['r'])
+                rd['vol'+prfx+'_fine'] = np.trapz(dvdr[fineInd], x=rd['r'][fineInd])
+                rd['vol'+prfx+'_coarse'] = np.trapz(dvdr[crseInd], x=rd['r'][crseInd])
         if not incldDust: return
         for pstFx in ['', '_fine', '_coarse']:
-            for pstFx2 in ['', 'PBL', 'FT']:
-                fullFx = pstFx+'_'+pstFx2 if not pstFx2=='' and pstFx=='' else pstFx+pstFx2
-                for rd in self.rtrvdData: # loop over pixels & find sphere fraction (assumes dust is only (and completely) non-spherical type)
-                    rd['sph'+fullFx] = 100*(1 - rd['vol_DU'+fullFx]/rd['vol'+fullFx])
-
-    def _calcPSDvals(self, rd, dvdr, prfx, var, hgtInds=None, modeInds=slice(None)):
-        """ Note hgtInds and modeInds should be logical (although ints may also work)"""
-        rdSetKey = prfx if var=='' else '%s_%s' % (prfx, var)
-        if hgtInds is None: hgtInds = np.ones(self.Nlayers, dtype=np.bool) # use all vertical layers
-        # N(r) [integrated over height]
-        rd['dVdlnr'+rdSetKey] = np.zeros(len(rd['r']))
-        rd['dVdlnr'+rdSetKey][modeInds] = dvdr[hgtInds][:, modeInds].sum(axis=0)*rd['r'][modeInds] # TODO: FIX THESE UNITS!
-        # V(h) [integrated over size]
-        rd['volProf'+rdSetKey] = np.zeros(self.Nlayers)
-        vPrfFineKy = 'volProf%s_fine' % prfx
-        vPrfCoarseKy = 'volProf%s_coarse' % prfx
-        assert sum(hgtInds)>0, 'At least one entry in hgtInds must be True – the layer has to be somewhere.'
-        for Indlyr, dvdrLyr in zip(np.where(hgtInds)[0], dvdr[hgtInds][:,modeInds]): # loop over layers – top down (IndLyr=71 is bottom)
-            if 'fine' in var and not 'fine'==var and vPrfFineKy in rd: # we want PBL(FT) specific but already have column
-                rd['volProf'+rdSetKey][Indlyr] = rd[vPrfFineKy][Indlyr]
-            elif 'coarse' in var and not 'coarse'==var and vPrfCoarseKy in rd: # we want PBL(FT) specific but already have column
-                rd['volProf'+rdSetKey][Indlyr] = rd[vPrfCoarseKy][Indlyr]
-            elif vPrfFineKy in rd and vPrfCoarseKy in rd and var not in ['fine', 'coarse']: # we want total, just sum fine+coarse mode profiles
-                rd['volProf'+rdSetKey][Indlyr] = rd[vPrfFineKy][Indlyr] + rd[vPrfCoarseKy][Indlyr]
-            else: # we got nothing to work off, need to perform the _SLOW_ integration
-                rd['volProf'+rdSetKey][Indlyr] = np.trapz(dvdrLyr, x=rd['r'][modeInds])
-        # total volume [integrate over both]
-        rd['vol'+rdSetKey] = rd['volProf'+rdSetKey].sum()
+            for rd in self.rtrvdData: # loop over pixels & find sphere fraction (assumes dust is only (and completely) non-spherical type)
+                rd['sph'+pstFx] = 100*(1 - rd['vol_DU'+pstFx]/rd['vol'+pstFx])
 
     def readlidarData(self,pixInd=None):
         ncDataVars09   = {'LS':'INSTRUMENT_ATB'}
