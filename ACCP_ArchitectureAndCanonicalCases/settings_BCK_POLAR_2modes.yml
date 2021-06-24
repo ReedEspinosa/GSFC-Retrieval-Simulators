@@ -9,11 +9,11 @@ retrieval:
     inversion:
         regime: single_pixel
         convergence:
-            maximum_iterations_for_stopping: 40
-            maximum_iterations_of_Levenberg-Marquardt: 40
+            maximum_iterations_for_stopping: 20
+            maximum_iterations_of_Levenberg-Marquardt: 20
             minimization_convention: logarithm
             normal_system_solver: sparse_matrix_solver
-            scale_for_finite_difference: 1.0e-05 #2.0e-5
+            scale_for_finite_difference: 3.0e-05 #2.0e-5
             shift_for_applying_logarithm_to_negative_values: 1.1
             threshold_for_stopping: 1.0e-9 #0.001
             threshold_for_stopping_Q_iterations: 1.0e-09 #1.0e-06
@@ -112,7 +112,7 @@ retrieval:
                     index_of_wavelength_involved: [0, 0]
                     max:   [0.24, 0.60]
                     min:   [0.12, 0.35]
-                    value: [0.17, 0.4]
+                    value: [0.13, 0.4]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
@@ -131,7 +131,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 8.0
+                        lagrange_multiplier: 4.0
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -141,7 +141,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 4.0
+                        lagrange_multiplier: 2.0
             retrieved: true
             type: real_part_of_refractive_index_spectral_dependent
         characteristic[4]:
@@ -154,7 +154,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 2
-                        lagrange_multiplier: 0.085
+                        lagrange_multiplier: 0.06
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -164,7 +164,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 2
-                        lagrange_multiplier: 0.085
+                        lagrange_multiplier: 0.06
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
         characteristic[5]:
@@ -258,7 +258,7 @@ retrieval:
                     min:   [0.000001]
                     value: [0.000002]
                 single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 3}
             retrieved: false
             type: surface_land_polarized_maignan_breon
         characteristic[10]:
