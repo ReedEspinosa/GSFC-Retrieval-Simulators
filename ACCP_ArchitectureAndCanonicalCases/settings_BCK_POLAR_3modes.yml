@@ -1,0 +1,332 @@
+settings:
+    strict: true
+input: {driver: sdata, file: inversionBACK.sdat}
+output:
+    segment: {function: classic, stream: bench_inversionRslts.txt}
+retrieval:
+    general: {path_to_internal_files: /usr/local/share/grasp/kernels/}
+    mode: inversion
+    inversion:
+        regime: single_pixel
+        convergence:
+            maximum_iterations_for_stopping: 20
+            maximum_iterations_of_Levenberg-Marquardt: 20
+            minimization_convention: logarithm
+            normal_system_solver: sparse_matrix_solver
+            scale_for_finite_difference: 3.0e-05 #2.0e-5
+            shift_for_applying_logarithm_to_negative_values: 1.1
+            threshold_for_stopping: 1.0e-9 #0.001
+            threshold_for_stopping_Q_iterations: 1.0e-09 #1.0e-06
+        measurement_fitting: {polarization: relative_polarization_components}
+        noises:
+            noise[1]:
+                error_type: relative
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    type: I
+                standard_deviation: 0.03
+                standard_deviation_synthetic: 0.0
+            noise[2]:
+                error_type: absolute
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    type: Q
+                measurement_type[2]:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    type: U
+                standard_deviation: 0.005
+                standard_deviation_synthetic: 0.0
+    forward_model:
+        phase_matrix:
+            kernels_folder: KERNELS_BASE/
+            size_binning_method_for_triangle_bins: logarithm
+            number_of_elements: 4
+            radius:
+                mode[1]: {max: 11.0, min: 0.05}
+                mode[2]: {max: 11.0, min: 0.05}
+                mode[3]: {max: 11.0, min: 0.05}
+        radiative_transfer:
+            absolute_error_rt_calculations: 1.0e-06
+            aerosol_profile_vertical_type: gaussian
+            molecular_profile_vertical_type: exponential
+            number_of_layers: 50
+            reference_plane_for_polarization: meridian
+            simulating_derivatives:
+                number_of_fourier_expansion_coefficients: 6
+                number_of_gaussian_quadratures_for_expansion_coefficients: 8
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 12
+                order_of_scattering: derivatives
+            simulating_observation:
+                number_of_fourier_expansion_coefficients: 6
+                number_of_gaussian_quadratures_for_expansion_coefficients: 8
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 12
+                order_of_scattering: multiple_scattering
+
+    debug:
+        additional_information: false
+        verbose: true
+
+    products:
+        aerosol:
+            chemistry: false
+            lidar: true
+            optical_properties: true
+            particulate_matter: false
+            phase_matrix: true
+            refractive_index: true
+            theoretical_bimodal_extinction: false
+            theoretical_bimodal_parameters: false
+            type: false
+        error_estimation:
+            aerosol:
+                lidar: false
+                optical_properties: false
+            parameters: false
+        forcing:
+            broadband_flux: false
+            forcing: false
+        retrieval:
+            fitting: true
+            parameters: true
+            residual: true
+        surface: true
+
+    constraints:
+        characteristic[1]:
+            mode[1]: # fine mode
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [0.75]
+                    min: [0.00000001]
+                    value: [0.005]
+            mode[2]: # sea salt
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [1.0]
+                    min: [0.00000001]
+                    value: [0.01]
+            mode[3]: # dust
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [2.0]
+                    min: [0.00000001]
+                    value: [0.02]
+            retrieved: true
+            type: aerosol_concentration
+        characteristic[2]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0]
+                    max:   [0.24, 0.60]
+                    min:   [0.12, 0.35]
+                    value: [0.13, 0.4]
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0]
+                    max:   [2.0,  0.6]
+                    min:   [0.5,  0.4]
+                    value: [1.0,  0.45]
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0]
+                    max:   [8.0,  0.8]
+                    min:   [1.3,  0.4]
+                    value: [3.0,  0.55]
+            retrieved: true
+            type: size_distribution_lognormal
+        characteristic[3]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max:   [1.53]
+                    min:   [1.33]
+                    value: [1.37]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 4.0
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max:   [1.44]
+                    min:   [1.33]
+                    value: [1.37]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 2.0
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max:   [1.55]
+                    min:   [1.50]
+                    value: [1.53]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 2.0
+            retrieved: true
+            type: real_part_of_refractive_index_spectral_dependent
+        characteristic[4]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8]
+                       #    0.36    0.38    0.41    0.55    0.67    0.87    1.55    1.65
+                    max:   [0.025,  0.025,  0.025,  0.025,  0.025,  0.025,  0.025,  0.025 ]
+                    min:   [1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5]
+                    value: [0.002,  0.002,  0.002,  0.002,  0.002,  0.002,  0.002,  0.002 ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 2
+                        lagrange_multiplier: 0.06
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8]
+                       #    0.36     0.38     0.41     0.55     0.67     0.87     1.55     1.65
+                    max:   [0.0005,  0.0005,  0.0005,  0.0005,  0.0005,  0.0005,  0.0005,  0.0005 ]
+                    min:   [1.0e-6,  1.0e-6,  1.0e-6,  1.0e-6,  1.0e-6,  1.0e-6,  1.0e-6,  1.0e-6]
+                    value: [0.0002,  0.0002,  0.0002,  0.0002,  0.0002,  0.0002,  0.0002,  0.0002 ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8]
+                       #    0.36    0.38    0.41    0.55    0.67    0.87    1.55    1.65
+                    max:   [0.008,  0.007,  0.005,  0.004,  0.003,  0.003,  0.005,  0.006 ]
+                    min:   [0.005,  0.004,  0.003,  0.002,  0.001,  0.001,  0.003,  0.004 ]
+                    value: [0.007,  0.006,  0.004,  0.003,  0.002,  0.002,  0.004,  0.005 ]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 2
+                        lagrange_multiplier: 0.02
+            retrieved: true
+            type: imaginary_part_of_refractive_index_spectral_dependent
+        characteristic[5]:
+            type: surface_water_CxMnk_iso_noPol
+            retrieved: true
+            mode[1]:
+                initial_guess:                       #1      #2      #3
+                    value:                          [0.000000002]
+                    min:                            [0.000000001]
+                    max:                            [0.000000003]
+                    index_of_wavelength_involved:   [1]
+                single_pixel:
+                    smoothness_constraints:
+                        difference_order: 1
+                        lagrange_multiplier: 0.0
+            mode[2]:
+                initial_guess:                       #1      #2      #3
+                    value:                          [0.999999]
+                    min:                            [0.999998]
+                    max:                            [1.000000]
+                    index_of_wavelength_involved:   [0]
+            mode[3]:
+                initial_guess:                       #1      #2      #3
+                    value:                          [0.015]
+                    min:                            [0.00406] # 1 m/s
+                    max:                            [0.040] # 0.027 -> 10 m/s
+                    index_of_wavelength_involved:   [0]
+        characteristic[6]:
+            type: vertical_profile_parameter_height
+            retrieved: true
+            mode[1]:
+                initial_guess:                      #1
+                    value:                          [1000.0 ]
+                    min:                            [500.0]
+                    max:                            [4000.0]
+                    index_of_wavelength_involved:   [0      ]
+            mode[2]:
+                initial_guess:                      #1
+                    value:                          [1000.0 ]
+                    min:                            [500.0]
+                    max:                            [1500.0]
+                    index_of_wavelength_involved:   [0      ]
+            mode[3]:
+                initial_guess:                      #1
+                    value:                          [2000.0 ]
+                    min:                            [100.0]
+                    max:                            [4500.0]
+                    index_of_wavelength_involved:   [0      ]
+#        DESERT INSPIRED (lower mins)
+        characteristic[7]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1] # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
+                    max:                               [0.2,     0.2,    0.2,    0.5,   0.7,    0.9,    1.4,    1.4]
+                    min:                               [0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0500, 0.0250, 0.020]
+                    value:                             [0.0800, 0.0800, 0.0800, 0.2500, 0.3000, 0.4500, 0.6000, 0.6000]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0}
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [2.0 ]
+                    min:   [0.001]
+                    value: [0.1 ]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [1.0]
+                    min:   [0.0001]
+                    value: [0.1]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
+            retrieved: true
+            type: surface_land_brdf_ross_li
+        characteristic[8]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [0.9999999]
+                    min:   [0.9990000]
+                    value: [0.9999998]
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [0.9999999]
+                    min:   [0.9990000]
+                    value: [0.9999998]
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [0.8]
+                    min:   [0.0000001]
+                    value: [0.6]
+            retrieved: true
+            type: sphere_fraction
+        characteristic[9]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max:   [0.000003]
+                    min:   [0.000001]
+                    value: [0.000002]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 3}
+            retrieved: false
+            type: surface_land_polarized_maignan_breon
+        characteristic[10]:
+            type: vertical_profile_parameter_standard_deviation
+            retrieved: false
+            mode[1]:
+                initial_guess:                      #1
+                    value:                          [900.0 ]
+                    min:                            [250.0  ]
+                    max:                            [1500.0 ]
+                    index_of_wavelength_involved:   [0      ]
+            mode[2]:
+                initial_guess:                      #1
+                    value:                          [900.0 ]
+                    min:                            [250.0  ]
+                    max:                            [1500.0 ]
+                    index_of_wavelength_involved:   [0      ]
+            mode[3]:
+                initial_guess:                      #1
+                    value:                          [900.0 ]
+                    min:                            [250.0  ]
+                    max:                            [1500.0 ]
+                    index_of_wavelength_involved:   [0      ]
