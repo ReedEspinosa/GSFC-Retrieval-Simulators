@@ -123,9 +123,9 @@ retrieval:
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max:   [5.0,  0.85]
+                    max:   [8.0,  0.85]
                     min:   [0.8,  0.4]
-                    value: [2.0,  0.5]
+                    value: [3.5,  0.5]
             mode[3]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
