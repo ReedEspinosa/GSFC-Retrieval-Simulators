@@ -74,8 +74,8 @@ fwdYAML = [setupConCaseYAML(paramTple[1], nowPix[i], fwdModelYAMLpath, caseLoadF
 
 # run simulation    
 simA = rs.simulation(nowPix) # defines new instance for architecture described by nowPix
-gObjFwd, gObjBck = simA.runSim(fwdYAML, bckYAML, Nsims, maxCPU=maxCPU, savePath=savePath, \
-                               binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, \
-                               lightSave=False, rndIntialGuess=rndIntialGuess, dryRun=False, \
-                               workingFileSave=False, fixRndmSeed=False, verbose=verbose)
+simA.runSim(fwdYAML, bckYAML, Nsims, maxCPU=maxCPU, savePath=savePath, \
+            binPathGRASP=dirGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, \
+            lightSave=False, rndIntialGuess=rndIntialGuess, dryRun=False, \
+            workingFileSave=False, fixRndmSeed=False, verbose=verbose)
 

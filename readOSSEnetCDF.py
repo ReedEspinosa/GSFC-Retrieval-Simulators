@@ -37,8 +37,8 @@ class osseData(object):
             loadPSD - skip reading and converting of PSD data to save processing time
         Note: buildFpDict() method below will setup file paths mirroring the path structure on DISCOVER (more details in its header comment)
         """
-        if loadPSD and random:
-            warnings.warn('As of 05/22/21 there is a bug in 10k random cases OSSE aer_SD files. PSD, SPH & VOL parameters my be incorrect.')
+#         if loadPSD and random:
+#             warnings.warn('As of 05/22/21 there is a bug in 10k random cases OSSE aer_SD files. PSD, SPH & VOL parameters my be incorrect.')
         self.measData = None # measData has observational netCDF data
         self.rtrvdData = None # rtrvdData has state variables from netCDF data
         self.invldInd = np.array([])
