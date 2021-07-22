@@ -107,7 +107,7 @@ class osseData(object):
             'lc2Lidar'  : pathFrmt % (('D',)+dtTple+(orbit+'-g5nr.lc2.'+tmStr+'.%dnm.'+ldStr+'.nc4',)), # will need a str replace, e.g. VAR.replace('LIDAR', 'LIDAR09')
             'savePath'  : pathFrmt % (('E',)+dtTple+(orbit+'-g5nr.leV%02d.GRASP.%s.%s.'+tmStr+'.pkl',)) # % (vrsn, yamlTag, archName) needed from calling function
         }
-        self.fpDict['dateTime'] = dt.datetime(year, month, day, hour)
+        self.fpDict['dateTime'] = dt.datetime(year, month, 1, 0) if random else dt.datetime(year, month, day, hour)
         self.fpDict['noisyLidar'] = lidarVer < 100 # e.g. 0900 is noise free, but 09 is not
         if random:
             self.fpDict['lc2Lidar'] = self.fpDict['lc2Lidar'].replace('random.','').replace('nc4','RANDOM.7000m.nc4')
@@ -205,6 +205,8 @@ class osseData(object):
                 if self.verbose: print('Processing data from %s' % radianceFN)
                 self.measData[i] = loadVARSnetCDF(radianceFN, varNames, keepTimeInd=pixInd,verbose=self.verbose)
                 tShft = self.measData[i]['time'] if 'time' in self.measData[i] else 0
+                if len(np.unique(self.measData[i]['time'])) < len(self.measData[i]['time']) and self.fpDict['dateTime'].day==1: # we have duplicate times and use HACK below to fix it (random files do not have date, only seconds but runGRASP needs unqiue times so we add a random number of hours)
+                    tShft = [ts+np.mod(tShftInd,600)*3600 for tShftInd,ts in enumerate(tShft)] # add a random number of hours corresponding to less than 25 days (so month still valid) [NOTE: this just reduces collisions by 1/600, but just kills one run (~20 pixels) when they do happen]
                 self.measData[i]['dtObj'] = np.array([self.fpDict['dateTime'] + dt.timedelta(seconds=int(ts)) for ts in tShft])
                 with np.errstate(invalid='ignore'): # we need this b/c we will be comaring against NaNs
                     invldBool = np.logical_or(np.isnan(self.measData[i]['I']), self.measData[i]['I'] < 0)
