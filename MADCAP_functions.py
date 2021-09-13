@@ -22,6 +22,8 @@ def loadVARSnetCDF(filePath, varNames=None, verbose=False, keepTimeInd=None):
     measData = dict()
     netCDFobj = Dataset(filePath)
     if varNames is None: varNames = netCDFobj.variables.keys()
+    if 'time' in netCDFobj.dimensions and keepTimeInd is not None: # this seems to happen a lot and previously the error was very cryptic
+        assert max(keepTimeInd)<netCDFobj.dimensions['time'].size, 'At least one keepTimeInd exceeded len(time)=%d of %s' % (netCDFobj.dimensions['time'].size, filePath)
     for varName in varNames:
         if varName in netCDFobj.variables.keys():
             with warnings.catch_warnings():
