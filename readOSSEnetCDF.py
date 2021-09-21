@@ -204,12 +204,17 @@ class osseData(object):
             if os.path.exists(radianceFN): # load data and check for valid indices (I>=0)
                 if self.verbose: print('Processing data from %s' % radianceFN)
                 self.measData[i] = loadVARSnetCDF(radianceFN, varNames, keepTimeInd=pixInd,verbose=self.verbose)
-                tShft = self.measData[i]['time'] if 'time' in self.measData[i] else 0
+                tShft = self.measData[i]['time'] if 'time' in self.measData[i] else 0     
                 if len(np.unique(self.measData[i]['time'])) < len(self.measData[i]['time']) and self.fpDict['dateTime'].day==1: # we have duplicate times and use HACK below to fix it (random files do not have date, only seconds but runGRASP needs unqiue times so we add a random number of hours)
+                    if len(tShft)>2e6: 
+                    	warnings.warn('More times than seconds in a month, time collisions may occur')
+					else: # changes times to increment by the second beginning at start of the month
+						tShft = [j for j in range(len(tShft))]
                     tShft = [ts+np.mod(tShftInd,600)*3600 for tShftInd,ts in enumerate(tShft)] # add a random number of hours corresponding to less than 25 days (so month still valid) [NOTE: this just reduces collisions by 1/600, but just kills one run (~20 pixels) when they do happen]
                 self.measData[i]['dtObj'] = np.array([self.fpDict['dateTime'] + dt.timedelta(seconds=int(ts)) for ts in tShft])
                 with np.errstate(invalid='ignore'): # we need this b/c we will be comaring against NaNs
                     invldBool = np.logical_or(np.isnan(self.measData[i]['I']), self.measData[i]['I'] < 0)
+#                     invldBool = np.logical_or(invldBool, np.sqrt(self.measData[i]['Q']**2 + self.measData[i]['U']**2) / self.measData[i]['I'] <= 1) # check DOLP<1 as well, this did not happen before cirrus so we leave it commented for now
                 invldIndλ = invldBool.any(axis=1).nonzero()[0]
                 self.invldInd = np.append(self.invldInd, invldIndλ).astype(int) # only take points w/ I>0 at all wavelengths & angles
                 if not self.vldPolarλind: self.vldPolarλind = i # store the 1st λ index with polarimeter data
