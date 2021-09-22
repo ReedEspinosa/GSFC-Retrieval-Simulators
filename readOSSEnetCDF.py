@@ -10,6 +10,8 @@ import warnings
 import os
 import copy
 import datetime as dt
+import re
+import scipy.interpolate as interpolate
 from MADCAP_functions import loadVARSnetCDF, downsample1d
 
 GRAV = 9.80616 # m/s^2
@@ -32,7 +34,7 @@ class osseData(object):
             'wvls'* (_list_ [not np.array] of floats) - wavelengths to process in μm, not present or None -> determine them from polarNc4FP
             lidarVersion - int w/ lidar instrument version (e.g. 9), x100 for instrument w/o noise (e.g. 900), None to not load lidar
             maxSZA - filter out pixels with mean SZA above this value (degrees)
-            oceanOnly - true to skip retrievals on land pixels
+            oceanOnly - (string) 'all', 'land' or 'ocean'; bool is also okay
             loadDust - load size distributions of dust, as well as for total aerosol (ignored if loadPSD==False)
             loadPSD - skip reading and converting of PSD data to save processing time
         Note: buildFpDict() method below will setup file paths mirroring the path structure on DISCOVER (more details in its header comment)
@@ -46,6 +48,7 @@ class osseData(object):
         self.loadingCalls = []
         self.pblInds = None
         self.maxSZA = maxSZA
+        if type(oceanOnly) is bool: oceanOnly = 'ocean' if oceanOnly else 'all'
         self.oceanOnly = oceanOnly
         self.lidarVersion = lidarVersion
         self.verbose = verbose
@@ -68,6 +71,7 @@ class osseData(object):
         self.readaerData(pixInd=pixInd) # reads aerNc4FP
         self.readStateVars(pixInd=pixInd) # reads lcExt
         self.readStateVars(finemode=True, pixInd=pixInd) # reads lcExt (finemode version)
+        self.readSurfaceData(pixInd=pixInd) # reads lerNc4FP and brdfNc4FP
         if loadPSD: self.readPSD(incldDust=loadDust, pixInd=pixInd) # reads aerSD
         if loadLidar: self.readlidarData(pixInd=pixInd) # reads lc2Lidar
         self.purgeInvldInd(self.maxSZA, self.oceanOnly)
@@ -82,6 +86,8 @@ class osseData(object):
             'metNc4FP'* (string) - gpm-g5nr.lb2.met_Nv.YYYYMMDD_HH00z.nc4 file path (PS for surface alt.)
             'aerNc4FP'* (string) - gpm-g5nr.lb2.aer_Nv.YYYYMMDD_HH00z.nc4 file path (DELP/AIRDEN for level heights)
             'psdNc4FP'* (string) - gpm-g5nr.lb2.aer_SD.YYYYMMDD_HH00z.nc4 file path (contains speciated & total size distributions)
+            'lerNc4FP'* (string) - gpm-g5nr.lb2.ler.YYYYMMDD_HH00z.nc4 file path (contains UV surface parameters)
+            'brdNc4FP'* (string) - gpm-g5nr.lb2.ler.YYYYMMDD_HH00z.nc4 file path (contains VIS-SWIR surface parameters)
             'lcExt'* (string)    - gpm-g5nr.lc.ext.YYYYMMDD_HH00z.%dnm path (has τ, SSA, CRI, etc.)
             'lc2Lidar'* (string) - gpm-lidar-g5nr.lc2.YYYYMMDD_HH00z.%dnm path to file w/ simulated [noise added] lidar measurements
         All of the above files should contain noise free data, except lc2Lidar -
@@ -89,20 +95,28 @@ class osseData(object):
         assert osseDataPath is not None, 'osseDataPath, Year, month and orbit must be provided to build fpDict'
         if lidarVer is None: lidarVer=0
         ldStr = 'LIDAR%02d' % (np.floor(lidarVer/100) if lidarVer >= 100 else lidarVer)
+        lerExtrPath = os.path.join('surface','LER','OMI')
+        brdfExtrPath = os.path.join('surface','BRDF','MCD43C1','006')   
         if random:
             tmStr = 'random.%04d%02d01_0000z' % (year, month)
             dtTple = (year, month)
             pathFrmt = os.path.join(osseDataPath, orbit.upper(), 'Level%s', 'Y%04d','M%02d', '%s')
+            pathFrmtLER = os.path.join(osseDataPath, orbit.upper(),'Level%s',lerExtrPath,'Y%04d','M%02d','%s')
+            pathFrmtBRDF = os.path.join(osseDataPath, orbit.upper(),'Level%s', brdfExtrPath, 'Y%04d','M%02d', '%s')
         else:
             tmStr = '%04d%02d%02d_%02d00z' % (year, month, day, hour)
             dtTple = (year, month, day)
             pathFrmt = os.path.join(osseDataPath, orbit.upper(), 'Level%s', 'Y%04d','M%02d', 'D%02d', '%s')
+            pathFrmtLER = os.path.join(osseDataPath, orbit.upper(),'Level%s',lerExtrPath,'Y%04d','M%02d', 'D%02d','%s')
+            pathFrmtBRDF = os.path.join(osseDataPath, orbit.upper(),'Level%s', brdfExtrPath, 'Y%04d','M%02d', 'D%02d', '%s')
         self.fpDict = {
             'polarNc4FP': pathFrmt % (('C',)+dtTple+(orbit+'-polar07-g5nr.lc.vlidort.'+tmStr+'_%dd00nm.nc4',)),
             'asmNc4FP'  : pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.asm_Nx.'+tmStr+'.nc4',)),
             'metNc4FP'  : pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.met_Nv.'+tmStr+'.nc4',)),
             'aerNc4FP'  : pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.aer_Nv.'+tmStr+'.nc4',)),
             'psdNc4FP'  : pathFrmt % (('B',)+dtTple+(orbit+'-g5nr.lb2.aer_SD.'+tmStr+'.nc4',)),
+            'lerNc4FP'  : pathFrmtLER % (('B',)+dtTple+(orbit+'-g5nr.lb2.ler.'+tmStr+'.nc4',)),
+            'brdNc4FP'  : pathFrmtBRDF % (('B',)+dtTple+(orbit+'-g5nr.lb2.brdf.'+tmStr+'.nc4',)),
             'lcExt'     : pathFrmt % (('C',)+dtTple+(orbit+'-g5nr.lc.ext.'+tmStr+'.%dnm.nc4',)),
             'lc2Lidar'  : pathFrmt % (('D',)+dtTple+(orbit+'-g5nr.lc2.'+tmStr+'.%dnm.'+ldStr+'.nc4',)), # will need a str replace, e.g. VAR.replace('LIDAR', 'LIDAR09')
             'savePath'  : pathFrmt % (('E',)+dtTple+(orbit+'-g5nr.leV%02d.GRASP.%s.%s.'+tmStr+'.pkl',)) # % (vrsn, yamlTag, archName) needed from calling function
@@ -207,9 +221,9 @@ class osseData(object):
                 tShft = self.measData[i]['time'] if 'time' in self.measData[i] else 0     
                 if len(np.unique(self.measData[i]['time'])) < len(self.measData[i]['time']) and self.fpDict['dateTime'].day==1: # we have duplicate times and use HACK below to fix it (random files do not have date, only seconds but runGRASP needs unqiue times so we add a random number of hours)
                     if len(tShft)>2e6: 
-                    	warnings.warn('More times than seconds in a month, time collisions may occur')
-					else: # changes times to increment by the second beginning at start of the month
-						tShft = [j for j in range(len(tShft))]
+                        warnings.warn('More times than seconds in a month, time collisions may occur')
+                    else: # changes times to increment by the second beginning at start of the month
+                        tShft = [j for j in range(len(tShft))]
                     tShft = [ts+np.mod(tShftInd,600)*3600 for tShftInd,ts in enumerate(tShft)] # add a random number of hours corresponding to less than 25 days (so month still valid) [NOTE: this just reduces collisions by 1/600, but just kills one run (~20 pixels) when they do happen]
                 self.measData[i]['dtObj'] = np.array([self.fpDict['dateTime'] + dt.timedelta(seconds=int(ts)) for ts in tShft])
                 with np.errstate(invalid='ignore'): # we need this b/c we will be comaring against NaNs
@@ -269,6 +283,36 @@ class osseData(object):
                     md['range'] = np.full([self.Npix, len(delp)], np.nan)
                 md['range'][k,:] = rng
 
+    def readSurfaceData(self, pixInd=None):
+        """ Read in levelB data to obtain surface BRDF parameters in RTLS form (UV converted from LER)
+        These files are in the LevB data folders and have the form gpm-g5nr.lb2.ler[brdf].YYYYMMDD_HH00z.nc4 """       
+#           'lerNc4FP'* (string) - gpm-g5nr.lb2.ler.YYYYMMDD_HH00z.nc4 file path (contains UV surface parameters)
+#           'brdNc4FP'* (string) - gpm-g5nr.lb2.ler.YYYYMMDD_HH00z.nc4 file path (contains VIS-SWIR surface parameters)
+        λ_MODIS, brdf_MODIS = self._readSurfaceData_helper(self.fpDict['brdNc4FP'], 'Riso', pixInd)
+        λ_TOMS, brdf_TOMS = self._readSurfaceData_helper(self.fpDict['lerNc4FP'], 'SRFLER', pixInd)
+        λ_all = np.r_[λ_TOMS, λ_MODIS] # assumes max(TOMS) < min(MODIS) to preserve sorted order
+        brdf_all = np.concatenate((brdf_TOMS, brdf_MODIS), axis=2) # last axis=2 corresponds to wavelength
+        brdf_interper = interpolate.interp1d(λ_all, brdf_all, axis=2)
+        brdfTmp = brdf_interper(self.wvls) # brdf_all[pixInd, mode/wght, wavelength] interped to correct λ
+        for brdfVal,rd in zip(brdfTmp, self.rtrvdData): rd['brdf'] = brdfVal # self.rtrvdData[pixNumber] = var[modes,wavelength]
+
+    def _readSurfaceData_helper(self, levBFN, keyVarNm, pixInd):
+        call1st = 'readPolarimeterNetCDF'
+        funcNm = 'readBRDFData' if keyVarNm=='Riso' else 'readLERData'
+        if not self._loadingChecks(prereqCalls=call1st, filename=levBFN, functionName='readBRDFData'): return
+        surf_data = loadVARSnetCDF(levBFN, keepTimeInd=pixInd, verbose=self.verbose)
+        surfKeys = [y for y in surf_data.keys() if re.match(('%s[0-9]+' % keyVarNm), y) is not None]
+        surfλ = np.sort([int(re.sub('[^0-9]','',y))/1e3 for y in surfKeys]) # pull out wavelength, convert to μm and sort
+        Npix = np.max(surf_data['%s%d' % (keyVarNm, (surfλ[0]*1000))].shape) # UGLY but we assume largest dimension is time (next largest should be at most 1)
+        brdf = np.zeros((Npix, 3, len(surfλ)))
+        for i, λi in enumerate(surfλ):
+            brdf[:, 0, i] = surf_data['%s%d' % (keyVarNm, (λi*1000))].squeeze()
+            if keyVarNm=='Riso':
+                with np.errstate(divide='ignore'):
+                    brdf[:, 1, i] = surf_data['Rvol%d' % (λi*1000)]/brdf[:, 0, i] # GRASP normalizes geo and vol by iso weight
+                    brdf[:, 2, i] = surf_data['Rgeo%d' % (λi*1000)]/brdf[:, 0, i]
+        return surfλ, brdf
+                        
     def readStateVars(self, finemode=False, pixInd=None):
         """ readStateVars will read OSSE state variable file(s) and convert to the format used to store GRASP's output
             IN: dictionary stateVarFNs containing key 'lcExt' with path to lidar "truth" file
@@ -491,8 +535,10 @@ class osseData(object):
         if self.verbose and filename: print('Processing data from %s' % filename)
         return True
 
-    def purgeInvldInd(self, maxSZA=None, oceanOnly=False):
-        """ The method will remove all invldInd from measData """
+    def purgeInvldInd(self, maxSZA=None, oceanOnly='all'):
+        """ The method will remove all invldInd from measData 
+                oceanOnly must be a string by this method
+        """
         timeInvariantVars = ['ocean_refractive_index','x', 'y', 'RangeLidar', 'lev', 'rayleigh_depol_ratio']
         if self.invldIndPurged:
             warnings.warn('You should only purge invalid indices once. If you really want to purge again set self.invldIndPurged=False.')
@@ -503,10 +549,20 @@ class osseData(object):
                 if not np.all(np.isnan(sza)) and np.any(sza>maxSZA): overSZAInds.append(ind)
             self.invldInd = np.append(self.invldInd, overSZAInds).astype(int)
             if self.verbose: print('%d pixels exlcuded for SZA>%4.1f°' % (len(overSZAInds), maxSZA))
-        if oceanOnly:
+        if oceanOnly.lower()=='ocean':
             landInd = np.where(self.measData[0]['land_prct']>0)[0].tolist()
             self.invldInd = np.append(self.invldInd, landInd).astype(int)
             if self.verbose: print('%d pixels containing land were excluded' % len(landInd))
+        if oceanOnly.lower()=='ocean':
+            landInd = np.where(self.measData[0]['land_prct']>0)[0].tolist()
+            self.invldInd = np.append(self.invldInd, landInd).astype(int)
+            if self.verbose: print('%d pixels containing land were excluded' % len(landInd))
+        if oceanOnly.lower()=='land':
+            oceanInd = np.where(self.measData[0]['land_prct']<99.9)[0].tolist()
+            self.invldInd = np.append(self.invldInd, oceanInd).astype(int)
+            if self.verbose: print('%d pixels containing ocean were excluded' % len(oceanInd))
+        else:
+            assert oceanOnly.lower()=='all', '%s not a recognized string for oceanOnly variable' % oceanOnly
         self.invldInd = np.array(np.unique(self.invldInd), dtype='int')
         if self.verbose:
             allKeys = np.unique(sum([list(md.keys()) for md in self.measData],[]))
