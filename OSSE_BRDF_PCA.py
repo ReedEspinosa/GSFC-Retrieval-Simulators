@@ -8,7 +8,10 @@ import sys
 import functools
 import numpy as np
 import pickle
+from sklearn.decomposition import PCA
+from matplotlib import pyplot as plt
 from readOSSEnetCDF import osseData
+
 
 # define other paths not having to do with the python code itself
 osseDataPath = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/' # base path for A-CCP OSSE data (contains gpm and ss450 folders)
@@ -60,23 +63,47 @@ else:
 
 # run the PCA
 data2D = np.asarray([fd['brdf'].reshape(-1) for fd in fwdData])
-pca = PCA(n_components=24)
+dimTot = data2D.shape[1]
+pca = PCA(n_components=dimTot)
 pca.fit(data2D)
+
+for compKeep in range(10):
+    print('First %d components explain %5.2f%% of the variance' % (compKeep, np.sum(pca.explained_variance_ratio_[0:compKeep]*100)))
+
 compKeep = 5
-print('First %d components explain %4.1f%% of the variance' % (compKeep, np.sum(pca.explained_variance_ratio_[0:compKeep]*100))
+wvlng = fwdData[0]['lambda']
+Nwvlng = len(wvlng)
+plt.figure()
+plt.plot(wvlng, pca.components_[0:compKeep,0:Nwvlng].T)
+plt.gca().set_prop_cycle(None)
+plt.plot(wvlng, pca.components_[0:compKeep,Nwvlng:(2*Nwvlng)].T,'--')
+plt.gca().set_prop_cycle(None)
+plt.plot(wvlng, pca.components_[0:compKeep,(2*Nwvlng):(3*Nwvlng)].T,'-.')
+plt.xlabel('Wavelength')
+plt.ylabel('Princple Components')
+plt.ion()
+plt.show()
 
+print('The mean of each of the %d dimensions was:' % dimTot)
+print(pca.mean_)
 
-
-
-
-
-
-
-
-
-
-
-
+print('Values for the first %d components are:' % compKeep)
+isoVals = ''
+volVals = ''
+geoVals = ''
+numFormat = '%6E,' 
+newLineStr = '  &\n' + ' '.join(['' for _ in range(27)])
+for wvInd in range(Nwvlng):
+    for pcInd in range(compKeep):
+        isoVals += numFormat % np.around(pca.components_[pcInd, wvInd], 9)
+        volVals += numFormat % np.around(pca.components_[pcInd, wvInd+Nwvlng], 9)
+        geoVals += numFormat % np.around(pca.components_[pcInd, wvInd+2*Nwvlng], 9)
+    isoVals += newLineStr
+    volVals += newLineStr
+    geoVals += newLineStr
+print('      ISO_PC = reshape((/ %s /), shape(ISO_PC))' % (isoVals.replace('E','D')))
+print('      VOL_PC = reshape((/ %s /), shape(VOL_PC))' % (volVals.replace('E','D')))
+print('      GEO_PC = reshape((/ %s /), shape(GEO_PC))' % (geoVals.replace('E','D')))
 
 
 
