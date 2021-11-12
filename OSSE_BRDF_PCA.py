@@ -41,7 +41,13 @@ wvls = [0.355, 0.36, 0.38, 0.41, 0.532, 0.55, 0.67, 0.87, 1.064, 1.55, 1.65]
 pixInd = None
 # pixInd = [i*3 for i in range(252)] # Aug 1, 1400Z, stripe up atlantic w/ marine, BB, marine, dust, dustymarine(?)
 
+compKeep = 5
+
 savePath = 'allRandomData_%s_maxSZA%d_V1.pkl' % (orbit, maxSZA)
+
+plotPCs = False
+
+# SEE BELOW FOR NDVI-like threshold
 
 # load the data
 if os.path.exists(savePath):
@@ -62,30 +68,38 @@ else:
 
 
 # run the PCA
+wvlng = fwdData[0]['lambda']
+desertInd = np.asarray([fd['brdf'][0,5]/fd['brdf'][0,4] for fd in fwdData])<2 # desert-like NDVI only
 data2D = np.asarray([fd['brdf'].reshape(-1) for fd in fwdData])
+keepInd = np.logical_and(np.sum(data2D<1e-10, axis=1)==4, desertInd)
+data2D = data2D[keepInd]
+sclFct = data2D.std(axis=0)
+sclFct[0:len(wvlng)] = sclFct[0:len(wvlng)]/2 # double weight for ISO kernels
+sclFct[sclFct<1e-7] = 1e-7 # UV will give std of zero for GEO and VOL
+data2D = data2D/sclFct
+
 dimTot = data2D.shape[1]
 pca = PCA(n_components=dimTot)
 pca.fit(data2D)
 
-for compKeep in range(10):
-    print('First %d components explain %5.2f%% of the variance' % (compKeep, np.sum(pca.explained_variance_ratio_[0:compKeep]*100)))
+for compKeepi in range(10):
+    print('First %d components explain %5.2f%% of the variance' % (compKeepi, np.sum(pca.explained_variance_ratio_[0:compKeepi]*100)))
 
-compKeep = 5
-wvlng = fwdData[0]['lambda']
 Nwvlng = len(wvlng)
-plt.figure()
-plt.plot(wvlng, pca.components_[0:compKeep,0:Nwvlng].T)
-plt.gca().set_prop_cycle(None)
-plt.plot(wvlng, pca.components_[0:compKeep,Nwvlng:(2*Nwvlng)].T,'--')
-plt.gca().set_prop_cycle(None)
-plt.plot(wvlng, pca.components_[0:compKeep,(2*Nwvlng):(3*Nwvlng)].T,'-.')
-plt.xlabel('Wavelength')
-plt.ylabel('Princple Components')
-plt.ion()
-plt.show()
+if plotPCs:
+    plt.figure()
+    plt.plot(wvlng, pca.components_[0:compKeep,0:Nwvlng].T)
+    plt.gca().set_prop_cycle(None)
+    plt.plot(wvlng, pca.components_[0:compKeep,Nwvlng:(2*Nwvlng)].T,'--')
+    plt.gca().set_prop_cycle(None)
+    plt.plot(wvlng, pca.components_[0:compKeep,(2*Nwvlng):(3*Nwvlng)].T,'-.')
+    plt.xlabel('Wavelength')
+    plt.ylabel('Princple Components')
+    plt.ion()
+    plt.show()
 
 print('The mean of each of the %d dimensions was:' % dimTot)
-print(pca.mean_)
+print(', '.join(['%9.7f' % val for val in pca.mean_*sclFct]))
 
 print('Values for the first %d components are:' % compKeep)
 isoVals = ''
@@ -95,9 +109,9 @@ numFormat = '%6E,'
 newLineStr = '  &\n' + ' '.join(['' for _ in range(27)])
 for wvInd in range(Nwvlng):
     for pcInd in range(compKeep):
-        isoVals += numFormat % np.around(pca.components_[pcInd, wvInd], 9)
-        volVals += numFormat % np.around(pca.components_[pcInd, wvInd+Nwvlng], 9)
-        geoVals += numFormat % np.around(pca.components_[pcInd, wvInd+2*Nwvlng], 9)
+        isoVals += numFormat % np.around(pca.components_[pcInd, wvInd]*sclFct[wvInd], 9)
+        volVals += numFormat % np.around(pca.components_[pcInd, wvInd+Nwvlng]*sclFct[wvInd+Nwvlng], 9)
+        geoVals += numFormat % np.around(pca.components_[pcInd, wvInd+2*Nwvlng]*sclFct[wvInd+2*Nwvlng], 9)
     isoVals += newLineStr
     volVals += newLineStr
     geoVals += newLineStr
@@ -105,11 +119,29 @@ print('      ISO_PC = reshape((/ %s /), shape(ISO_PC))' % (isoVals.replace('E','
 print('      VOL_PC = reshape((/ %s /), shape(VOL_PC))' % (volVals.replace('E','D')))
 print('      GEO_PC = reshape((/ %s /), shape(GEO_PC))' % (geoVals.replace('E','D')))
 
-
-
-
-
-
+padArray = np.zeros(3*Nwvlng-compKeep)
+isoErr = []
+volErr = []
+geoErr = []
+for i in range(data2D.shape[0]):
+    predict = pca.inverse_transform(np.r_[pca.transform(data2D[i:i+1,:])[0][0:compKeep], padArray].reshape(1,-1)) #1x24
+    relErr = np.squeeze((predict[:]+1e-1)/(data2D[i,:]+1e-1)-1) # add 1e-1 to condition; zeros give 1e-1/1e-1=1 instead of 0.000../0.000.. error which blows up
+    isoErr.append(np.sqrt(np.median(relErr[0:Nwvlng]**2)))
+    volErr.append(np.sqrt(np.median(relErr[Nwvlng:2*Nwvlng]**2)))
+    geoErr.append(np.sqrt(np.median(relErr[2*Nwvlng:3*Nwvlng]**2)))
+isoErr = np.asarray(isoErr)
+volErr = np.asarray(volErr)
+geoErr = np.asarray(geoErr)
+print('–––Error resulting from reduction to %d dimensions–––' % compKeep)
+print('ISO Percent of Errors >100%%: %6.3f%%' % (100*np.sum(isoErr>1)/len(isoErr)))
+print('VOL Percent of Errors >100%%: %6.3f%%' % (100*np.sum(volErr>1)/len(volErr)))
+print('GEO Percent of Errors >100%%: %6.3f%%' % (100*np.sum(geoErr>1)/len(geoErr)))
+isoErr[isoErr>1] = 1
+volErr[volErr>1] = 1
+geoErr[geoErr>1] = 1
+print('ISO Mean Relative Error: %6.3f%%' % (100*isoErr.mean()))
+print('VOL Mean Relative Error: %6.3f%%' % (100*volErr.mean()))
+print('GEO Mean Relative Error: %6.3f%%' % (100*geoErr.mean()))
 
 
 
