@@ -9,9 +9,9 @@ import numpy as np
 import os
 import sys
 from glob import glob
-MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GRASP_scripts is in parent of MADCAP_scripts
-sys.path.append(os.path.join(MADCAPparentDir, 'MADCAP_Analysis','ACCP_ArchitectureAndCanonicalCases'))
-sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
+RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
+sys.path.append(os.path.join(RtrvSimParentDir, 'GSFC-Retrieval-Simulators','ACCP_ArchitectureAndCanonicalCases'))
+sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
 from simulateRetrieval import simulation
 from miscFunctions import matplotlibX11, norm2absExtProf
 from ACCP_functions import findFineModes

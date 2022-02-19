@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import datetime as dt
-sys.path.append("/Users/wrespino/Synced/Local_Code_MacBook/GRASP_scripts")
+sys.path.append("/Users/wrespino/Synced/Local_Code_MacBook/GSFC-GRASP-Python-Interface")
 import runGRASP as rg
 import miscFunctions as mf
 from MADCAP_functions import loadVARSnetCDF

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """ Contains the definition of the osseData class, which imports OSSE NetCDF data and, if desired,
-exports it to a list of rslts dicts employing the convention used in GRASP_Scripts. """
+exports it to a list of rslts dicts employing the convention used in GSFC-GRASP-Python-Interface. """
 
 import numpy as np
 import glob

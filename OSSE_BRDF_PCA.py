@@ -61,7 +61,7 @@ else:
         od = osseData(osseDataPath, orbit, year, month, day, hour, random=random, wvls=wvls, pixInd=pixInd,
                       lidarVersion=None, maxSZA=maxSZA, oceanOnly=oceanOnly, loadPSD=False, verbose=True)
 
-        # extract the simulated observations and pack them in GRASP_scripts rslts dictionary format
+        # extract the simulated observations and pack them in GSFC-GRASP-Python-Interface rslts dictionary format
         fwdData  = fwdData + od.osse2graspRslts()
     with open(savePath, 'wb') as save_fid: pickle.dump(fwdData, save_fid)
     print('fwdData from all runs concatenated and saved to %s' % savePath)

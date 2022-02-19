@@ -4,8 +4,8 @@ import sys
 import re
 import datetime as dt
 from scipy.integrate import simps
-MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GRASP_scripts is in parent of MADCAP_scripts
-sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
+RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
+sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
 import runGRASP as rg
 from ACCP_functions import readKathysLidarσ
 import functools

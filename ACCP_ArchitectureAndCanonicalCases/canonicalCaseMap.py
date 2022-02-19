@@ -6,8 +6,8 @@ import numpy.random as rnd
 import tempfile
 import os
 import sys
-MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GRASP_scripts is in parent of MADCAP_scripts
-sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
+RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
+sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
 import runGRASP as rg
 
 def conCaseDefinitions(caseStr, nowPix):
@@ -271,7 +271,7 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=No
 def splitMultipleCases(caseStrs, caseLoadFct=1):
     cases = []
     loadings = []
-    for case in caseStrs.split('+'): # HINT: Sharon's files reader output is ordered [TOP_F, TOP_C, BOT_F, BOT_C]
+    for case in caseStrs.split('+'): # HINT: Sharons files' reader output is ordered [TOP_F, TOP_C, BOT_F, BOT_C]
         if 'case06a' in case.lower():
             cases.append(case.replace('case06a','smoke')) # smoke base τ550=1.0
             loadings.append(0.25*caseLoadFct)

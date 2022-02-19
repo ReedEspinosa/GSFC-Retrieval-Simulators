@@ -4,7 +4,7 @@
 
 import os
 import sys
-sys.path.append(os.path.join("..", "GRASP_scripts"))
+sys.path.append(os.path.join("..", "GSFC-GRASP-Python-Interface"))
 import matplotlib.pyplot as plt
 from runGRASP import graspDB, graspYAML
 from MADCAP_functions import loadVARSnetCDF, readVILDORTnetCDF

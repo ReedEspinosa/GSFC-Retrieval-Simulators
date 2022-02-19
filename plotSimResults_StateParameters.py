@@ -12,8 +12,8 @@ import scipy.stats as st
 import copy
 import pylab
 import itertools
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases'))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../GRASP_scripts'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../GSFC-GRASP-Python-Interface'))
 from simulateRetrieval import simulation
 import miscFunctions as mf
 import ACCP_functions as af

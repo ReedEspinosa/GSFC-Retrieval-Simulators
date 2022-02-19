@@ -28,8 +28,8 @@ import sys
 import re
 from netCDF4 import Dataset
 import numpy as np
-MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GRASP_scripts is in parent of MADCAP_scripts
-sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
+RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
+sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
 from miscFunctions import checkDiscover
 from MADCAP_functions import loadVARSnetCDF
 

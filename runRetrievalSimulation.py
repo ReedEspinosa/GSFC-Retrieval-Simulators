@@ -5,8 +5,8 @@
 import os
 import sys
 import itertools
-MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GRASP_scripts is in parent of MADCAP_scripts
-sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
+RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
+sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
 import simulateRetrieval as rs
 from miscFunctions import checkDiscover
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_ArchitectureAndCanonicalCases'))
@@ -20,7 +20,7 @@ if checkDiscover(): # DISCOVER
     nAng = int(sys.argv[2])
     basePath = os.environ['NOBACKUP']
     saveStart = os.path.join(basePath, 'synced/Working/TASNPP_simulation00/MultiPix31_')
-    ymlDir = os.path.join(basePath, 'MADCAP_Analysis_multiPix/ACCP_ArchitectureAndCanonicalCases/')
+    ymlDir = os.path.join(basePath, 'GSFC-Retrieval-Simulators_multiPix/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     geomFile = os.path.join(basePath, 'synced/Working/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt')
@@ -31,7 +31,7 @@ else: # MacBook Air
     n = 0
     nAng = 11
     saveStart = '/Users/wrespino/Desktop/TEST_V03_' # end will be appended
-    ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/MADCAP_Analysis_multiPix/ACCP_ArchitectureAndCanonicalCases/'
+    ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/GSFC-Retrieval-Simulators_multiPix/ACCP_ArchitectureAndCanonicalCases/'
     dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
     geomFile = '/Users/wrespino/Synced/Proposals/ROSES_TASNPP_Yingxi_2020/retrievalSimulation/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt'
     krnlPath = None
@@ -46,7 +46,7 @@ bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 
 instruments = ['modis']
 conCases = ['HuamboVegetation', 'NasaAmesVegetation'] # a1,a2,b1,..,o2 #180
-τFactor = [1.0] #1 - Syntax error on this line? Make sure you are running python 3!
+τFactor = [1.0] #1 - Syntax error on this line? Make sure you are running Python 3!
 rndIntialGuess = False # initial guess falls in middle 25% of min/max range
 verbose = True
 # more specific simulation options in runSim call below... 
