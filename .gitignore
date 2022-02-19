@@ -1,0 +1,13 @@
+__pycache__
+ACCP_ArchitectureAndCanonicalCases/A-CCP S-Lidar RFI Summary 190614 v3.xlsx
+ACCP_ArchitectureAndCanonicalCases/A-CCP S-Polarimeter RFI summary 190703.xlsx
+ACCP_ArchitectureAndCanonicalCases/ACCP_canonical_case_OU_V16.xlsx
+~$ACCP_canonical_case_OU_V16.xlsx
+~$A-CCP S-Polarimeter RFI summary 190703.xlsx
+~$A-CCP S-Lidar RFI Summary 190614 v3.xlsx
+*.DS_Store
+log/
+bench.sdat
+bench_FWD_IQU_rslts.txt
+ACCP_ArchitectureAndCanonicalCases/settings_BCK_POLAR_2modes_V0.8.3.yml
+ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_POLAR_1lambda_V0.8.3.yml
