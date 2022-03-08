@@ -6,6 +6,7 @@ import numpy.random as rnd
 import tempfile
 import os
 import sys
+import pickle
 RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
 sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
 import runGRASP as rg
@@ -71,6 +72,32 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['k'] = np.repeat(0.04, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    # Added by Anin
+    elif 'aerosol_campex' in caseStr.lower(): # ALL VARIABLES WITH MODES MUST BE 2D (ie. var[mode,wl]) or [] (will not change these values)
+
+        # A function to read the PSD from Jeff's file or ASCII and pass it to
+        # this definition
+        # read PSD bins
+        file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
+                    "Campex_dVDlnr36.pkl", 'rb')
+        dVdlnr = pickle.load(file)
+        file.close()
+        file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
+                    "Campex_r36.pkl", 'rb')
+        radiusBin = pickle.load(file)
+        file.close() 
+        vals['triaPSD'] = np.vstack([np.around(dVdlnr[0,0,:], decimals=3),
+                                     np.around(dVdlnr[0,1,:], decimals=2)]) # needs edit
+        # parameters above this line has to be modified [AP]
+        vals['sph'] = [[0.6], [0.9999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.12], [0.04]]) # gives AOD=4*[0.2165, 0.033499]=1.0
+        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.55, nwl) # mode 1
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.04, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
+        landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
         rv = [0.2, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -242,7 +269,7 @@ def conCaseDefinitions(caseStr, nowPix):
 
 def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=None, simBldProfs=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
     """ nowPix needed to: 1) set land percentage of nowPix and 2) get number of wavelengths """
-    aeroKeys = ['lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k']
+    aeroKeys = ['traiPSD','lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k']
     vals = dict()
     for caseStr,loading in splitMultipleCases(caseStrs, caseLoadFctr): # loop over all cases and add them together
         valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix)
@@ -402,6 +429,11 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.1)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.7*caseLoadFct)
+        elif 'case09a' in case.lower():
+            cases.append(case.replace('case09a','aerosol_campex')) # smoke base τ550=1.0
+            loadings.append(0.25*caseLoadFct)
+            # cases.append(case.replace('case09a','marine')) # marine base τ550=1.0
+            # loadings.append(0.1*caseLoadFct)
         else:
             cases.append(case)
             loadings.append(caseLoadFct)
