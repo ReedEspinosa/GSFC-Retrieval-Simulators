@@ -8,7 +8,7 @@ import sys
 import pprint
 
 # add GRASP_scripts, GSFC-Retrieval-Simulators and ACCP subfolder to paths (assumes GRASP_scripts and GSFC-Retrieval-Simulators are in the same parent folder)
-parentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # obtain THIS_FILE_PATH/../ in POSIX
+parentDir = os.path.dirname(os.path.dirname(os.path.realpath("__file__"))) # obtain THIS_FILE_PATH/../ in POSIX
 sys.path.append(parentDir) # that should be GSFC-Retrieval-Simulators – add it to Python path
 sys.path.append(os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases"))
 grandParentDir = os.path.dirname(parentDir)# THIS_FILE_PATH/../../ in POSIX (this is folder that contains GRASP_scripts and GSFC-Retrieval-Simulators
@@ -28,31 +28,30 @@ from canonicalCaseMap import setupConCaseYAML
 # <><><> BEGIN BASIC CONFIGURATION SETTINGS <><><>
 
 # Full path to save simulation results as a Python pickle
-savePath = '/Users/wrespino/Desktop/exampleSimulationTest.pkl'
+savePath = '/Users/aputhukkudy/Downloads/exampleSimulationTest#1.pkl'
 
 # Full path grasp binary
 # binGRASP = '/usr/local/bin/grasp'
-binGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
+binGRASP = '/Users/aputhukkudy/git/GRASP_GSFC/build_polar07/bin/grasp'
 
 # Full path grasp precomputed single scattering kernels
-krnlPath = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/src/retrieval/internal_files'
+krnlPath = '/Users/aputhukkudy/git/GRASP_GSFC/src/retrieval/internal_files'
 
 # Directory containing the foward and inversion YAML files you would like to use
 ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
-fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml') # foward YAML file
+fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda_CustomBins.yml') # foward YAML file
 bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml') # inversion YAML file
 
 # Other non-path related settings
-Nsims = 4 # the number of inversion to perform, each with its own random noise
-maxCPU = 2 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
-conCase = 'case06a' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+Nsims = 1 # the number of inversion to perform, each with its own random noise
+maxCPU = 1 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+conCase = 'case09a' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
 SZA = 30 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
 Phi = 0 # relative azimuth angle, φsolar-φsensor
 τFactor = 1.0 # scaling factor for total AOD
 instrument = 'polar0700' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
-# <><><> END BASIC CONFIGURATION SETTINGS <><><>
-
+# %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
 
 # create a dummy pixel object, conveying the measurement geometry, wavlengths, etc. (i.e. information in a GRASP SDATA file)
 nowPix = returnPixel(instrument, sza=SZA, relPhi=Phi, nowPix=None)
