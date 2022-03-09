@@ -79,24 +79,25 @@ def conCaseDefinitions(caseStr, nowPix):
         # this definition
         # read PSD bins
         file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
-                    "Campex_dVDlnr36.pkl", 'rb')
+                    "Campex_dVDlnr.pkl", 'rb')
         dVdlnr = pickle.load(file)
         file.close()
         file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
-                    "Campex_r36.pkl", 'rb')
+                    "Campex_r.pkl", 'rb')
         radiusBin = pickle.load(file)
         file.close() 
-        vals['triaPSD'] = np.vstack([np.around(dVdlnr[0,0,:], decimals=3),
-                                     np.around(dVdlnr[0,1,:], decimals=2)]) # needs edit
+        vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=3)]
+        # vals['triaPSD'] = np.vstack([np.around(dVdlnr[0,0,:], decimals=3),
+        #                              np.around(dVdlnr[0,1,:], decimals=3)]) # needs edit
         # parameters above this line has to be modified [AP]
-        vals['sph'] = [[0.6], [0.9999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.12], [0.04]]) # gives AOD=4*[0.2165, 0.033499]=1.0
-        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
-        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.55, nwl) # mode 1
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-        vals['k'] = np.repeat(0.04, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
+        vals['sph'] = [0.999] # mode 1, 2,...
+        vals['vol'] = np.array([0.756129]) # gives AOD=4*[0.2165, 0.033499]=1.0
+        vals['vrtHght'] = [3010] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+        vals['vrtHghtStd'] = [500] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = [np.repeat(1.55, nwl)] # mode 1
+        # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
+        vals['k'] = [np.repeat(0.04, nwl)] # mode 1
+        # vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...

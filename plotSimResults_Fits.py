@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 # import seaborn as sns
 
 # simRsltFile can have glob style wildcards
-simRsltFile = '/Users/wrespino/Synced/Working/SIM17_SITA_SeptAssessment/DRS_V01_Lidar050+polar07_case08b1_tFct1.00_orbSS_multiAngles_n32_nAngALL.pkl'
+simRsltFile = '/Users/aputhukkudy/Working_Data/ACCDAM/2022/Campex_Simulations/Mar2022/Flight#1/Spherical/Log/SimulationTestFlight#1_Level#1_AOD_2p0_550nm.pkl'
 # nn = int(sys.argv[1])
 # mm = int(sys.argv[2])
 # simRsltFile = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/ss450-g5nr.leV30.GRASP.YAML*-n%dpixStrt%d.polar07*.random.20060801_0000z.pkl' % (nn,mm*28)
@@ -66,7 +66,7 @@ color3 = plt.cm.Set1([0,0.125])/1.7 # polarimeter measurement fits
 
 measTypesL = [x for x in ['VExt', 'VBS', 'LS'] if 'fit_'+x in simA.rsltFwd[0] and not np.isnan(simA.rsltFwd[0]['fit_'+x][:,lIndL]).any()]
 print('Lidar data found at %5.3f μm' % simA.rsltFwd[0]['lambda'][lIndL])
-assert not np.isnan(simA.rsltFwd[0]['fit_'+measTypesL[0]][0,lIndL]), 'Nans found in LIDAR data at this wavelength! Is the value of lIndL valid?'
+# assert not np.isnan(simA.rsltFwd[0]['fit_'+measTypesL[0]][0,lIndL]), 'Nans found in LIDAR data at this wavelength! Is the value of lIndL valid?'
 
 # Polar Prep
 if 'fit_QoI' in simA.rsltBck[0]:
