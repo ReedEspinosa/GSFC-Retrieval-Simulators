@@ -69,7 +69,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.54, nwl) # mode 1
         vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-        vals['k'] = np.repeat(0.04, nwl) # mode 1
+        vals['k'] = np.repeat(0.01, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     # Added by Anin
@@ -79,11 +79,11 @@ def conCaseDefinitions(caseStr, nowPix):
         # this definition
         # read PSD bins
         file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
-                    "Campex_dVDlnr.pkl", 'rb')
+                    "Campex_dVDlnr36.pkl", 'rb')
         dVdlnr = pickle.load(file)
         file.close()
         file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
-                    "Campex_r.pkl", 'rb')
+                    "Campex_r36.pkl", 'rb')
         radiusBin = pickle.load(file)
         file.close() 
         vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=3)]
@@ -91,12 +91,12 @@ def conCaseDefinitions(caseStr, nowPix):
         #                              np.around(dVdlnr[0,1,:], decimals=3)]) # needs edit
         # parameters above this line has to be modified [AP]
         vals['sph'] = [0.999] # mode 1, 2,...
-        vals['vol'] = np.array([0.756129]) # gives AOD=4*[0.2165, 0.033499]=1.0
-        vals['vrtHght'] = [3010] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+        vals['vol'] = np.array([0.7326831395]) # gives AOD=4*[0.2165, 0.033499]=1.0
+        vals['vrtHght'] = [3000] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
         vals['vrtHghtStd'] = [500] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = [np.repeat(1.55, nwl)] # mode 1
         # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-        vals['k'] = [np.repeat(0.04, nwl)] # mode 1
+        vals['k'] = [np.repeat(0.002, nwl)] # mode 1
         # vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
@@ -430,11 +430,14 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.1)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.7*caseLoadFct)
-        elif 'case09a' in case.lower():
-            cases.append(case.replace('case09a','aerosol_campex')) # smoke base τ550=1.0
+        elif 'campex' in case.lower():
+            cases.append(case.replace('campex','aerosol_campex')) # smoke base τ550=1.0
             loadings.append(0.25*caseLoadFct)
             # cases.append(case.replace('case09a','marine')) # marine base τ550=1.0
             # loadings.append(0.1*caseLoadFct)
+        elif 'camp_test' in case.lower():
+            cases.append(case.replace('camp_test','smoke')) # smoke base τ550=1.0
+            loadings.append(0.25*caseLoadFct)
         else:
             cases.append(case)
             loadings.append(caseLoadFct)

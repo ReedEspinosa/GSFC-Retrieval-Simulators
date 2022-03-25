@@ -16,14 +16,14 @@ matplotlibX11()
 import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
-simRsltFile = '/Users/wrespino/Synced/Working/SIM16_SITA_JuneAssessment/TEST_V06_polar07_case08n1_tFct1.00_orbSS_sza48_phi35_n146_nAng4.pkl'
+simRsltFile = '/Users/aputhukkudy/Working_Data/ACCDAM/2022/Campex_Simulations/Mar2022/Flight#1/Spherical/Linear/16bins/SimulationTest_16Bins_AOD_0p1_550nm.pkl'
 # nn = int(sys.argv[1])
 # mm = int(sys.argv[2])
 # simRsltFile = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/ss450-g5nr.leV30.GRASP.YAML*-n%dpixStrt%d.polar07*.random.20060801_0000z.pkl' % (nn,mm*28)
 trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
-trgtλPolar = 0.55 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
+trgtλPolar = 0.87 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
 extErrPlot = True
-χthresh = 2.5
+χthresh = 5
 minSaved = 40
 fineModesBck = [0]
 
@@ -31,14 +31,14 @@ fineModesBck = [0]
 posFiles = glob(simRsltFile)
 assert len(posFiles)==1, 'glob found %d files but we expect exactly 1' % len(posFiles)
 simA = simulation(picklePath=posFiles[0])
-simA.conerganceFilter(χthresh=χthresh, minSaved=minSaved, verbose=True, forceχ2Calc=True)
+simA.conerganceFilter(χthresh=χthresh, minSaved=minSaved, verbose=True, forceχ2Calc=False)
 # simA.rsltFwd = simA.rsltFwd[0:40:9]
 # simA.rsltBck = simA.rsltBck[0:40:9]
 lIndL = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλLidar))
 lIndP = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλPolar))
 alphVal = 1/np.sqrt(len(simA.rsltBck))
 alphVal = 0.3
-color1 = plt.get_cmap("Dark2")
+color1 = plt.get_cmap("rainbow_r")
 color2 = plt.get_cmap("Dark2")
 
 
@@ -100,7 +100,7 @@ for rb in simA.rsltBck:
     if POLARpresent:
         for i,mt in enumerate(measTypesP): # Polarimeter retrieval meas & fit
             axP[i].plot(θfun(lIndP,rb), rb['meas_'+mt][:,lIndP], color=color2(0), alpha=alphVal)
-            axP[i].plot(θfun(lIndP,rb), rb['fit_'+mt][:,lIndP], color=color2(1), alpha=alphVal)
+            axP[i].plot(θfun(lIndP,rb), rb['fit_'+mt][:,lIndP], color=color1(1), alpha=alphVal)
     if LIDARpresent:
         for i in range(NfwdModes):
             βprof = norm2absExtProf(simA.rsltFwd[0]['βext'][i,:], simA.rsltFwd[0]['range'][i,:], simA.rsltFwd[0]['aodMode'][i,lIndL])
