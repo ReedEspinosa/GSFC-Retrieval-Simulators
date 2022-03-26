@@ -7,6 +7,7 @@ import tempfile
 import os
 import sys
 import pickle
+import re
 RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
 sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
 import runGRASP as rg
@@ -78,15 +79,51 @@ def conCaseDefinitions(caseStr, nowPix):
         # A function to read the PSD from Jeff's file or ASCII and pass it to
         # this definition
         # read PSD bins
-        file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
-                    "Campex_dVDlnr36.pkl", 'rb')
-        dVdlnr = pickle.load(file)
-        file.close()
-        file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
-                    "Campex_r36.pkl", 'rb')
-        radiusBin = pickle.load(file)
-        file.close() 
-        vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=3)]
+        try:
+            file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
+                        "Campex_dVDlnr36.pkl", 'rb')
+            dVdlnr = pickle.load(file)
+            file.close()
+            file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
+                        "Campex_r36.pkl", 'rb')
+            radiusBin = pickle.load(file)
+            file.close()
+        except Exception as e:
+            print('File loading error: check if the PSD file path is correct'\
+                  ' or not\n %s' %e)
+        # modifying PSD based on the flight and layer. This will be updated to
+        # include multiple layer information
+        
+        # flight
+        if 'flight#' in caseStr.lower():
+            try:
+                matchRe = re.compile(r'flight#\d{2}')
+                flight_numtemp = matchRe.search(caseStr.lower())
+                flight_num = int(flight_numtemp.group(0)[7:])
+            except Exception as e:
+                print('Could not find a matching string pattern: %s' %e)
+                flight_num = 1
+            nlayer = 1
+            
+            # layer
+            if 'layer#' in caseStr.lower():
+                try:
+                    matchRe = re.compile(r'layer#\d{2}')
+                    layer_numtemp = matchRe.search(caseStr.lower())
+                    nlayer = int(layer_numtemp.group(0)[6:])
+                except Exception as e:
+                    print('Could not find a matching string pattern: %s' %e)
+
+            print('Using the PSD from the flight# %d and layer#'\
+                  ' %d' %(flight_num, nlayer))
+            
+            # update the PSD based on flight an d layer information
+            # This needs modification to use multiple layers
+            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,nlayer-1,:], decimals=3)]
+        else:
+            # using the first flight PSD
+            print('Using the PSD from the first flight and first layer')
+            vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=3)]
         # vals['triaPSD'] = np.vstack([np.around(dVdlnr[0,0,:], decimals=3),
         #                              np.around(dVdlnr[0,1,:], decimals=3)]) # needs edit
         # parameters above this line has to be modified [AP]
@@ -96,7 +133,7 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['vrtHghtStd'] = [500] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = [np.repeat(1.55, nwl)] # mode 1
         # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-        vals['k'] = [np.repeat(0.002, nwl)] # mode 1
+        vals['k'] = [np.repeat(0.005, nwl)] # mode 1
         # vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
