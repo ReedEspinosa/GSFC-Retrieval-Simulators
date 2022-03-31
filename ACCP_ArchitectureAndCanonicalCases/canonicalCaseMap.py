@@ -3,6 +3,8 @@
 
 import numpy as np
 import numpy.random as rnd
+# to use the same seed for random number generator
+rnd.default_rng(seed=33)
 import tempfile
 import os
 import sys
@@ -135,13 +137,15 @@ def conCaseDefinitions(caseStr, nowPix):
         # vals['triaPSD'] = np.vstack([np.around(dVdlnr[0,0,:], decimals=3),
         #                              np.around(dVdlnr[0,1,:], decimals=3)]) # needs edit
         # parameters above this line has to be modified [AP]
-        vals['sph'] = [0.999] # mode 1, 2,...
+        vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
         vals['vol'] = np.array([0.7326831395]) # gives AOD=4*[0.2165, 0.033499]=1.0
         vals['vrtHght'] = [flight_vrtHght] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
         vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = [np.repeat(1.55, nwl)] # mode 1
+        vals['n'] = [np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)),
+                               nwl)] # mode 1
         # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-        vals['k'] = [np.repeat(0.005, nwl)] # mode 1
+        vals['k'] = [np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),
+                               nwl)] # mode 1
         # vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
