@@ -7,6 +7,7 @@ import os
 import sys
 import pprint
 import numpy as np
+import time
 
 # add GRASP_scripts, GSFC-Retrieval-Simulators and ACCP subfolder to paths (assumes GRASP_scripts and GSFC-Retrieval-Simulators are in the same parent folder)
 parentDir = os.path.dirname(os.path.dirname(os.path.realpath("__file__"))) # obtain THIS_FILE_PATH/../ in POSIX
@@ -32,10 +33,11 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
 
     # Full path to save simulation results as a Python pickle
     savePath = '/Users/aputhukkudy/Working_Data/ACCDAM/2022/Campex_Simulations/Mar2022/'\
-        'Flight#1/Spherical/Linear/%s/'\
-        'Camp2ex_%s_AOD_%sp%s_550nm.pkl' %(psd_type, psd_type,
+        'All_Flights/Spherical/Linear/%s/'\
+        'Camp2ex_%s_AOD_%sp%s_550nm_%s.pkl' %(psd_type, psd_type,
                                            str(τFactor).split('.')[0],
-                                           str(τFactor).split('.')[1][:3])
+                                           str(τFactor).split('.')[1][:3],
+                                           conCase)
     
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
@@ -50,8 +52,8 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex.yml' %psd_type) # inversion YAML file
     
     # Other non-path related settings
-    Nsims = 10 # the number of inversion to perform, each with its own random noise
-    maxCPU = 2 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+    Nsims = 6 # the number of inversion to perform, each with its own random noise
+    maxCPU = 3 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = 30 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
     Phi = 0 # relative azimuth angle, φsolar-φsensor
@@ -85,16 +87,24 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
 # %% Run multiple times
 # tau = np.logspace(np.log10(0.01), np.log10(2.0), 20)
 psd_type = '2modes' # '2modes' or '16bins'
-tau = np.linspace(0.7, 1, 1)
-conCase = 'campex_flight#16_layer#01'#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+tau = np.linspace(0.01, 1, 20)
+# conCase = 'campex_flight#16_layer#01'#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+start_time = time.time()
 for i in tau:
-    print('<-->'*20)
-    try:
-        print('<-->'*20)
-        print('Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
-        runMultiple(τFactor=i, psd_type=psd_type,
-                    conCase=conCase)
-    except Exception as e:
-        print('<---->'*10)
-        print('Run error: Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
-        print('Error message: %s' %e)
+    loop_start_time = time.time()
+    for j in np.r_[1:19]:
+        flight_loop_start_time = time.time()
+        for k in np.r_[1:5]:
+            conCase = 'campex_flight#%.2d_layer#%.2d' %(j,k)
+            print('<-->'*20)
+            try:
+                print('<-->'*20)
+                print('Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
+                runMultiple(τFactor=i, psd_type=psd_type,
+                            conCase=conCase)
+            except Exception as e:
+                print('<---->'*10)
+                print('Run error: Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
+                print('Error message: %s' %e)
+        print('Time to comple one loop for flight: %s'%(time.time()-flight_loop_start_time))
+    print('Time to comple one loop for AOD: %s'%(time.time()-loop_start_time))            
