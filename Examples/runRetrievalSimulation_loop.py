@@ -29,22 +29,24 @@ from canonicalCaseMap import setupConCaseYAML
 
 # <><><> BEGIN BASIC CONFIGURATION SETTINGS <><><>
 def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
-                conCase='campex'):
-
+                conCase='campex', instrument='polar07'):
+    # instrument
+    instrument=instrument
     # Full path to save simulation results as a Python pickle
-    savePath = '/Users/aputhukkudy/Working_Data/ACCDAM/2022/Campex_Simulations/Mar2022/'\
-        'All_Flights/Spherical/Linear/%s/'\
-        'Camp2ex_%s_AOD_%sp%s_550nm_%s.pkl' %(psd_type, psd_type,
-                                           str(τFactor).split('.')[0],
-                                           str(τFactor).split('.')[1][:3],
-                                           conCase)
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Apr2022/'\
+        'All_Flights/Spherical/%s/'\
+        '%sCamp2ex_%s_AOD_%sp%s_550nm_%s.pkl' %(psd_type, instrument,
+                                                psd_type,
+                                                str(τFactor).split('.')[0],
+                                                str(τFactor).split('.')[1][:3],
+                                                conCase)
     
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
-    binGRASP = '/Users/aputhukkudy/git/GRASP_GSFC/build_polar07_fast/bin/grasp'
+    binGRASP = '../../GRASP_GSFC/build_polar07_fast/bin/grasp_app'
     
     # Full path grasp precomputed single scattering kernels
-    krnlPath = '/Users/aputhukkudy/git/GRASP_GSFC/src/retrieval/internal_files'
+    krnlPath = '../../GRASP_GSFC/src/retrieval/internal_files'
     
     # Directory containing the foward and inversion YAML files you would like to use
     ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
@@ -52,13 +54,12 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex.yml' %psd_type) # inversion YAML file
     
     # Other non-path related settings
-    Nsims = 6 # the number of inversion to perform, each with its own random noise
-    maxCPU = 3 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+    Nsims = 18 # the number of inversion to perform, each with its own random noise
+    maxCPU = 6 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = 30 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
     Phi = 0 # relative azimuth angle, φsolar-φsensor
     τFactor = τFactor # scaling factor for total AOD
-    instrument = 'polar07' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
     
     # %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
     
@@ -83,25 +84,26 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     pprint.pprint(simA.analyzeSim(0)[0])
     
     # save simulated truth data to a NetCDF file
-    simA.saveSim_netCDF(savePath[:-4], verbose=True)
+    # simA.saveSim_netCDF(savePath[:-4], verbose=True)
 # %% Run multiple times
-# tau = np.logspace(np.log10(0.01), np.log10(2.0), 20)
+tau = np.logspace(np.log10(0.01), np.log10(2.0), 2)
 psd_type = '2modes' # '2modes' or '16bins'
-tau = np.linspace(0.01, 1, 20)
+instrument = 'polar07' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+# tau = np.linspace(0.01, 1, 20)
 # conCase = 'campex_flight#16_layer#01'#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
 start_time = time.time()
 for i in tau:
     loop_start_time = time.time()
-    for j in np.r_[1:19]:
+    for j in np.r_[1:2]:
         flight_loop_start_time = time.time()
-        for k in np.r_[1:5]:
+        for k in np.r_[1:2]:
             conCase = 'campex_flight#%.2d_layer#%.2d' %(j,k)
-            print('<-->'*20)
+            print('<-**->'*10)
             try:
                 print('<-->'*20)
                 print('Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
                 runMultiple(τFactor=i, psd_type=psd_type,
-                            conCase=conCase)
+                            conCase=conCase, instrument=instrument)
             except Exception as e:
                 print('<---->'*10)
                 print('Run error: Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
