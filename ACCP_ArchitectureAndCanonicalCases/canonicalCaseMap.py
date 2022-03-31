@@ -80,11 +80,11 @@ def conCaseDefinitions(caseStr, nowPix):
         # this definition
         # read PSD bins
         try:
-            file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
+            file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
                         "Campex_dVDlnr36.pkl", 'rb')
             dVdlnr = pickle.load(file)
             file.close()
-            file = open("/Users/aputhukkudy/git/GSFC-ESI-Scripts/Jeff-Project/"
+            file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
                         "Campex_r36.pkl", 'rb')
             radiusBin = pickle.load(file)
             file.close()
@@ -100,19 +100,27 @@ def conCaseDefinitions(caseStr, nowPix):
                 matchRe = re.compile(r'flight#\d{2}')
                 flight_numtemp = matchRe.search(caseStr.lower())
                 flight_num = int(flight_numtemp.group(0)[7:])
+                
             except Exception as e:
                 print('Could not find a matching string pattern: %s' %e)
                 flight_num = 1
+        
             nlayer = 1
-            
+            flight_vrtHght = 500
+            flight_vrtHghtStd = 200
             # layer
             if 'layer#' in caseStr.lower():
                 try:
                     matchRe = re.compile(r'layer#\d{2}')
                     layer_numtemp = matchRe.search(caseStr.lower())
                     nlayer = int(layer_numtemp.group(0)[6:])
+                    flight_vrtHght = 500*nlayer
+                    flight_vrtHghtStd = 200
+                        
                 except Exception as e:
                     print('Could not find a matching string pattern: %s' %e)
+                    flight_vrtHght = 500
+                    flight_vrtHghtStd = 200
 
             print('Using the PSD from the flight# %d and layer#'\
                   ' %d' %(flight_num, nlayer))
@@ -129,8 +137,8 @@ def conCaseDefinitions(caseStr, nowPix):
         # parameters above this line has to be modified [AP]
         vals['sph'] = [0.999] # mode 1, 2,...
         vals['vol'] = np.array([0.7326831395]) # gives AOD=4*[0.2165, 0.033499]=1.0
-        vals['vrtHght'] = [3000] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
-        vals['vrtHghtStd'] = [500] # mode 1, 2,... # Gaussian sigma in meters
+        vals['vrtHght'] = [flight_vrtHght] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+        vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = [np.repeat(1.55, nwl)] # mode 1
         # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
         vals['k'] = [np.repeat(0.005, nwl)] # mode 1

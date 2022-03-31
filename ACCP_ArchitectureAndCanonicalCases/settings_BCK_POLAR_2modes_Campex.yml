@@ -71,7 +71,7 @@ retrieval:
             lidar: true
             optical_properties: true
             particulate_matter: false
-            phase_matrix: false
+            phase_matrix: true
             refractive_index: true
             theoretical_bimodal_extinction: false
             theoretical_bimodal_parameters: false
@@ -110,8 +110,8 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max:   [0.24, 0.60]
-                    min:   [0.12, 0.35]
+                    max:   [0.25, 0.60]
+                    min:   [0.10, 0.35]
                     value: [0.13, 0.4]
             mode[2]:
                 initial_guess:
@@ -125,8 +125,8 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max:   [1.60]
-                    min:   [1.40]
+                    max:   [1.70]
+                    min:   [1.33]
                     value: [1.55]
                 single_pixel:
                     smoothness_constraints:
@@ -135,9 +135,9 @@ retrieval:
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max:   [1.60]
+                    max:   [1.70]
                     min:   [1.33]
-                    value: [1.4]
+                    value: [1.40]
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
@@ -171,12 +171,12 @@ retrieval:
             type: imaginary_part_of_refractive_index_spectral_dependent
         characteristic[5]:
             type: surface_water_cox_munk_iso
-            retrieved: false
+            retrieved: true
             mode[1]:
                 initial_guess:                       #1      #2      #3
                     value:                          [0.000000002]
                     min:                            [0.000000001]
-                    max:                            [0.030000000]
+                    max:                            [0.045000000]
                     index_of_wavelength_involved:   [1]
                 single_pixel:
                     smoothness_constraints:
@@ -185,32 +185,62 @@ retrieval:
             mode[2]:
                 initial_guess:                       #1      #2      #3
                     value:                          [0.999999]
-                    min:                            [0.999998]
+                    min:                            [0.599998]
                     max:                            [1.000000]
                     index_of_wavelength_involved:   [0]
             mode[3]:
                 initial_guess:                       #1      #2      #3
                     value:                          [0.01942]
                     min:                            [0.00406] # 1 m/s
-                    max:                            [0.040] # 0.027 -> 10 m/s
+                    max:                            [0.04000] # 0.027 -> 10 m/s
                     index_of_wavelength_involved:   [0]
         characteristic[6]:
             type: vertical_profile_parameter_height
-            retrieved: false
+            retrieved: true
             mode[1]:
                 initial_guess:                      #1
-                    value:                          [3000.0 ]
-                    min:                            [500.0]
-                    max:                            [4000.0]
+                    value:                          [1000.0 ]
+                    min:                            [400.0  ]
+                    max:                            [4000.0 ]
                     index_of_wavelength_involved:   [0      ]
             mode[2]:
                 initial_guess:                      #1
                     value:                          [3000.0 ]
-                    min:                            [200.0]
-                    max:                            [4500.0]
+                    min:                            [200.0  ]
+                    max:                            [4500.0 ]
                     index_of_wavelength_involved:   [0      ]
-#        DESERT INSPIRED (lower mins)
         characteristic[7]:
+            type: vertical_profile_parameter_standard_deviation
+            retrieved: true
+            mode[1]:
+                initial_guess:                      #1
+                    value:                          [900.0 ]
+                    min:                            [150.0  ]
+                    max:                            [1500.0 ]
+                    index_of_wavelength_involved:   [0      ]
+            mode[2]:
+                initial_guess:                      #1
+                    value:                          [900.0 ]
+                    min:                            [150.0  ]
+                    max:                            [1500.0 ]
+                    index_of_wavelength_involved:   [0      ]
+        characteristic[8]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [0.9999999]
+                    min:   [0.0001000]
+                    value: [0.9999998]
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [0.9999999]
+                    min:   [0.0000001]
+                    value: [0.9999998]
+            retrieved: true
+            type: sphere_fraction
+        # DESERT INSPIRED (lower mins)
+        characteristic[9]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1] # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
@@ -237,22 +267,7 @@ retrieval:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             retrieved: false
             type: surface_land_brdf_ross_li
-        characteristic[8]:
-            mode[1]:
-                initial_guess:
-                    index_of_wavelength_involved: [0]
-                    max:   [0.9999999]
-                    min:   [0.9900000]
-                    value: [0.9999998]
-            mode[2]:
-                initial_guess:
-                    index_of_wavelength_involved: [0]
-                    max:   [0.9999999]
-                    min:   [0.0000001]
-                    value: [0.9999998]
-            retrieved: false
-            type: sphere_fraction
-        characteristic[9]:
+        characteristic[10]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -263,18 +278,3 @@ retrieval:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 3}
             retrieved: false
             type: surface_land_polarized_maignan_breon
-        characteristic[10]:
-            type: vertical_profile_parameter_standard_deviation
-            retrieved: false
-            mode[1]:
-                initial_guess:                      #1
-                    value:                          [900.0 ]
-                    min:                            [250.0  ]
-                    max:                            [1500.0 ]
-                    index_of_wavelength_involved:   [0      ]
-            mode[2]:
-                initial_guess:                      #1
-                    value:                          [900.0 ]
-                    min:                            [250.0  ]
-                    max:                            [1500.0 ]
-                    index_of_wavelength_involved:   [0      ]
