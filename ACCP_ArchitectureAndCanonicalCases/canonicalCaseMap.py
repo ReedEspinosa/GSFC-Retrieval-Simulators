@@ -108,28 +108,34 @@ def conCaseDefinitions(caseStr, nowPix):
                 flight_num = 1
         
             nlayer = 1
-            flight_vrtHght = 500
-            flight_vrtHghtStd = 200
+            flight_vrtHght = 1000
+            flight_vrtHghtStd = 500
+            multiMode = False
             # layer
             if 'layer#' in caseStr.lower():
                 try:
                     matchRe = re.compile(r'layer#\d{2}')
                     layer_numtemp = matchRe.search(caseStr.lower())
-                    nlayer = int(layer_numtemp.group(0)[6:])
-                    flight_vrtHght = 500*nlayer
-                    flight_vrtHghtStd = 200
-                        
+                    nlayer = int(layer_numtemp.group(0)[6:]) 
+                    # to use all layers
+                    if not nlayer:
+                        multiMode = True
+                    # to use only one layer
+                    else:
+                        flight_vrtHght = 1000*nlayer
+                        flight_vrtHghtStd = 500   
                 except Exception as e:
                     print('Could not find a matching string pattern: %s' %e)
-                    flight_vrtHght = 500
-                    flight_vrtHghtStd = 200
+                    flight_vrtHght = 1000
+                    flight_vrtHghtStd = 500
 
             print('Using the PSD from the flight# %d and layer#'\
                   ' %d' %(flight_num, nlayer))
             
             # update the PSD based on flight an d layer information
             # This needs modification to use multiple layers
-            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,nlayer-1,:], decimals=3)]
+            if not nlayer==0:
+                vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,nlayer-1,:], decimals=3)]
         else:
             # using the first flight PSD
             print('Using the PSD from the first flight and first layer')
@@ -137,16 +143,40 @@ def conCaseDefinitions(caseStr, nowPix):
         # vals['triaPSD'] = np.vstack([np.around(dVdlnr[0,0,:], decimals=3),
         #                              np.around(dVdlnr[0,1,:], decimals=3)]) # needs edit
         # parameters above this line has to be modified [AP]
-        vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
-        vals['vol'] = np.array([0.7326831395]) # gives AOD=4*[0.2165, 0.033499]=1.0
-        vals['vrtHght'] = [flight_vrtHght] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
-        vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = [np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)),
+        if multiMode:
+            # Defining PSD of four layers for a particular flight
+            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:], decimals=3),
+                               np.around(dVdlnr[flight_num-1,1,:], decimals=3),
+                               np.around(dVdlnr[flight_num-1,2,:], decimals=3),
+                               np.around(dVdlnr[flight_num-1,3,:], decimals=3)]
+            vals['sph'] = [[0.999 + rnd.uniform(-0.99, 0)],
+                           [0.999 + rnd.uniform(-0.99, 0)],
+                           [0.999 + rnd.uniform(-0.99, 0)],
+                           [0.999 + rnd.uniform(-0.99, 0)]] # mode 1, 2,...
+            vals['vol'] = np.array([[0.1832], [0.1832], [0.1832], [0.1832]]) # gives AOD=4*[0.2165, 0.033499]=1.0
+            vals['vrtHght'] = [[1000], [2000], [3000], [4000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+            vals['vrtHghtStd'] = [[500], [500], [500], [500]] # mode 1, 2,... # Gaussian sigma in meters
+            nAero = 1.5
+            kAero = 0.005
+            vals['n'] = [list(np.repeat(nAero + (rnd.uniform(-0.14, 0.15)), nwl)),
+                         list(np.repeat(nAero + (rnd.uniform(-0.14, 0.15)), nwl)),
+                         list(np.repeat(nAero + (rnd.uniform(-0.14, 0.15)), nwl)),
+                         list(np.repeat(nAero + (rnd.uniform(-0.14, 0.15)), nwl))] # mode 1
+            # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
+            vals['k'] = [list(np.repeat(kAero + (rnd.uniform(-0.004,0.004)),nwl)),
+                         list(np.repeat(kAero + (rnd.uniform(-0.004,0.004)),nwl)),
+                         list(np.repeat(kAero + (rnd.uniform(-0.004,0.004)),nwl)),
+                         list(np.repeat(kAero + (rnd.uniform(-0.004,0.004)),nwl))]# mode 1
+        else:
+            vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
+            vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
+            vals['vrtHght'] =[flight_vrtHght] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+            vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
+            vals['n'] = [np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)),
+                                   nwl)] # mode 1
+            # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
+            vals['k'] = [np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),
                                nwl)] # mode 1
-        # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-        vals['k'] = [np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),
-                               nwl)] # mode 1
-        # vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
@@ -319,7 +349,7 @@ def conCaseDefinitions(caseStr, nowPix):
 
 def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=None, simBldProfs=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
     """ nowPix needed to: 1) set land percentage of nowPix and 2) get number of wavelengths """
-    aeroKeys = ['traiPSD','lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k']
+    aeroKeys = ['traiPSD','lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k', 'landPrct']
     vals = dict()
     for caseStr,loading in splitMultipleCases(caseStrs, caseLoadFctr): # loop over all cases and add them together
         valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix)

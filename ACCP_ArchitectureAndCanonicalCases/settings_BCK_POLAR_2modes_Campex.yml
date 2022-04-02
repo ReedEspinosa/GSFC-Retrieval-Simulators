@@ -199,14 +199,14 @@ retrieval:
             retrieved: true
             mode[1]:
                 initial_guess:                      #1
-                    value:                          [1000.0 ]
-                    min:                            [400.0  ]
+                    value:                          [1500.0 ]
+                    min:                            [1000.0  ]
                     max:                            [4000.0 ]
                     index_of_wavelength_involved:   [0      ]
             mode[2]:
                 initial_guess:                      #1
                     value:                          [3000.0 ]
-                    min:                            [200.0  ]
+                    min:                            [1000.0  ]
                     max:                            [4500.0 ]
                     index_of_wavelength_involved:   [0      ]
         characteristic[7]:
@@ -214,15 +214,15 @@ retrieval:
             retrieved: true
             mode[1]:
                 initial_guess:                      #1
-                    value:                          [900.0 ]
-                    min:                            [150.0  ]
-                    max:                            [1500.0 ]
+                    value:                          [900.0   ]
+                    min:                            [400.0   ]
+                    max:                            [1500.0  ]
                     index_of_wavelength_involved:   [0      ]
             mode[2]:
                 initial_guess:                      #1
-                    value:                          [900.0 ]
-                    min:                            [150.0  ]
-                    max:                            [1500.0 ]
+                    value:                          [900.0   ]
+                    min:                            [400.0   ]
+                    max:                            [1500.0  ]
                     index_of_wavelength_involved:   [0      ]
         characteristic[8]:
             mode[1]:
