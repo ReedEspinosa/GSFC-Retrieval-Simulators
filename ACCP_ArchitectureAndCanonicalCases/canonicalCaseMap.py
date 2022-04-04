@@ -149,24 +149,25 @@ def conCaseDefinitions(caseStr, nowPix):
                                np.around(dVdlnr[flight_num-1,1,:], decimals=3),
                                np.around(dVdlnr[flight_num-1,2,:], decimals=3),
                                np.around(dVdlnr[flight_num-1,3,:], decimals=3)]
-            vals['sph'] = [[0.999 + rnd.uniform(-0.99, 0)],
-                           [0.999 + rnd.uniform(-0.99, 0)],
-                           [0.999 + rnd.uniform(-0.99, 0)],
-                           [0.999 + rnd.uniform(-0.99, 0)]] # mode 1, 2,...
+            sphFrac = 0.999 + rnd.uniform(-0.99, 0)
+            vals['sph'] = [sphFrac,
+                           sphFrac,
+                           sphFrac,
+                           sphFrac] # mode 1, 2,...
             vals['vol'] = np.array([[0.1832], [0.1832], [0.1832], [0.1832]]) # gives AOD=4*[0.2165, 0.033499]=1.0
             vals['vrtHght'] = [[1000], [2000], [3000], [4000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [[500], [500], [500], [500]] # mode 1, 2,... # Gaussian sigma in meters
-            nAero = 1.5
-            kAero = 0.005
-            vals['n'] = [list(np.repeat(nAero + (rnd.uniform(-0.14, 0.15)), nwl)),
-                         list(np.repeat(nAero + (rnd.uniform(-0.14, 0.15)), nwl)),
-                         list(np.repeat(nAero + (rnd.uniform(-0.14, 0.15)), nwl)),
-                         list(np.repeat(nAero + (rnd.uniform(-0.14, 0.15)), nwl))] # mode 1
+            nAero = np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)), nwl)
+            kAero = np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),nwl)
+            vals['n'] = [list(nAero),
+                         list(nAero),
+                         list(nAero),
+                         list(nAero)] # mode 1
             # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-            vals['k'] = [list(np.repeat(kAero + (rnd.uniform(-0.004,0.004)),nwl)),
-                         list(np.repeat(kAero + (rnd.uniform(-0.004,0.004)),nwl)),
-                         list(np.repeat(kAero + (rnd.uniform(-0.004,0.004)),nwl)),
-                         list(np.repeat(kAero + (rnd.uniform(-0.004,0.004)),nwl))]# mode 1
+            vals['k'] = [list(kAero),
+                         list(kAero),
+                         list(kAero),
+                         list(kAero)]# mode 1
         else:
             vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
             vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
