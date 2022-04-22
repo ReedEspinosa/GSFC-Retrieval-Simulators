@@ -192,32 +192,32 @@ retrieval:
             retrieved: true
             mode[1]:
                 initial_guess:                      #1
-                    value:                          [1000.0 ]
-                    min:                            [400.0  ]
+                    value:                          [1500.0 ]
+                    min:                            [1000.0  ]
                     max:                            [4000.0 ]
                     index_of_wavelength_involved:   [0      ]
             mode[2]:
                 initial_guess:                      #1
                     value:                          [3000.0 ]
-                    min:                            [200.0  ]
+                    min:                            [1000.0  ]
                     max:                            [4500.0 ]
                     index_of_wavelength_involved:   [0      ]
-        characteristic[7]:
+        characteristic[6]:
             type: vertical_profile_parameter_standard_deviation
             retrieved: true
             mode[1]:
                 initial_guess:                      #1
                     value:                          [900.0 ]
-                    min:                            [150.0  ]
+                    min:                            [400.0  ]
                     max:                            [1500.0 ]
                     index_of_wavelength_involved:   [0      ]
             mode[2]:
                 initial_guess:                      #1
                     value:                          [900.0 ]
-                    min:                            [150.0  ]
+                    min:                            [400.0  ]
                     max:                            [1500.0 ]
                     index_of_wavelength_involved:   [0      ]
-        characteristic[8]:
+        characteristic[7]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
@@ -233,7 +233,7 @@ retrieval:
             retrieved: true
             type: sphere_fraction
         # DESERT INSPIRED (lower mins)
-        characteristic[9]:
+        characteristic[8]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1] # 0.3600, 0.3800, 0.4100, 0.5500, 0.6700, 0.8700, 1.5500, 1.6500 μm
@@ -260,7 +260,7 @@ retrieval:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             retrieved: false
             type: surface_land_brdf_ross_li
-        characteristic[10]:
+        characteristic[9]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]

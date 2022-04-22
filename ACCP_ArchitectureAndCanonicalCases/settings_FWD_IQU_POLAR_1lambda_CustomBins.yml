@@ -55,7 +55,7 @@ retrieval:
         verbose: true
 
     products:
-        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: false, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: false, type: false}
+        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: true, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: false, type: false}
         error_estimation:
             aerosol: {lidar: false, optical_properties: false}
             parameters: false
