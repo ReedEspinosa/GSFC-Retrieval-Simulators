@@ -141,6 +141,8 @@ class simulation(object):
             for pmStr in ['angle', 'p11','p12','p22','p33','p34','p44','range','βext']:
                 [rb.pop(pmStr, None) for rb in self.rsltBck]
                 if len(self.rsltFwd) > 1: [rf.pop(pmStr, None) for rf in self.rsltFwd]
+        self.rsltBck[0]['version'] = rg.RSLT_DICT_VERSION if 'RSLT_DICT_VERSION' in dir(rg) else '0.0'
+        self.rsltFwd[0]['version'] = rg.RSLT_DICT_VERSION if 'RSLT_DICT_VERSION' in dir(rg) else '0.0'
         if verbose: print('Saving simulation results to %s' %  savePath)
         with open(savePath, 'wb') as f:
             pickle.dump(list(self.rsltBck), f, pickle.HIGHEST_PROTOCOL)
