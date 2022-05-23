@@ -167,37 +167,38 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
     if mtch.group(1).lower() == 'polar': # measNm should be string w/ format 'polarN', where N is polarimeter number
         if int(mtch.group(2)) in [4, 7, 8]: # S-Polar04 (a-d), S-Polar07, S-Polar08
             relErr = 0.03
-            relDoLPErr = 0.005
+            absDoLPErr = 0.005 # absDoLPErr is the absolute 1 sigma error in DoLP, independent of I,Q or U
         elif int(mtch.group(2)) in [700]: # "perfect" version of polarimeter 7 (1e-4 standard noise)
             relErr = 0.000003
-            relDoLPErr = 0.0000005
+            absDoLPErr = 0.0000005
         elif int(mtch.group(2)) in [1, 2, 3]: # S-Polar01, S-Polar2 (a-b), S-Polar3 [1st two state ΔI as "4% to 6%" in RFI]
             relErr = 0.05
-            relDoLPErr = 0.005
+            absDoLPErr = 0.005
         elif int(mtch.group(2)) in [9]: # S-Polar09
             relErr = 0.03
-            relDoLPErr = 0.003
+            absDoLPErr = 0.003
         elif int(mtch.group(2)) in [5]: # S-Polar05
             relErr = 0.02
-            relDoLPErr = 0.003
+            absDoLPErr = 0.003
         elif int(mtch.group(2)) in [10]: # S-Polar10
             relErr = 0.05
-            relDoLPErr = 0.010
+            absDoLPErr = 0.010
         else:
             assert False, 'No error model found for %s!' % measNm # S-Polar06 has DoLP dependent ΔDoLP
         trueSimI = rsltFwd['fit_I'][:,l]
         trueSimQ = rsltFwd['fit_Q'][:,l]
         trueSimU = rsltFwd['fit_U'][:,l]
         assert len(trueSimI)==len(trueSimQ) and len(trueSimI)==len(trueSimU), wrngNumMeasMsg
-        noiseVctI = np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimI))
+#         relErr = 0.03 # relErr is the 1 sigma error in the intensity I
+#         absDoLPErr = 0.005 # absDoLPErr is the absolute 1 sigma error in DoLP, independent of I,Q or U
+        noiseVctI = np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimI)) # draw from log-normal distribution for relative errors
         fwdSimI = trueSimI*noiseVctI
-        fwdSimQ = trueSimQ*noiseVctI # we scale Q and U too to keep q, u and DoLP inline with truth
+        fwdSimQ = trueSimQ*noiseVctI # scale Q and U too so that the correct values of q, u and DoLP are preserved
         fwdSimU = trueSimU*noiseVctI
-        dpRnd = np.random.normal(size=len(trueSimI))*relDoLPErr
-        dPol = trueSimI*np.sqrt((trueSimQ**2+trueSimU**2)/(trueSimQ**4+trueSimU**4)) # true is fine b/c noiceVctI factors cancel themselves out
-        dpRnd = np.random.normal(size=len(trueSimI))*relDoLPErr
+        dPol = trueSimI*np.sqrt((trueSimQ**2+trueSimU**2)/(trueSimQ**4+trueSimU**4)) # dPol*absDoLPErr = sigma_Q/Q = sigma_U/U
+        dpRnd = np.random.normal(size=len(trueSimI), scale=absDoLPErr)
         fwdSimQ = fwdSimQ*(1+dpRnd*dPol)
-        dpRnd = np.random.normal(size=len(trueSimI))*relDoLPErr # Q and U errors are NOT correlated here (this is what we want)
+        dpRnd = np.random.normal(size=len(trueSimI), scale=absDoLPErr) # We do not want correlated errors so we do a separate random draw for U
         fwdSimU = fwdSimU*(1+dpRnd*dPol)
         return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
