@@ -5,8 +5,8 @@
 import numpy as np
 import os
 import sys
-MADCAPparentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GRASP_scripts is in parent of MADCAP_scripts
-sys.path.append(os.path.join(MADCAPparentDir, "GRASP_scripts"))
+RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
+sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
 from simulateRetrieval import simulation
 
 simRsltFile = '/Users/wrespino/synced/Working/SIM14_lidarPolACCP/SIM202_4mode_lidar05+polar07_case-case06c_sza30_phi0_tFct1.00_V2.pkl'

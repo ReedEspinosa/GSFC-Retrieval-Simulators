@@ -9,8 +9,8 @@ import numpy as np
 import os
 import sys
 from glob import glob
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../MADCAP_Analysis/ACCP_ArchitectureAndCanonicalCases'))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../GRASP_scripts'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../GSFC-GRASP-Python-Interface'))
 from simulateRetrieval import simulation
 from ACCP_functions import normalizeError, findLayerSeperation, findFineModes
 
