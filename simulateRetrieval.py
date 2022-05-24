@@ -16,10 +16,16 @@ if GRASP_Python_Path not in sys.path: sys.path.append(GRASP_Python_Path)
 import runGRASP as rg
 import miscFunctions as ms
 
+
 class simulation(object):
-    def __init__(self, nowPix=None, picklePath=None):
+    def __init__(self, nowPix=None, picklePath=None, standardizePSD=True):
+        """
+        nowPix – dummy pixel object with measurement geometry, wavelengths, etc. (i.e. info in a GRASP SDATA)
+        picklePath – path to pickle file from a previously run simulation (either this or nowPix must be provided)
+        standardizePSD – regrid all (fwd and back) particle size disruptions to a common set of radii
+        """
         assert not (nowPix and picklePath), 'Either nowPix or picklePath should be provided, but not both.'
-        if picklePath: self.loadSim(picklePath)
+        if picklePath: self.loadSim(picklePath, standardizePSD)
         if nowPix is None:
             self.nowPix = None
             return
@@ -158,7 +164,7 @@ class simulation(object):
             if verbose: print('Saving simulation %s results to %s' %  (dsc.lower(), savePathNow))
             gRun.output2netCDF(savePathNow, rsltDict=rslts)
 
-    def loadSim(self, picklePath):
+    def loadSim(self, picklePath, standardizePSD=True):
         with open(picklePath, 'rb') as f:
             self.rsltBck = rg.frmtLoadedRslts(pickle.load(f))
             try:
@@ -166,6 +172,51 @@ class simulation(object):
             except EOFError: # this was an older file (created before Jan 2020)
                 self.rsltFwd = [self.rsltBck[-1]] # resltFwd as a array of len==0 (not totaly backward compatible, it used to be straight dict)
                 self.rsltBck = self.rsltBck[:-1]
+        if standardizePSD: self._standardizePSD()
+
+    def _standardizePSD(self):    
+        """
+        This will place all fwd and back PSD on a common radii grid spanning from the smallest
+            to largest size from all PSDs at the finest, non-redundant grid spacing.
+        """
+          # This handles radii that vary from pixel-to-pixel but takes ~1 sec for sim with 100k pixels
+#         if np.all([rs['r'][:,0]==rs['r'][0,0] for rs in self.rsltFwd]) & \
+#            np.all([rs['r'][:,0]==rs['r'][0,0] for rs in self.rsltBck]) & \
+#            np.all([rs['r'][:,-1]==rs['r'][0,-1] for rs in self.rsltFwd]) & \
+#            np.all([rs['r'][:,-1]==rs['r'][0,-1] for rs in self.rsltBck]): # This also still needs back-to-fwd cross check to be complete (see below)
+#            return # interpolation is slow; skip it if not required
+        # This is effectively instantaneous but will cause method to fail to standardize if radii vary pixel-to-pixel
+        if np.all(self.rsltFwd[0]['r'][:,0]==self.rsltFwd[0]['r'][0,0]) and \
+           np.all(self.rsltBck[0]['r'][:,0]==self.rsltBck[0]['r'][0,0]) and \
+           np.all(self.rsltFwd[0]['r'][:,-1]==self.rsltFwd[0]['r'][0,-1]) and \
+           np.all(self.rsltBck[0]['r'][:,-1]==self.rsltBck[0]['r'][0,-1]) and \
+           self.rsltFwd[0]['r'][0,0]==self.rsltBck[0]['r'][0,0] and \
+           self.rsltFwd[0]['r'][0,-1]==self.rsltBck[0]['r'][0,-1]:
+           return # interpolation is slow; skip it if not required
+        # This handles radii that vary from pixel-to-pixel but takes ~10 sec for sim with 100k pixels
+#         rmin = np.inf
+#         rmax = 0
+#         dlnr = np.inf
+#         for rsltDictList in [self.rsltFwd, self.rsltBck]:
+#             for rs in rsltDictList: # best to loop over fwd & back separately because they are not guaranteed to have same len()
+#                 rmin = min(rmin, rs['r'].min())
+#                 rmax = max(rmax, rs['r'].max())
+#                 dlnr = min(dlnr, np.diff(np.log(rs['r'])).min()) # possibly change this to log10 everywhere for efficiency at end
+        rmin = min(self.rsltFwd[0]['r'].min(), self.rsltBck[0]['r'].min())
+        rmax = max(self.rsltFwd[0]['r'].max(), self.rsltBck[0]['r'].max())
+        dlnrFwd = np.diff(np.log(self.rsltFwd[0]['r'])).min()
+        dlnrBck = np.diff(np.log(self.rsltBck[0]['r'])).min()
+        dlnr = min(dlnrFwd, dlnrBck)
+        N = int((np.log(rmax)-np.log(rmin))/dlnr+1) # <- ln(r_max) = ln(r_min)+lndr*(N-1)
+        r_stand = np.logspace(np.log10(rmin), np.log10(rmax), N)
+        for rsltDictList in [self.rsltFwd, self.rsltBck]:
+            for i,rs in enumerate(rsltDictList): # best to loop over fwd & bck separately because they are not guaranteed to have same len()
+                Nmode = rs['r'].shape[0]
+                dvdlnr = np.empty((Nmode, len(r_stand)))
+                for j,(r,dv) in enumerate(zip(rs['r'], rs['dVdlnr'])):
+                    dvdlnr[j,:] = np.interp(r_stand, r, dv, left=0, right=0) # this could cause interpolation errors...
+                rsltDictList[i]['dVdlnr'] = dvdlnr
+                rsltDictList[i]['r'] = np.tile(r_stand, [Nmode,1])
 
     def _addReffMode(self, modeCut=None, Force=False):
         oneAdded = False
