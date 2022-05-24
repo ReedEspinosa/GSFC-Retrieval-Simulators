@@ -176,9 +176,9 @@ class simulation(object):
 
     def _standardizePSD(self):    
         """
-        This will place all fwd and back PSD on a common radii grid spanning from the smallest
-            to largest size from all PSDs at the finest, non-redundant grid spacing.
+        Place all fwd and back PSD on a common radii grid spanning smallest to largest size from all PSDs
         """
+        fidelityFactor = 2 # increase to shrink new grid spacing (dlnr_new = min(dlnr)/fidelityFactor)
           # This handles radii that vary from pixel-to-pixel but takes ~1 sec for sim with 100k pixels
 #         if np.all([rs['r'][:,0]==rs['r'][0,0] for rs in self.rsltFwd]) & \
 #            np.all([rs['r'][:,0]==rs['r'][0,0] for rs in self.rsltBck]) & \
@@ -207,7 +207,7 @@ class simulation(object):
         dlnrFwd = np.diff(np.log(self.rsltFwd[0]['r'])).min()
         dlnrBck = np.diff(np.log(self.rsltBck[0]['r'])).min()
         dlnr = min(dlnrFwd, dlnrBck)
-        N = int((np.log(rmax)-np.log(rmin))/dlnr+1) # <- ln(r_max) = ln(r_min)+lndr*(N-1)
+        N = int(fidelityFactor*(np.log(rmax)-np.log(rmin))/dlnr+1) # <- ln(r_max) = ln(r_min)+lndr*(N-1)
         r_stand = np.logspace(np.log10(rmin), np.log10(rmax), N)
         for rsltDictList in [self.rsltFwd, self.rsltBck]:
             for i,rs in enumerate(rsltDictList): # best to loop over fwd & bck separately because they are not guaranteed to have same len()
