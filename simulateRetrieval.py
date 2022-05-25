@@ -213,8 +213,13 @@ class simulation(object):
             for i,rs in enumerate(rsltDictList): # best to loop over fwd & bck separately because they are not guaranteed to have same len()
                 Nmode = rs['r'].shape[0]
                 dvdlnr = np.empty((Nmode, len(r_stand)))
-                for j,(r,dv) in enumerate(zip(rs['r'], rs['dVdlnr'])):
+                for j,(r,dv) in enumerate(zip(rs['r'], rs['dVdlnr'])): # loop over modes
                     dvdlnr[j,:] = np.interp(r_stand, r, dv, left=0, right=0) # this could cause interpolation errors...
+                    leftInd = r_stand<r.min()
+                    if 'rv' in rs and leftInd.any(): # fill in in below current modes lower bound using rv/σ
+                        r_left = np.r_[r_stand[leftInd], r[0]]
+                        dv_left = ms.logNormal(rs['rv'][j], rs['sigma'][j], r_left)[0]
+                        dvdlnr[j,leftInd] = dv[0]/dv_left[-1]*dv_left[:-1] # stitch to existing dvdlnr
                 rsltDictList[i]['dVdlnr'] = dvdlnr
                 rsltDictList[i]['r'] = np.tile(r_stand, [Nmode,1])
 
