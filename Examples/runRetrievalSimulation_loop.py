@@ -107,7 +107,7 @@ for i in tau:
     for j in np.r_[1:2]:
         flight_loop_start_time = time.time()
         for k in np.r_[0]:
-            conCase = 'campex_flight#%.2d_layer#%.2d' %(j,k)
+            conCase = 'addCoarse_campex_flight#%.2d_layer#%.2d' %(j,k)
             print('<-**->'*10)
             try:
                 print('<-->'*20)

@@ -12,17 +12,8 @@ import pickle
 import re
 RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
 sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
+from miscFunctions import logNormal
 import runGRASP as rg
-
-def dvdlnrCustom(radii, rv, lnsigma):
-    temp = 0
-    dvdlnr_ = np.zeros(len(radii))
-    for i in radii:
-        num = np.exp(-((np.log(i)-np.log(rv))/(lnsigma))**2/2)
-        den = np.sqrt(2*np.pi*(lnsigma)**2)
-        dvdlnr_[temp] = num/den
-        temp +=1
-    return dvdlnr_
 
 def conCaseDefinitions(caseStr, nowPix):
     """ '+' is used to seperate multiple cases (implemented in splitMultipleCases below)
@@ -96,7 +87,9 @@ def conCaseDefinitions(caseStr, nowPix):
             # Multiple mode in coarse mode will crash
             σ = [0.70] # mode 1, 2,...
             rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-            vals['triaPSD'] = [dvdlnrCustom(radiusBin, rv[0], σ[0])]
+            dvdr = logNormal(rv[0], σ[0], radiusBin)
+            dvdlnr = dvdr[0]*radiusBin
+            vals['triaPSD'] = [dvdlnr]
             vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
             vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
             vals['vrtHght'] =[3000] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
@@ -211,8 +204,10 @@ def conCaseDefinitions(caseStr, nowPix):
                 # together
                 σ = [0.70] # mode 1, 2,...
                 rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+                dvdr = logNormal(rv[0], σ[0], radiusBin)
+                dvdlnr = dvdr[0]*radiusBin
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
-                                            [dvdlnrCustom(radiusBin, rv[0], σ[0])]])
+                                            [dvdlnr]])
                 vals['sph'] = vals['sph'] + [sphFrac]
                 vals['vol'] = np.array([[0.14652], [0.14652], [0.14652],
                                         [0.14652], [0.14652]])
@@ -571,6 +566,8 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             # loadings.append(0.25*caseLoadFct)
         elif 'camp_test' in case.lower():
             cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
+            loadings.append(0.25*caseLoadFct)
+            cases.append(case.replace('camp_test','aerosol_campex'))
             loadings.append(0.25*caseLoadFct)
         else:
             cases.append(case)
