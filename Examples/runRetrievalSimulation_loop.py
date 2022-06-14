@@ -36,7 +36,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     instrument=instrument
     # Full path to save simulation results as a Python pickle
     savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/'\
-        'All_Flights/Spherical/%s/SZA%s/'\
+        'All_Flights/withCoarseMode/%s/SZA%s/'\
         '%sCamp2ex_%s_AOD_%sp%s_550nm_%s.pkl' %( psd_type, SZA, instrument,
                                                 psd_type,
                                                 str(τFactor).split('.')[0],
@@ -56,8 +56,8 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex.yml' %psd_type) # inversion YAML file
     
     # Other non-path related settings
-    Nsims = 1 # the number of inversion to perform, each with its own random noise
-    maxCPU = 1 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+    Nsims = 4 # the number of inversion to perform, each with its own random noise
+    maxCPU = 4 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
     Phi = 0 # relative azimuth angle, φsolar-φsensor
@@ -88,11 +88,11 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     # save simulated truth data to a NetCDF file
     # simA.saveSim_netCDF(savePath[:-4], verbose=True)
 # %% Sun-Satellite geometry information
-tau = np.logspace(np.log10(1.0), np.log10(2.0), 1)
+tau = np.logspace(np.log10(0.01), np.log10(2.0), 1)
 psd_type = '2modes' # '2modes' or '16bins'
 instrument = 'megaharp01' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 SZA = 30
-useRealGeometry = True
+useRealGeometry = False
 if useRealGeometry:
     rawAngleDir = '/Users/aputhukkudy/Working_Data/ACCDAM/onOrbitObservationGeometryACCP/angularSampling/colarco_20200520_g5nr_pdfs'
     PCAslctMatFilePath = '/Users/aputhukkudy/Working_Data/ACCDAM/onOrbitObservationGeometryACCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
@@ -100,7 +100,7 @@ if useRealGeometry:
     orbit = 'SS'
     SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbit)
 # %% Run multiple times
-# conCase = 'campex_flight#16_layer#01'#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+# conCase = 'campex_flight#16_layer#01'#'camp_test' # canonical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
 start_time = time.time()
 for i in tau:
     loop_start_time = time.time()
