@@ -204,13 +204,14 @@ def conCaseDefinitions(caseStr, nowPix):
                 # together
                 σ = [0.70] # mode 1, 2,...
                 rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-                dvdr = logNormal(rv[0], σ[0], radiusBin)
-                dvdlnr = dvdr[0]*radiusBin
+                radiusBin_ = np.logspace(np.log10(0.1), np.log10(15), 36)
+                dvdr = logNormal(rv[0], σ[0], radiusBin_)
+                dvdlnr = dvdr[0]*radiusBin_
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
                                             [dvdlnr]])
                 vals['sph'] = vals['sph'] + [sphFrac]
                 vals['vol'] = np.array([[0.14652], [0.14652], [0.14652],
-                                        [0.14652], [0.14652]])
+                                        [0.14652], [0.13000]])
                 vals['vrtHght'] = vals['vrtHght'] + [[3000]]
                 vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[500]]
                 nAero = np.repeat(1.41 + (rnd.uniform(-0.05, 0.05)), nwl)
