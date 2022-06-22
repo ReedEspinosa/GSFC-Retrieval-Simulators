@@ -110,11 +110,11 @@ def conCaseDefinitions(caseStr, nowPix):
         # read PSD bins
         try:
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_dVDlnr36.pkl", 'rb')
+                        "Campex_dVDlnr144.pkl", 'rb')
             dVdlnr = pickle.load(file)
             file.close()
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_r36.pkl", 'rb')
+                        "Campex_r144.pkl", 'rb')
             radiusBin = pickle.load(file)
             file.close()
             
@@ -204,7 +204,8 @@ def conCaseDefinitions(caseStr, nowPix):
                 # together
                 σ = [0.70] # mode 1, 2,...
                 rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-                radiusBin_ = np.logspace(np.log10(0.1), np.log10(15), 36)
+                nbins = np.len(radiusBin)
+                radiusBin_ = np.logspace(np.log10(0.005), np.log10(15), nbins)
                 dvdr = logNormal(rv[0], σ[0], radiusBin)
                 dvdlnr = dvdr[0]*radiusBin_
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
