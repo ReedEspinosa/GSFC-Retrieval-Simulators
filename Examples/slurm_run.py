@@ -15,9 +15,9 @@ job_directory = "%s" %os.getcwd()
 # mkdir_p(job_directory)
 # mkdir_p(data_dir)
 
-tau = np.logspace(np.log10(0.01), np.log10(2), 30)
+tau = np.logspace(np.log10(1.1), np.log10(2), 2)
 jobName = 'A'
-SZA = 15
+SZA = 30
 jobName = jobName + str(SZA)
 
 instrument = 'megaharp01'
@@ -42,7 +42,7 @@ for aod in tau:
         fh.writelines("#SBATCH --partition=LocalQ\n")
         # fh.writelines("#SBATCH --qos=short\n")
         fh.writelines("#SBATCH --nodes=1\n")
-        fh.writelines("#SBATCH --ntasks-per-node=5\n\n")
+        fh.writelines("#SBATCH --ntasks-per-node=10\n\n")
         fh.writelines("#SBATCH --mail-type=ALL\n")
         fh.writelines("#SBATCH --mail-user=$USER@umbc.edu\n")
         fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s" %(aod, instrument, SZA))

@@ -80,7 +80,7 @@ def conCaseDefinitions(caseStr, nowPix):
     elif 'coarse_mode_campex' in caseStr.lower():
         try:
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_r36.pkl", 'rb')
+                        "Campex_r72.pkl", 'rb')
             radiusBin = pickle.load(file)
             file.close()            
             
@@ -110,11 +110,11 @@ def conCaseDefinitions(caseStr, nowPix):
         # read PSD bins
         try:
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_dVDlnr144.pkl", 'rb')
+                        "Campex_dVDlnr72.pkl", 'rb')
             dVdlnr = pickle.load(file)
             file.close()
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_r144.pkl", 'rb')
+                        "Campex_r72.pkl", 'rb')
             radiusBin = pickle.load(file)
             file.close()
             
@@ -204,7 +204,7 @@ def conCaseDefinitions(caseStr, nowPix):
                 # together
                 σ = [0.70] # mode 1, 2,...
                 rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-                nbins = np.len(radiusBin)
+                nbins = np.size(radiusBin)
                 radiusBin_ = np.logspace(np.log10(0.005), np.log10(15), nbins)
                 dvdr = logNormal(rv[0], σ[0], radiusBin)
                 dvdlnr = dvdr[0]*radiusBin_

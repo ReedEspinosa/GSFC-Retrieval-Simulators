@@ -36,7 +36,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     instrument=instrument
     # Full path to save simulation results as a Python pickle
     savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/'\
-        'All_Flights/withCoarseMode/%s/SZA%s/'\
+        'Test/withCoarseMode/%s/SZA%s/'\
         '%sCamp2ex_%s_AOD_%sp%s_550nm_%s.pkl' %( psd_type, SZA, instrument,
                                                 psd_type,
                                                 str(τFactor).split('.')[0],
@@ -45,7 +45,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
-    binGRASP = '../../GRASP_GSFC/build_polar07_fast/bin/grasp_app'
+    binGRASP = '../../GRASP_GSFC/build_megaharp01/bin/grasp_app'
     
     # Full path grasp precomputed single scattering kernels
     krnlPath = '../../GRASP_GSFC/src/retrieval/internal_files'
@@ -56,8 +56,8 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex.yml' %psd_type) # inversion YAML file
     
     # Other non-path related settings
-    Nsims = 4 # the number of inversion to perform, each with its own random noise
-    maxCPU = 4 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+    Nsims = 20 # the number of inversion to perform, each with its own random noise
+    maxCPU = 20 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
     Phi = 0 # relative azimuth angle, φsolar-φsensor
@@ -76,7 +76,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     
     # run the simulation, see below the definition of runSIM in simulateRetrieval.py for more input argument explanations
     simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
-                binPathGRASP=binGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=False, \
+                binPathGRASP=binGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, \
                 rndIntialGuess=False, dryRun=False, workingFileSave=True, verbose=True)
     
     # print some results to the console/terminal
