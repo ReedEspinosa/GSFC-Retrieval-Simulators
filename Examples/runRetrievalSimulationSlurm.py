@@ -26,6 +26,8 @@ from architectureMap import returnPixel
 # import setupConCaseYAML function with simulated scene definitions from .../GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/canonicalCaseMap.py
 from canonicalCaseMap import setupConCaseYAML
 
+# import selectGeometryEntry function that can read realsitic sun-satellite geometry
+from ACCP_functions import selectGeometryEntry
 
 # <><><> BEGIN BASIC CONFIGURATION SETTINGS <><><>
 def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
@@ -33,12 +35,13 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/22/'\
-        'FullRun/withCoarseMode/%s/SZA%s/'\
-        '%s_CAMP2Ex_%s_AOD_%sp%s_550nm_%s.pkl' %(psd_type, int(SZA), instrument, psd_type,
-                                           str(τFactor).split('.')[0],
-                                           str(τFactor).split('.')[1][:3],
-                                           conCase)
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/29/'\
+        'FullGeometry/withCoarseMode/%s/'\
+        '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_%s.pkl' %( psd_type,instrument,
+                                                psd_type,
+                                                str(τFactor).split('.')[0],
+                                                str(τFactor).split('.')[1][:3],
+                                                int(round(SZA, 2)*100),conCase)
 
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
@@ -53,8 +56,8 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex.yml' %psd_type) # inversion YAML file
 
     # Other non-path related settings
-    Nsims = 20 # the number of inversion to perform, each with its own random noise
-    maxCPU = 10 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+    Nsims = 3 # the number of inversion to perform, each with its own random noise
+    maxCPU = 1 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase #'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
     Phi = 0 # relative azimuth angle, φsolar-φsensor
@@ -73,7 +76,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
 
     # run the simulation, see below the definition of runSIM in simulateRetrieval.py for more input argument explanations
     simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
-                binPathGRASP=binGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=False, \
+                binPathGRASP=binGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, \
                 rndIntialGuess=False, dryRun=False, workingFileSave=True, verbose=True)
 
     # print some results to the console/terminal
@@ -86,13 +89,15 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     # simA.saveSim_netCDF(savePath[:-4], verbose=True)
 
 # %% Run multiple times
-
-# tau = np.logspace(np.log10(0.01), np.log10(1.0), 1)
+# Based on the input arguments modify the parameters
 if len(sys.argv) > 0:
+    # AOD range
     tau = [float(sys.argv[1])]
     if len(sys.argv) > 1:
+        # Instrument details
         instrument = sys.argv[2]
         if len(sys.argv) > 2:
+            # Solar Zenith angle
             SZA = float(sys.argv[3])
         else:
             SZA=30
@@ -105,25 +110,54 @@ else:
     print('AOD not given as an argument so using the 0.05 at 550 nm')
 
 psd_type = '2modes' # '2modes' or '16bins'
-# instrument = 'polar07'
-# tau = np.linspace(0.01, 1, 20)
 # conCase = 'campex_flight#16_layer#01'#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+phi = 0
 start_time = time.time()
-for i in tau:
-    loop_start_time = time.time()
-    for j in np.r_[1:19]:
-        flight_loop_start_time = time.time()
-        for k in np.r_[0]:
-            conCase = 'addCoarse__campex_flight#%.2d_layer#%.2d' %(j,k)
-            print('<-->'*20)
-            try:
+useRealGeometry = False
+# For real geometry
+if len(sys.argv) > 3:
+    useRealGeometry = bool(int(sys.argv[4]))
+    # if using real geometry loop through different AOD in one run
+    tau = np.linspace(0.01, 1, 10)
+    # read the nPCA using the sys arg
+    npca = [int(float(sys.argv[1]))]
+    
+nFlights = 18 # number of flights used for simulation (should be 18 for full camp2ex measurements)
+
+def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
+    for i in tau:
+        loop_start_time = time.time()
+        for j in np.r_[1:nFlights+1]:
+            flight_loop_start_time = time.time()
+            for k in np.r_[0]:
+                conCase = 'addCoarse__campex_flight#%.2d_layer#%.2d' %(j,k)
                 print('<-->'*20)
-                print('Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
-                runMultiple(τFactor=i, psd_type=psd_type, SZA=SZA,
-                            conCase=conCase, instrument=instrument)
-            except Exception as e:
-                print('<---->'*10)
-                print('Run error: Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
-                print('Error message: %s' %e)
-        print('Time to comple one loop for flight: %s'%(time.time()-flight_loop_start_time))
-    print('Time to comple one loop for AOD: %s'%(time.time()-loop_start_time))
+                try:
+                    print('<-->'*20)
+                    print('Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
+                    runMultiple(τFactor=i, psd_type=psd_type, SZA=SZA, Phi=phi,
+                                conCase=conCase, instrument=instrument)
+                except Exception as e:
+                    print('<---->'*10)
+                    print('Run error: Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
+                    print('Error message: %s' %e)
+            print('Time to comple one loop for flight: %s'%(time.time()-flight_loop_start_time))
+        print('Time to comple one loop for AOD: %s'%(time.time()-loop_start_time))
+
+if useRealGeometry:
+    print('Running retrieval simulations for real sun-satellite geometry')
+    rawAngleDir = '../../../ACCDAM/onOrbitObservationGeometryACCP/angularSampling/colarco_20200520_g5nr_pdfs'
+    PCAslctMatFilePath = '../../../ACCDAM/onOrbitObservationGeometryACCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
+    orbit = 'SS'
+    for nPCA in npca:
+        SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA, orbit=orbit)
+        # run the function over multiple sun-satellite geometries
+        loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
+    
+else:
+    print('Running retrieval simulations for pricipal plane')
+    loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
+
+# Total time
+total_time = (time.time() - start_time)/60
+print('*<><><><> %4.3f minutes for total run <><><><>*' %(total_time))

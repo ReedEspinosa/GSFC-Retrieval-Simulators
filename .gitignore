@@ -15,3 +15,5 @@ ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_POLAR_1lambda_V0.8.3.yml
 Examples/*.err
 Examples/*.out
 Examples/*.slurm
+Examples/job/*.err
+Examples/job/*.out

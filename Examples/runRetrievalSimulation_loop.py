@@ -35,13 +35,13 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     # instrument
     instrument=instrument
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/'\
-        'Test/withCoarseMode/%s/SZA%s/'\
-        '%sCamp2ex_%s_AOD_%sp%s_550nm_%s.pkl' %( psd_type, SZA, instrument,
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/29/'\
+        'Test/withCoarseMode/%s/'\
+        '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_%s.pkl' %( psd_type,instrument,
                                                 psd_type,
                                                 str(τFactor).split('.')[0],
                                                 str(τFactor).split('.')[1][:3],
-                                                conCase)
+                                                int(round(SZA, 2)*10),conCase)
     
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
@@ -56,11 +56,11 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex.yml' %psd_type) # inversion YAML file
     
     # Other non-path related settings
-    Nsims = 20 # the number of inversion to perform, each with its own random noise
-    maxCPU = 20 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+    Nsims = 2 # the number of inversion to perform, each with its own random noise
+    maxCPU = 2 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
-    Phi = 0 # relative azimuth angle, φsolar-φsensor
+    Phi = Phi # relative azimuth angle, φsolar-φsensor
     τFactor = τFactor # scaling factor for total AOD
     
     # % <><><> END BASIC CONFIGURATION SETTINGS <><><>
@@ -92,10 +92,11 @@ tau = np.logspace(np.log10(0.01), np.log10(2.0), 1)
 psd_type = '2modes' # '2modes' or '16bins'
 instrument = 'megaharp01' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 SZA = 30
-useRealGeometry = False
+phi = 0
+useRealGeometry = True
 if useRealGeometry:
-    rawAngleDir = '/Users/aputhukkudy/Working_Data/ACCDAM/onOrbitObservationGeometryACCP/angularSampling/colarco_20200520_g5nr_pdfs'
-    PCAslctMatFilePath = '/Users/aputhukkudy/Working_Data/ACCDAM/onOrbitObservationGeometryACCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
+    rawAngleDir = '../../../ACCDAM/onOrbitObservationGeometryACCP/angularSampling/colarco_20200520_g5nr_pdfs'
+    PCAslctMatFilePath = '../../../ACCDAM/onOrbitObservationGeometryACCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
     nAng = 4
     orbit = 'SS'
     SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbit)
@@ -112,7 +113,7 @@ for i in tau:
             try:
                 print('<-->'*20)
                 print('Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
-                runMultiple(τFactor=i, psd_type=psd_type, SZA=SZA,
+                runMultiple(τFactor=i, psd_type=psd_type, SZA=SZA, Phi=phi,
                             conCase=conCase, instrument=instrument)
             except Exception as e:
                 print('<---->'*10)
