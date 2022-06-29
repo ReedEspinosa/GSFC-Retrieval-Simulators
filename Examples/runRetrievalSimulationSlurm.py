@@ -33,7 +33,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/15/'\
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/22/'\
         'FullRun/withCoarseMode/%s/SZA%s/'\
         '%s_CAMP2Ex_%s_AOD_%sp%s_550nm_%s.pkl' %(psd_type, int(SZA), instrument, psd_type,
                                            str(τFactor).split('.')[0],
@@ -42,7 +42,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
 
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
-    binGRASP = '../../GRASP_GSFC/build_polar07_fast/bin/grasp_app'
+    binGRASP = '../../GRASP_GSFC/build_megaharp01/bin/grasp_app'
         
     # Full path grasp precomputed single scattering kernels
     krnlPath = '../../GRASP_GSFC/src/retrieval/internal_files'
@@ -54,7 +54,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
 
     # Other non-path related settings
     Nsims = 20 # the number of inversion to perform, each with its own random noise
-    maxCPU = 5 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+    maxCPU = 10 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase #'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
     Phi = 0 # relative azimuth angle, φsolar-φsensor

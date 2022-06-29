@@ -15,7 +15,7 @@ job_directory = "%s" %os.getcwd()
 # mkdir_p(job_directory)
 # mkdir_p(data_dir)
 
-tau = np.logspace(np.log10(1.1), np.log10(2), 2)
+tau = np.logspace(np.log10(0.01), np.log10(0.1), 10)
 jobName = 'A'
 SZA = 30
 jobName = jobName + str(SZA)
