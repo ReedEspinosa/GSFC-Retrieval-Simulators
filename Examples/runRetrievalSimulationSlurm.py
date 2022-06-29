@@ -37,11 +37,13 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     # Full path to save simulation results as a Python pickle
     savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/29/'\
         'FullGeometry/withCoarseMode/%s/'\
-        '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_%s.pkl' %( psd_type,instrument,
+        '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_PHI_%s_%s.pkl' %( psd_type,instrument,
                                                 psd_type,
                                                 str(τFactor).split('.')[0],
                                                 str(τFactor).split('.')[1][:3],
-                                                int(round(SZA, 2)*100),conCase)
+                                                int(round(SZA, 2)*100),
+                                                int(round(Phi, 2)*100),
+                                                conCase)
 
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
@@ -60,7 +62,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     maxCPU = 1 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase #'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
-    Phi = 0 # relative azimuth angle, φsolar-φsensor
+    Phi = Phi # relative azimuth angle, φsolar-φsensor
     τFactor = τFactor # scaling factor for total AOD
 
     # %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
@@ -118,7 +120,7 @@ useRealGeometry = False
 if len(sys.argv) > 3:
     useRealGeometry = bool(int(sys.argv[4]))
     # if using real geometry loop through different AOD in one run
-    tau = np.linspace(0.01, 1, 10)
+    tau = np.linspace(0.01, 2, 20)
     # read the nPCA using the sys arg
     npca = [int(float(sys.argv[1]))]
     
