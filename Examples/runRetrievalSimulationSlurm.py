@@ -35,7 +35,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/29/'\
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/30/'\
         'FullGeometry/withCoarseMode/%s/'\
         '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_PHI_%s_%s.pkl' %( psd_type,instrument,
                                                 psd_type,
@@ -120,7 +120,7 @@ useRealGeometry = False
 if len(sys.argv) > 3:
     useRealGeometry = bool(int(sys.argv[4]))
     # if using real geometry loop through different AOD in one run
-    tau = np.linspace(0.01, 2, 20)
+    tau = np.linspace(0.005, 2.5, 10)
     # read the nPCA using the sys arg
     npca = [int(float(sys.argv[1]))]
     

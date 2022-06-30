@@ -15,13 +15,13 @@ mkdir_p(job_directory+'/job')
 
 # list of AOD/nPCA
 # tau = np.logspace(np.log10(0.01), np.log10(2.1), 1)
-tau = range(0,108) # max is 107
+tau = range(46,108) # max is 107
 # Solar Zenith angle (used if no real sun-satelliote geometry is used)
 SZA = 30
 # realGeometry: True if using the real geometry provided in the .mat file
 useRealGeometry = 1
 # Job name
-jobName = 'Z' # 'A' for 2modes, 'Z' for realGeometry
+jobName = 'Y' # 'A' for 2modes, 'Z' for realGeometry
 if not useRealGeometry: jobName = jobName + str(SZA); varStr = 'aod'
 else: varStr = 'nPCA'
 
@@ -45,13 +45,15 @@ for aod in tau:
         fh.writelines("#SBATCH --output=./job/%s_%.4d.out\n" % (jobName, aod_))
         fh.writelines("#SBATCH --error=./job/%s_%.4d.err\n" % (jobName, aod_))
         fh.writelines("#SBATCH --time=11:29:59\n")
-        fh.writelines("#SBATCH --partition=LocalQ\n")
+        #fh.writelines("#SBATCH --partition=LocalQ\n")
         # fh.writelines("#SBATCH --qos=short\n")
-        fh.writelines("#SBATCH --nodes=1\n")
-        fh.writelines("#SBATCH --ntasks-per-node=1\n\n")
+        fh.writelines('#SBATCH --nodes=1 --constraint="sky|cas"\n')
+        fh.writelines("#SBATCH --array=0\n")
+        #fh.writelines("#SBATCH --nodes=1\n")
+        #fh.writelines("#SBATCH --ntasks-per-node=1\n\n")
         # fh.writelines("#SBATCH --mail-type=ALL\n")
         # fh.writelines("#SBATCH --mail-user=$USER@umbc.edu\n")
-        fh.writelines("echo Start: \n")
+        fh.writelines("\necho Start: \n")
         fh.writelines("date\n")
         fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
         fh.writelines("echo End: \n")
