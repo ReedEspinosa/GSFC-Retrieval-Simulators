@@ -3,6 +3,8 @@
 import os
 import numpy as np
 
+hostname = os.uname()[1]
+
 def mkdir_p(dir):
     '''make a directory (dir) if it doesn't exist'''
     if not os.path.exists(dir): os.mkdir(dir)
@@ -45,17 +47,24 @@ for aod in tau:
         fh.writelines("#SBATCH --output=./job/%s_%.4d.out\n" % (jobName, aod_))
         fh.writelines("#SBATCH --error=./job/%s_%.4d.err\n" % (jobName, aod_))
         fh.writelines("#SBATCH --time=11:29:59\n")
-        #fh.writelines("#SBATCH --partition=LocalQ\n")
+        # In Discover
+        if 'discover' in hostname:
+            fh.writelines('#SBATCH --nodes=1 --constraint="sky"\n')
+            fh.writelines("#SBATCH --array=0\n")
+        # In Uranus
+        else:
+            fh.writelines("#SBATCH --partition=LocalQ\n")
         # fh.writelines("#SBATCH --qos=short\n")
-        fh.writelines('#SBATCH --nodes=1 --constraint="sky|cas"\n')
-        fh.writelines("#SBATCH --array=0\n")
-        #fh.writelines("#SBATCH --nodes=1\n")
-        #fh.writelines("#SBATCH --ntasks-per-node=1\n\n")
+        # fh.writelines("#SBATCH --nodes=1\n")
+        # fh.writelines("#SBATCH --ntasks-per-node=1\n\n")
         # fh.writelines("#SBATCH --mail-type=ALL\n")
         # fh.writelines("#SBATCH --mail-user=$USER@umbc.edu\n")
         fh.writelines("\necho Start: \n")
         fh.writelines("date\n")
-        fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
+        if 'discover' in hostname:
+            for i in tau
+        else:
+            fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
         fh.writelines("echo End: \n")
         fh.writelines("date")
         # fh.writelines("python hello.py %.3d" % aod_)
