@@ -17,3 +17,4 @@ Examples/*.out
 Examples/*.slurm
 Examples/job/*.err
 Examples/job/*.out
+/Examples/temp/
