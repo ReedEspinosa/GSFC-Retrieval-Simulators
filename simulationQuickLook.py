@@ -7,13 +7,14 @@ from matplotlib import pyplot as plt
 from simulateRetrieval import simulation
 from glob import glob
 
-waveInd = 2
-waveInd2 = 4
+waveInd = 0
+waveInd2 = 3
 fnPtrnList = []
 #fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
-fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
+# fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
+fnPtrn = 'MERGED_harp02ALL_2modes_AOD_ALL_550nmALL_addCoarse__campex_flight#ALL_layer#00.pkl'
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
-inDirPath = '/Users/aputhukkudy/ACCDAM/2022/Campex_Simulations/Jun2022/22/FullRun/withCoarseMode/2modes/SZA30/'
+inDirPath = '/Users/aputhukkudy/Working_Data/ACCDAM/2022/Campex_Simulations/'
 
 # fnPtrn = 'exampleSimulationTest#1.pkl'
 # inDirPath = '/Users/wrespino/Downloads/'
@@ -173,12 +174,22 @@ rtrv = np.asarray([aodWght(rf['k'][:,waveInd], rf['aodMode'][:,waveInd]) for rf 
 # if 5 modes present, for the case of ACCDAM-CAMP2EX four modes have one refractive index
 # and the coarse mode 'sea salt' have different value. So based on the dimension of the var
 # We can distinguish each run type and generalize the code
-if true.ndim >1:
-    true = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,nMode]
-# rtrv = 1-np.asarray([rf['ssa'][waveInd] for rf in simBase.rsltFwd])[keepInd]
-# true = 1-np.asarray([rb['ssa'][waveInd] for rb in simBase.rsltBck])[keepInd]
-# minAOD = np.min(true)*0.95
-
+tempInd = 0
+for nMode_ in [0,4]:
+    true = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,nMode_]
+    rtrv = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltBck])[keepInd][:,tempInd]
+    minAOD = np.min(true)
+    maxAOD = np.max(true)
+    ax[0,3].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
+    ax[0,3].set_title('k')
+    ax[0,3].set_xlabel(xlabel)
+    
+    if tempInd == 1:
+            cmap = 'rainbow'
+    else:
+             cmap = 'viridis'
+    ax[0,3].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha, cmap=cmap)
+    tempInd += 1
 minAOD = 0.0005
 maxAOD = np.max(true)*1.05
 ax[0,3].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
