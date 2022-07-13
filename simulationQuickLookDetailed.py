@@ -65,7 +65,7 @@ def plotProp(axs, titleStr ='', scale='linear', ylabel=None,
     axs.set_ylim(minAOD,maxAOD)
     
     # Title of the plot
-    axs.set_title('AOD')
+    axs.set_title(titleStr)
     
     # x and y label
     if ylabel:
@@ -76,6 +76,9 @@ def plotProp(axs, titleStr ='', scale='linear', ylabel=None,
     if scale == 'log':
         axs.set_xscale('log')
         axs.set_yscale('log')
+    elif scale == 'linear':
+        axs.ticklabel_format(axis='both', style='plain', useOffset=False)
+        
     # Plot the statistics
     if stat:
         Rcoef = np.corrcoef(true, rtrv)[0,1]
@@ -87,6 +90,7 @@ def plotProp(axs, titleStr ='', scale='linear', ylabel=None,
         textstr = frmt % (Rcoef, RMSE, bias)
         tHnd = axs.annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
                             textcoords='offset points', color=clrText, fontsize=FS)
+    return tHnd
 # =============================================================================
 # Initiation
 # =============================================================================
@@ -194,7 +198,6 @@ maxAOD = np.max(true)*1.05
 density_scatter(true, rtrv, ax=ax[0,0])
 plotProp(ax[0,0], titleStr='AOD', scale='log', ylabel='Retrieved')
 
-
 # =============================================================================
 # # AAOD
 # =============================================================================
@@ -204,10 +207,7 @@ minAOD = np.min(true)*0.9
 maxAOD = 0.15
 ax[0,2].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
 ax[0,2].set_title('AAOD')
-# ax[0,2].set_xticks(np.arange(0.75, 1.01, 0.05))
-# ax[0,2].set_yticks(np.arange(0.75, 1.01, 0.05))
-ax[0,2].set_xlim(minAOD,maxAOD)
-ax[0,2].set_ylim(minAOD,maxAOD)
+
 density_scatter(true, rtrv, ax=ax[0,2])
 plotProp(ax[0,2], titleStr='AAOD')
 
@@ -232,13 +232,13 @@ aod1 = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepInd]
 aod2 = np.asarray([rf['aod'][waveInd2] for rf in simBase.rsltFwd])[keepInd]
 logLamdRatio = np.log(simBase.rsltFwd[0]['lambda'][waveInd]/simBase.rsltFwd[0]['lambda'][waveInd2])
 true = -np.log(aod1/aod2)/logLamdRatio
+
 aod1 = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltBck])[keepInd]
 aod2 = np.asarray([rf['aod'][waveInd2] for rf in simBase.rsltBck])[keepInd]
 rtrv = -np.log(aod1/aod2)/logLamdRatio
+
 minAOD = np.percentile(true,1) # BUG: Why is Angstrom >50 in at least one OSSE cases?
 maxAOD = np.percentile(true,99)
-ax[0,1].set_xlim(minAOD,maxAOD)
-ax[0,1].set_ylim(minAOD,maxAOD)
 ax[0,1].set_xticks(np.arange(minAOD, maxAOD, 0.5))
 ax[0,1].set_yticks(np.arange(minAOD, maxAOD, 0.5))
 density_scatter(true, rtrv, ax=ax[0,1])
@@ -258,40 +258,19 @@ tempInd = 0
 for nMode_ in [0,4]:
     true = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,nMode_]
     rtrv = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltBck])[keepInd][:,tempInd]
-    minAOD = np.min(true)
-    maxAOD = np.max(true)
-    ax[0,3].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-    ax[0,3].set_title('k')
-    # ax[0,3].set_xlabel(xlabel)
-    
-    if tempInd == 1:
-            cmap = 'rainbow'
+
+    minAOD = 0.0005
+    maxAOD = np.max(true)*1.05
+    if nMode_ == 0:
+        density_scatter(true, rtrv, ax=ax[1,3])
+        plotProp(ax[1,3], titleStr=r'k$_{fine}$', scale='log')
     else:
-             cmap = 'viridis'
-    density_scatter(true, rtrv, ax=ax[0,3])
-    # ax[0,3].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha, cmap=cmap)
+        density_scatter(true, rtrv, ax=ax[1,4])
+        plotProp(ax[1,4], titleStr=r'k$_{coarse}$', scale='log')
     tempInd += 1
-minAOD = 0.0005
-maxAOD = np.max(true)*1.05
-ax[0,3].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-ax[0,3].set_title('k')
-ax[0,3].set_xscale('log')
-ax[0,3].set_yscale('log')
-ax[0,3].set_xlim(minAOD,maxAOD)
-ax[0,3].set_ylim(minAOD,maxAOD)
-ax[0,3].set_xticks([0.001, 0.01])
-ax[0,3].set_yticks([0.001, 0.01])
-density_scatter(true, rtrv, ax=ax[0,3])
-# ax[0,3].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
-Rcoef = np.corrcoef(true, rtrv)[0,1]
-RMSE = np.sqrt(np.median((true - rtrv)**2))
-bias = np.mean((rtrv-true))
-frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
-tHnd = ax[0,3].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-            textcoords='offset points', color=clrText, fontsize=FS)
-textstr = frmt % (Rcoef, RMSE, bias)
-tHnd = ax[0,3].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-                    textcoords='offset points', color=clrText, fontsize=FS)
+
+ax[1,3].set_xticks([0.001, 0.01])
+ax[1,3].set_yticks([0.001, 0.01])
 
 # =============================================================================
 # # FMF (vol)
@@ -382,29 +361,15 @@ except Exception as err:
     rtrv = np.asarray([rf['ssa'][waveInd] for rf in simBase.rsltBck])[keepInd]
     minAOD = np.min(true)*0.95
     maxAOD = 1
-    ax[0,4].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-    ax[0,4].set_title('SSA')
-    ax[0,4].set_xscale('linear')
-    ax[0,4].set_yscale('linear')
-    # ax[0,4].set_xlabel(xlabel)
-    # ax[0,4].set_ylabel('Retrieved')
-    ax[0,4].set_xlim(minAOD,maxAOD)
-    ax[0,4].set_ylim(minAOD,maxAOD)
-    density_scatter(true, rtrv, ax=ax[0,4])
-    # ax[0,4].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
-    Rcoef = np.corrcoef(true, rtrv)[0,1]
-    RMSE = np.sqrt(np.median((true - rtrv)**2))
-    bias = np.mean((rtrv-true))
-    frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
-    tHnd = ax[0,4].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-                textcoords='offset points', color=clrText, fontsize=FS)
-    textstr = frmt % (Rcoef, RMSE, bias)
-    tHnd = ax[0,4].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-                        textcoords='offset points', color=clrText, fontsize=FS)
-    ax[0,4].ticklabel_format(axis='both', style='plain', useOffset=False)
+
+    ax[2,0].set_xlim(minAOD,maxAOD)
+    ax[2,0].set_ylim(minAOD,maxAOD)
+    
+    density_scatter(true, rtrv, ax=ax[2,0])
+    plotProp(ax[2,0], titleStr=r'SSA$_{fine}$', scale='linear')
 
 # =============================================================================
-# # sph
+# # spherical fraction
 # =============================================================================
 true = np.asarray([rf['sph'] for rf in simBase.rsltFwd])[keepInd]
 rtrv = np.asarray([aodWght(rf['sph'], rf['vol']) for rf in simBase.rsltBck])[keepInd]
@@ -416,24 +381,12 @@ if true.ndim >1:
     true = np.asarray([rf['sph']for rf in simBase.rsltFwd])[keepInd][:,nMode]
 minAOD = 0
 maxAOD = 100.1
-ax[1,1].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-ax[1,1].set_title('spherical vol. frac.')
-ax[1,1].set_xlabel(xlabel)
-ax[1,1].set_xticks(np.arange(minAOD, maxAOD, 25))
-ax[1,1].set_yticks(np.arange(minAOD, maxAOD, 25))
-ax[1,1].set_xlim(minAOD,maxAOD)
-ax[1,1].set_ylim(minAOD,maxAOD)
-# ax[1,1].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
-density_scatter(true, rtrv, ax=ax[1,1])
-Rcoef = np.corrcoef(true, rtrv)[0,1]
-RMSE = np.sqrt(np.median((true - rtrv)**2))
-bias = np.mean((rtrv-true))
-frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
-tHnd = ax[1,1].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-            textcoords='offset points', color=clrText, fontsize=FS)
-textstr = frmt % (Rcoef, RMSE, bias)
-tHnd = ax[1,1].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-                    textcoords='offset points', color=clrText, fontsize=FS)
+
+ax[0,3].set_xticks(np.arange(minAOD, maxAOD, 25))
+ax[0,3].set_yticks(np.arange(minAOD, maxAOD, 25))
+
+density_scatter(true, rtrv, ax=ax[0,3])
+plotProp(ax[0,3], titleStr='spherical vol. frac.')
 
 # =============================================================================
 # # rEff
@@ -443,23 +396,9 @@ true = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltFwd])[keepInd]
 rtrv = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltBck])[keepInd]
 minAOD = np.min(true)*0.8
 maxAOD = np.max(true)*1.2
-ax[1,2].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-# ax[1,2].set_title('r_eff Total')
-ax[1,2].set_title('Submicron r_eff')
-ax[1,2].set_xlabel(xlabel)
-ax[1,2].set_xlim(minAOD,maxAOD)
-ax[1,2].set_ylim(minAOD,maxAOD)
-density_scatter(true, rtrv, ax=ax[1,2])
-# ax[1,2].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
-Rcoef = np.corrcoef(true, rtrv)[0,1]
-RMSE = np.sqrt(np.median((true - rtrv)**2))
-bias = np.mean((rtrv-true))
-frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
-tHnd = ax[1,2].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-            textcoords='offset points', color=clrText, fontsize=FS)
-textstr = frmt % (Rcoef, RMSE, bias)
-tHnd = ax[1,2].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-                    textcoords='offset points', color=clrText, fontsize=FS)
+
+density_scatter(true, rtrv, ax=ax[0,4])
+plotProp(ax[0,4], titleStr='Submicron r_eff', scale=None)
 
 ttlStr = '%s (λ=%5.3fμm, %s surface, AOD≥%4.2f)' % (saveFN, simBase.rsltFwd[0]['lambda'][waveInd], surf2plot, aodMin)
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
@@ -478,29 +417,15 @@ tempInd = 0
 for nMode_ in [0,4]:
     true = np.asarray([rf['n'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,nMode_]
     rtrv = np.asarray([rf['n'][:,waveInd] for rf in simBase.rsltBck])[keepInd][:,tempInd]
-    minAOD = np.min(true)
-    maxAOD = np.max(true)
-    ax[1,3].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-    ax[1,3].set_title('n')
-    ax[1,3].set_xlabel(xlabel)
-    # ax[1,3].set_xlim(minAOD,maxAOD)
-    # ax[1,3].set_ylim(minAOD,maxAOD)
-    if tempInd == 1:
-            cmap = 'magma'
+    minAOD = np.min(true)*0.95
+    maxAOD = np.max(true)*1.05
+    if nMode_ == 0:
+        density_scatter(true, rtrv, ax=ax[1,1])
+        plotProp(ax[1,1], titleStr=r'n$_{fine}$', scale=None)
     else:
-             cmap = 'viridis'
-    density_scatter(true, rtrv, ax=ax[1,3])
-    # ax[1,3].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha, cmap=cmap)
+        density_scatter(true, rtrv, ax=ax[1,2])
+        plotProp(ax[1,2], titleStr=r'n$_{coarse}$', scale=None)
     tempInd += 1
-Rcoef = np.corrcoef(true, rtrv)[0,1]
-RMSE = np.sqrt(np.median((true - rtrv)**2))
-bias = np.mean((rtrv-true))
-frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
-tHnd = ax[1,3].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-            textcoords='offset points', color=clrText, fontsize=FS)
-textstr = frmt % (Rcoef, RMSE, bias)
-tHnd = ax[1,3].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-                    textcoords='offset points', color=clrText, fontsize=FS)
 
 # =============================================================================
 # # %% intensity
@@ -535,9 +460,9 @@ else:
         rtrv = np.asarray([rf['vol'] for rf in simBase.rsltBck])[keepInd][:,tempInd]
         minAOD = np.min(true)*0.95
         maxAOD = np.max(true)*1.05
-        ax[1,4].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-        ax[1,4].set_title('Vol concentration')
-        ax[1,4].set_xlabel(xlabel)
+        ax[2,4].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
+        ax[2,4].set_title('Vol concentration')
+        ax[2,4].set_xlabel(xlabel)
         # ax[1,4].set_xlim(minAOD,maxAOD)
         # ax[1,4].set_ylim(minAOD,maxAOD)
         if tempInd == 1:
@@ -551,10 +476,10 @@ else:
     RMSE = np.sqrt(np.median((true - rtrv)**2))
     bias = np.mean((rtrv-true))
     frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
-    tHnd = ax[1,4].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
+    tHnd = ax[2,4].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
                 textcoords='offset points', color=clrText, fontsize=FS)
     textstr = frmt % (Rcoef, RMSE, bias)
-    tHnd = ax[1,4].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
+    tHnd = ax[2,4].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
                         textcoords='offset points', color=clrText, fontsize=FS)
 
 # =============================================================================
