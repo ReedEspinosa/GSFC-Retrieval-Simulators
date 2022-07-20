@@ -23,6 +23,7 @@ import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from scipy import interpolate
+from scipy.stats import norm
 from simulateRetrieval import simulation
 from glob import glob
 
@@ -57,12 +58,13 @@ def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20, **kwargs):
     return ax
 
 def plotProp(axs, titleStr ='', scale='linear', ylabel=None,
-             xlabel=None, stat=True):
+             xlabel=None, stat=True, MinMax=True):
     
     # min max
-    axs.plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121) # line plot
-    axs.set_xlim(minAOD,maxAOD)
-    axs.set_ylim(minAOD,maxAOD)
+    if MinMax:
+        axs.plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121) # line plot
+        axs.set_xlim(minAOD,maxAOD)
+        axs.set_ylim(minAOD,maxAOD)
     
     # Title of the plot
     axs.set_title(titleStr)
@@ -91,20 +93,76 @@ def plotProp(axs, titleStr ='', scale='linear', ylabel=None,
         tHnd = axs.annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
                             textcoords='offset points', color=clrText, fontsize=FS)
     return tHnd
+
+def modifiedHist(x, axs, fig=None, titleStr ='', xscale=None, ylabel=None,
+             xlabel=None, stat=True, MinMax=False, nBins=20, err=0.05,
+             yscale=None):
+
+    # Creating histogram
+    N, bins, patches = axs.hist(x, bins = nBins, density=True)
+     
+    # Setting color
+    fracs = ((N**(1 / 2)) / N.max())
+    norm_ = mpl.colors.Normalize(fracs.min(), fracs.max())
+     
+    for thisfrac, thispatch in zip(fracs, patches):
+        color = plt.cm.viridis(norm_(thisfrac))
+        thispatch.set_facecolor(color)
+    # min max
+    if MinMax:
+        axs.set_xlim(-err, err)
+    
+    # Title of the plot
+    axs.set_title(titleStr)
+    
+    # x and y label
+    if ylabel:
+        axs.set_ylabel(ylabel)
+    if xlabel:
+        axs.set_xlabel(xlabel)
+    # scale
+    if yscale == 'log':
+        axs.set_yscale('log')
+    if xscale == 'log':
+        axs.set_xscale('log')
+        
+    # Fit a normal distribution to the data:
+    # mean and standard deviation
+    if stat:
+        mu, std = norm.fit(x)
+        # Plot the PDF.
+        x_ = [abs(np.percentile(x,1)), 
+              abs(np.percentile(x,99))]
+        
+        xmax = np.max(x_)
+        xmin = -xmax
+        x = np.linspace(xmin, xmax, 100)
+        p = norm.pdf(x, mu, std)
+        axs.plot(x, p, 'C03', linewidth=1.5)
+        
+        RMSE = np.sqrt(np.median((true - rtrv)**2))
+        bias = np.mean((rtrv-true))
+        frmt = 'RMS=%5.3f\nbias=%5.3f'
+        textstr = frmt % (RMSE, bias)
+        tHnd = axs.annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top',
+                            xycoords='axes fraction',
+                            textcoords='offset points', color=clrText,
+                            fontsize=FS)
+    
 # =============================================================================
 # Initiation
 # =============================================================================
 
 # Wavelength index for plotting
-waveInd = 1
+waveInd = 2
 # Wavelength index for AE calculation
-waveInd2 = 3
+waveInd2 = 4
 
 # Define the string pattern for the file name
 fnPtrnList = []
 #fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
 # fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-fnPtrn = 'MERGED_*_harp02ALL_2modes_AOD_ALL_550nmALL_addCoarse__campex_flight#ALL_layer#00.pkl'
+fnPtrn = 'megaharp01_2_2modes_AOD_*_550nm*_addCoarse__campex_flight#*_layer#00.pkl'
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
@@ -121,13 +179,14 @@ FS = 10
 LW121 = 1
 pointAlpha = 0.10
 clrText = [0.5,0,0.0]
+nBins = 200 # no. of bins for histogram
 
 # define the fig and axes handles
 # Figure for 2D density plots
-fig, ax = plt.subplots(3,5, figsize=(15,6))
+fig, ax = plt.subplots(3,5, figsize=(15,9))
 plt.locator_params(nbins=3)
 # Figure for histograms
-fig_hist, ax_hist = plt.subplots(3,5, figsize=(15,6))
+fig_hist, ax_hist = plt.subplots(3,5, figsize=(15,9))
 plt.locator_params(nbins=3)
 lightSave = True # Omit PM elements and extinction profiles from MERGED files to save space
 
@@ -198,6 +257,10 @@ maxAOD = np.max(true)*1.05
 density_scatter(true, rtrv, ax=ax[0,0])
 plotProp(ax[0,0], titleStr='AOD', scale='log', ylabel='Retrieved')
 
+# histogram
+modifiedHist((rtrv-true), axs=ax_hist[0,0], titleStr='AOD', ylabel= 'Density',
+             fig=fig_hist, nBins=nBins)
+
 # =============================================================================
 # # AAOD
 # =============================================================================
@@ -205,11 +268,13 @@ true = np.asarray([(1-rf['ssa'][waveInd])*rf['aod'][waveInd] for rf in simBase.r
 rtrv = np.asarray([(1-rb['ssa'][waveInd])*rb['aod'][waveInd] for rb in simBase.rsltBck])[keepInd]
 minAOD = np.min(true)*0.9
 maxAOD = 0.15
-ax[0,2].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-ax[0,2].set_title('AAOD')
 
 density_scatter(true, rtrv, ax=ax[0,2])
 plotProp(ax[0,2], titleStr='AAOD')
+
+# histogram
+modifiedHist((rtrv-true), axs=ax_hist[0,2], titleStr='AAOD',
+             fig=fig_hist, nBins=nBins)
 
 # apply AOD min after we plot AOD
 keepInd = np.logical_and(keepInd, [rf['aod'][waveInd]>=aodMin for rf in simBase.rsltFwd])
@@ -220,7 +285,7 @@ clrVar = np.asarray([rb['costVal'] for rb in simBase.rsltBck[keepInd]])
 
 # apply Reff min
 # simBase._addReffMode(0.008, True) # reframe so pretty much all of the PSD is in the second "coarse" mode
-simBase._addReffMode(0.7, True) # reframe with cut at 1 micron diameter
+simBase._addReffMode(1.0, True) # reframe with cut at 1 micron diameter
 #keepInd = np.logical_and(keepInd, [rf['rEffMode']>=2.0 for rf in simBase.rsltBck])
 #print('%d/%d fit surface type %s and aod≥%4.2f AND retrieved Reff>2.0μm' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, aodMin))
 #clrVar = np.sqrt([rb['rEff']/rf['rEff']-1 for rb,rf in zip(simBase.rsltBck[keepInd], simBase.rsltFwd[keepInd])])
@@ -239,10 +304,12 @@ rtrv = -np.log(aod1/aod2)/logLamdRatio
 
 minAOD = np.percentile(true,1) # BUG: Why is Angstrom >50 in at least one OSSE cases?
 maxAOD = np.percentile(true,99)
-ax[0,1].set_xticks(np.arange(minAOD, maxAOD, 0.5))
-ax[0,1].set_yticks(np.arange(minAOD, maxAOD, 0.5))
 density_scatter(true, rtrv, ax=ax[0,1])
 plotProp(ax[0,1], titleStr='Angstrom Exponent')
+
+# histogram
+modifiedHist((rtrv-true), axs=ax_hist[0,1], titleStr='Angstrom Exponent',
+             fig=fig_hist, nBins=nBins, yscale='log')
 
 # =============================================================================
 # # k
@@ -258,19 +325,28 @@ tempInd = 0
 for nMode_ in [0,4]:
     true = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,nMode_]
     rtrv = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltBck])[keepInd][:,tempInd]
-
-    minAOD = 0.0005
-    maxAOD = np.max(true)*1.05
+    
     if nMode_ == 0:
+        minAOD = 0.0005
+        maxAOD = np.max(true)*1.15
         density_scatter(true, rtrv, ax=ax[1,3])
         plotProp(ax[1,3], titleStr=r'k$_{fine}$', scale='log')
+        ax[1,3].set_xticks([0.001, 0.01])
+        ax[1,3].set_yticks([0.001, 0.01])
+        # histogram
+        modifiedHist((rtrv-true), axs=ax_hist[1,3], titleStr=r'k$_{fine}$',
+                     fig=fig_hist, nBins=nBins)
     else:
+        minAOD = 0.0001
+        maxAOD = 0.001
         density_scatter(true, rtrv, ax=ax[1,4])
         plotProp(ax[1,4], titleStr=r'k$_{coarse}$', scale='log')
+        ax[1,4].set_xticks([0.0001, 0.001])
+        ax[1,4].set_yticks([0.0001, 0.001])
+        # histogram
+        modifiedHist((rtrv-true), axs=ax_hist[1,4], titleStr=r'k$_{coarse}$',
+                     fig=fig_hist, nBins=nBins)
     tempInd += 1
-
-ax[1,3].set_xticks([0.001, 0.01])
-ax[1,3].set_yticks([0.001, 0.01])
 
 # =============================================================================
 # # FMF (vol)
@@ -336,23 +412,18 @@ except Exception as err:
     maxAOD = np.max(true)*1.1
     ax[1,0].plot([minAOD,maxAOD], [0,0], 'k', linewidth=LW121)
     ax[1,0].set_title('difference in AOD')
-    ax[1,0].set_xlabel(xlabel)
     ax[1,0].set_ylabel('true-retrieved')
     ax[1,0].set_xlim(minAOD,maxAOD)
     ax[1,0].set_ylim(-maxAOD/10,maxAOD/10)
-    # ax[1,0].set_yscale('log')
+
     ax[1,0].set_xscale('log')
     density_scatter(true, rtrv, ax=ax[1,0])
-    # ax[1,0].scatter(true, rtrv, c=clrVarAll, s=MS, alpha=pointAlpha)
+
     Rcoef = np.corrcoef(true, rtrv)[0,1]
     RMSE = np.sqrt(np.median((true - rtrv)**2))
     bias = np.mean((rtrv-true))
-    # frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
     tHnd = ax[1,0].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-                textcoords='offset points', color=clrText, fontsize=FS)
-    # textstr = frmt % (Rcoef, RMSE, bias)
-    # tHnd = ax[1,0].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-    #                     textcoords='offset points', color=clrText, fontsize=FS)    
+                textcoords='offset points', color=clrText, fontsize=FS)   
     
 # =============================================================================
 #     # SSA
@@ -366,7 +437,13 @@ except Exception as err:
     ax[2,0].set_ylim(minAOD,maxAOD)
     
     density_scatter(true, rtrv, ax=ax[2,0])
-    plotProp(ax[2,0], titleStr=r'SSA$_{fine}$', scale='linear')
+    plotProp(ax[2,0], titleStr=r'SSA', scale='linear', ylabel='Retrieved',
+             xlabel=xlabel)
+    # histogram
+    modifiedHist((rtrv-true), axs=ax_hist[1,0], titleStr='SSA',
+                 fig=fig_hist, nBins=nBins, ylabel= 'Density', 
+                 xlabel='Retrieved-Simulated')
+    
 
 # =============================================================================
 # # spherical fraction
@@ -388,6 +465,10 @@ ax[0,3].set_yticks(np.arange(minAOD, maxAOD, 25))
 density_scatter(true, rtrv, ax=ax[0,3])
 plotProp(ax[0,3], titleStr='spherical vol. frac.')
 
+# histogram
+modifiedHist((rtrv-true), axs=ax_hist[0,3], titleStr='spherical vol. frac.',
+             fig=fig_hist, nBins=nBins)
+
 # =============================================================================
 # # rEff
 # =============================================================================
@@ -399,11 +480,22 @@ maxAOD = np.max(true)*1.2
 
 density_scatter(true, rtrv, ax=ax[0,4])
 plotProp(ax[0,4], titleStr='Submicron r_eff', scale=None)
+# histogram
+modifiedHist((rtrv-true), axs=ax_hist[0,4], titleStr='Submicron r_eff',
+             fig=fig_hist, nBins=nBins)
 
-ttlStr = '%s (λ=%5.3fμm, %s surface, AOD≥%4.2f)' % (saveFN, simBase.rsltFwd[0]['lambda'][waveInd], surf2plot, aodMin)
-plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-plt.suptitle(ttlStr.replace('MERGED_',''))
+# Corase mode rEff
+true = np.asarray([rf['rEffMode'][1] for rf in simBase.rsltFwd])[keepInd]
+rtrv = np.asarray([rf['rEffMode'][1] for rf in simBase.rsltBck])[keepInd]
+minAOD = np.min(true)*0.8
+maxAOD = np.max(true)*1.2
 
+density_scatter(true, rtrv, ax=ax[2,1])
+plotProp(ax[2,1], titleStr='above micron r_eff', scale=None, xlabel=xlabel,
+         MinMax=False)
+# histogram
+modifiedHist((rtrv-true), axs=ax_hist[2,1], titleStr='above micron r_eff',
+             fig=fig_hist, nBins=nBins, xlabel='Retrieved-Simulated')
 # =============================================================================
 # # n
 # =============================================================================
@@ -422,9 +514,15 @@ for nMode_ in [0,4]:
     if nMode_ == 0:
         density_scatter(true, rtrv, ax=ax[1,1])
         plotProp(ax[1,1], titleStr=r'n$_{fine}$', scale=None)
+        # histogram
+        modifiedHist((rtrv-true), axs=ax_hist[1,1], titleStr=r'n$_{fine}$',
+                     fig=fig_hist, nBins=nBins)
     else:
         density_scatter(true, rtrv, ax=ax[1,2])
         plotProp(ax[1,2], titleStr=r'n$_{coarse}$', scale=None)
+        # histogram
+        modifiedHist((rtrv-true), axs=ax_hist[1,2], titleStr=r'n$_{fine}$',
+                     fig=fig_hist, nBins=nBins)
     tempInd += 1
 
 # =============================================================================
@@ -436,21 +534,10 @@ if intensity:
     rtrv = np.sum([rb['fit_I'][:,waveInd] for rb in simBase.rsltBck[keepInd]], axis=1)
     minAOD = np.min(true)*0.95
     maxAOD = np.max(true)*1.05
-    ax[1,4].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-    ax[1,4].set_title('sum(intensity)')
-    ax[1,4].set_xlabel(xlabel)
-    ax[1,4].set_xlim(minAOD,maxAOD)
-    ax[1,4].set_ylim(minAOD,maxAOD)
-    ax[1,4].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
-    Rcoef = np.corrcoef(true, rtrv)[0,1]
-    RMSE = np.sqrt(np.median((true - rtrv)**2))
-    bias = np.mean((rtrv-true))
-    frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
-    tHnd = ax[1,4].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-                textcoords='offset points', color=clrText, fontsize=FS)
-    textstr = frmt % (Rcoef, RMSE, bias)
-    tHnd = ax[1,4].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-                        textcoords='offset points', color=clrText, fontsize=FS)
+
+    density_scatter(true, rtrv, ax=ax[1,4], xlabel=xlabel)
+    plotProp(ax[2,4], titleStr='sum(intensity)', scale='linear')
+
 else:
     true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[keepInd]
     rtrv = np.asarray([rf['vol'] for rf in simBase.rsltBck])[keepInd]
@@ -458,35 +545,48 @@ else:
     for nMode_ in [0,4]:
         true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[keepInd][:,nMode_]
         rtrv = np.asarray([rf['vol'] for rf in simBase.rsltBck])[keepInd][:,tempInd]
-        minAOD = np.min(true)*0.95
-        maxAOD = np.max(true)*1.05
-        ax[2,4].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-        ax[2,4].set_title('Vol concentration')
-        ax[2,4].set_xlabel(xlabel)
-        # ax[1,4].set_xlim(minAOD,maxAOD)
-        # ax[1,4].set_ylim(minAOD,maxAOD)
-        if tempInd == 1:
-            cmap = 'magma'
+        minAOD = np.min(rtrv)*0.90
+        maxAOD = np.max(rtrv)*1.10
+        if nMode_ == 0:
+            true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[keepInd][:,nMode_]*4
+            density_scatter(true*8, rtrv, ax=ax[2,3])
+            plotProp(ax[2,3], titleStr='Fine mode \n Vol concentration',
+                     scale='linear', xlabel=xlabel, MinMax=True)
+            # histogram
+            modifiedHist((rtrv-true), axs=ax_hist[2,3],
+                         titleStr='Fine mode \n Vol concentration',
+                         fig=fig_hist, nBins=nBins,
+                         xlabel='Retrieved-Simulated')
         else:
-             cmap = 'viridis'
-        density_scatter(true, rtrv, ax=ax[1,4])
-        # ax[1,4].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha, cmap = cmap)
+            density_scatter(true*8, rtrv, ax=ax[2,2])
+            plotProp(ax[2,2], titleStr='Coarse mode \n Vol concentration',
+                     scale='linear', xlabel=xlabel, MinMax=True)
+            # histogram
+            modifiedHist((rtrv-true), axs=ax_hist[2,2],
+                         titleStr='Fine mode \n Vol concentration',
+                         fig=fig_hist, nBins=nBins,
+                         xlabel='Retrieved-Simulated')
         tempInd += 1
-    Rcoef = np.corrcoef(true, rtrv)[0,1]
-    RMSE = np.sqrt(np.median((true - rtrv)**2))
-    bias = np.mean((rtrv-true))
-    frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
-    tHnd = ax[2,4].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-                textcoords='offset points', color=clrText, fontsize=FS)
-    textstr = frmt % (Rcoef, RMSE, bias)
-    tHnd = ax[2,4].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-                        textcoords='offset points', color=clrText, fontsize=FS)
-
+# =============================================================================
+# Empt axs
+# =============================================================================
+ax[2,4].axis('off')
+ax_hist[2,0].axis('off')
+ax_hist[2,4].axis('off')
 # =============================================================================
 # Save the figure
 # =============================================================================
 figSavePath = saveFN.replace('.pkl',('_%s_%s_%04dnm.png' % (surf2plot, fnTag, simBase.rsltFwd[0]['lambda'][waveInd]*1000)))
 print('Saving figure to: %s' % figSavePath)
-plt.savefig(inDirPath + figSavePath, dpi=330)
+ttlStr = '%s (λ=%5.3fμm, %s surface, AOD≥%4.2f)' % (saveFN, simBase.rsltFwd[0]['lambda'][waveInd], surf2plot, aodMin)
+fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+# fig.tight_layout()
+fig.suptitle(ttlStr.replace('MERGED_',''))
+fig_hist.tight_layout(rect=[0, 0.03, 1, 0.95])
+# fig_hist.tight_layout()
+fig_hist.suptitle(ttlStr.replace('MERGED_','Hist_'))
+fig.savefig(inDirPath + figSavePath, dpi=330)
+fig_hist.savefig(inDirPath + figSavePath.replace('MERGED_','Hist_'), dpi=330)
+print('Saving figure to: %s' % figSavePath.replace('MERGED_','Hist_'))
 # plt.show()
 
