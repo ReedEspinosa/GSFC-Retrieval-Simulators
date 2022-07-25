@@ -23,38 +23,72 @@ import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from scipy import interpolate
-from scipy.stats import norm
+from scipy.stats import norm, gaussian_kde
 from simulateRetrieval import simulation
 from glob import glob
+try:
+    import mpl_scatter_density # adds projection='scatter_density'
+    mpl_scatter = True
+except:
+    print('mpl_scatter_density library not available')
+    mpl_scatter = False
+from matplotlib.colors import LinearSegmentedColormap
+# =============================================================================
+# Definition to plot the 2D histogram
+# =============================================================================
 
-# =============================================================================
-# Definition to plot the 2D histo gram
-# =============================================================================
-def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20, **kwargs):
+# "Viridis-like" colormap with white background
+white_viridis = LinearSegmentedColormap.from_list('white_viridis', [
+    (0, '#ffffff'),
+    (1e-24, '#440053'),
+    (0.1, '#404388'),
+    (0.2, '#2a788e'),
+    (0.3, '#21a784'),
+    (0.5, '#78d151'),
+    (1, '#fde624'),
+], N=512)
+
+def using_mpl_scatter_density(x, y, ax, fig=None):
+    density = ax.scatter_density(x, y,
+                                 cmap=white_viridis, dpi=60)
+    if fig:
+        fig.colorbar(density, label='Number of points per pixel')
+    
+def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20,
+                    mplscatter=True, **kwargs):
     """
     Scatter plot colored by 2d histogram
     """
     if ax is None:
         fig, ax = plt.subplots()
-    data, x_e, y_e = np.histogram2d(x, y, bins=bins, density=True)
-    z = interpolate.interpn((0.5 * (x_e[1:] + x_e[:-1]), 0.5 * (y_e[1:] + y_e[:-1])),
-                data, np.vstack([x, y]).T, method="splinef2d", bounds_error=False)
+    if not mplscatter:
+        data, x_e, y_e = np.histogram2d(x, y, bins=bins, density=True)
+        z = interpolate.interpn((0.5 * (x_e[1:] + x_e[:-1]), 0.5 * (y_e[1:] + y_e[:-1])),
+                    data, np.vstack([x, y]).T, method="splinef2d", bounds_error=False)
+        # Calculate the point density
+        # xy = np.vstack([x_e, y_e])
+        # z = gaussian_kde(xy)(xy)
 
-    # To be sure to plot all data
-    z[np.where(np.isnan(z))] = 0.0
+        # To be sure to plot all data
+        # z[np.where(np.isnan(z))] = 0.0
 
-    # Sort the points by density, so that the densest points are plotted last
-    if sort:
-        idx = z.argsort()
-        x, y, z = x[idx], y[idx], z[idx]
+        # Sort the points by density, so that the densest points are plotted last
+        if sort:
+            idx = z.argsort()
+            x, y, z = x[idx], y[idx], z[idx]
 
-    ax.scatter(x, y, c=z, s=5, alpha=0.1, **kwargs)
+        ax.scatter(x, y, c=z, s=5, alpha=0.1, **kwargs)
 
-    norm = mpl.colors.Normalize(vmin=np.max([0, np.min(z)]), vmax=np.max(z))
-    if fig:
-        cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm), ax=ax)
-        cbar.ax.set_ylabel('Density')
-
+        norm = mpl.colors.Normalize(vmin=np.max([0, np.min(z)]), vmax=np.max(z))
+        if fig:
+            cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm), ax=ax)
+            cbar.ax.set_ylabel('Density')
+    else:
+        # use mpl_scatter_density library    
+        if fig:
+            using_mpl_scatter_density( x, y, ax, fig)
+        else:
+            using_mpl_scatter_density( x, y, ax)
     return ax
 
 def plotProp(axs, titleStr ='', scale='linear', ylabel=None,
@@ -154,19 +188,19 @@ def modifiedHist(x, axs, fig=None, titleStr ='', xscale=None, ylabel=None,
 # =============================================================================
 
 # Wavelength index for plotting
-waveInd = 2
+waveInd = 1
 # Wavelength index for AE calculation
-waveInd2 = 4
+waveInd2 = 3
 
 # Define the string pattern for the file name
 fnPtrnList = []
 #fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
 # fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-fnPtrn = 'megaharp01_2_2modes_AOD_*_550nm*_addCoarse__campex_flight#*_layer#00.pkl'
+fnPtrn = 'harp02*_2modes_AOD_*_550nm*_addCoarse__campex_flight#*_layer#00.pkl'
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
-inDirPath = '/Users/aputhukkudy/Working_Data/ACCDAM/2022/Campex_Simulations/'
+inDirPath = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Jul2022/23/FullGeometry/withCoarseMode/2modes/'
 
 # more tags and specifiations for the scatter plot
 surf2plot = 'ocean' # land, ocean or both
@@ -180,10 +214,11 @@ LW121 = 1
 pointAlpha = 0.10
 clrText = [0.5,0,0.0]
 nBins = 200 # no. of bins for histogram
+nBins2 = 50 # no. of bins for 2D density plot
 
 # define the fig and axes handles
 # Figure for 2D density plots
-fig, ax = plt.subplots(3,5, figsize=(15,9))
+fig, ax = plt.subplots(3,5, figsize=(15,9), subplot_kw={'projection': 'scatter_density'})
 plt.locator_params(nbins=3)
 # Figure for histograms
 fig_hist, ax_hist = plt.subplots(3,5, figsize=(15,9))
@@ -253,8 +288,8 @@ rtrv = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltBck])[keepInd]
 
 minAOD = np.min(true)*0.95
 maxAOD = np.max(true)*1.05
-
-density_scatter(true, rtrv, ax=ax[0,0])
+logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
+density_scatter(true, rtrv, ax=ax[0,0],bins=logBins)
 plotProp(ax[0,0], titleStr='AOD', scale='log', ylabel='Retrieved')
 
 # histogram
@@ -267,10 +302,10 @@ modifiedHist((rtrv-true), axs=ax_hist[0,0], titleStr='AOD', ylabel= 'Density',
 true = np.asarray([(1-rf['ssa'][waveInd])*rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepInd]
 rtrv = np.asarray([(1-rb['ssa'][waveInd])*rb['aod'][waveInd] for rb in simBase.rsltBck])[keepInd]
 minAOD = np.min(true)*0.9
-maxAOD = 0.15
-
-density_scatter(true, rtrv, ax=ax[0,2])
-plotProp(ax[0,2], titleStr='AAOD')
+maxAOD = np.max(true)*1.1
+logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
+density_scatter(true, rtrv, ax=ax[0,2], bins=logBins)
+plotProp(ax[0,2], titleStr='AAOD', scale='log')
 
 # histogram
 modifiedHist((rtrv-true), axs=ax_hist[0,2], titleStr='AAOD',
@@ -329,7 +364,8 @@ for nMode_ in [0,4]:
     if nMode_ == 0:
         minAOD = 0.0005
         maxAOD = np.max(true)*1.15
-        density_scatter(true, rtrv, ax=ax[1,3])
+        logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
+        density_scatter(true, rtrv, ax=ax[1,3], bins=logBins)
         plotProp(ax[1,3], titleStr=r'k$_{fine}$', scale='log')
         ax[1,3].set_xticks([0.001, 0.01])
         ax[1,3].set_yticks([0.001, 0.01])
@@ -339,7 +375,8 @@ for nMode_ in [0,4]:
     else:
         minAOD = 0.0001
         maxAOD = 0.001
-        density_scatter(true, rtrv, ax=ax[1,4])
+        logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
+        density_scatter(true, rtrv, ax=ax[1,4], bins=logBins)
         plotProp(ax[1,4], titleStr=r'k$_{coarse}$', scale='log')
         ax[1,4].set_xticks([0.0001, 0.001])
         ax[1,4].set_yticks([0.0001, 0.001])
@@ -417,7 +454,8 @@ except Exception as err:
     ax[1,0].set_ylim(-maxAOD/10,maxAOD/10)
 
     ax[1,0].set_xscale('log')
-    density_scatter(true, rtrv, ax=ax[1,0])
+    logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
+    density_scatter(true, rtrv, ax=ax[1,0], bins=logBins)
 
     Rcoef = np.corrcoef(true, rtrv)[0,1]
     RMSE = np.sqrt(np.median((true - rtrv)**2))
@@ -491,8 +529,7 @@ minAOD = np.min(true)*0.8
 maxAOD = np.max(true)*1.2
 
 density_scatter(true, rtrv, ax=ax[2,1])
-plotProp(ax[2,1], titleStr='above micron r_eff', scale=None, xlabel=xlabel,
-         MinMax=False)
+plotProp(ax[2,1], titleStr='above micron r_eff', scale=None, xlabel=xlabel)
 # histogram
 modifiedHist((rtrv-true), axs=ax_hist[2,1], titleStr='above micron r_eff',
              fig=fig_hist, nBins=nBins, xlabel='Retrieved-Simulated')
