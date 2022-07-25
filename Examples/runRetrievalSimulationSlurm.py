@@ -35,7 +35,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/30/'\
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jul2022/25/'\
         'FullGeometry/withCoarseMode/%s/'\
         '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_PHI_%s_%s.pkl' %( psd_type,instrument,
                                                 psd_type,
@@ -120,11 +120,15 @@ useRealGeometry = False
 if len(sys.argv) > 3:
     useRealGeometry = bool(int(sys.argv[4]))
     # if using real geometry loop through different AOD in one run
-    tau = np.linspace(0.005, 2.5, 10)
+    #tau = np.logspace(np.log10(0.015), np.log10(0.1), 5)
+    tau = [0.01      , 0.01321621, 0.01746681, 0.0230845 , 0.03050896,
+           0.04032127, 0.05328943, 0.07042841, 0.09307965, 0.12301599,
+    	   0.16258049, 0.21486974, 0.2839763 , 0.37530897, 0.49601611,
+           0.65554518, 0.8663821 , 1.14502854, 1.51329346, 2.        ]
     # read the nPCA using the sys arg
     npca = [int(float(sys.argv[1]))]
     
-nFlights = 18 # number of flights used for simulation (should be 18 for full camp2ex measurements)
+nFlights = 1 # number of flights used for simulation (should be 18 for full camp2ex measurements)
 
 def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
     for i in tau:
@@ -144,6 +148,11 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
                     print('Run error: Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
                     print('Error message: %s' %e)
             print('Time to comple one loop for flight: %s'%(time.time()-flight_loop_start_time))
+        # Delete the temp files after each aod loop
+        if 'borg' in os.uname()[1]:
+            os.system('rm -rf temp/')
+            print('Clearing the temp folder in discover and sleep for 1 second')
+            time.sleep(1)
         print('Time to comple one loop for AOD: %s'%(time.time()-loop_start_time))
 
 if useRealGeometry:
