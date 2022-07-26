@@ -79,26 +79,43 @@ def conCaseDefinitions(caseStr, nowPix):
     # Added by Anin
     elif 'coarse_mode_campex' in caseStr.lower():
         try:
-            file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_r72.pkl", 'rb')
-            radiusBin = pickle.load(file)
-            file.close()            
             
-            # Multiple mode in coarse mode will crash
-            σ = [0.70] # mode 1, 2,...
-            rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+            nbins = 100
+            radiusBin = np.logspace(np.log10(0.005), np.log10(15), nbins)
+            
+            # # Multiple mode in coarse mode will crash
+            # σ = [0.70] # mode 1, 2,...
+            # rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+            # dvdr = logNormal(rv[0], σ[0], radiusBin)
+            # dvdlnr = dvdr[0]*radiusBin
+            # vals['triaPSD'] = [dvdlnr]
+            # vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
+            # vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
+            # vals['vrtHght'] =[3000] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+            # vals['vrtHghtStd'] = [500] # mode 1, 2,... # Gaussian sigma in meters
+            # vals['n'] = [np.repeat(1.4 + (rnd.uniform(-0.05, 0.05)),
+            #                         nwl)] # mode 1
+            # # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
+            # vals['k'] = [np.repeat(0.002 + (rnd.uniform(-0.001,0.001)),
+            #                     nwl)] # mode 1
+            # landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+            
+            σ = [0.45, 0.70] # mode 1, 2,...
+            rv = [0.2, 0.6]*np.exp(3*np.power(σ,2))
             dvdr = logNormal(rv[0], σ[0], radiusBin)
-            dvdlnr = dvdr[0]*radiusBin
-            vals['triaPSD'] = [dvdlnr]
-            vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
-            vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
-            vals['vrtHght'] =[3000] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
-            vals['vrtHghtStd'] = [500] # mode 1, 2,... # Gaussian sigma in meters
-            vals['n'] = [np.repeat(1.4 + (rnd.uniform(-0.05, 0.05)),
-                                   nwl)] # mode 1
-            # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-            vals['k'] = [np.repeat(0.002 + (rnd.uniform(-0.001,0.001)),
-                               nwl)] # mode 1
+            dvdr2 = logNormal(rv[1], σ[1], radiusBin)
+            dvdlnr1 = dvdr[0]*radiusBin
+            dvdlnr2 = dvdr2[0]*radiusBin
+            vals['triaPSD'] = [np.around(dvdlnr1, decimals=6),
+                               np.around(dvdlnr2, decimals=6)]
+            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+            vals['vol'] = np.array([[0.0477583], [0.7941207]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
+            vals['vrtHght'] = [[2010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
+            vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+            vals['n'] = np.repeat(1.415, nwl) # mode 1
+            vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
+            vals['k'] = np.repeat(0.002, nwl) # mode 1
+            vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
             landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
         except Exception as e:
             print('File loading error: check if the PSD file path is correct'\
@@ -175,10 +192,10 @@ def conCaseDefinitions(caseStr, nowPix):
         if multiMode:
             
             # Defining PSD of four layers for a particular flight
-            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:], decimals=3),
-                               np.around(dVdlnr[flight_num-1,1,:], decimals=3),
-                               np.around(dVdlnr[flight_num-1,2,:], decimals=3),
-                               np.around(dVdlnr[flight_num-1,3,:], decimals=3)]
+            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:], decimals=6),
+                               np.around(dVdlnr[flight_num-1,1,:], decimals=6),
+                               np.around(dVdlnr[flight_num-1,2,:], decimals=6),
+                               np.around(dVdlnr[flight_num-1,3,:], decimals=6)]
             sphFrac = 0.999 + rnd.uniform(-0.99, 0)
             vals['sph'] = [sphFrac,
                            sphFrac,
@@ -206,7 +223,7 @@ def conCaseDefinitions(caseStr, nowPix):
                 rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
                 nbins = np.size(radiusBin)
                 radiusBin_ = np.logspace(np.log10(0.005), np.log10(15), nbins)
-                dvdr = logNormal(rv[0], σ[0], radiusBin)
+                dvdr = logNormal(rv[0], σ[0], radiusBin_)
                 dvdlnr = dvdr[0]*radiusBin_
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
                                             [dvdlnr]])
@@ -569,8 +586,8 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
         elif 'camp_test' in case.lower():
             cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
             loadings.append(0.25*caseLoadFct)
-            cases.append(case.replace('camp_test','aerosol_campex'))
-            loadings.append(0.25*caseLoadFct)
+            # cases.append(case.replace('camp_test','aerosol_campex'))
+            # loadings.append(0.25*caseLoadFct)
         else:
             cases.append(case)
             loadings.append(caseLoadFct)
