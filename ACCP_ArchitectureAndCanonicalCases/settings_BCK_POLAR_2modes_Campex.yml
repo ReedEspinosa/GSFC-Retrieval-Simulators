@@ -111,13 +111,13 @@ retrieval:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
                     max:   [0.25, 0.60]
-                    min:   [0.10, 0.35]
-                    value: [0.13, 0.4]
+                    min:   [0.08, 0.35]
+                    value: [0.13, 0.40]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max:   [7.8,  0.85]
-                    min:   [1.0,  0.4]
+                    max:   [8.80,  0.85]
+                    min:   [1.00,  0.40]
                     value: [3.25,  0.55]
             retrieved: true
             type: size_distribution_lognormal
