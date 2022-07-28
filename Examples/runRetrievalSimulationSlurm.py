@@ -35,8 +35,8 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jul2022/25/'\
-        'FullGeometry/withCoarseMode/%s/'\
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jul2022/28/'\
+        'FullGeometryRun/withCoarseMode/%s/'\
         '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_PHI_%s_%s.pkl' %( psd_type,instrument,
                                                 psd_type,
                                                 str(τFactor).split('.')[0],
@@ -128,15 +128,16 @@ if len(sys.argv) > 3:
     # read the nPCA using the sys arg
     npca = [int(float(sys.argv[1]))]
     
-nFlights = 1 # number of flights used for simulation (should be 18 for full camp2ex measurements)
+nFlights = 18 # number of flights used for simulation (should be 18 for full camp2ex measurements)
 
 def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
     for i in tau:
         loop_start_time = time.time()
+        #tempVAR = 0
         for j in np.r_[1:nFlights+1]:
             flight_loop_start_time = time.time()
             for k in np.r_[0]:
-                conCase = 'addCoarse__campex_flight#%.2d_layer#%.2d' %(j,k)
+                conCase = '_Coarse_campex_flight#%.2d_layer#%.2d' %(j,k)
                 print('<-->'*20)
                 try:
                     print('<-->'*20)
@@ -148,11 +149,13 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
                     print('Run error: Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
                     print('Error message: %s' %e)
             print('Time to comple one loop for flight: %s'%(time.time()-flight_loop_start_time))
-        # Delete the temp files after each aod loop
-        if 'borg' in os.uname()[1]:
-            os.system('rm -rf temp/')
-            print('Clearing the temp folder in discover and sleep for 1 second')
-            time.sleep(1)
+            #tempVAR+=1
+            # Delete the temp files after each aod loop
+            #if 'borg' in os.uname()[1] and tempVAR==2:
+               # os.system('rm -rf temp/')
+                #print('Clearing the temp folder in discover and sleep for 1 second')
+                #time.sleep(1)
+                #tempVAR = 0
         print('Time to comple one loop for AOD: %s'%(time.time()-loop_start_time))
 
 if useRealGeometry:
