@@ -227,7 +227,7 @@ def conCaseDefinitions(caseStr, nowPix):
                 dvdr = logNormal(rv[0], σ[0], radiusBin_)
                 dvdlnr = dvdr[0]*radiusBin_
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
-                                            [dvdlnr]*[0.2575]])
+                                            [dvdlnr*0.2575]])
                 vals['sph'] = vals['sph'] + [sphFrac]
                 # removed to avoid the descrepency in printing the aero vol conc in the output
                 # vals['vol'] = np.array([[0.14652], [0.14652], [0.14652],
