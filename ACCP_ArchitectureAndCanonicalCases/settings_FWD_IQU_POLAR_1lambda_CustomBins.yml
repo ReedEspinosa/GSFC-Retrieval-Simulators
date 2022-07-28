@@ -68,17 +68,6 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [5.00001]
-                    min: [0.00000001]
-                    value: [0.009357605939569125]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
-            retrieved: true
-            type: aerosol_concentration
-        characteristic[2]:
-            mode[1]:
-                initial_guess:
-                    index_of_wavelength_involved: [0]
                     max: [10.0]
                     min: [0.02]
                     value: [0.18482]
@@ -88,7 +77,7 @@ retrieval:
                         lagrange_multiplier: 0.0
             retrieved: true
             type: size_distribution_triangle_bins
-        characteristic[3]:
+        characteristic[2]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -101,7 +90,7 @@ retrieval:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             retrieved: true
             type: real_part_of_refractive_index_spectral_dependent
-        characteristic[4]:
+        characteristic[3]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -112,7 +101,7 @@ retrieval:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
-        characteristic[5]:
+        characteristic[4]:
             type: surface_water_cox_munk_iso
             retrieved: true
             mode[1]:
@@ -133,7 +122,7 @@ retrieval:
                     min:                            [0.0015]
                     max:                            [0.1]
                     index_of_wavelength_involved:   [ 1]
-        characteristic[6]:
+        characteristic[5]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
@@ -142,7 +131,7 @@ retrieval:
                     value: [0.9999998]
             retrieved: true
             type: sphere_fraction
-        characteristic[7]:
+        characteristic[6]:
             type: vertical_profile_parameter_height
             retrieved: true
             mode[1]:
@@ -151,7 +140,7 @@ retrieval:
                     min:                            [400.0  ]
                     max:                            [5000.0 ]
                     index_of_wavelength_involved:   [0      ]
-        characteristic[8]:
+        characteristic[7]:
             type: vertical_profile_parameter_standard_deviation
             retrieved: true
             mode[1]:
@@ -160,7 +149,7 @@ retrieval:
                     min:                            [150.0  ]
                     max:                            [2000.0 ]
                     index_of_wavelength_involved:   [0      ]
-        characteristic[9]:
+        characteristic[8]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -183,7 +172,7 @@ retrieval:
                     value: [0.001]
             retrieved: true
             type: surface_land_brdf_ross_li
-        characteristic[10]:
+        characteristic[9]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
