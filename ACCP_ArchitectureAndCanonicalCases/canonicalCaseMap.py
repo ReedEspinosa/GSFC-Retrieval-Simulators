@@ -106,8 +106,8 @@ def conCaseDefinitions(caseStr, nowPix):
             dvdr2 = logNormal(rv[1], σ[1], radiusBin)
             dvdlnr1 = dvdr[0]*radiusBin
             dvdlnr2 = dvdr2[0]*radiusBin
-            vals['triaPSD'] = [np.around(dvdlnr1*[0.011939575], decimals=6),
-                               np.around(dvdlnr2*[0.198530175], decimals=6)]
+            vals['triaPSD'] = [np.around(dvdlnr1*[0.00011939575], decimals=6),
+                               np.around(dvdlnr2*[0.00198530175], decimals=6)]
             vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
             # removed to avoid the descrepency in printing the aero vol conc in the output
             #vals['vol'] = np.array([[0.0477583], [0.7941207]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
@@ -193,10 +193,10 @@ def conCaseDefinitions(caseStr, nowPix):
         if multiMode:
             
             # Defining PSD of four layers for a particular flight
-            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.0458], decimals=6),
-                               np.around(dVdlnr[flight_num-1,1,:]*[0.0458], decimals=6),
-                               np.around(dVdlnr[flight_num-1,2,:]*[0.0458], decimals=6),
-                               np.around(dVdlnr[flight_num-1,3,:]*[0.0458], decimals=6)]
+            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.000458], decimals=6),
+                               np.around(dVdlnr[flight_num-1,1,:]*[0.000458], decimals=6),
+                               np.around(dVdlnr[flight_num-1,2,:]*[0.000458], decimals=6),
+                               np.around(dVdlnr[flight_num-1,3,:]*[0.000458], decimals=6)]
             sphFrac = 0.999 + rnd.uniform(-0.99, 0)
             vals['sph'] = [sphFrac,
                            sphFrac,
@@ -227,7 +227,7 @@ def conCaseDefinitions(caseStr, nowPix):
                 dvdr = logNormal(rv[0], σ[0], radiusBin_)
                 dvdlnr = dvdr[0]*radiusBin_
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
-                                            [dvdlnr*0.2575]])
+                                            [dvdlnr*0.002575]])
                 vals['sph'] = vals['sph'] + [sphFrac]
                 # removed to avoid the descrepency in printing the aero vol conc in the output
                 # vals['vol'] = np.array([[0.14652], [0.14652], [0.14652],
@@ -240,7 +240,7 @@ def conCaseDefinitions(caseStr, nowPix):
                 vals['k'] = vals['k'] + [list(kAero)]
         else:
             vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
-            vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
+            vals['vol'] = np.array([0.0017]) # gives AOD=4*[0.2165, 0.033499]=1.0
             vals['vrtHght'] =[flight_vrtHght] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
             vals['n'] = [np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)),
