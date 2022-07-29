@@ -8,6 +8,7 @@ import sys
 import pprint
 import numpy as np
 import time
+import tempfile
 
 # add GRASP_scripts, GSFC-Retrieval-Simulators and ACCP subfolder to paths (assumes GRASP_scripts and GSFC-Retrieval-Simulators are in the same parent folder)
 parentDir = os.path.dirname(os.path.dirname(os.path.realpath("__file__"))) # obtain THIS_FILE_PATH/../ in POSIX
@@ -35,7 +36,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jul2022/28/'\
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jul2022/29/'\
         'FullGeometryRun/withCoarseMode/%s/'\
         '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_PHI_%s_%s.pkl' %( psd_type,instrument,
                                                 psd_type,
@@ -79,7 +80,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     # run the simulation, see below the definition of runSIM in simulateRetrieval.py for more input argument explanations
     simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
                 binPathGRASP=binGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, \
-                rndIntialGuess=False, dryRun=False, workingFileSave=True, verbose=True)
+                rndIntialGuess=False, dryRun=False, workingFileSave=False, verbose=True, delTempFiles=True)
 
     # print some results to the console/terminal
     wavelengthIndex = 2
@@ -120,11 +121,8 @@ useRealGeometry = False
 if len(sys.argv) > 3:
     useRealGeometry = bool(int(sys.argv[4]))
     # if using real geometry loop through different AOD in one run
-    #tau = np.logspace(np.log10(0.015), np.log10(0.1), 5)
-    tau = [0.01      , 0.01321621, 0.01746681, 0.0230845 , 0.03050896,
-           0.04032127, 0.05328943, 0.07042841, 0.09307965, 0.12301599,
-    	   0.16258049, 0.21486974, 0.2839763 , 0.37530897, 0.49601611,
-           0.65554518, 0.8663821 , 1.14502854, 1.51329346, 2.        ]
+    tau1 = np.logspace(np.log10(0.01), np.log10(2), 20)
+    tau = tau1[5:10]
     # read the nPCA using the sys arg
     npca = [int(float(sys.argv[1]))]
     
@@ -133,11 +131,11 @@ nFlights = 18 # number of flights used for simulation (should be 18 for full cam
 def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
     for i in tau:
         loop_start_time = time.time()
-        #tempVAR = 0
+        tempVAR = 0
         for j in np.r_[1:nFlights+1]:
             flight_loop_start_time = time.time()
             for k in np.r_[0]:
-                conCase = '_Coarse_campex_flight#%.2d_layer#%.2d' %(j,k)
+                conCase = 'Coarse_campex_flight#%.2d_layer#%.2d' %(j,k)
                 print('<-->'*20)
                 try:
                     print('<-->'*20)
@@ -149,13 +147,14 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
                     print('Run error: Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
                     print('Error message: %s' %e)
             print('Time to comple one loop for flight: %s'%(time.time()-flight_loop_start_time))
-            #tempVAR+=1
+            tempVAR+=1
             # Delete the temp files after each aod loop
-            #if 'borg' in os.uname()[1] and tempVAR==2:
-               # os.system('rm -rf temp/')
-                #print('Clearing the temp folder in discover and sleep for 1 second')
-                #time.sleep(1)
-                #tempVAR = 0
+            if 'uranus' in os.uname()[1] and tempVAR==5:
+                tempFileDir = tempfile.gettempdir()
+                os.system('rm -rf temp%s' %tempFileDir)
+                print('Clearing the temp folder in discover and sleep for 1 second')
+                time.sleep(1)
+                tempVAR = 0
         print('Time to comple one loop for AOD: %s'%(time.time()-loop_start_time))
 
 if useRealGeometry:
