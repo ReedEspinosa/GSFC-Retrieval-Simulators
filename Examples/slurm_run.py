@@ -16,14 +16,14 @@ job_directory = "%s" %os.getcwd()
 mkdir_p(job_directory+'/job')
 
 # list of AOD/nPCA
-tau = np.logspace(np.log10(0.01), np.log10(2.1), 5)
-npca = range(0,108) # max is 107
+tau = np.logspace(np.log10(0.99), np.log10(2), 2)
+npca = range(0,77) # max is 107
 # Solar Zenith angle (used if no real sun-satelliote geometry is used)
 SZA = 30
 # realGeometry: True if using the real geometry provided in the .mat file
 useRealGeometry = 1
 # Job name
-jobName = 'Y' # 'A' for 2modes, 'Z' for realGeometry
+jobName = 'MH' # 'A' for 2modes, 'Z' for realGeometry
 if not useRealGeometry: jobName = jobName + str(SZA); varStr = 'aod'
 else: varStr = 'nPCA'
 
@@ -42,18 +42,18 @@ for aod in tau:
     mkdir_p(job_directory)
 
     with open(job_file, 'w') as fh:
-        fh.writelines("#!/bin/bash\n\n")
+        fh.writelines("#!/usr/local/bin/bash\n\n")
         fh.writelines("#SBATCH --job-name=%s%.4d\n" % (jobName, aod_))
         fh.writelines("#SBATCH --output=./job/%s_%.4d.out.%s\n" % (jobName, aod_, '%A'))
         fh.writelines("#SBATCH --error=./job/%s_%.4d.err.%s\n" % (jobName, aod_, '%A'))
-        fh.writelines("#SBATCH --time=11:29:59\n")
+        fh.writelines("#SBATCH --time=01:59:59\n")
         # In Discover
-        if 'uranus' in hostname:
+        if 'discover' in hostname:
             fh.writelines('#SBATCH --constraint="sky|cas"\n')
-            fh.writelines("#SBATCH --ntasks=108\n")
+            fh.writelines("#SBATCH --ntasks=79\n")
             # fh.writelines("#SBATCH --array=0\n")
         # In Uranus
-        else:
+        elif 'uranus' in hostname:
             fh.writelines("#SBATCH --partition=LocalQ\n")
         # fh.writelines("#SBATCH --qos=short\n")
         # fh.writelines("#SBATCH --nodes=1\n")
@@ -64,13 +64,16 @@ for aod in tau:
         fh.writelines("hostname\n")
         fh.writelines('echo "---Running Simulation---"\n')
         fh.writelines("date\n")
-        if 'uranus' in hostname:
+        if 'discover' in hostname:
             for i in npca:
                 fh.writelines("python runRetrievalSimulationSlurm.py %d %s %s %s %2.3f &\n" %(int(i), instrument,
                                                                                            SZA, useRealGeometry, aod))
         else:
             fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
+        fh.writelines("wait\n")
+        fh.writelines("echo 0\n")
         fh.writelines("echo End: \n")
+        fh.writelines("rm -rf ${TMPDIR}\n")
         fh.writelines("date")
         # fh.writelines("python hello.py %.3d" % aod_)
     fh.close()
