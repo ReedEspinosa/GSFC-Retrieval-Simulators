@@ -36,8 +36,8 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jul2022/29/'\
-        'fullAuto/withCoarseMode/%s/'\
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jul2022/30/'\
+        'fullAuto/noCoarseMode/%s/'\
         '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_PHI_%s_%s.pkl' %( psd_type,instrument,
                                                 psd_type,
                                                 str(τFactor).split('.')[0],
@@ -121,11 +121,11 @@ useRealGeometry = False
 if len(sys.argv) > 3:
     useRealGeometry = bool(int(sys.argv[4]))
     # if using real geometry loop through different AOD in one run
-    #if len(sys.argv) > 4:
-    #    tau = [float(sys.argv[5])]
-    #else:
-    tau1 = np.logspace(np.log10(0.01), np.log10(2), 20)
-    tau = tau1[0:5]
+    if len(sys.argv) > 4:
+        tau = [float(sys.argv[5])]
+    else:
+        tau1 = np.logspace(np.log10(0.01), np.log10(2), 20)
+        tau = tau1[0:5]
     # read the nPCA using the sys arg
     npca = [int(float(sys.argv[1]))]
     
@@ -139,7 +139,7 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
         for j in np.r_[1:nFlights+1]:
             flight_loop_start_time = time.time()
             for k in np.r_[0]:
-                conCase = 'Coarse_campex_flight#%.2d_layer#%.2d' %(j,k)
+                conCase = 'campex_flight#%.2d_layer#%.2d' %(j,k)
                 print('<-->'*20)
                 try:
                     print('<-->'*20)

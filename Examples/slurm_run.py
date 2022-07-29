@@ -16,19 +16,19 @@ job_directory = "%s" %os.getcwd()
 mkdir_p(job_directory+'/job')
 
 # list of AOD/nPCA
-tau = np.logspace(np.log10(0.99), np.log10(2), 2)
-npca = range(0,77) # max is 107
+tau = np.logspace(np.log10(0.01), np.log10(2), 20)
+npca = range(40,79) # max is 107
 # Solar Zenith angle (used if no real sun-satelliote geometry is used)
 SZA = 30
 # realGeometry: True if using the real geometry provided in the .mat file
 useRealGeometry = 1
 # Job name
-jobName = 'MH' # 'A' for 2modes, 'Z' for realGeometry
+jobName = 'NH22' # 'A' for 2modes, 'Z' for realGeometry
 if not useRealGeometry: jobName = jobName + str(SZA); varStr = 'aod'
 else: varStr = 'nPCA'
 
 # Instrment name
-instrument = 'megaharp01'
+instrument = 'harp20'
 
 # looping through the var string
 for aod in tau:
@@ -46,11 +46,11 @@ for aod in tau:
         fh.writelines("#SBATCH --job-name=%s%.4d\n" % (jobName, aod_))
         fh.writelines("#SBATCH --output=./job/%s_%.4d.out.%s\n" % (jobName, aod_, '%A'))
         fh.writelines("#SBATCH --error=./job/%s_%.4d.err.%s\n" % (jobName, aod_, '%A'))
-        fh.writelines("#SBATCH --time=01:59:59\n")
+        fh.writelines("#SBATCH --time=00:59:59\n")
         # In Discover
         if 'discover' in hostname:
             fh.writelines('#SBATCH --constraint="sky|cas"\n')
-            fh.writelines("#SBATCH --ntasks=79\n")
+            fh.writelines("#SBATCH --ntasks=39\n")
             # fh.writelines("#SBATCH --array=0\n")
         # In Uranus
         elif 'uranus' in hostname:
