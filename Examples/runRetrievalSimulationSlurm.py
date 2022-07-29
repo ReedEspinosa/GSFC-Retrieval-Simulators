@@ -121,13 +121,17 @@ useRealGeometry = False
 if len(sys.argv) > 3:
     useRealGeometry = bool(int(sys.argv[4]))
     # if using real geometry loop through different AOD in one run
-    tau1 = np.logspace(np.log10(0.01), np.log10(2), 20)
-    tau = tau1[5:10]
+    if len(sys.argv) > 4:
+        tau = [float(sys.argv[5])]
+    else:
+        tau1 = np.logspace(np.log10(0.01), np.log10(2), 20)
+        tau = tau1[5:10]
     # read the nPCA using the sys arg
     npca = [int(float(sys.argv[1]))]
     
 nFlights = 18 # number of flights used for simulation (should be 18 for full camp2ex measurements)
-
+deleteTemp = False # Flag for deleting temp files regularly
+ 
 def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
     for i in tau:
         loop_start_time = time.time()
@@ -147,14 +151,15 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
                     print('Run error: Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
                     print('Error message: %s' %e)
             print('Time to comple one loop for flight: %s'%(time.time()-flight_loop_start_time))
-            tempVAR+=1
-            # Delete the temp files after each aod loop
-            if 'uranus' in os.uname()[1] and tempVAR==5:
-                tempFileDir = tempfile.gettempdir()
-                os.system('rm -rf temp%s' %tempFileDir)
-                print('Clearing the temp folder in discover and sleep for 1 second')
-                time.sleep(1)
-                tempVAR = 0
+            if deleteTemp:
+                tempVAR+=1
+                # Delete the temp files after each aod loop
+                if 'borg' in os.uname()[1] and tempVAR==5:
+                    tempFileDir = tempfile.gettempdir()
+                    os.system('rm -rf temp%s' %tempFileDir)
+                    print('Clearing the temp folder in discover and sleep for 1 second')
+                    time.sleep(1)
+                    tempVAR = 0
         print('Time to comple one loop for AOD: %s'%(time.time()-loop_start_time))
 
 if useRealGeometry:

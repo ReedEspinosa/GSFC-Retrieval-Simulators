@@ -16,8 +16,8 @@ job_directory = "%s" %os.getcwd()
 mkdir_p(job_directory+'/job')
 
 # list of AOD/nPCA
-# tau = np.logspace(np.log10(0.01), np.log10(2.1), 1)
-tau = range(46,108) # max is 107
+tau = np.logspace(np.log10(0.01), np.log10(2.1), 5)
+npca = range(0,108) # max is 107
 # Solar Zenith angle (used if no real sun-satelliote geometry is used)
 SZA = 30
 # realGeometry: True if using the real geometry provided in the .mat file
@@ -32,7 +32,7 @@ instrument = 'megaharp01'
 
 # looping through the var string
 for aod in tau:
-    if useRealGeometry: aod_ = aod; fileName = '%04d' %(aod_)
+    if useRealGeometry: aod_ = aod*1000; fileName = '%04d' %(aod_)
     else: aod_ = aod*1000; fileName = '%.4d' %(aod_)
     
     job_file = os.path.join(job_directory,
@@ -44,13 +44,14 @@ for aod in tau:
     with open(job_file, 'w') as fh:
         fh.writelines("#!/bin/bash\n\n")
         fh.writelines("#SBATCH --job-name=%s%.4d\n" % (jobName, aod_))
-        fh.writelines("#SBATCH --output=./job/%s_%.4d.out\n" % (jobName, aod_))
-        fh.writelines("#SBATCH --error=./job/%s_%.4d.err\n" % (jobName, aod_))
+        fh.writelines("#SBATCH --output=./job/%s_%.4d.out.%s\n" % (jobName, aod_, '%A'))
+        fh.writelines("#SBATCH --error=./job/%s_%.4d.err.%s\n" % (jobName, aod_, '%A'))
         fh.writelines("#SBATCH --time=11:29:59\n")
         # In Discover
-        if 'discover' in hostname:
-            fh.writelines('#SBATCH --nodes=1 --constraint="sky"\n')
-            fh.writelines("#SBATCH --array=0\n")
+        if 'uranus' in hostname:
+            fh.writelines('#SBATCH --constraint="sky|cas"\n')
+            fh.writelines("#SBATCH --ntasks=108\n")
+            # fh.writelines("#SBATCH --array=0\n")
         # In Uranus
         else:
             fh.writelines("#SBATCH --partition=LocalQ\n")
@@ -59,10 +60,14 @@ for aod in tau:
         # fh.writelines("#SBATCH --ntasks-per-node=1\n\n")
         # fh.writelines("#SBATCH --mail-type=ALL\n")
         # fh.writelines("#SBATCH --mail-user=$USER@umbc.edu\n")
-        fh.writelines("\necho Start: \n")
         fh.writelines("date\n")
-        if 'discover' in hostname:
-            for i in tau
+        fh.writelines("hostname\n")
+        fh.writelines('echo "---Running Simulation---"\n')
+        fh.writelines("date\n")
+        if 'uranus' in hostname:
+            for i in npca:
+                fh.writelines("python runRetrievalSimulationSlurm.py %d %s %s %s %2.3f &\n" %(int(i), instrument,
+                                                                                           SZA, useRealGeometry, aod))
         else:
             fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
         fh.writelines("echo End: \n")
