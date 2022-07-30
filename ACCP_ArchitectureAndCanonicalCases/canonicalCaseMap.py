@@ -193,10 +193,10 @@ def conCaseDefinitions(caseStr, nowPix):
         if multiMode:
             
             # Defining PSD of four layers for a particular flight
-            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.000458], decimals=6),
-                               np.around(dVdlnr[flight_num-1,1,:]*[0.000458], decimals=6),
-                               np.around(dVdlnr[flight_num-1,2,:]*[0.000458], decimals=6),
-                               np.around(dVdlnr[flight_num-1,3,:]*[0.000458], decimals=6)]
+            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.062], decimals=6),
+                               np.around(dVdlnr[flight_num-1,1,:]*[0.062], decimals=6),
+                               np.around(dVdlnr[flight_num-1,2,:]*[0.062], decimals=6),
+                               np.around(dVdlnr[flight_num-1,3,:]*[0.062], decimals=6)]
             sphFrac = 0.999 + rnd.uniform(-0.99, 0)
             vals['sph'] = [sphFrac,
                            sphFrac,
@@ -220,14 +220,14 @@ def conCaseDefinitions(caseStr, nowPix):
                 # This is hard coded not great for generalization
                 # GRASP needs to be modified to make use of triangle and lognormal bins
                 # together
-                σ = [0.70] # mode 1, 2,...
-                rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+                σ = [0.70+rnd.uniform(-0.05, 0.05)] # mode 1, 2,...
+                rv = [0.6+rnd.uniform(-0.05, 0.05)]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
                 nbins = np.size(radiusBin)
                 radiusBin_ = np.logspace(np.log10(0.005), np.log10(15), nbins)
                 dvdr = logNormal(rv[0], σ[0], radiusBin_)
                 dvdlnr = dvdr[0]*radiusBin_
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
-                                            [dvdlnr*0.002575]])
+                                            [dvdlnr*0.15]])
                 vals['sph'] = vals['sph'] + [sphFrac]
                 # removed to avoid the descrepency in printing the aero vol conc in the output
                 # vals['vol'] = np.array([[0.14652], [0.14652], [0.14652],
