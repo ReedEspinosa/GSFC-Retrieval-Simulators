@@ -2,6 +2,7 @@
 
 import os
 import numpy as np
+import sys
 
 hostname = os.uname()[1]
 
@@ -16,14 +17,23 @@ job_directory = "%s" %os.getcwd()
 mkdir_p(job_directory+'/job')
 
 # list of AOD/nPCA
-tau = np.logspace(np.log10(0.01), np.log10(2), 20)
-npca = range(40,79) # max is 107
+tau = np.logspace(np.log10(0.009), np.log10(2.2), 10)
+# splitting into chunks to make the code efficient and run easily in DISCOVER
+try:
+    arrayNum= int(sys.argv[1])
+except:
+    print('No array number is given: it should be 0,1 or 2 \n Using default value 0')
+    arrayNum = 0
+
+npca_ = [range(0,36), range(36,72), range(72, 107)]
+npca = npca_[arrayNum] # max is 107
+
 # Solar Zenith angle (used if no real sun-satelliote geometry is used)
 SZA = 30
 # realGeometry: True if using the real geometry provided in the .mat file
 useRealGeometry = 1
 # Job name
-jobName = 'NH22' # 'A' for 2modes, 'Z' for realGeometry
+jobName = 'H10%d' %arrayNum # 'A' for 2modes, 'Z' for realGeometry
 if not useRealGeometry: jobName = jobName + str(SZA); varStr = 'aod'
 else: varStr = 'nPCA'
 
@@ -50,7 +60,7 @@ for aod in tau:
         # In Discover
         if 'discover' in hostname:
             fh.writelines('#SBATCH --constraint="sky|cas"\n')
-            fh.writelines("#SBATCH --ntasks=39\n")
+            fh.writelines("#SBATCH --ntasks=36\n")
             # fh.writelines("#SBATCH --array=0\n")
         # In Uranus
         elif 'uranus' in hostname:

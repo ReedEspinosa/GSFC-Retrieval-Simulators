@@ -36,10 +36,9 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jul2022/30/'\
-        'fullAuto/noCoarseMode/%s/'\
-        '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_PHI_%s_%s.pkl' %( psd_type,instrument,
-                                                psd_type,
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jul2022/31/'\
+        'fullGeometry/withCoarseMode/%s/%s/'\
+        'Camp2ex_AOD_%sp%s_550nm_SZA_%s_PHI_%s_%s.pkl' %( psd_type,instrument,
                                                 str(τFactor).split('.')[0],
                                                 str(τFactor).split('.')[1][:3],
                                                 int(round(SZA, 2)*100),
@@ -59,7 +58,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex.yml' %psd_type) # inversion YAML file
 
     # Other non-path related settings
-    Nsims = 3 # the number of inversion to perform, each with its own random noise
+    Nsims = 5 # the number of inversion to perform, each with its own random noise
     maxCPU = 1 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase #'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
@@ -139,7 +138,7 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
         for j in np.r_[1:nFlights+1]:
             flight_loop_start_time = time.time()
             for k in np.r_[0]:
-                conCase = 'campex_flight#%.2d_layer#%.2d' %(j,k)
+                conCase = 'Coarse_campex_flight#%.2d_layer#%.2d' %(j,k)
                 print('<-->'*20)
                 try:
                     print('<-->'*20)

@@ -584,7 +584,7 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.7*caseLoadFct)
         elif 'campex' in case.lower():
             cases.append(case.replace('campex','aerosol_campex')) # smoke base τ550=1.0
-            loadings.append(0.8*caseLoadFct)
+            loadings.append(1*caseLoadFct)
             # cases.append(case.replace('campex','coarse_mode_campex')) # smoke base τ550=1.0
             # loadings.append(0.25*caseLoadFct)
         elif 'camp_test' in case.lower():
