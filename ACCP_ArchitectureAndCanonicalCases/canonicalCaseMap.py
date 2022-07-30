@@ -193,10 +193,10 @@ def conCaseDefinitions(caseStr, nowPix):
         if multiMode:
             
             # Defining PSD of four layers for a particular flight
-            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.062], decimals=6),
-                               np.around(dVdlnr[flight_num-1,1,:]*[0.062], decimals=6),
-                               np.around(dVdlnr[flight_num-1,2,:]*[0.062], decimals=6),
-                               np.around(dVdlnr[flight_num-1,3,:]*[0.062], decimals=6)]
+            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.1], decimals=6),
+                               np.around(dVdlnr[flight_num-1,1,:]*[0.1], decimals=6),
+                               np.around(dVdlnr[flight_num-1,2,:]*[0.1], decimals=6),
+                               np.around(dVdlnr[flight_num-1,3,:]*[0.1], decimals=6)]
             sphFrac = 0.999 + rnd.uniform(-0.99, 0)
             vals['sph'] = [sphFrac,
                            sphFrac,
@@ -221,13 +221,13 @@ def conCaseDefinitions(caseStr, nowPix):
                 # GRASP needs to be modified to make use of triangle and lognormal bins
                 # together
                 σ = [0.70+rnd.uniform(-0.05, 0.05)] # mode 1, 2,...
-                rv = [0.6+rnd.uniform(-0.05, 0.05)]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+                rv = [0.6+rnd.uniform(-0.03, 0.03)]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
                 nbins = np.size(radiusBin)
                 radiusBin_ = np.logspace(np.log10(0.005), np.log10(15), nbins)
                 dvdr = logNormal(rv[0], σ[0], radiusBin_)
                 dvdlnr = dvdr[0]*radiusBin_
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
-                                            [dvdlnr*0.15]])
+                                            [dvdlnr*0.25]])
                 vals['sph'] = vals['sph'] + [sphFrac]
                 # removed to avoid the descrepency in printing the aero vol conc in the output
                 # vals['vol'] = np.array([[0.14652], [0.14652], [0.14652],
@@ -429,6 +429,8 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=No
                 valsTmp[key] = loading*valsTmp[key]
             elif key=='vrtHght' and caseHeightKM:
                 valsTmp[key][:] = caseHeightKM*1000
+            if key=='triaPSD':
+                valsTmp[key] = loading*valsTmp[key]
             if key in aeroKeys and key in vals:
                     vals[key] = np.vstack([vals[key], valsTmp[key]])
             else: # implies we take the surface parameters from the last case
@@ -582,12 +584,12 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.7*caseLoadFct)
         elif 'campex' in case.lower():
             cases.append(case.replace('campex','aerosol_campex')) # smoke base τ550=1.0
-            loadings.append(0.25*caseLoadFct)
+            loadings.append(0.8*caseLoadFct)
             # cases.append(case.replace('campex','coarse_mode_campex')) # smoke base τ550=1.0
             # loadings.append(0.25*caseLoadFct)
         elif 'camp_test' in case.lower():
             cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
-            loadings.append(0.25*caseLoadFct)
+            loadings.append(caseLoadFct)
             # cases.append(case.replace('camp_test','aerosol_campex'))
             # loadings.append(0.25*caseLoadFct)
         else:
