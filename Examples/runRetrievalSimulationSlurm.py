@@ -37,7 +37,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
 
     # Full path to save simulation results as a Python pickle
     savePath = '../../../ACCDAM/2022/Campex_Simulations/Jul2022/31/'\
-        'fullGeometry/withCoarseMode/%s/%s/'\
+        'fullGeometry/noCoarseMode/%s/%s/'\
         'Camp2ex_AOD_%sp%s_550nm_SZA_%s_PHI_%s_%s.pkl' %( psd_type,instrument,
                                                 str(τFactor).split('.')[0],
                                                 str(τFactor).split('.')[1][:3],
@@ -138,7 +138,7 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
         for j in np.r_[1:nFlights+1]:
             flight_loop_start_time = time.time()
             for k in np.r_[0]:
-                conCase = 'Camp2ex_campex_flight#%.2d_layer#%.2d' %(j,k)
+                conCase = 'noCoarse_campex_flight#%.2d_layer#%.2d' %(j,k)
                 print('<-->'*20)
                 try:
                     print('<-->'*20)
@@ -147,7 +147,7 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
                                 conCase=conCase, instrument=instrument)
                 except Exception as e:
                     print('<---->'*10)
-                    print('Run error: Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
+                    print('Run error: Running runRetrievalSimulationSlurm.py for τ(550nm) = %0.3f' %i)
                     print('Error message: %s' %e)
             print('Time to comple one loop for flight: %s'%(time.time()-flight_loop_start_time))
             if deleteTemp:

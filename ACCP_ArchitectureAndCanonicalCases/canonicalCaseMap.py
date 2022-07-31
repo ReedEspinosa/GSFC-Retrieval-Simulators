@@ -197,6 +197,7 @@ def conCaseDefinitions(caseStr, nowPix):
                                np.around(dVdlnr[flight_num-1,1,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,2,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,3,:]*[0.1], decimals=6)]
+            vals['triaPSD'] = np.array(vals['triaPSD'])
             sphFrac = 0.999 + rnd.uniform(-0.99, 0)
             vals['sph'] = [sphFrac,
                            sphFrac,
@@ -226,8 +227,10 @@ def conCaseDefinitions(caseStr, nowPix):
                 radiusBin_ = np.logspace(np.log10(0.005), np.log10(15), nbins)
                 dvdr = logNormal(rv[0], σ[0], radiusBin_)
                 dvdlnr = dvdr[0]*radiusBin_
+                if 'nocoarse' in caseStr.lower(): multFac = 0.0001
+                else: multFac=0.25
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
-                                            [dvdlnr*0.25]])
+                                            [dvdlnr*multFac]])
                 vals['sph'] = vals['sph'] + [sphFrac]
                 # removed to avoid the descrepency in printing the aero vol conc in the output
                 # vals['vol'] = np.array([[0.14652], [0.14652], [0.14652],
