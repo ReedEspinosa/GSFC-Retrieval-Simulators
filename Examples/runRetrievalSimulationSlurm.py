@@ -138,11 +138,11 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
         for j in np.r_[1:nFlights+1]:
             flight_loop_start_time = time.time()
             for k in np.r_[0]:
-                conCase = 'Coarse_campex_flight#%.2d_layer#%.2d' %(j,k)
+                conCase = 'Camp2ex_campex_flight#%.2d_layer#%.2d' %(j,k)
                 print('<-->'*20)
                 try:
                     print('<-->'*20)
-                    print('Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
+                    print('Running runRetrievalSimulationSlurm.py for τ(550nm) = %0.3f' %i)
                     runMultiple(τFactor=i, psd_type=psd_type, SZA=SZA, Phi=phi,
                                 conCase=conCase, instrument=instrument)
                 except Exception as e:

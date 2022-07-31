@@ -3,12 +3,15 @@
 import os
 import numpy as np
 import sys
+import itertools
 
 hostname = os.uname()[1]
+
 
 def mkdir_p(dir):
     '''make a directory (dir) if it doesn't exist'''
     if not os.path.exists(dir): os.mkdir(dir)
+
 
 job_directory = "%s" %os.getcwd()
 
@@ -30,15 +33,17 @@ npca = npca_[arrayNum] # max is 107
 
 # Solar Zenith angle (used if no real sun-satelliote geometry is used)
 SZA = 30
+sza_ = range(0,70, 10) # For running multible simulations in DISCOVER
+sza = list(itertools.chain.from_iterable(itertools.repeat(x, 5) for x in sza_))
 # realGeometry: True if using the real geometry provided in the .mat file
-useRealGeometry = 1
+useRealGeometry = 0
 # Job name
-jobName = 'H10%d' %arrayNum # 'A' for 2modes, 'Z' for realGeometry
+jobName = 'MH%d_' %arrayNum # 'A' for 2modes, 'Z' for realGeometry
 if not useRealGeometry: jobName = jobName + str(SZA); varStr = 'aod'
 else: varStr = 'nPCA'
 
 # Instrment name
-instrument = 'harp20'
+instrument = 'megaharp01'
 
 # looping through the var string
 for aod in tau:
@@ -56,7 +61,7 @@ for aod in tau:
         fh.writelines("#SBATCH --job-name=%s%.4d\n" % (jobName, aod_))
         fh.writelines("#SBATCH --output=./job/%s_%.4d.out.%s\n" % (jobName, aod_, '%A'))
         fh.writelines("#SBATCH --error=./job/%s_%.4d.err.%s\n" % (jobName, aod_, '%A'))
-        fh.writelines("#SBATCH --time=00:59:59\n")
+        fh.writelines("#SBATCH --time=01:29:59\n")
         # In Discover
         if 'discover' in hostname:
             fh.writelines('#SBATCH --constraint="sky|cas"\n')
@@ -74,12 +79,20 @@ for aod in tau:
         fh.writelines("hostname\n")
         fh.writelines('echo "---Running Simulation---"\n')
         fh.writelines("date\n")
-        if 'discover' in hostname:
-            for i in npca:
-                fh.writelines("python runRetrievalSimulationSlurm.py %d %s %s %s %2.3f &\n" %(int(i), instrument,
+        if useRealGeometry:
+            if 'discover' in hostname:
+                for i in npca:
+                    fh.writelines("python runRetrievalSimulationSlurm.py %d %s %s %s %2.3f &\n" %(int(i), instrument,
                                                                                            SZA, useRealGeometry, aod))
+            else:
+                fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
         else:
-            fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
+            if 'discover' in hostname:
+                for i in sza:
+                    fh.writelines("python runRetrievalSimulationSlurm.py %d %s %s %s %2.3f &\n" %(int(i), instrument,
+                                                                                           i, useRealGeometry, aod))
+            else:
+                fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
         fh.writelines("wait\n")
         fh.writelines("echo 0\n")
         fh.writelines("echo End: \n")
@@ -88,3 +101,4 @@ for aod in tau:
         # fh.writelines("python hello.py %.3d" % aod_)
     fh.close()
     os.system("sbatch %s" %job_file)
+print('Jobs sumitted succesfully check the ./job/ folder for output/error')
