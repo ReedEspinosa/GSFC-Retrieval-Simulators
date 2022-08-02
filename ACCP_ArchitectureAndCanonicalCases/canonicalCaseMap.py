@@ -106,8 +106,9 @@ def conCaseDefinitions(caseStr, nowPix):
             dvdr2 = logNormal(rv[1], σ[1], radiusBin)
             dvdlnr1 = dvdr[0]*radiusBin
             dvdlnr2 = dvdr2[0]*radiusBin
-            vals['triaPSD'] = [np.around(dvdlnr1*[0.00011939575], decimals=6),
-                               np.around(dvdlnr2*[0.00198530175], decimals=6)]
+            vals['triaPSD'] = [np.around(dvdlnr1*[0.18], decimals=6),
+                               np.around(dvdlnr2*[0.20], decimals=6)]
+            vals['triaPSD'] = np.vstack(vals['triaPSD'])
             vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
             # removed to avoid the descrepency in printing the aero vol conc in the output
             #vals['vol'] = np.array([[0.0477583], [0.7941207]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
@@ -117,7 +118,7 @@ def conCaseDefinitions(caseStr, nowPix):
             vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
             vals['k'] = np.repeat(0.002, nwl) # mode 1
             vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
-            landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+            landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
         except Exception as e:
             print('File loading error: check if the PSD file path is correct'\
                   ' or not\n %s' %e)
@@ -179,16 +180,17 @@ def conCaseDefinitions(caseStr, nowPix):
             print('Using the PSD from the flight# %d and layer#'\
                   ' %d' %(flight_num, nlayer))
             
-            # update the PSD based on flight an d layer information
+            # update the PSD based on flight and layer information
             # This needs modification to use multiple layers
             if not nlayer==0:
-                vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,nlayer-1,:], decimals=3)]
+                vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,nlayer-1,:], decimals=6)]
+                vals['triaPSD'] = np.vstack(vals['triaPSD'])
         else:
             # using the first flight PSD
             print('Using the PSD from the first flight and first layer')
-            vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=3)]
-        # vals['triaPSD'] = np.vstack([np.around(dVdlnr[0,0,:], decimals=3),
-        #                              np.around(dVdlnr[0,1,:], decimals=3)]) # needs edit
+            vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=6)]
+            vals['triaPSD'] = np.vstack(vals['triaPSD'])
+
         # parameters above this line has to be modified [AP]
         if multiMode:
             
@@ -202,7 +204,6 @@ def conCaseDefinitions(caseStr, nowPix):
                            sphFrac,
                            sphFrac,
                            sphFrac] # mode 1, 2,...
-            # vals['vol'] = np.array([[0.1832], [0.1832], [0.1832], [0.1832]]) # gives AOD=4*[0.2165, 0.033499]=1.0
             vals['vrtHght'] = [[1000], [1500], [2000], [2500]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [[500], [500], [500], [500]] # mode 1, 2,... # Gaussian sigma in meters
             nAero = np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)), nwl)
@@ -211,7 +212,7 @@ def conCaseDefinitions(caseStr, nowPix):
                          list(nAero),
                          list(nAero),
                          list(nAero)] # mode 1
-            # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
+            
             vals['k'] = [list(kAero),
                          list(kAero),
                          list(kAero),
@@ -230,8 +231,6 @@ def conCaseDefinitions(caseStr, nowPix):
                                             [dvdlnr*0.25]])
                 vals['sph'] = vals['sph'] + [sphFrac]
                 # removed to avoid the descrepency in printing the aero vol conc in the output
-                # vals['vol'] = np.array([[0.14652], [0.14652], [0.14652],
-                #                         [0.14652], [1.03000]])
                 vals['vrtHght'] = vals['vrtHght'] + [[1000]]
                 vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[500]]
                 nAero = np.repeat(1.40 + (rnd.uniform(-0.05, 0.05)), nwl)
@@ -245,10 +244,10 @@ def conCaseDefinitions(caseStr, nowPix):
             vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
             vals['n'] = [np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)),
                                    nwl)] # mode 1
-            # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
+            
             vals['k'] = [np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),
                                nwl)] # mode 1
-        landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
         rv = [0.2, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
