@@ -3,18 +3,20 @@
 import os
 import warnings
 import numpy as np
+from scipy import interpolate
 from matplotlib import pyplot as plt
 from matplotlib import ticker as mtick
 from simulateRetrieval import simulation # This should ensure GSFC-GRASP-Python-Interface is in the path
-
+import matplotlib as mpl;
+import matplotlib.pyplot as plt; mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'});mpl.rcParams.update({'ytick.right': 'True'});mpl.rcParams.update({'xtick.top': 'True'});plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
 # pklDataPath = '/Users/wrespino/Synced/Working/OSSE_Test_Run/MERGED_ss450-g5nr.leV210.GRASP.example.polarimeter07.200608ALL_ALLz.pkl' # None to skip reloading of data
-pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl' # None to skip reloading of data
+pklDataPath = '/mnt/Raid4TB/ACCDAM/2022/Campex_Simulations/Aug2022/08/fullGeometry/withCoarseMode/ocean/2modes/harp02/MERGED_Camp2ex_AOD_ALL_550nm_ALL_campex_flight#ALL_layer#00.pkl' # None to skip reloading of data
 # pklDataPath = '/Users/wrespino/Synced/ACCDAM_RemoteSensingObservability/AninsSimulations/Apr2022_5mode/MERGED_CAMP2ExmegaALL_2modes_AOD_ALL_550nmALL.pkl'
 # pklDataPath = '/Users/wrespino/Synced/ACCDAM_RemoteSensingObservability/AninsSimulations/Apr2022_4mode/MERGED_polarALL_2modes_AOD_ALL_550nmALL.pkl'
 # pklDataPath = None # None to skip reloading of data
 # plotSaveDir = '/Users/wrespino/Synced/AOS/PLRA/Figures_AODF_bugFixApr11'
-plotSaveDir = '/Users/wrespino/Downloads/'
-surf2plot = 'ocean' # land, ocean or both
+plotSaveDir = os.path.split(pklDataPath)[0]
+surf2plot = 'both' # land, ocean or both
 
 colors = np.array([[0.83921569, 0.15294118, 0.15686275, 1.        ],  # red  - number
                    [0.12156863, 0.46666667, 0.70588235, 1.        ],  # blue - surface
@@ -23,7 +25,9 @@ colors = np.array([[0.83921569, 0.15294118, 0.15686275, 1.        ],  # red  - n
 
 showFigs = False
 saveFigs = True
-inst = 'polar07'
+waveInd = 2
+aodMin = 0.1
+inst = 'megaharp'
 simType = 'G5NR' if 'g5nr' in pklDataPath else 'CanCase'
 version = '%s-%s-%s-V01' % (inst, surf2plot, simType) # for PDF file names
 
@@ -45,32 +49,73 @@ else:
 
 # apply convergence filter
 # simBase.conerganceFilter(forceχ2Calc=True) # ours looks more normal, but GRASP's produces slightly lower RMSE
-# costThresh = np.percentile([rb['costVal'] for rb in simBase.rsltBck[keepInd]], 95)
+keepInd = keepInd.astype('int16') # make sure that the keepInd is integer or bool
+# costThresh = np.percentile([rb['costVal'] for rb in simBase.rsltBck[keepInd]], 99)
 # keepInd = np.logical_and(keepInd, [rb['costVal']<costThresh for rb in simBase.rsltBck])
+# filter based on the AOD at 550nm band
+keepInd = np.logical_and(keepInd, [rf['aod'][waveInd]>=aodMin for rf in simBase.rsltFwd])
 print('%d/%d fit surface type %s and convergence filter' % (keepInd.sum(), len(simBase.rsltBck), surf2plot))
 
 
-calc_dV = lambda rf: rf['dVdlnr'].sum(axis=0)/rf['r'][0]
+# calc_dV = lambda rf: (np.array([rf['dVdlnr'][i,:]*rf['vol'][i] for i in range(0,len(rf['vol']))])).sum(axis=0)/rf['r'][0]
+calc_dV = lambda rf: rf['dVdlnr'].sum(axis=0)#/rf['r'][0]
+# calc_dV_rb = lambda rb: rb['dVdlnr'].sum(axis=0)/rb['r'][0]
+# calc_dV_rb = lambda rb: (np.array([rb['dVdlnr'][i,:]*rb['vol'][i] for i in range(0,len(rb['vol']))])).sum(axis=0)/rb['r'][0]
 calc_dV2dA = lambda dv, r: 3*dv/r
 calc_dA2dN = lambda da, r: da/(r**2)/4/np.pi
 
 rAll = simBase.rsltFwd[0]['r'][0] # HACK: Again, we assume all pixels, fwd/bck and all modes are defined at the same radii
-Nr = len(rAll); Npix = len(simBase.rsltFwd)
+Nr = len(rAll); Npix = len(simBase.rsltFwd[keepInd])
+Nr_Bck = len(simBase.rsltBck[0]['r'][0]); Npix_Bck = len(simBase.rsltBck)
 dXdrT = np.empty((3, Npix, Nr)) # dXdrT[j,:,:] j=0,1,2 -> number, surface, volume, respectively
 dXdrR = np.empty((3, Npix, Nr)) # dXdrR[j,:,:] j=0,1,2 -> number, surface, volume, respectively
-for i, (rf,rb) in enumerate(zip(simBase.rsltFwd, simBase.rsltBck)):
+for i, (rf,rb) in enumerate(zip(simBase.rsltFwd[keepInd], simBase.rsltBck[keepInd])):
     dXdrT[2,i,:] = calc_dV(rf)
-    dXdrR[2,i,:] = calc_dV(rb)
+    f = interpolate.interp1d(rb['r'][0],calc_dV(rb),kind='linear')
+    dXdrR[2,i,:] = f(rf['r'][0])
     dXdrT[1,i,:] = calc_dV2dA(dXdrT[2,i,:], rf['r'][0])
-    dXdrR[1,i,:] = calc_dV2dA(dXdrR[2,i,:], rb['r'][0]) 
+    dXdrR[1,i,:] = calc_dV2dA(dXdrR[2,i,:], rf['r'][0]) 
     dXdrT[0,i,:] = calc_dA2dN(dXdrT[1,i,:], rf['r'][0])
-    dXdrR[0,i,:] = calc_dA2dN(dXdrR[1,i,:], rb['r'][0])
-
+    dXdrR[0,i,:] = calc_dA2dN(dXdrR[1,i,:], rf['r'][0])
+for i in range(0,5):
+    simBase.rsltFwd[90]['dVdlnr'][i,:]*simBase.rsltFwd[90]['vol'][i]
+# =============================================================================
+# Plot all the size distribution
+# =============================================================================
+labelsPSD = ['Number ($\# \cdot μm^{-2} \cdot μm^{-1}$)',
+          'Surface ($μm^{2} \cdot μm^{-2} \cdot μm^{-1}$)',
+          'Volume ($μm^{3} \cdot μm^{-2} \cdot μm^{-1}$)']
+fig_psd, ax_psd = plt.subplots(nrows=3,sharex=True, figsize=(3.5,7))
+for i in range(0,3):
+    ax_psd[i].semilogx(rf['r'][0], np.mean(dXdrT[i,:,:], axis=0), 'r.',
+                       alpha = 0.5)
+    ax_psd[i].fill_between(rf['r'][0], np.percentile(dXdrT[i,:,:], 10, axis=0),
+                           np.percentile(dXdrT[i,:,:], 90, axis=0), color = 'r', alpha = 0.25)
+    ax_psd[i].semilogx(rf['r'][0], np.mean(dXdrR[i,:,:], axis=0), 'g.',
+                       alpha = 0.5)
+    ax_psd[i].fill_between(rf['r'][0], np.percentile(dXdrR[i,:,:], 10, axis=0),
+                           np.percentile(dXdrR[i,:,:], 90, axis=0), color = 'g', alpha = 0.25)
+    ax_psd[i].set_xlim([0.01, 15])
+    if i == 0:
+        ax_psd[i].set_ylim([0, np.max(np.percentile(dXdrR[i,:,:], 99, axis=0))])
+    else:
+        ax_psd[i].set_ylim([0, np.max(np.percentile(dXdrR[i,:,:], 92, axis=0))])
+    ax_psd[i].set_ylabel(labelsPSD[i])
+    ax_psd[i].grid(True)
+ax_psd[0].legend(['True', 'Retrieved'])
+ax_psd[2].set_xlabel(r'Radius ($\mu$m)')
+fig_psd.tight_layout()
+# save the plot in the same directory
+filePath = os.path.split(pklDataPath)[0]+'/PSD_difference_'+\
+            os.path.split(pklDataPath)[1].replace('.pkl', '.png')
+plt.savefig(filePath, dpi=330)
+print('Plot saved in: %s' %filePath)
 
 def set_axis_style(ax, labels):
     ax.xaxis.set_tick_params(direction='out')
     ax.xaxis.set_ticks_position('bottom')
-    ax.set_xticks(np.arange(1, len(labels) + 1), labels=labels, fontweight='bold')
+    ax.set_xticks(np.arange(1, len(labels) + 1))
+    ax.set_xticklabels(labels=labels, fontweight='bold')
     ax.set_xlim(0.25, len(labels) + 0.75)
     ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=True)
 
@@ -78,7 +123,7 @@ violinBarColor = [0.5,0.5,0.5,1]
 figV, axV = plt.subplots(1,1, figsize=(5,4.1)) # Violin Plot figure
 figV.subplots_adjust(right=0.65)
 integratedT = np.trapz(dXdrT[:,:,:].T, simBase.rsltFwd[0]['r'][0], axis=0).T
-integratedR = np.trapz(dXdrR[:,:,:].T, simBase.rsltBck[0]['r'][0], axis=0).T
+integratedR = np.trapz(dXdrR[:,:,:].T, simBase.rsltFwd[0]['r'][0], axis=0).T
 integratedD = 100*(integratedR - integratedT)/(integratedT) # TODO: Change this to simply 1/Truth but add minimum loading
 vldInd = np.any(integratedT>=np.percentile(integratedT,2,axis=1)[:,None], axis=0) # below 1% in N, S or V
 iD_list = []
@@ -124,7 +169,7 @@ labels = ['Number RMSE ($\# \cdot μm^{-2} \cdot μm^{-1}$)',
 
 for i in range(3):
     twinAxs.append(axM.twinx())
-    if i>0: twinAxs[-1].spines.right.set_position(("axes", 0.96+0.22*i))
+    if i>0: twinAxs[-1].spines['right'].set_position(("axes", 0.96+0.22*i))
     RMSE = np.sqrt(np.mean((dXdrR[i,:,:] - dXdrT[i,:,:])**2, axis=0))
     pltHnd, = twinAxs[-1].plot(rAll, RMSE, ':', color=colors[i], linewidth=2)
     prettyAxis(twinAxs[-1], pltHnd.get_color(), labels[i])
