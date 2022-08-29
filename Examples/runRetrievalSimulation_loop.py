@@ -26,6 +26,8 @@ from architectureMap import returnPixel
 # import setupConCaseYAML function with simulated scene definitions from .../GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/canonicalCaseMap.py
 from canonicalCaseMap import setupConCaseYAML
 
+# import selectGeometryEntry function that can read realsitic sun-satellite geometry
+from ACCP_functions import selectGeometryEntry
 
 # <><><> BEGIN BASIC CONFIGURATION SETTINGS <><><>
 def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
@@ -33,17 +35,17 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     # instrument
     instrument=instrument
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Apr2022/'\
-        'All_Flights/Spherical/%s/'\
-        '%sCamp2ex_%s_AOD_%sp%s_550nm_%s.pkl' %(psd_type, instrument,
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/29/'\
+        'Test/withCoarseMode/%s/'\
+        '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_%s.pkl' %( psd_type,instrument,
                                                 psd_type,
                                                 str(τFactor).split('.')[0],
                                                 str(τFactor).split('.')[1][:3],
-                                                conCase)
+                                                int(round(SZA, 2)*10),conCase)
     
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
-    binGRASP = '../../GRASP_GSFC/build_polar07_fast/bin/grasp_app'
+    binGRASP = '../../GRASP_GSFC/build_megaharp01/bin/grasp_app'
     
     # Full path grasp precomputed single scattering kernels
     krnlPath = '../../GRASP_GSFC/src/retrieval/internal_files'
@@ -54,14 +56,14 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex.yml' %psd_type) # inversion YAML file
     
     # Other non-path related settings
-    Nsims = 18 # the number of inversion to perform, each with its own random noise
-    maxCPU = 6 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+    Nsims = 2 # the number of inversion to perform, each with its own random noise
+    maxCPU = 2 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
-    SZA = 30 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
-    Phi = 0 # relative azimuth angle, φsolar-φsensor
+    SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
+    Phi = Phi # relative azimuth angle, φsolar-φsensor
     τFactor = τFactor # scaling factor for total AOD
     
-    # %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
+    # % <><><> END BASIC CONFIGURATION SETTINGS <><><>
     
     # create a dummy pixel object, conveying the measurement geometry, wavlengths, etc. (i.e. information in a GRASP SDATA file)
     nowPix = returnPixel(instrument, sza=SZA, relPhi=Phi, nowPix=None)
@@ -85,24 +87,33 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     
     # save simulated truth data to a NetCDF file
     # simA.saveSim_netCDF(savePath[:-4], verbose=True)
-# %% Run multiple times
-tau = np.logspace(np.log10(0.01), np.log10(2.0), 2)
+# %% Sun-Satellite geometry information
+tau = np.logspace(np.log10(0.01), np.log10(2.0), 1)
 psd_type = '2modes' # '2modes' or '16bins'
-instrument = 'polar07' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
-# tau = np.linspace(0.01, 1, 20)
-# conCase = 'campex_flight#16_layer#01'#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+instrument = 'megaharp01' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+SZA = 30
+phi = 0
+useRealGeometry = True
+if useRealGeometry:
+    rawAngleDir = '../../../ACCDAM/onOrbitObservationGeometryACCP/angularSampling/colarco_20200520_g5nr_pdfs'
+    PCAslctMatFilePath = '../../../ACCDAM/onOrbitObservationGeometryACCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
+    nAng = 4
+    orbit = 'SS'
+    SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nAng, orbit=orbit)
+# %% Run multiple times
+# conCase = 'campex_flight#16_layer#01'#'camp_test' # canonical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
 start_time = time.time()
 for i in tau:
     loop_start_time = time.time()
     for j in np.r_[1:2]:
         flight_loop_start_time = time.time()
-        for k in np.r_[1:2]:
-            conCase = 'campex_flight#%.2d_layer#%.2d' %(j,k)
+        for k in np.r_[0]:
+            conCase = 'addCoarse_campex_flight#%.2d_layer#%.2d' %(j,k)
             print('<-**->'*10)
             try:
                 print('<-->'*20)
                 print('Running runRetrievalSimulation.py for τ(550nm) = %0.3f' %i)
-                runMultiple(τFactor=i, psd_type=psd_type,
+                runMultiple(τFactor=i, psd_type=psd_type, SZA=SZA, Phi=phi,
                             conCase=conCase, instrument=instrument)
             except Exception as e:
                 print('<---->'*10)

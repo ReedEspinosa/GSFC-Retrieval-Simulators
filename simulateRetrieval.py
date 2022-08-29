@@ -39,7 +39,7 @@ class simulation(object):
 
     def runSim(self, fwdData, bckYAML, Nsims=1, maxCPU=4, maxT=None, binPathGRASP=None, savePath=None,
                lightSave=False, intrnlFileGRASP=None, releaseYAML=True, rndIntialGuess=False,
-               dryRun=False, workingFileSave=False, fixRndmSeed=False, radianceNoiseFun=None, verbose=False):
+               dryRun=False, workingFileSave=False, fixRndmSeed=False, radianceNoiseFun=None, verbose=False, delTempFiles=False):
         """
         <> runs the simulation for given set of simulated and inversion conditions <>
         fwdData -> yml file path for GRASP fwd model OR graspYAML object OR a list of either of the prior two OR "results style" list of dicts
@@ -59,6 +59,9 @@ class simulation(object):
         radianceNoiseFun -> a function with 1st arg λ (μm), 2nd arg rslt dict & 3rd arg verbose bool to map rslt fit_I/Q/U to retrieval (back) SDATA
                                 See addError() at bottom of architectureMap in ACCP folding of MADCAP scripts for an example
                                 This option will override an error model in nowPix; set to None add no noise to OSSE polarimeter
+        delTempFiles -> The flag deletes the temporary files and directories created by graspRun. 
+                        In the DISCOVER server, there is a limit on the number of files that can be stored at a time in the storage.
+                        If you are running a large number of simulations, this flag should be set to 'True'. 
         """
         if fixRndmSeed and not rndIntialGuess:
             warnings.warn('Identical noise values and initial guess used in each pixel, repeating EXACT same retrieval %d times!' % Nsims)
@@ -76,7 +79,9 @@ class simulation(object):
                 gObjFwd.append(rg.graspRun(fd))
                 gObjFwd[-1].addPix(pix)
             gDBFwd = rg.graspDB(gObjFwd, maxCPU=maxCPU)
-            self.rsltFwd = gDBFwd.processData(maxCPU, binPathGRASP, krnlPathGRASP=intrnlFileGRASP, rndGuess=False)[0]
+            self.rsltFwd = gDBFwd.processData(maxCPU, binPathGRASP,
+                                              krnlPathGRASP=intrnlFileGRASP,
+                                              rndGuess=False)[0]
             assert len(self.rsltFwd)==len(fwdData), 'Forward calucation was not fully successfull, halting the simulation.'
         elif type(fwdData[0]) == dict: # likely OSSE from netCDF
             self.rsltFwd = fwdData
@@ -102,7 +107,9 @@ class simulation(object):
         if len(self.rsltFwd)>1: self.rsltFwd = np.tile(self.rsltFwd, Nsims) # make len(rsltBck)==len(rsltFwd)... very memory inefficient though so only do it in more complicated len(self.rstlFwd)>1 cases
         gDB = rg.graspDB(gObjBck, maxCPU=maxCPU, maxT=maxT)
         if not dryRun:
-            self.rsltBck, failedRuns = gDB.processData(maxCPU, binPathGRASP, krnlPathGRASP=intrnlFileGRASP, rndGuess=rndIntialGuess)
+            self.rsltBck, failedRuns = gDB.processData(maxCPU, binPathGRASP,
+                                                       krnlPathGRASP=intrnlFileGRASP,
+                                                       rndGuess=rndIntialGuess)
             assert len(self.rsltBck)>0, 'No inversion output could be read, halting the simulation (no data was saved).'
             if failedRuns.any():  self.rsltFwd = [rf for rf,failed in zip(self.rsltFwd, failedRuns) if failed==False] # remove runs from rsltFwd for which the inversion was not succesful
             if 'pixNumber' in self.rsltFwd[0]: self._rsltFwdInd2rsltBck()
@@ -124,6 +131,14 @@ class simulation(object):
                 shutil.copytree(gb.dirGRASP, os.path.join(fullSaveDir,'inversion%03d' % i))
             shutil.make_archive(fullSaveDir, 'zip', fullSaveDir)
             shutil.rmtree(fullSaveDir)
+        # delete the temporary files used for GRASP run
+        if delTempFiles:
+            try:
+                if not type(fwdData[0]) == dict:
+                    [os.system('rm -rf %s/' %gb.dirGRASP) for i, gb in enumerate(gDBFwd.grObjs)]
+                [os.system('rm -rf %s/' %gb.dirGRASP) for i, gb in enumerate(gDB.grObjs)]
+            except:
+                print('Issue with deleting the temp files related to GRASP run')
         return
 
     def _rsltFwdInd2rsltBck(self):

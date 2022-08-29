@@ -7,26 +7,27 @@ from matplotlib import pyplot as plt
 from simulateRetrieval import simulation
 from glob import glob
 
-waveInd = 3
-waveInd2 = 5
+waveInd = 0
+waveInd2 = 3
 fnPtrnList = []
 #fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
-fnPtrn = 'SZA*_2modes_AOD_*_550nm*.pkl'
+# fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
+fnPtrn = 'MERGED_harp02ALL_2modes_AOD_ALL_550nmALL_addCoarse__campex_flight#ALL_layer#00.pkl'
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
-inDirPath = '/Users/aputhukkudy/ACCDAM/2022/Campex_Simulations/Apr2022/All_Flights/Spherical/2modes'
+inDirPath = '/Users/aputhukkudy/Working_Data/ACCDAM/2022/Campex_Simulations/'
 
-fnPtrn = 'exampleSimulationTest#1.pkl'
-inDirPath = '/Users/wrespino/Downloads/'
+# fnPtrn = 'exampleSimulationTest#1.pkl'
+# inDirPath = '/Users/wrespino/Downloads/'
 
 surf2plot = 'ocean' # land, ocean or both
-aodMin = 0.1 # does not apply to first AOD plot
+aodMin = 0.3 # does not apply to first AOD plot
 nMode = 0 # Select which layer or mode to plot
 fnTag = 'AllCases'
 xlabel = 'Simulated Truth'
 MS = 2
 FS = 10
 LW121 = 1
-pointAlpha = 0.30
+pointAlpha = 0.10
 clrText = [0.5,0,0.0]
 fig, ax = plt.subplots(2,5, figsize=(15,6))
 plt.locator_params(nbins=3)
@@ -173,12 +174,22 @@ rtrv = np.asarray([aodWght(rf['k'][:,waveInd], rf['aodMode'][:,waveInd]) for rf 
 # if 5 modes present, for the case of ACCDAM-CAMP2EX four modes have one refractive index
 # and the coarse mode 'sea salt' have different value. So based on the dimension of the var
 # We can distinguish each run type and generalize the code
-if true.ndim >1:
-    true = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,nMode]
-# rtrv = 1-np.asarray([rf['ssa'][waveInd] for rf in simBase.rsltFwd])[keepInd]
-# true = 1-np.asarray([rb['ssa'][waveInd] for rb in simBase.rsltBck])[keepInd]
-# minAOD = np.min(true)*0.95
-
+tempInd = 0
+for nMode_ in [0,4]:
+    true = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,nMode_]
+    rtrv = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltBck])[keepInd][:,tempInd]
+    minAOD = np.min(true)
+    maxAOD = np.max(true)
+    ax[0,3].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
+    ax[0,3].set_title('k')
+    ax[0,3].set_xlabel(xlabel)
+    
+    if tempInd == 1:
+            cmap = 'rainbow'
+    else:
+             cmap = 'viridis'
+    ax[0,3].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha, cmap=cmap)
+    tempInd += 1
 minAOD = 0.0005
 maxAOD = np.max(true)*1.05
 ax[0,3].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
@@ -364,16 +375,23 @@ rtrv = np.asarray([aodWght(rf['n'][:,waveInd], rf['aodMode'][:,waveInd]) for rf 
 # if 5 modes present, for the case of ACCDAM-CAMP2EX four modes have one refractive index
 # and the coarse mode 'sea salt' have different value. So based on the dimension of the var
 # We can distinguish each run type and generalize the code
-if true.ndim >1:
-    true = np.asarray([rf['n'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,nMode]
-minAOD = np.min(true)
-maxAOD = np.max(true)
-ax[1,3].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-ax[1,3].set_title('n')
-ax[1,3].set_xlabel(xlabel)
-ax[1,3].set_xlim(minAOD,maxAOD)
-ax[1,3].set_ylim(minAOD,maxAOD)
-ax[1,3].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
+tempInd = 0
+for nMode_ in [0,4]:
+    true = np.asarray([rf['n'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,nMode_]
+    rtrv = np.asarray([rf['n'][:,waveInd] for rf in simBase.rsltBck])[keepInd][:,tempInd]
+    minAOD = np.min(true)
+    maxAOD = np.max(true)
+    ax[1,3].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
+    ax[1,3].set_title('n')
+    ax[1,3].set_xlabel(xlabel)
+    # ax[1,3].set_xlim(minAOD,maxAOD)
+    # ax[1,3].set_ylim(minAOD,maxAOD)
+    if tempInd == 1:
+            cmap = 'magma'
+    else:
+             cmap = 'viridis'
+    ax[1,3].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha, cmap=cmap)
+    tempInd += 1
 Rcoef = np.corrcoef(true, rtrv)[0,1]
 RMSE = np.sqrt(np.median((true - rtrv)**2))
 bias = np.mean((rtrv-true))
@@ -384,26 +402,57 @@ textstr = frmt % (Rcoef, RMSE, bias)
 tHnd = ax[1,3].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
                     textcoords='offset points', color=clrText, fontsize=FS)
 
-# intensity
-true = np.sum([rb['meas_I'][:,waveInd] for rb in simBase.rsltBck[keepInd]], axis=1)
-rtrv = np.sum([rb['fit_I'][:,waveInd] for rb in simBase.rsltBck[keepInd]], axis=1)
-minAOD = np.min(true)*0.95
-maxAOD = np.max(true)*1.05
-ax[1,4].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-ax[1,4].set_title('sum(intensity)')
-ax[1,4].set_xlabel(xlabel)
-ax[1,4].set_xlim(minAOD,maxAOD)
-ax[1,4].set_ylim(minAOD,maxAOD)
-ax[1,4].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
-Rcoef = np.corrcoef(true, rtrv)[0,1]
-RMSE = np.sqrt(np.median((true - rtrv)**2))
-bias = np.mean((rtrv-true))
-frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
-tHnd = ax[1,4].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-            textcoords='offset points', color=clrText, fontsize=FS)
-textstr = frmt % (Rcoef, RMSE, bias)
-tHnd = ax[1,4].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-                    textcoords='offset points', color=clrText, fontsize=FS)
+# %% intensity
+intensity = False
+if intensity:
+    true = np.sum([rb['meas_I'][:,waveInd] for rb in simBase.rsltBck[keepInd]], axis=1)
+    rtrv = np.sum([rb['fit_I'][:,waveInd] for rb in simBase.rsltBck[keepInd]], axis=1)
+    minAOD = np.min(true)*0.95
+    maxAOD = np.max(true)*1.05
+    ax[1,4].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
+    ax[1,4].set_title('sum(intensity)')
+    ax[1,4].set_xlabel(xlabel)
+    ax[1,4].set_xlim(minAOD,maxAOD)
+    ax[1,4].set_ylim(minAOD,maxAOD)
+    ax[1,4].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
+    Rcoef = np.corrcoef(true, rtrv)[0,1]
+    RMSE = np.sqrt(np.median((true - rtrv)**2))
+    bias = np.mean((rtrv-true))
+    frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
+    tHnd = ax[1,4].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
+                textcoords='offset points', color=clrText, fontsize=FS)
+    textstr = frmt % (Rcoef, RMSE, bias)
+    tHnd = ax[1,4].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
+                        textcoords='offset points', color=clrText, fontsize=FS)
+else:
+    true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[keepInd]
+    rtrv = np.asarray([rf['vol'] for rf in simBase.rsltBck])[keepInd]
+    tempInd = 0
+    for nMode_ in [0,4]:
+        true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[keepInd][:,nMode_]
+        rtrv = np.asarray([rf['vol'] for rf in simBase.rsltBck])[keepInd][:,tempInd]
+        minAOD = np.min(true)*0.95
+        maxAOD = np.max(true)*1.05
+        ax[1,4].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
+        ax[1,4].set_title('Vol concentration')
+        ax[1,4].set_xlabel(xlabel)
+        # ax[1,4].set_xlim(minAOD,maxAOD)
+        # ax[1,4].set_ylim(minAOD,maxAOD)
+        if tempInd == 1:
+            cmap = 'magma'
+        else:
+             cmap = 'viridis'
+        ax[1,4].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha, cmap = cmap)
+        tempInd += 1
+    Rcoef = np.corrcoef(true, rtrv)[0,1]
+    RMSE = np.sqrt(np.median((true - rtrv)**2))
+    bias = np.mean((rtrv-true))
+    frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
+    tHnd = ax[1,4].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
+                textcoords='offset points', color=clrText, fontsize=FS)
+    textstr = frmt % (Rcoef, RMSE, bias)
+    tHnd = ax[1,4].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
+                        textcoords='offset points', color=clrText, fontsize=FS)
 
 
 figSavePath = saveFN.replace('.pkl',('_%s_%s_%04dnm.png' % (surf2plot, fnTag, simBase.rsltFwd[0]['lambda'][waveInd]*1000)))

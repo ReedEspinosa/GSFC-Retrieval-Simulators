@@ -12,17 +12,8 @@ import pickle
 import re
 RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
 sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
+from miscFunctions import logNormal
 import runGRASP as rg
-
-def dvdlnrCustom(radii, rv, lnsigma):
-    temp = 0
-    dvdlnr_ = np.zeros(len(radii))
-    for i in radii:
-        num = np.exp(-((np.log(i)-np.log(rv))/(lnsigma))**2/2)
-        den = np.sqrt(2*np.pi*(lnsigma)**2)
-        dvdlnr_[temp] = num/den
-        temp +=1
-    return dvdlnr_
 
 def conCaseDefinitions(caseStr, nowPix):
     """ '+' is used to seperate multiple cases (implemented in splitMultipleCases below)
@@ -88,25 +79,46 @@ def conCaseDefinitions(caseStr, nowPix):
     # Added by Anin
     elif 'coarse_mode_campex' in caseStr.lower():
         try:
-            file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_r36.pkl", 'rb')
-            radiusBin = pickle.load(file)
-            file.close()            
             
-            # Multiple mode in coarse mode will crash
-            σ = [0.70] # mode 1, 2,...
-            rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-            vals['triaPSD'] = [dvdlnrCustom(radiusBin, rv[0], σ[0])]
-            vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
-            vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
-            vals['vrtHght'] =[3000] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
-            vals['vrtHghtStd'] = [500] # mode 1, 2,... # Gaussian sigma in meters
-            vals['n'] = [np.repeat(1.4 + (rnd.uniform(-0.05, 0.05)),
-                                   nwl)] # mode 1
-            # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-            vals['k'] = [np.repeat(0.002 + (rnd.uniform(-0.001,0.001)),
-                               nwl)] # mode 1
-            landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+            nbins = 36
+            radiusBin = np.logspace(np.log10(0.005), np.log10(15), nbins)
+            
+            # # Multiple mode in coarse mode will crash
+            # σ = [0.70] # mode 1, 2,...
+            # rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+            # dvdr = logNormal(rv[0], σ[0], radiusBin)
+            # dvdlnr = dvdr[0]*radiusBin
+            # vals['triaPSD'] = [dvdlnr]
+            # vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
+            # vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
+            # vals['vrtHght'] =[3000] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+            # vals['vrtHghtStd'] = [500] # mode 1, 2,... # Gaussian sigma in meters
+            # vals['n'] = [np.repeat(1.4 + (rnd.uniform(-0.05, 0.05)),
+            #                         nwl)] # mode 1
+            # # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
+            # vals['k'] = [np.repeat(0.002 + (rnd.uniform(-0.001,0.001)),
+            #                     nwl)] # mode 1
+            # landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+            
+            σ = [0.45, 0.70] # mode 1, 2,...
+            rv = [0.1, 0.6]*np.exp(3*np.power(σ,2))
+            dvdr = logNormal(rv[0], σ[0], radiusBin)
+            dvdr2 = logNormal(rv[1], σ[1], radiusBin)
+            dvdlnr1 = dvdr[0]*radiusBin
+            dvdlnr2 = dvdr2[0]*radiusBin
+            vals['triaPSD'] = [np.around(dvdlnr1*[0.18], decimals=6),
+                               np.around(dvdlnr2*[0.20], decimals=6)]
+            vals['triaPSD'] = np.vstack(vals['triaPSD'])
+            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+            # removed to avoid the descrepency in printing the aero vol conc in the output
+            #vals['vol'] = np.array([[0.0477583], [0.7941207]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
+            vals['vrtHght'] = [[2010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
+            vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+            vals['n'] = np.repeat(1.415, nwl) # mode 1
+            vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
+            vals['k'] = np.repeat(0.002, nwl) # mode 1
+            vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
+            landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
         except Exception as e:
             print('File loading error: check if the PSD file path is correct'\
                   ' or not\n %s' %e)
@@ -117,11 +129,11 @@ def conCaseDefinitions(caseStr, nowPix):
         # read PSD bins
         try:
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_dVDlnr36.pkl", 'rb')
+                        "Campex_dVDlnr72.pkl", 'rb')
             dVdlnr = pickle.load(file)
             file.close()
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_r36.pkl", 'rb')
+                        "Campex_r72.pkl", 'rb')
             radiusBin = pickle.load(file)
             file.close()
             
@@ -168,31 +180,32 @@ def conCaseDefinitions(caseStr, nowPix):
             print('Using the PSD from the flight# %d and layer#'\
                   ' %d' %(flight_num, nlayer))
             
-            # update the PSD based on flight an d layer information
+            # update the PSD based on flight and layer information
             # This needs modification to use multiple layers
             if not nlayer==0:
-                vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,nlayer-1,:], decimals=3)]
+                vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,nlayer-1,:], decimals=6)]
+                vals['triaPSD'] = np.vstack(vals['triaPSD'])
         else:
             # using the first flight PSD
             print('Using the PSD from the first flight and first layer')
-            vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=3)]
-        # vals['triaPSD'] = np.vstack([np.around(dVdlnr[0,0,:], decimals=3),
-        #                              np.around(dVdlnr[0,1,:], decimals=3)]) # needs edit
+            vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=6)]
+            vals['triaPSD'] = np.vstack(vals['triaPSD'])
+
         # parameters above this line has to be modified [AP]
         if multiMode:
             
             # Defining PSD of four layers for a particular flight
-            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:], decimals=3),
-                               np.around(dVdlnr[flight_num-1,1,:], decimals=3),
-                               np.around(dVdlnr[flight_num-1,2,:], decimals=3),
-                               np.around(dVdlnr[flight_num-1,3,:], decimals=3)]
+            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.1], decimals=6),
+                               np.around(dVdlnr[flight_num-1,1,:]*[0.1], decimals=6),
+                               np.around(dVdlnr[flight_num-1,2,:]*[0.1], decimals=6),
+                               np.around(dVdlnr[flight_num-1,3,:]*[0.1], decimals=6)]
+            vals['triaPSD'] = np.array(vals['triaPSD'])
             sphFrac = 0.999 + rnd.uniform(-0.99, 0)
             vals['sph'] = [sphFrac,
                            sphFrac,
                            sphFrac,
                            sphFrac] # mode 1, 2,...
-            vals['vol'] = np.array([[0.1832], [0.1832], [0.1832], [0.1832]]) # gives AOD=4*[0.2165, 0.033499]=1.0
-            vals['vrtHght'] = [[1000], [2000], [3000], [4000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+            vals['vrtHght'] = [[1000], [1500], [2000], [2500]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [[500], [500], [500], [500]] # mode 1, 2,... # Gaussian sigma in meters
             nAero = np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)), nwl)
             kAero = np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),nwl)
@@ -200,7 +213,7 @@ def conCaseDefinitions(caseStr, nowPix):
                          list(nAero),
                          list(nAero),
                          list(nAero)] # mode 1
-            # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
+            
             vals['k'] = [list(kAero),
                          list(kAero),
                          list(kAero),
@@ -209,30 +222,35 @@ def conCaseDefinitions(caseStr, nowPix):
                 # This is hard coded not great for generalization
                 # GRASP needs to be modified to make use of triangle and lognormal bins
                 # together
-                σ = [0.70] # mode 1, 2,...
-                rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+                σ = [0.70+rnd.uniform(-0.05, 0.05)] # mode 1, 2,...
+                rv = [0.6+rnd.uniform(-0.03, 0.03)]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+                nbins = np.size(radiusBin)
+                radiusBin_ = np.logspace(np.log10(0.005), np.log10(15), nbins)
+                dvdr = logNormal(rv[0], σ[0], radiusBin_)
+                dvdlnr = dvdr[0]*radiusBin_
+                if 'nocoarse' in caseStr.lower(): multFac = 0.0001
+                else: multFac=0.25
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
-                                            [dvdlnrCustom(radiusBin, rv[0], σ[0])]])
+                                            [dvdlnr*multFac]])
                 vals['sph'] = vals['sph'] + [sphFrac]
-                vals['vol'] = np.array([[0.14652], [0.14652], [0.14652],
-                                        [0.14652], [0.14652]])
-                vals['vrtHght'] = vals['vrtHght'] + [[3000]]
+                # removed to avoid the descrepency in printing the aero vol conc in the output
+                vals['vrtHght'] = vals['vrtHght'] + [[1000]]
                 vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[500]]
-                nAero = np.repeat(1.41 + (rnd.uniform(-0.05, 0.05)), nwl)
+                nAero = np.repeat(1.40 + (rnd.uniform(-0.05, 0.05)), nwl)
                 kAero = np.repeat(0.0005 + (rnd.uniform(-0.0004,0.0004)),nwl)
                 vals['n'] = vals['n'] + [list(nAero)]
                 vals['k'] = vals['k'] + [list(kAero)]
         else:
             vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
-            vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
+            vals['vol'] = np.array([0.0017]) # gives AOD=4*[0.2165, 0.033499]=1.0
             vals['vrtHght'] =[flight_vrtHght] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
             vals['n'] = [np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)),
                                    nwl)] # mode 1
-            # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
+            
             vals['k'] = [np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),
                                nwl)] # mode 1
-        landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
         rv = [0.2, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -413,6 +431,8 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=No
                 valsTmp[key] = loading*valsTmp[key]
             elif key=='vrtHght' and caseHeightKM:
                 valsTmp[key][:] = caseHeightKM*1000
+            if key=='triaPSD':
+                valsTmp[key] = loading*valsTmp[key]
             if key in aeroKeys and key in vals:
                     vals[key] = np.vstack([vals[key], valsTmp[key]])
             else: # implies we take the surface parameters from the last case
@@ -566,12 +586,14 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.7*caseLoadFct)
         elif 'campex' in case.lower():
             cases.append(case.replace('campex','aerosol_campex')) # smoke base τ550=1.0
-            loadings.append(0.25*caseLoadFct)
+            loadings.append(1*caseLoadFct)
             # cases.append(case.replace('campex','coarse_mode_campex')) # smoke base τ550=1.0
             # loadings.append(0.25*caseLoadFct)
         elif 'camp_test' in case.lower():
             cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
-            loadings.append(0.25*caseLoadFct)
+            loadings.append(caseLoadFct)
+            # cases.append(case.replace('camp_test','aerosol_campex'))
+            # loadings.append(0.25*caseLoadFct)
         else:
             cases.append(case)
             loadings.append(caseLoadFct)
