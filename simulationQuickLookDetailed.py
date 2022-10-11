@@ -42,7 +42,7 @@ from matplotlib.colors import LinearSegmentedColormap
 white_viridis = LinearSegmentedColormap.from_list('white_viridis', [
     (0, '#ffffff'),
     (1e-4, '#440053'),
-    (0.3, '#404388'),
+    (0.2, '#404388'),
     (0.35, '#2a788e'),
     (0.4, '#21a784'),
     (0.45, '#78d151'),
@@ -52,8 +52,9 @@ white_viridis = LinearSegmentedColormap.from_list('white_viridis', [
 def using_mpl_scatter_density(x, y, ax, fig=None):
     density = ax.scatter_density(x, y,
                                  cmap=white_viridis, dpi=60)
+    # ax.colorbar(density, label='Number of points per pixel')
     if fig:
-        fig.colorbar(density, label='Number of points per pixel')
+        fig.colorbar(density, label='Frequency')
     
 def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20,
                     mplscatter=True, **kwargs):
@@ -137,7 +138,7 @@ def modifiedHist(x, axs, fig=None, titleStr ='', xscale=None, ylabel=None,
              yscale=None, fit='norm'):
 
     # Creating histogram
-    N, bins, patches = axs.hist(x, bins = nBins, density=True)
+    N, bins, patches = axs.hist(x, bins = nBins, density=False)
      
     # Setting color
     fracs = ((N**(1 / 2)) / N.max())
@@ -203,24 +204,24 @@ def modifiedHist(x, axs, fig=None, titleStr ='', xscale=None, ylabel=None,
 # =============================================================================
 
 # Wavelength index for plotting
-waveInd = 2
+waveInd = 1
 # Wavelength index for AE calculation
-waveInd2 = 4
+waveInd2 = 3
 
 # Define the string pattern for the file name
 fnPtrnList = []
 #fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
 # fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_3*_campex_flight#*_layer#00.pkl'
+fnPtrn = 'Camp2ex_AOD_*_550nm_*_campex_flight#*_layer#00.pkl'
 # fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl'
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
-inDirPath = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Aug2022/08/specificGeometry/withCoarseMode/ocean/2modes/megaharp01/'
+inDirPath = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Aug2022/08/specificGeometry/withCoarseMode/ocean/2modes/harp20/'
 
 # more tags and specifiations for the scatter plot
 surf2plot = 'both' # land, ocean or both
-aodMin = 0.3 # does not apply to first AOD plot
+aodMin = 0.2 # does not apply to first AOD plot
 aodMax = 2
 nMode = 0 # Select which layer or mode to plot
 fnTag = 'AllCases'
@@ -306,12 +307,12 @@ rtrv = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltBck])[keepInd]
 minAOD = np.min(true)*0.95
 maxAOD = np.max(true)*1.05
 logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
-density_scatter(true, rtrv, ax=ax[0,0],bins=logBins)
+density_scatter(true, rtrv, ax=ax[0,0],bins=logBins, fig=fig)
 plotProp(ax[0,0], titleStr='AOD', scale='log', ylabel='Retrieved')
 
 # histogram
 nBins_ = np.linspace(-0.05,0.05, nBins)
-modifiedHist((rtrv-true), axs=ax_hist[0,0], titleStr='AOD', ylabel= 'Density',
+modifiedHist((rtrv-true), axs=ax_hist[0,0], titleStr='AOD', ylabel= 'Frequency',
              fig=fig_hist, nBins=nBins_)
 
 # =============================================================================
@@ -333,8 +334,8 @@ modifiedHist((rtrv-true), axs=ax_hist[2,4], titleStr='Coarse mode AOD',
 # =============================================================================
 # # AAOD
 # =============================================================================
-true = np.asarray([(1-rf['ssa'][waveInd])*rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepInd]
-rtrv = np.asarray([(1-rb['ssa'][waveInd])*rb['aod'][waveInd] for rb in simBase.rsltBck])[keepInd]
+true = np.asarray([(1-rf['ssa'][waveInd])*rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepIndAll]
+rtrv = np.asarray([(1-rb['ssa'][waveInd])*rb['aod'][waveInd] for rb in simBase.rsltBck])[keepIndAll]
 minAOD = np.min(true)*0.9
 maxAOD = np.max(true)*1.1
 logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
@@ -518,7 +519,7 @@ except Exception as err:
     # histogram
     nBins_ = np.linspace(-0.1,0.1, nBins)
     modifiedHist((rtrv-true), axs=ax_hist[1,0], titleStr='SSA',
-                 fig=fig_hist, nBins=nBins_, ylabel= 'Density')
+                 fig=fig_hist, nBins=nBins_, ylabel= 'Frequency')
     
 # =============================================================================
 # # spherical fraction
@@ -563,7 +564,7 @@ density_scatter(true, rtrv, ax=ax[0,4])
 plotProp(ax[0,4], titleStr=r'Submicron r$_{eff}$', scale=None)
 # histogram
 modifiedHist((rtrv-true), axs=ax_hist[2,0], titleStr=r'Submicron r$_{eff}$',
-             fig=fig_hist, nBins=nBins, xlabel='Retrieved-Simulated', ylabel='Density')
+             fig=fig_hist, nBins=nBins, xlabel='Retrieved-Simulated', ylabel='Frequency')
 
 # Corase mode rEff
 true = np.asarray([rf['rEffMode'][1] for rf in simBase.rsltFwd])[keepInd]

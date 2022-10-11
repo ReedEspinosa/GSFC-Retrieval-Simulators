@@ -10,7 +10,7 @@ from simulateRetrieval import simulation # This should ensure GSFC-GRASP-Python-
 import matplotlib as mpl;
 import matplotlib.pyplot as plt; mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'});mpl.rcParams.update({'ytick.right': 'True'});mpl.rcParams.update({'xtick.top': 'True'});plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
 # pklDataPath = '/Users/wrespino/Synced/Working/OSSE_Test_Run/MERGED_ss450-g5nr.leV210.GRASP.example.polarimeter07.200608ALL_ALLz.pkl' # None to skip reloading of data
-pklDataPath = '/mnt/Raid4TB/ACCDAM/2022/Campex_Simulations/Aug2022/08/fullGeometry/withCoarseMode/ocean/2modes/harp02/MERGED_Camp2ex_AOD_ALL_550nm_ALL_campex_flight#ALL_layer#00.pkl' # None to skip reloading of data
+pklDataPath = '/mnt/Raid4TB/ACCDAM/2022/Campex_Simulations/Aug2022/08/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/MERGED_Camp2ex_AOD_ALL_550nm_ALL_campex_flight#ALL_layer#00.pkl' # None to skip reloading of data
 # pklDataPath = '/Users/wrespino/Synced/ACCDAM_RemoteSensingObservability/AninsSimulations/Apr2022_5mode/MERGED_CAMP2ExmegaALL_2modes_AOD_ALL_550nmALL.pkl'
 # pklDataPath = '/Users/wrespino/Synced/ACCDAM_RemoteSensingObservability/AninsSimulations/Apr2022_4mode/MERGED_polarALL_2modes_AOD_ALL_550nmALL.pkl'
 # pklDataPath = None # None to skip reloading of data
@@ -139,7 +139,8 @@ for k in ['cbars', 'cmaxes', 'cmins', 'cmedians']:
     parts[k].set_edgecolor(violinBarColor)
 set_axis_style(axV, ['Number', 'Surface', 'Volume'])
 ylimAbs = np.abs(axV.get_ylim()).max()
-axV.set_ylim([-ylimAbs, ylimAbs])
+# axV.set_ylim([-ylimAbs, ylimAbs])
+axV.set_ylim([-200, 200])
 axV.set_ylabel('Relative Error in Integrated Concentration')
 axV.yaxis.set_major_formatter(mtick.PercentFormatter())
 figV.tight_layout()
@@ -161,6 +162,7 @@ MARE = np.mean(np.abs(dXdrR[0,vldInd,:] - dXdrT[0,vldInd,:])/(dXdrT[0,vldInd,:] 
 pltHnd, = axM.plot(rAll, MARE, color=colors[-1])
 prettyAxis(axM, pltHnd.get_color(), 'Mean Absolute Relative Error')
 axM.set_ylim(axM.get_ylim()[1]*axMinMaxScl)
+axM.set_xlim([0.01, 15])
 axM.yaxis.set_major_formatter(mtick.PercentFormatter())
 twinAxs = []
 labels = ['Number RMSE ($\# \cdot μm^{-2} \cdot μm^{-1}$)',

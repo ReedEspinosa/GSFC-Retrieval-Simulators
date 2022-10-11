@@ -16,7 +16,7 @@ from miscFunctions import matplotlibX11, norm2absExtProf
 import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
-simRsltFile = '../../ACCDAM/2022/Campex_Simulations/Jun2022/Test/withCoarseMode/2modes/SZA30/megaharp01Camp2ex_2modes_AOD_0p01_550nm_addCoarse_campex_flight#01_layer#00.pkl'
+simRsltFile = './exampleSimulationTest#1.pkl'
 # nn = int(sys.argv[1])
 # mm = int(sys.argv[2])
 # simRsltFile = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/ss450-g5nr.leV30.GRASP.YAML*-n%dpixStrt%d.polar07*.random.20060801_0000z.pkl' % (nn,mm*28)
