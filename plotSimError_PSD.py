@@ -23,17 +23,20 @@ colors = np.array([[0.83921569, 0.15294118, 0.15686275, 1.        ],  # red  - n
                    [0.58039216, 0.40392157, 0.74117647, 1.        ],  # purp - volume
                    [0.00803922, 0.00803922, 0.00803922, 0.65      ]]) # grey - relative
 
+reloadData = False
 showFigs = False
 saveFigs = True
 waveInd = 2
 aodMin = 0.1
 inst = 'megaharp'
 simType = 'G5NR' if 'g5nr' in pklDataPath else 'CanCase'
-version = '%s-%s-%s-V01' % (inst, surf2plot, simType) # for PDF file names
+version = '%s-%s-%s-V05' % (inst, surf2plot, simType) # for PDF file names
 
-if pklDataPath is not None:
+if reloadData:
     simBase = simulation(picklePath=pklDataPath)
     print('Loaded from %s - %d' % (pklDataPath, len(simBase.rsltBck)))
+else:
+    print('Re-using simulation data in memomory – pklDataPath was not reloaded (will crash if not previously loaded and run in interactive mode)') 
 print('--')
 
 # NOTE: This check only looks at first pixel; if radii grid differs with pixel this will not catch the error
@@ -178,6 +181,7 @@ for i in range(3):
     twinAxs[-1].set_ylim(twinAxs[-1].get_ylim()[1]*axMinMaxScl)
 axM.set_xlabel('radius (μm)')
 axM.set_xscale('log')
+axM.set_xlim([0.009,10.1]) # HACK
 
 if saveFigs:
     print('Saving figures to %s' % plotSaveDir)

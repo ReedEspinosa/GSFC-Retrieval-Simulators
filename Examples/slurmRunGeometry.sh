@@ -1,9 +1,9 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=MULTI
+#SBATCH --job-name=HARP2
 #SBATCH --nodes=1 --constraint="sky|cas"
 #SBATCH --time=02:55:00
-#SBATCH -o ./job/22-Jul-2022-harp02out.%A-%a
-#SBATCH -e ./job/22-Jul-2022-harp02err.%A-%a
+#SBATCH -o ./job/28-Jul-2022-harp02out.%A-%a
+#SBATCH -e ./job/28-Jul-2022-harp02err.%A-%a
 #SBATCH --array=0-2
 
 date
