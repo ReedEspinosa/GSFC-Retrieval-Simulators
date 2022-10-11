@@ -7,13 +7,13 @@ from matplotlib import pyplot as plt
 from matplotlib import ticker as mtick
 from simulateRetrieval import simulation # This should ensure GSFC-GRASP-Python-Interface is in the path
 
-# pklDataPath = '/Users/wrespino/Synced/Working/OSSE_Test_Run/MERGED_ss450-g5nr.leV210.GRASP.example.polarimeter07.200608ALL_ALLz.pkl' # None to skip reloading of data
-pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl' # None to skip reloading of data
+pklDataPath = '/Users/wrespino/Synced/Working/OSSE_Test_Run/MERGED_ss450-g5nr.leV210.GRASP.example.polarimeter07.200608ALL_ALLz.pkl' # None to skip reloading of data
+# pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl' # None to skip reloading of data
 # pklDataPath = '/Users/wrespino/Synced/ACCDAM_RemoteSensingObservability/AninsSimulations/Apr2022_5mode/MERGED_CAMP2ExmegaALL_2modes_AOD_ALL_550nmALL.pkl'
 # pklDataPath = '/Users/wrespino/Synced/ACCDAM_RemoteSensingObservability/AninsSimulations/Apr2022_4mode/MERGED_polarALL_2modes_AOD_ALL_550nmALL.pkl'
 # pklDataPath = None # None to skip reloading of data
 # plotSaveDir = '/Users/wrespino/Synced/AOS/PLRA/Figures_AODF_bugFixApr11'
-plotSaveDir = '/Users/wrespino/Downloads/'
+plotSaveDir = '/Users/wrespino/Synced/Presentations/AGU_Fall_2022/Figures'
 surf2plot = 'ocean' # land, ocean or both
 
 colors = np.array([[0.83921569, 0.15294118, 0.15686275, 1.        ],  # red  - number
@@ -21,15 +21,18 @@ colors = np.array([[0.83921569, 0.15294118, 0.15686275, 1.        ],  # red  - n
                    [0.58039216, 0.40392157, 0.74117647, 1.        ],  # purp - volume
                    [0.00803922, 0.00803922, 0.00803922, 0.65      ]]) # grey - relative
 
+reloadData = False
 showFigs = False
 saveFigs = True
 inst = 'polar07'
 simType = 'G5NR' if 'g5nr' in pklDataPath else 'CanCase'
-version = '%s-%s-%s-V01' % (inst, surf2plot, simType) # for PDF file names
+version = '%s-%s-%s-V05' % (inst, surf2plot, simType) # for PDF file names
 
-if pklDataPath is not None:
+if reloadData:
     simBase = simulation(picklePath=pklDataPath)
     print('Loaded from %s - %d' % (pklDataPath, len(simBase.rsltBck)))
+else:
+    print('Re-using simulation data in memomory – pklDataPath was not reloaded (will crash if not previously loaded and run in interactive mode)') 
 print('--')
 
 # NOTE: This check only looks at first pixel; if radii grid differs with pixel this will not catch the error
@@ -47,6 +50,10 @@ else:
 # simBase.conerganceFilter(forceχ2Calc=True) # ours looks more normal, but GRASP's produces slightly lower RMSE
 # costThresh = np.percentile([rb['costVal'] for rb in simBase.rsltBck[keepInd]], 95)
 # keepInd = np.logical_and(keepInd, [rb['costVal']<costThresh for rb in simBase.rsltBck])
+
+# apply minimum AOD filter (AOD_550nm>0.2 for G5NR lambda)
+keepInd = np.logical_and(keepInd, [rf['aod'][3]>0.2 for rf in simBase.rsltFwd])
+
 print('%d/%d fit surface type %s and convergence filter' % (keepInd.sum(), len(simBase.rsltBck), surf2plot))
 
 
@@ -55,10 +62,10 @@ calc_dV2dA = lambda dv, r: 3*dv/r
 calc_dA2dN = lambda da, r: da/(r**2)/4/np.pi
 
 rAll = simBase.rsltFwd[0]['r'][0] # HACK: Again, we assume all pixels, fwd/bck and all modes are defined at the same radii
-Nr = len(rAll); Npix = len(simBase.rsltFwd)
+Nr = len(rAll); Npix = keepInd.sum()
 dXdrT = np.empty((3, Npix, Nr)) # dXdrT[j,:,:] j=0,1,2 -> number, surface, volume, respectively
 dXdrR = np.empty((3, Npix, Nr)) # dXdrR[j,:,:] j=0,1,2 -> number, surface, volume, respectively
-for i, (rf,rb) in enumerate(zip(simBase.rsltFwd, simBase.rsltBck)):
+for i, (rf,rb) in enumerate(zip(simBase.rsltFwd[keepInd], simBase.rsltBck[keepInd])):
     dXdrT[2,i,:] = calc_dV(rf)
     dXdrR[2,i,:] = calc_dV(rb)
     dXdrT[1,i,:] = calc_dV2dA(dXdrT[2,i,:], rf['r'][0])
@@ -115,7 +122,8 @@ axMinMaxScl = np.r_[-0.02, 1]
 MARE = np.mean(np.abs(dXdrR[0,vldInd,:] - dXdrT[0,vldInd,:])/(dXdrT[0,vldInd,:] + dXdrT[0,vldInd,:])*2, axis=0)*100 # TODO: Change this to simply 1/Truth but add minimum loading
 pltHnd, = axM.plot(rAll, MARE, color=colors[-1])
 prettyAxis(axM, pltHnd.get_color(), 'Mean Absolute Relative Error')
-axM.set_ylim(axM.get_ylim()[1]*axMinMaxScl)
+# axM.set_ylim(axM.get_ylim()[1]*axMinMaxScl)
+axM.set_ylim([-2,200]) # HACK
 axM.yaxis.set_major_formatter(mtick.PercentFormatter())
 twinAxs = []
 labels = ['Number RMSE ($\# \cdot μm^{-2} \cdot μm^{-1}$)',
@@ -131,6 +139,7 @@ for i in range(3):
     twinAxs[-1].set_ylim(twinAxs[-1].get_ylim()[1]*axMinMaxScl)
 axM.set_xlabel('radius (μm)')
 axM.set_xscale('log')
+axM.set_xlim([0.009,10.1]) # HACK
 
 if saveFigs:
     print('Saving figures to %s' % plotSaveDir)
