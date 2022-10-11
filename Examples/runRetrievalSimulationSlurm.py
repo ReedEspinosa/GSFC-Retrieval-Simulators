@@ -36,9 +36,9 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jul2022/31/'\
-        'fullGeometry/noCoarseMode/%s/%s/'\
-        'Camp2ex_AOD_%sp%s_550nm_SZA_%s_PHI_%s_%s.pkl' %( psd_type,instrument,
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Aug2022/08/'\
+        'specificGeometry/withCoarseMode/ocean/%s/%s/'\
+        'Camp2ex_AOD_%sp%s_550nm_SZA_%0.4d_PHI_%0.4d_%s.pkl' %( psd_type,instrument,
                                                 str(τFactor).split('.')[0],
                                                 str(τFactor).split('.')[1][:3],
                                                 int(round(SZA, 2)*100),
@@ -138,7 +138,7 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
         for j in np.r_[1:nFlights+1]:
             flight_loop_start_time = time.time()
             for k in np.r_[0]:
-                conCase = 'noCoarse_campex_flight#%.2d_layer#%.2d' %(j,k)
+                conCase = 'Coarse_campex_flight#%.2d_layer#%.2d' %(j,k)
                 print('<-->'*20)
                 try:
                     print('<-->'*20)

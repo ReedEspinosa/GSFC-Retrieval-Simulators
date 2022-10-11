@@ -20,7 +20,7 @@ job_directory = "%s" %os.getcwd()
 mkdir_p(job_directory+'/job')
 
 # list of AOD/nPCA
-tau = np.logspace(np.log10(0.009), np.log10(2.2), 10)
+tau = np.logspace(np.log10(0.004), np.log10(1.2), 20)
 # splitting into chunks to make the code efficient and run easily in DISCOVER
 try:
     arrayNum= int(sys.argv[1])
@@ -33,17 +33,17 @@ npca = npca_[arrayNum] # max is 107
 
 # Solar Zenith angle (used if no real sun-satelliote geometry is used)
 SZA = 30
-sza_ = range(0,70, 10) # For running multible simulations in DISCOVER
-sza = list(itertools.chain.from_iterable(itertools.repeat(x, 5) for x in sza_))
+sza_ = [0, 30, 60]# For running multible simulations in DISCOVER
+sza = list(itertools.chain.from_iterable(itertools.repeat(x, 12) for x in sza_))
 # realGeometry: True if using the real geometry provided in the .mat file
 useRealGeometry = 0
 # Job name
-jobName = 'MH%d_' %arrayNum # 'A' for 2modes, 'Z' for realGeometry
+jobName = 'H1%d_' %arrayNum # 'A' for 2modes, 'Z' for realGeometry
 if not useRealGeometry: jobName = jobName + str(SZA); varStr = 'aod'
 else: varStr = 'nPCA'
 
 # Instrment name
-instrument = 'megaharp01'
+instrument = 'harp20'
 
 # looping through the var string
 for aod in tau:
@@ -88,9 +88,11 @@ for aod in tau:
                 fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
         else:
             if 'discover' in hostname:
+                temp_num = 1
                 for i in sza:
                     fh.writelines("python runRetrievalSimulationSlurm.py %d %s %s %s %2.3f &\n" %(int(i), instrument,
-                                                                                           i, useRealGeometry, aod))
+                                                                                           (i+((arrayNum*1.3)/10+temp_num/100)), useRealGeometry, aod))
+                    temp_num += 1
             else:
                 fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
         fh.writelines("wait\n")

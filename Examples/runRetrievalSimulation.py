@@ -25,28 +25,28 @@ from canonicalCaseMap import setupConCaseYAML
 # <><><> BEGIN BASIC CONFIGURATION SETTINGS <><><>
 
 # Full path to save simulation results as a Python pickle
-savePath = '/Users/wrespino/Downloads/exampleSimulationTest#1.pkl'
+savePath = './job/exampleSimulationTest#1.pkl'
 
 # Full path grasp binary
 # binGRASP = '/usr/local/bin/grasp'
-binGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
+binGRASP = '../../GRASP_GSFC/build_megaharp01/bin/grasp_app'
 
 # Full path grasp precomputed single scattering kernels
-krnlPath = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/src/retrieval/internal_files'
+krnlPath = './src/retrieval/internal_files'
 
 # Directory containing the foward and inversion YAML files you would like to use
 ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
-fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml') # foward YAML file
-bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml') # inversion YAML file
+fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda_CustomBins.yml') # foward YAML file
+bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes_Campex.yml') # inversion YAML file
 
 # Other non-path related settings
-Nsims = 4 # the number of inversions to perform, each with its own random noise
-maxCPU = 4 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
-conCase = 'case06a' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+Nsims = 3 # the number of inversions to perform, each with its own random noise
+maxCPU = 1 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+conCase = '_campex_flight#01_layer#00' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
 SZA = 30 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
 Phi = 0 # relative azimuth angle, φsolar-φsensor
-τFactor = 1.0 # scaling factor for total AOD
-instrument = 'polar0700' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+τFactor = 1 # scaling factor for total AOD
+instrument = 'megaharp01' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
 # %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
 
@@ -71,4 +71,4 @@ print('RMS deviations (retrieved-truth) at wavelength of %5.3f μm:' % wavelengt
 pprint.pprint(simA.analyzeSim(0)[0])
 
 # save simulated truth data to a NetCDF file
-simA.saveSim_netCDF(savePath[:-4], verbose=True)
+#simA.saveSim_netCDF(savePath[:-4], verbose=True)

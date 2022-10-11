@@ -56,8 +56,8 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex.yml' %psd_type) # inversion YAML file
     
     # Other non-path related settings
-    Nsims = 2 # the number of inversion to perform, each with its own random noise
-    maxCPU = 2 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+    Nsims = 1 # the number of inversion to perform, each with its own random noise
+    maxCPU = 1 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
     Phi = Phi # relative azimuth angle, φsolar-φsensor

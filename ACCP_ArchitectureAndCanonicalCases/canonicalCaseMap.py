@@ -224,12 +224,14 @@ def conCaseDefinitions(caseStr, nowPix):
                 # together
                 σ = [0.70+rnd.uniform(-0.05, 0.05)] # mode 1, 2,...
                 rv = [0.6+rnd.uniform(-0.03, 0.03)]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+                #σ = [0.70]
+                #rv = [0.6]*np.exp(3*np.power(σ,2))
                 nbins = np.size(radiusBin)
                 radiusBin_ = np.logspace(np.log10(0.005), np.log10(15), nbins)
                 dvdr = logNormal(rv[0], σ[0], radiusBin_)
                 dvdlnr = dvdr[0]*radiusBin_
                 if 'nocoarse' in caseStr.lower(): multFac = 0.0001
-                else: multFac=0.25
+                else: multFac=0.50
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
                                             [dvdlnr*multFac]])
                 vals['sph'] = vals['sph'] + [sphFrac]
