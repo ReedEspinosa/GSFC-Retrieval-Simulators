@@ -253,6 +253,104 @@ def conCaseDefinitions(caseStr, nowPix):
             vals['k'] = [np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),
                                nwl)] # mode 1
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    elif 'fit_campex' in caseStr.lower():
+        
+        # find the params based on the flight and layer #
+        # A function to read the PSD from Jeff's file or ASCII and pass it to
+        # this definition
+        # read PSD bins
+        try:
+            file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
+                        "Campex_dVDlnr72_fitParams.pkl", 'rb')
+            dVdlnrParams = pickle.load(file)
+            file.close()
+            file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
+                        "Campex_r72.pkl", 'rb')
+            radiusBin = pickle.load(file)
+            file.close()
+        except Exception as e:
+            print('File loading error: check if the PSD file path is correct'\
+                  ' or not\n %s' %e)
+        # flight
+        if 'flight#' in caseStr.lower():
+            try:
+                matchRe = re.compile(r'flight#\d{2}')
+                flight_numtemp = matchRe.search(caseStr.lower())
+                flight_num = int(flight_numtemp.group(0)[7:])
+                
+            except Exception as e:
+                print('Could not find a matching string pattern: %s' %e)
+                flight_num = 1
+        
+            nlayer = 1
+            flight_vrtHght = 1000
+            flight_vrtHghtStd = 500
+            multiMode = False
+            # layer
+            if 'layer#' in caseStr.lower():
+                try:
+                    matchRe = re.compile(r'layer#\d{2}')
+                    layer_numtemp = matchRe.search(caseStr.lower())
+                    nlayer = int(layer_numtemp.group(0)[6:]) 
+                    # to use all layers
+                    if not nlayer:
+                        multiMode = True
+                    # to use only one layer
+                    else:
+                        flight_vrtHght = 1000*nlayer
+                        flight_vrtHghtStd = 500   
+                except Exception as e:
+                    print('Could not find a matching string pattern: %s' %e)
+                    flight_vrtHght = 1000
+                    flight_vrtHghtStd = 500
+
+            print('Using the PSD from the flight# %d and layer#'\
+                  ' %d' %(flight_num, nlayer))
+        else:
+            # using the first flight PSD
+            print('Using the PSD from the first flight and first layer')
+            vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=6)]
+            vals['triaPSD'] = np.vstack(vals['triaPSD'])
+        flight_num = flight_num-1    
+        sigmaFit = [dVdlnrParams['sigma'][flight_num, 0],
+                    dVdlnrParams['sigma'][flight_num, 1],
+                    dVdlnrParams['sigma'][flight_num, 2],
+                    dVdlnrParams['sigma'][flight_num, 3],
+                    0.70 + rnd.uniform(-0.05, 0.05)]               
+        muFit = [dVdlnrParams['mu'][flight_num, 0],
+                dVdlnrParams['mu'][flight_num, 1],
+                dVdlnrParams['mu'][flight_num, 2],
+                dVdlnrParams['mu'][flight_num, 3],
+                2.6095 + rnd.uniform(-0.1305, 0.1305)] # The values based on the rndm variation limit in the previous model 
+        # Not using this at the moment (but if we randomize the fine mode fraction 
+        # we wil have to play with/adjust this)
+        V0Fit = [dVdlnrParams['V0'][flight_num, 0],
+                dVdlnrParams['V0'][flight_num, 1],
+                dVdlnrParams['V0'][flight_num, 2],
+                dVdlnrParams['V0'][flight_num, 3],
+                1]
+        
+        σ = sigmaFit # mode 1, 2,...
+        rv = muFit
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        sphFrac = 0.999 + rnd.uniform(-0.99, 0)
+        vals['sph'] = [sphFrac, sphFrac, sphFrac, sphFrac, sphFrac] # mode 1, 2,...
+        vals['vol'] = np.array([[0.3529], [0.3529],[0.3529], [0.3529], [2.155]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
+        vals['vrtHght'] = [[1010], [1510], [2010], [2510],  [1010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [500, 500, 500, 500, 500] # mode 1, 2,... # Gaussian sigma in meters
+        nAero = np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)), nwl)
+        kAero = np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),nwl)
+        vals['n'] = np.vstack([nAero,
+                               nAero,
+                               nAero,
+                               nAero]) # mode 1,2,...
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.40 + rnd.uniform(-0.05, 0.05), nwl)]) # mode 2
+        vals['k'] = np.vstack([kAero,
+                               kAero,
+                               kAero,
+                               kAero])# mode 1,2,...
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.0005 + (rnd.uniform(-0.0004,0.0004)), nwl)]) # mode 5
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
         rv = [0.2, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -592,10 +690,10 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             # cases.append(case.replace('campex','coarse_mode_campex')) # smoke base τ550=1.0
             # loadings.append(0.25*caseLoadFct)
         elif 'camp_test' in case.lower():
-            cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
-            loadings.append(caseLoadFct)
-            # cases.append(case.replace('camp_test','aerosol_campex'))
-            # loadings.append(0.25*caseLoadFct)
+            # cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
+            # loadings.append(caseLoadFct)
+            cases.append(case.replace('camp_test','fit_campex'))
+            loadings.append(0.25*caseLoadFct)
         else:
             cases.append(case)
             loadings.append(caseLoadFct)
