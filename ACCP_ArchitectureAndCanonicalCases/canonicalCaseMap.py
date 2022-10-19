@@ -83,23 +83,7 @@ def conCaseDefinitions(caseStr, nowPix):
             nbins = 36
             radiusBin = np.logspace(np.log10(0.005), np.log10(15), nbins)
             
-            # # Multiple mode in coarse mode will crash
-            # σ = [0.70] # mode 1, 2,...
-            # rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-            # dvdr = logNormal(rv[0], σ[0], radiusBin)
-            # dvdlnr = dvdr[0]*radiusBin
-            # vals['triaPSD'] = [dvdlnr]
-            # vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
-            # vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
-            # vals['vrtHght'] =[3000] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
-            # vals['vrtHghtStd'] = [500] # mode 1, 2,... # Gaussian sigma in meters
-            # vals['n'] = [np.repeat(1.4 + (rnd.uniform(-0.05, 0.05)),
-            #                         nwl)] # mode 1
-            # # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-            # vals['k'] = [np.repeat(0.002 + (rnd.uniform(-0.001,0.001)),
-            #                     nwl)] # mode 1
-            # landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
-            
+            # # Multiple mode in coarse mode will crash            
             σ = [0.45, 0.70] # mode 1, 2,...
             rv = [0.1, 0.6]*np.exp(3*np.power(σ,2))
             dvdr = logNormal(rv[0], σ[0], radiusBin)
@@ -200,15 +184,15 @@ def conCaseDefinitions(caseStr, nowPix):
                                np.around(dVdlnr[flight_num-1,2,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,3,:]*[0.1], decimals=6)]
             vals['triaPSD'] = np.array(vals['triaPSD'])
-            sphFrac = 0.999 + rnd.uniform(-0.99, 0)
+            sphFrac = 0.999
             vals['sph'] = [sphFrac,
                            sphFrac,
                            sphFrac,
                            sphFrac] # mode 1, 2,...
             vals['vrtHght'] = [[1000], [1500], [2000], [2500]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [[500], [500], [500], [500]] # mode 1, 2,... # Gaussian sigma in meters
-            nAero = np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)), nwl)
-            kAero = np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),nwl)
+            nAero = np.repeat(1.5, nwl)
+            kAero = np.repeat(0.005,nwl)
             vals['n'] = [list(nAero),
                          list(nAero),
                          list(nAero),
@@ -222,8 +206,8 @@ def conCaseDefinitions(caseStr, nowPix):
                 # This is hard coded not great for generalization
                 # GRASP needs to be modified to make use of triangle and lognormal bins
                 # together
-                σ = [0.70+rnd.uniform(-0.05, 0.05)] # mode 1, 2,...
-                rv = [0.6+rnd.uniform(-0.03, 0.03)]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+                σ = [0.70] #+rnd.uniform(-0.05, 0.05)] # mode 1, 2,...
+                rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
                 #σ = [0.70]
                 #rv = [0.6]*np.exp(3*np.power(σ,2))
                 nbins = np.size(radiusBin)
@@ -231,15 +215,15 @@ def conCaseDefinitions(caseStr, nowPix):
                 dvdr = logNormal(rv[0], σ[0], radiusBin_)
                 dvdlnr = dvdr[0]*radiusBin_
                 if 'nocoarse' in caseStr.lower(): multFac = 0.0001
-                else: multFac=0.50
+                else: multFac=0.77
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
                                             [dvdlnr*multFac]])
                 vals['sph'] = vals['sph'] + [sphFrac]
                 # removed to avoid the descrepency in printing the aero vol conc in the output
                 vals['vrtHght'] = vals['vrtHght'] + [[1000]]
                 vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[500]]
-                nAero = np.repeat(1.40 + (rnd.uniform(-0.05, 0.05)), nwl)
-                kAero = np.repeat(0.0005 + (rnd.uniform(-0.0004,0.0004)),nwl)
+                nAero = np.repeat(1.40 , nwl)
+                kAero = np.repeat(0.0005 ,nwl)
                 vals['n'] = vals['n'] + [list(nAero)]
                 vals['k'] = vals['k'] + [list(kAero)]
         else:
@@ -316,12 +300,12 @@ def conCaseDefinitions(caseStr, nowPix):
                     dVdlnrParams['sigma'][flight_num, 1],
                     dVdlnrParams['sigma'][flight_num, 2],
                     dVdlnrParams['sigma'][flight_num, 3],
-                    0.70 + rnd.uniform(-0.05, 0.05)]               
+                    0.70 ]               
         muFit = [dVdlnrParams['mu'][flight_num, 0],
                 dVdlnrParams['mu'][flight_num, 1],
                 dVdlnrParams['mu'][flight_num, 2],
                 dVdlnrParams['mu'][flight_num, 3],
-                2.6095 + rnd.uniform(-0.1305, 0.1305)] # The values based on the rndm variation limit in the previous model 
+                2.6095 ] # The values based on the rndm variation limit in the previous model 
         # Not using this at the moment (but if we randomize the fine mode fraction 
         # we wil have to play with/adjust this)
         V0Fit = [dVdlnrParams['V0'][flight_num, 0],
@@ -333,23 +317,23 @@ def conCaseDefinitions(caseStr, nowPix):
         σ = sigmaFit # mode 1, 2,...
         rv = muFit
         vals['lgrnm'] = np.vstack([rv, σ]).T
-        sphFrac = 0.999 + rnd.uniform(-0.99, 0)
+        sphFrac = 0.999
         vals['sph'] = [sphFrac, sphFrac, sphFrac, sphFrac, sphFrac] # mode 1, 2,...
-        vals['vol'] = np.array([[0.3529], [0.3529],[0.3529], [0.3529], [2.155]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
+        vals['vol'] = np.array([[0.35], [0.35],[0.35], [0.35], [4.1]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
         vals['vrtHght'] = [[1010], [1510], [2010], [2510],  [1010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [500, 500, 500, 500, 500] # mode 1, 2,... # Gaussian sigma in meters
-        nAero = np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)), nwl)
-        kAero = np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),nwl)
+        nAero = np.repeat(1.5, nwl)
+        kAero = np.repeat(0.005,nwl)
         vals['n'] = np.vstack([nAero,
                                nAero,
                                nAero,
                                nAero]) # mode 1,2,...
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.40 + rnd.uniform(-0.05, 0.05), nwl)]) # mode 2
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.40 , nwl)]) # mode 2
         vals['k'] = np.vstack([kAero,
                                kAero,
                                kAero,
                                kAero])# mode 1,2,...
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.0005 + (rnd.uniform(-0.0004,0.0004)), nwl)]) # mode 5
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.0005, nwl)]) # mode 5
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
@@ -686,14 +670,14 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.7*caseLoadFct)
         elif 'campex' in case.lower():
             cases.append(case.replace('campex','aerosol_campex')) # smoke base τ550=1.0
-            loadings.append(1*caseLoadFct)
+            loadings.append(0.5*caseLoadFct)
             # cases.append(case.replace('campex','coarse_mode_campex')) # smoke base τ550=1.0
             # loadings.append(0.25*caseLoadFct)
         elif 'camp_test' in case.lower():
             # cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
             # loadings.append(caseLoadFct)
             cases.append(case.replace('camp_test','fit_campex'))
-            loadings.append(0.25*caseLoadFct)
+            loadings.append(0.0937*caseLoadFct)
         else:
             cases.append(case)
             loadings.append(caseLoadFct)
