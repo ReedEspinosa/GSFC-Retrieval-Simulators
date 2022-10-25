@@ -12,7 +12,7 @@ import pickle
 import re
 RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
 sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
-from miscFunctions import logNormal
+from miscFunctions import logNormal, loguniform
 import runGRASP as rg
 
 def conCaseDefinitions(caseStr, nowPix):
@@ -184,7 +184,7 @@ def conCaseDefinitions(caseStr, nowPix):
                                np.around(dVdlnr[flight_num-1,2,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,3,:]*[0.1], decimals=6)]
             vals['triaPSD'] = np.array(vals['triaPSD'])
-            sphFrac = 0.999 + rnd.uniform(-0.99, 0)
+            sphFrac = 0.999 - round(rnd.uniform(0, 1))*0.99
             vals['sph'] = [sphFrac,
                            sphFrac,
                            sphFrac,
@@ -192,7 +192,7 @@ def conCaseDefinitions(caseStr, nowPix):
             vals['vrtHght'] = [[1000], [1500], [2000], [2500]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [[500], [500], [500], [500]] # mode 1, 2,... # Gaussian sigma in meters
             nAero = np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)), nwl)
-            kAero = np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),nwl)
+            kAero = np.repeat(loguniform(0.001,0.02),nwl)
             vals['n'] = [list(nAero),
                          list(nAero),
                          list(nAero),
@@ -218,23 +218,23 @@ def conCaseDefinitions(caseStr, nowPix):
                 else: multFac=0.77
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
                                             [dvdlnr*multFac]])
-                vals['sph'] = vals['sph'] + [sphFrac]
+                vals['sph'] = vals['sph'] + [0.999 - round(rnd.uniform(0, 1))*0.99]
                 # removed to avoid the descrepency in printing the aero vol conc in the output
                 vals['vrtHght'] = vals['vrtHght'] + [[1000]]
                 vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[500]]
                 nAero = np.repeat(1.40 + (rnd.uniform(-0.05, 0.05)), nwl)
-                kAero = np.repeat(0.0005 + (rnd.uniform(-0.0004,0.0004)),nwl)
+                kAero = np.repeat(loguniform(0.0001,0.001),nwl)
                 vals['n'] = vals['n'] + [list(nAero)]
                 vals['k'] = vals['k'] + [list(kAero)]
         else:
-            vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
+            vals['sph'] = [0.999 - round(rnd.uniform(0, 1))*0.99] # mode 1, 2,...
             vals['vol'] = np.array([0.0017]) # gives AOD=4*[0.2165, 0.033499]=1.0
             vals['vrtHght'] =[flight_vrtHght] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
             vals['n'] = [np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)),
                                    nwl)] # mode 1
             
-            vals['k'] = [np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),
+            vals['k'] = [np.repeat(loguniform(0.0001,0.001),
                                nwl)] # mode 1
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'fit_campex' in caseStr.lower():
@@ -317,13 +317,13 @@ def conCaseDefinitions(caseStr, nowPix):
         σ = sigmaFit # mode 1, 2,...
         rv = muFit
         vals['lgrnm'] = np.vstack([rv, σ]).T
-        sphFrac = 0.999 + rnd.uniform(-0.99, 0)
+        sphFrac = 0.999 - round(rnd.uniform(0, 1))*0.99
         vals['sph'] = [sphFrac, sphFrac, sphFrac, sphFrac, sphFrac] # mode 1, 2,...
         vals['vol'] = np.array([[0.35], [0.35],[0.35], [0.35], [4.1]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
         vals['vrtHght'] = [[1010], [1510], [2010], [2510],  [1010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [500, 500, 500, 500, 500] # mode 1, 2,... # Gaussian sigma in meters
         nAero = np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)), nwl)
-        kAero = np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),nwl)
+        kAero = np.repeat(loguniform(0.001,0.02),nwl)
         vals['n'] = np.vstack([nAero,
                                nAero,
                                nAero,
@@ -333,7 +333,7 @@ def conCaseDefinitions(caseStr, nowPix):
                                kAero,
                                kAero,
                                kAero])# mode 1,2,...
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.0005 + (rnd.uniform(-0.0004,0.0004)), nwl)]) # mode 5
+        vals['k'] = np.vstack([vals['k'], np.repeat(loguniform(0.0001,0.001), nwl)]) # mode 5
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
