@@ -15,7 +15,7 @@ sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
 from miscFunctions import logNormal, loguniform
 import runGRASP as rg
 
-def conCaseDefinitions(caseStr, nowPix):
+def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
     """ '+' is used to seperate multiple cases (implemented in splitMultipleCases below)
         This function should insensitive to trailing characters in caseStr
             (e.g. 'smokeDesert' and 'smokeDeserta2' should produce same result)
@@ -395,6 +395,52 @@ def conCaseDefinitions(caseStr, nowPix):
         vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     # case01 is blank in V22 of the canoncial case spreadsheet...
+    elif 'd_tamu' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
+        if defineRandom is not None: random_r = defineRandom # array of random numbers at least 4 element for this case
+        
+        rv = [0.8+random_r[0]*3.2,0.8+random_r[1]*3.2] #coarse mode
+        vals['vol'] = np.array([[1.5+random_r[2]*1.5]])/3 
+        σ = [0.5, 0.75] # mode 1, 2,...
+        rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
+        if 'nonsph' in caseStr.lower():
+            vals['sph'] = [[0.00001], [0.00001]] # mode fine sphere, coarse spheroid
+            vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # spheroids require scaling to maintain AOD
+        else:
+            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.46, nwl) # mode 1
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
+        vals['k'] = np.repeat(1e-8, nwl) # mode 1
+        mode2λ = [0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
+        mode2k = [0.0025, 0.0025, 0.0024, 0.0021, 0.0019, 0.0011, 0.0010, 0.0010]
+        mode2Intrp = np.interp(wvls, mode2λ, mode2k)
+        vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    # case01 is blank in V22 of the canoncial case spreadsheet...
+    
+    elif 'var_tamu' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
+        if defineRandom is not None: random_r  = defineRandom # array of random numbers
+        
+        σ = 0.35+random_r[0]*0.3
+        if 'fine' in caseStr.lower():
+            rv = 0.145+random_r[1]*0.105
+            vals['vol'] = np.array([[0.5+random_r[2]*0.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
+        elif 'coarse' in caseStr.lower():
+            rv = 0.8+random_r[4]*3.2
+            vals['vol'] = np.array([[1.5+random_r[3]*1.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
+        else:
+            assert False, 'variable aerosol case must be appended with either fine or coarse'
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999]] # mode 1, 2,...
+        vals['vrtHght'] = [[3010]] if 'lofted' in caseStr.lower() else  [[1010]]  # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500]] # Gaussian sigma in meters
+        vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.36+np.array([random_r[5],random_r[6]])*0.15)[None,:] # mode 1 # linear w/ λ
+        vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+np.array([random_r[7],random_r[8]])*0.015)[None,:] # mode 1 # linear w/ λ
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+
     elif 'case02' in caseStr.lower(): # VERSION 22 (except vol & 2.1μm RI)
         σ = [0.4, 0.4] # mode 1, 2,...
         rv = [0.07, 0.25]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -504,12 +550,12 @@ def conCaseDefinitions(caseStr, nowPix):
         del vals['vrtHghtStd']
     return vals, landPrct
 
-def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=None, simBldProfs=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
+def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=None, simBldProfs=None, defineRandom = None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
     """ nowPix needed to: 1) set land percentage of nowPix and 2) get number of wavelengths """
     aeroKeys = ['traiPSD','lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k', 'landPrct']
     vals = dict()
     for caseStr,loading in splitMultipleCases(caseStrs, caseLoadFctr): # loop over all cases and add them together
-        valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix)
+        valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix, defineRandom)
         for key in valsTmp.keys():
             if key=='vol':
                 valsTmp[key] = loading*valsTmp[key]
@@ -678,6 +724,18 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             # loadings.append(caseLoadFct)
             cases.append(case.replace('camp_test','fit_campex'))
             loadings.append(0.0937*caseLoadFct)
+        #Added by Greema
+        elif 'tamu_variable_sphere' in case.lower():
+            cases.append(case.replace('tamu_variable_sphere','var_tamucoarse'))
+            loadings.append(0.4*caseLoadFct)
+            cases.append(case.replace('tamu_variable_sphere','var_tamufine'))
+            loadings.append(0.1*caseLoadFct)
+
+        elif 'tamu_variable' in case.lower():
+            cases.append(case.replace('tamu_variable','var_tamucoarse_nonsph'))
+            loadings.append(0.4*caseLoadFct)
+            cases.append(case.replace('tamu_variable','var_tamufine_nonsph'))
+            loadings.append(0.1*caseLoadFct)
         else:
             cases.append(case)
             loadings.append(caseLoadFct)
