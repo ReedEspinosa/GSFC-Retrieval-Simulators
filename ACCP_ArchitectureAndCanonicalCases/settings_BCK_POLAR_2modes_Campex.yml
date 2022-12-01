@@ -131,7 +131,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 4.0
+                        lagrange_multiplier: 3.0
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -141,7 +141,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 2.0
+                        lagrange_multiplier: 3.0
             retrieved: true
             type: real_part_of_refractive_index_spectral_dependent
         characteristic[4]:
@@ -155,7 +155,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0.1
+                        lagrange_multiplier: 0.01
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8]
@@ -181,7 +181,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 1.0
+                        lagrange_multiplier: 0.1
             mode[2]:
                 initial_guess:                       #1      #2      #3
                     value:                          [0.999999]
