@@ -345,6 +345,7 @@ def conCaseDefinitions(caseStr, nowPix):
                                nAero,
                                nAero,
                                nAero]) # mode 1,2,...
+    
         nAero_ = np.repeat(1.40 + rnd.uniform(-0.05, 0.05), nwl)
         nAero = slope4RRI(nAero_, wvls)
         vals['n'] = np.vstack([vals['n'], nAero]) # mode 2
@@ -478,7 +479,9 @@ def conCaseDefinitions(caseStr, nowPix):
         if 'chl' in caseStr.lower():
             #R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.00000002, 0.00000002, 0.00000002] # SIT-A canonical values, TODO: need to double check these units
             R=[0.02, 0.02, 0.02, 0.02,  0.01, 0.0005, 0.00000002, 0.00000002] # Figure 8, Chowdhary et al, APPLIED OPTICS Vol. 45, No. 22 (2006), also need to check units...
-        else:
+        elif 'open_ocean' in caseStr.lower():
+            R=[0.012, 0.014, 0.010, 0.00249109,	0.00169515, 0.00000002, 0.00000002, 0.00000002]
+        else: 
             R=[0.00000002, 0.00000002, 0.00000002, 0.00000002,	0.00000002, 0.00000002, 0.00000002, 0.00000002]
         lambR = np.interp(wvls, λ, R)
         FresFrac = 0.999999*np.ones(nwl)
@@ -689,15 +692,15 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.1)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.7*caseLoadFct)
-        elif 'campex' in case.lower():
-            cases.append(case.replace('campex','aerosol_campex')) # smoke base τ550=1.0
+        elif 'campex_tria' in case.lower():
+            cases.append(case.replace('campex','aerosol_campex_open_ocean')) # smoke base τ550=1.0
             loadings.append(0.5*caseLoadFct)
             # cases.append(case.replace('campex','coarse_mode_campex')) # smoke base τ550=1.0
             # loadings.append(0.25*caseLoadFct)
-        elif 'camp_test' in case.lower():
+        elif 'campex_bi' in case.lower():
             # cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
             # loadings.append(caseLoadFct)
-            cases.append(case.replace('camp_test','fit_campex'))
+            cases.append(case.replace('campex','fit_campex_open_ocean'))
             loadings.append(0.0937*caseLoadFct)
         # added greema
         elif 'tamu01a' in case.lower():
