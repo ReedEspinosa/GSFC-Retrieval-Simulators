@@ -12,7 +12,7 @@ import pickle
 import re
 RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
 sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
-from miscFunctions import logNormal, loguniform
+from miscFunctions import logNormal, loguniform, slope4RRI
 import runGRASP as rg
 
 def conCaseDefinitions(caseStr, nowPix):
@@ -113,7 +113,7 @@ def conCaseDefinitions(caseStr, nowPix):
         # read PSD bins
         try:
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_dVDlnr72.pkl", 'rb')
+                        "Campex_dVDlnr72_Clean.pkl", 'rb')
             dVdlnr = pickle.load(file)
             file.close()
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
@@ -189,10 +189,15 @@ def conCaseDefinitions(caseStr, nowPix):
                            sphFrac,
                            sphFrac,
                            sphFrac] # mode 1, 2,...
-            vals['vrtHght'] = [[1000], [1500], [2000], [2500]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+            vals['vrtHght'] = [[500], [1000], [2000], [3000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [[500], [500], [500], [500]] # mode 1, 2,... # Gaussian sigma in meters
-            nAero = np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)), nwl)
-            kAero = np.repeat(loguniform(0.001,0.02),nwl)
+            nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)),nwl)
+            nAero = slope4RRI(nAero_, wvls)
+            λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+            k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
+            lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
+            kAero = loguniform(0.001,0.02)*lamb_k
+            
             vals['n'] = [list(nAero),
                          list(nAero),
                          list(nAero),
@@ -220,10 +225,12 @@ def conCaseDefinitions(caseStr, nowPix):
                                             [dvdlnr*multFac]])
                 vals['sph'] = vals['sph'] + [0.999 - round(rnd.uniform(0, 1))*0.99]
                 # removed to avoid the descrepency in printing the aero vol conc in the output
-                vals['vrtHght'] = vals['vrtHght'] + [[1000]]
+                vals['vrtHght'] = vals['vrtHght'] + [[500]]
                 vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[500]]
-                nAero = np.repeat(1.40 + (rnd.uniform(-0.05, 0.05)), nwl)
-                kAero = np.repeat(loguniform(0.0001,0.001),nwl)
+                nAero_ = np.repeat(1.40 + (rnd.uniform(-0.05, 0.05)), nwl)
+                nAero = slope4RRI(nAero_, wvls)
+                # k
+                kAero = loguniform(0.0001,0.001)*lamb_k
                 vals['n'] = vals['n'] + [list(nAero)]
                 vals['k'] = vals['k'] + [list(kAero)]
         else:
@@ -231,11 +238,15 @@ def conCaseDefinitions(caseStr, nowPix):
             vals['vol'] = np.array([0.0017]) # gives AOD=4*[0.2165, 0.033499]=1.0
             vals['vrtHght'] =[flight_vrtHght] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
-            vals['n'] = [np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)),
-                                   nwl)] # mode 1
-            
-            vals['k'] = [np.repeat(loguniform(0.0001,0.001),
-                               nwl)] # mode 1
+            nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)),nwl)
+            nAero = slope4RRI(nAero_, wvls)
+            vals['n'] = np.vstack([vals['n'], nAero]) # mode 2
+            # k
+            λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+            k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
+            lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
+            kAero = loguniform(0.0001,0.001)*lamb_k
+            vals['k'] = [kAero] # mode 1
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'fit_campex' in caseStr.lower():
         
@@ -245,7 +256,7 @@ def conCaseDefinitions(caseStr, nowPix):
         # read PSD bins
         try:
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_dVDlnr72_fitParams.pkl", 'rb')
+                        "Campex_dVDlnr72_fitParams_Clean.pkl", 'rb')
             dVdlnrParams = pickle.load(file)
             file.close()
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
@@ -285,7 +296,7 @@ def conCaseDefinitions(caseStr, nowPix):
                         flight_vrtHghtStd = 500   
                 except Exception as e:
                     print('Could not find a matching string pattern: %s' %e)
-                    flight_vrtHght = 1000
+                    flight_vrtHght = 500
                     flight_vrtHghtStd = 500
 
             print('Using the PSD from the flight# %d and layer#'\
@@ -320,20 +331,29 @@ def conCaseDefinitions(caseStr, nowPix):
         sphFrac = 0.999 - round(rnd.uniform(0, 1))*0.99
         vals['sph'] = [sphFrac, sphFrac, sphFrac, sphFrac, sphFrac] # mode 1, 2,...
         vals['vol'] = np.array([[0.35], [0.35],[0.35], [0.35], [4.1]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
-        vals['vrtHght'] = [[1010], [1510], [2010], [2510],  [1010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHght'] = [[500], [1010], [2010], [3010],  [500]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [500, 500, 500, 500, 500] # mode 1, 2,... # Gaussian sigma in meters
-        nAero = np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)), nwl)
-        kAero = np.repeat(loguniform(0.001,0.02),nwl)
+        # n
+        nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)), nwl)
+        nAero = slope4RRI(nAero_, wvls)
+        # k
+        λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+        k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
+        lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
+        kAero = loguniform(0.001,0.02)*lamb_k
         vals['n'] = np.vstack([nAero,
                                nAero,
                                nAero,
                                nAero]) # mode 1,2,...
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.40 + rnd.uniform(-0.05, 0.05), nwl)]) # mode 2
+        nAero_ = np.repeat(1.40 + rnd.uniform(-0.05, 0.05), nwl)
+        nAero = slope4RRI(nAero_, wvls)
+        vals['n'] = np.vstack([vals['n'], nAero]) # mode 2
         vals['k'] = np.vstack([kAero,
                                kAero,
                                kAero,
                                kAero])# mode 1,2,...
-        vals['k'] = np.vstack([vals['k'], np.repeat(loguniform(0.0001,0.001), nwl)]) # mode 5
+        kAero = loguniform(0.0001,0.001)*lamb_k
+        vals['k'] = np.vstack([vals['k'], kAero]) # mode 5
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
@@ -394,6 +414,7 @@ def conCaseDefinitions(caseStr, nowPix):
         mode2Intrp = np.interp(wvls, mode2λ, mode2k)
         vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    
     # case01 is blank in V22 of the canoncial case spreadsheet...
     elif 'case02' in caseStr.lower(): # VERSION 22 (except vol & 2.1μm RI)
         σ = [0.4, 0.4] # mode 1, 2,...
@@ -678,6 +699,12 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             # loadings.append(caseLoadFct)
             cases.append(case.replace('camp_test','fit_campex'))
             loadings.append(0.0937*caseLoadFct)
+        # added greema
+        elif 'tamu01a' in case.lower():
+            cases.append(case.replace('tamu01','dust'))
+            loadings.append(0.11*caseLoadFct)
+            # cases.append(case.replace('case08','marine'))
+            # loadings.append(0.1*caseLoadFct)
         else:
             cases.append(case)
             loadings.append(caseLoadFct)

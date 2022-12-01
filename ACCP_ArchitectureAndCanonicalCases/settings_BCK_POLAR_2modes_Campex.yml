@@ -149,13 +149,13 @@ retrieval:
                 initial_guess:
                     index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8]
                        #    0.36    0.38    0.41    0.55    0.67    0.87    1.55    1.65
-                    max:   [0.050,  0.050,  0.050,  0.050,  0.050,  0.050,  0.050,  0.050 ]
+                    max:   [0.060,  0.050,  0.050,  0.050,  0.050,  0.050,  0.10,  0.10 ]
                     min:   [1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5, 1.0e-5]
                     value: [0.002,  0.002,  0.002,  0.002,  0.002,  0.002,  0.002,  0.002 ]
                 single_pixel:
                     smoothness_constraints:
-                        difference_order: 2
-                        lagrange_multiplier: 0.06
+                        difference_order: 1
+                        lagrange_multiplier: 0.1
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8]
@@ -165,8 +165,8 @@ retrieval:
                     value: [0.0005,  0.0004,  0.0003,  0.0002,  0.0002,  0.0002,  0.0003,  0.0004 ]
                 single_pixel:
                     smoothness_constraints:
-                        difference_order: 2
-                        lagrange_multiplier: 0.06
+                        difference_order: 1
+                        lagrange_multiplier: 0.01
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
         characteristic[5]:
@@ -181,7 +181,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 0.0
+                        lagrange_multiplier: 1.0
             mode[2]:
                 initial_guess:                       #1      #2      #3
                     value:                          [0.999999]
