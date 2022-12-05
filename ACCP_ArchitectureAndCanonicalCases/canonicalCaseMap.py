@@ -230,7 +230,7 @@ def conCaseDefinitions(caseStr, nowPix):
                 nAero_ = np.repeat(1.40 + (rnd.uniform(-0.05, 0.05)), nwl)
                 nAero = slope4RRI(nAero_, wvls)
                 # k
-                kAero = loguniform(0.0001,0.001)*lamb_k
+                kAero = loguniform(0.0001,0.0005)*lamb_k
                 vals['n'] = vals['n'] + [list(nAero)]
                 vals['k'] = vals['k'] + [list(kAero)]
         else:
@@ -245,7 +245,7 @@ def conCaseDefinitions(caseStr, nowPix):
             λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
             k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
             lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
-            kAero = loguniform(0.0001,0.001)*lamb_k
+            kAero = loguniform(0.0001,0.0005)*lamb_k
             vals['k'] = [kAero] # mode 1
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'fit_campex' in caseStr.lower():
@@ -353,7 +353,7 @@ def conCaseDefinitions(caseStr, nowPix):
                                kAero,
                                kAero,
                                kAero])# mode 1,2,...
-        kAero = loguniform(0.0001,0.001)*lamb_k
+        kAero = loguniform(0.0001,0.0005)*lamb_k
         vals['k'] = np.vstack([vals['k'], kAero]) # mode 5
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
