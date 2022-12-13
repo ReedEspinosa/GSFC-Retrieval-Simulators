@@ -581,7 +581,7 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=No
     aeroKeys = ['traiPSD','lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k', 'landPrct']
     vals = dict()
     for caseStr,loading in splitMultipleCases(caseStrs, caseLoadFctr): # loop over all cases and add them together
-        valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix, defineRandom)
+        valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix)
         for key in valsTmp.keys():
             if key=='vol':
                 valsTmp[key] = loading*valsTmp[key]
