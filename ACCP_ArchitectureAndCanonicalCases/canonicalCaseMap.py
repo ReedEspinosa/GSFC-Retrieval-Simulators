@@ -212,7 +212,7 @@ def conCaseDefinitions(caseStr, nowPix):
                 # GRASP needs to be modified to make use of triangle and lognormal bins
                 # together
                 σ = [0.70 +rnd.uniform(-0.05, 0.05)] # mode 1, 2,...
-                rv = [0.6 +rnd.uniform(-0.03, 0.03)]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+                rv = [0.6 +rnd.uniform(-0.035, 0.035)]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
                 #σ = [0.70]
                 #rv = [0.6]*np.exp(3*np.power(σ,2))
                 nbins = np.size(radiusBin)
@@ -306,17 +306,19 @@ def conCaseDefinitions(caseStr, nowPix):
             print('Using the PSD from the first flight and first layer')
             vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=6)]
             vals['triaPSD'] = np.vstack(vals['triaPSD'])
-        flight_num = flight_num-1    
+        flight_num = flight_num-1 
+        rndmSigma = 0.70 +rnd.uniform(-0.05, 0.05) # mode 1, 2,...
+        rndmMuFit = (0.6 +rnd.uniform(-0.035, 0.035))*np.exp(3*np.power(rndmSigma,2))
         sigmaFit = [dVdlnrParams['sigma'][flight_num, 0],
                     dVdlnrParams['sigma'][flight_num, 1],
                     dVdlnrParams['sigma'][flight_num, 2],
                     dVdlnrParams['sigma'][flight_num, 3],
-                    0.70 + rnd.uniform(-0.05, 0.05)]               
+                    rndmSigma]               
         muFit = [dVdlnrParams['mu'][flight_num, 0],
                 dVdlnrParams['mu'][flight_num, 1],
                 dVdlnrParams['mu'][flight_num, 2],
                 dVdlnrParams['mu'][flight_num, 3],
-                2.6095 + rnd.uniform(-0.1305, 0.1305)] # The values based on the rndm variation limit in the previous model 
+                rndmMuFit] # The values based on the rndm variation limit in the previous model 
         # Not using this at the moment (but if we randomize the fine mode fraction 
         # we wil have to play with/adjust this)
         V0Fit = [dVdlnrParams['V0'][flight_num, 0],
