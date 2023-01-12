@@ -1,3 +1,5 @@
+# THIS USES NO POLARIZATION COX MUNK!!! (good for OSSE, but not much else)
+
 settings:
     strict: true
 input: {driver: sdata, file: inversionBACK.sdat}
@@ -54,7 +56,7 @@ retrieval:
                 number_of_fourier_expansion_coefficients: 6
                 number_of_gaussian_quadratures_for_expansion_coefficients: 8
                 number_of_guassian_quadratures_for_fourier_expansion_coefficients: 12
-                order_of_scattering: derivatives
+                order_of_scattering: multiple_scattering
             simulating_observation:
                 number_of_fourier_expansion_coefficients: 6
                 number_of_gaussian_quadratures_for_expansion_coefficients: 8
