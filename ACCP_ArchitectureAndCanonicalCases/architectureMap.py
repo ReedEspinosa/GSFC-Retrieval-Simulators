@@ -129,11 +129,12 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)
+    #   Lidar Instruments (msTyp: Battn-> 31, depol -> 35, VExt->36, VBS->39)
     if 'lidar05' in archName.lower() or 'lidar06' in archName.lower():
-        msTyp = [[36, 39],[31]] # must be in ascending order # BUG: we took out depol (msTyp=35) b/c GRASP was throwing error (& canonical cases are spherical)
+        msTyp = [[35, 36, 39],[31, 35]] # must be in ascending order
         wvls = [0.532, 1.064] # Nλ=2
         if 'lidar06' in archName.lower():
-            msTyp.insert(0,[36, 39])
+            msTyp.insert(0,[35, 36, 39])
             wvls.insert(0,0.355)
         errStr = [y for y in archName.lower().split('+') if ('lidar05' in y or 'lidar06' in y)][0] # this must link to an error model in addError() below
         for wvl, msTyp in zip(wvls, msTyp): # This will be expanded for wavelength dependent measurement types/geometry
@@ -144,7 +145,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             errModel = functools.partial(addError, errStr, concase=concase, orbit=orbit, lidErrDir=lidErrDir) # HSRL (LIDAR05/06)
             nowPix.addMeas(wvl, msTyp, nbvm, 0.01, thtv, phi, meas, errModel)
     if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
-        msTyp = [31] # must be in ascending order # BUG: we took out depol b/c GRASP was throwing error (& canonical cases are spherical)
+        msTyp = [31, 35] # must be in ascending order
         nbvm = Nlayers*np.ones(len(msTyp), np.int)
         thtv = np.tile(singProf, len(msTyp))
         wvls = [0.532, 1.064] # Nλ=2

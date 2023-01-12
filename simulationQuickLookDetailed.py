@@ -204,20 +204,20 @@ def modifiedHist(x, axs, fig=None, titleStr ='', xscale=None, ylabel=None,
 # =============================================================================
 
 # Wavelength index for plotting
-waveInd = 1
+waveInd = 2
 # Wavelength index for AE calculation
-waveInd2 = 3
+waveInd2 = 4
 
 # Define the string pattern for the file name
 fnPtrnList = []
 #fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
 # fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-fnPtrn = 'Camp2ex_AOD_*_550nm_*_campex_flight#*_layer#00.pkl'
+fnPtrn = 'Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
 # fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl'
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
-inDirPath = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Aug2022/08/specificGeometry/withCoarseMode/ocean/2modes/harp20/'
+inDirPath = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/'
 
 # more tags and specifiations for the scatter plot
 surf2plot = 'both' # land, ocean or both
@@ -325,7 +325,7 @@ minAOD = np.min(true)*0.95
 maxAOD = np.max(true)*1.05
 logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
 density_scatter(true, rtrv, ax=ax[1,0],bins=logBins)
-plotProp(ax[1,0], titleStr='Coarase mode AOD', scale='log', ylabel='Retrieved')
+plotProp(ax[1,0], titleStr='Coarse mode AOD', scale='log', ylabel='Retrieved')
 
 # histogram
 nBins_ = np.linspace(-0.025,0.025, nBins)
@@ -532,6 +532,7 @@ rtrv = np.asarray([aodWght(rf['sph'], rf['vol']) for rf in simBase.rsltBck])[kee
 # We can distinguish each run type and generalize the code
 if true.ndim >1:
     true = np.asarray([rf['sph']for rf in simBase.rsltFwd])[keepInd][:,nMode]
+    rtrv = np.asarray([rf['sph']for rf in simBase.rsltBck])[keepInd][:,0]
 minAOD = 0
 maxAOD = 100.1
 
@@ -542,7 +543,7 @@ density_scatter(true, rtrv, ax=ax[0,3])
 plotProp(ax[0,3], titleStr='spherical vol. frac.')
 
 # histogram
-modifiedHist((rtrv-true), axs=ax_hist[0,3], titleStr='spherical vol. frac.',
+modifiedHist((rtrv-true), axs=ax_hist[0,3], titleStr='Fine mode SF',
              fig=fig_hist, nBins=nBins)
 
 # coarse mode SF

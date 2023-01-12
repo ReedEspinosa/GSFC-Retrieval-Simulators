@@ -1,5 +1,7 @@
 # PSD and n set to match DT absorbing aerosol model (used over central Africa in summer)
 # SOURCE: https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2006JD007815
+# THIS USES NO POLARIZATION COX MUNK!!! (good for OSSE, but not much else)
+
 input: {driver: sdata, file: inversionBACK.sdat}
 output:
     segment: {function: classic, stream: bench_inversionRslts.txt}
