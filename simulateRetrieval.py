@@ -15,7 +15,7 @@ GRASP_Python_Path = path.join(path.dirname(path.dirname(__file__)), "GSFC-GRASP-
 if GRASP_Python_Path not in sys.path: sys.path.append(GRASP_Python_Path)
 import runGRASP as rg
 import miscFunctions as ms
-
+from glob import glob
 
 class simulation(object):
     def __init__(self, nowPix=None, picklePath=None, standardizePSD=True):
@@ -159,10 +159,7 @@ class simulation(object):
         if not os.path.exists(os.path.dirname(savePath)):
             print('savePath (%s) did not exist, creating it...' % os.path.dirname(savePath))
             os.makedirs(os.path.dirname(savePath))
-        if lightSave:
-            for pmStr in ['angle', 'p11','p12','p22','p33','p34','p44','range','βext']:
-                [rb.pop(pmStr, None) for rb in self.rsltBck]
-                if len(self.rsltFwd) > 1: [rf.pop(pmStr, None) for rf in self.rsltFwd]
+        if lightSave: self._makeRsltLight(self.rsltFwd, self.rsltBck)
         self.rsltBck[0]['version'] = rg.RSLT_DICT_VERSION if 'RSLT_DICT_VERSION' in dir(rg) else '0.0'
         self.rsltFwd[0]['version'] = rg.RSLT_DICT_VERSION if 'RSLT_DICT_VERSION' in dir(rg) else '0.0'
         if verbose: print('Saving simulation results to %s' %  savePath)
@@ -180,16 +177,54 @@ class simulation(object):
             if verbose: print('Saving simulation %s results to %s' %  (dsc.lower(), savePathNow))
             gRun.output2netCDF(savePathNow, rsltDict=rslts)
 
-    def loadSim(self, picklePath, standardizePSD=True):
-        with open(picklePath, 'rb') as f:
-            self.rsltBck = rg.frmtLoadedRslts(pickle.load(f))
-            try:
-                self.rsltFwd = rg.frmtLoadedRslts(pickle.load(f))
-            except EOFError: # this was an older file (created before Jan 2020)
-                self.rsltFwd = [self.rsltBck[-1]] # resltFwd as a array of len==0 (not totaly backward compatible, it used to be straight dict)
-                self.rsltBck = self.rsltBck[:-1]
+    def loadSim(self, picklePath, standardizePSD=True, saveMerge=True, forceMerge=False, lightSave=False):
+        """
+        Load simulation results from one or more pickle files
+        picklePath – Full path to the file, or glob-like string that will match more than one files to be merged
+        standardizePSD – All fwd and back PSD placed on a common radii grid (see self._standardizePSD method)
+        saveMerge – If a merge is done on multiple pickles, save results into a single pickle (format below)
+        forceMerge – Force a merge, even if a matching saved merged file exists
+        """
+        splitPath = path.split(picklePath)
+        savePATH = path.join(splitPath[0], 'MERGED_' + splitPath[1].replace('*','ALL'))
+        # If already exists, load the file
+        if os.path.exists(savePATH) and not forceMerge:
+            files = [savePATH]
+        else:
+            files = glob(picklePath)
+        assert len(files)>0, 'No files found!'
+        if len(files)==1:
+            self.rsltFwd, self.rsltBck = self._loadData(files[0])
+        else:
+            self.rsltFwd = []
+            self.rsltBck = []
+            print('Building %s - Nfiles=%d' % (saveFN, len(files)))
+            for file in files: # loop over all found files
+                rsltFwd, rsltBck = self._loadData(file)
+                if lightSave: self._makeRsltLight(rsltFwd, rsltBck) # do this now instead of save to reduce memory footprint
+                Nrepeats = 1 if len(rsltBck)==len(rsltFwd) else len(rsltBck)
+                for _ in range(Nrepeats): self.rsltFwd = self.rsltFwd + rsltFwd
+                self.rsltBck = self.rsltBck + rsltBck
         if standardizePSD: self._standardizePSD()
+        if saveMerge: self.saveSim(savePATH, verbose=True)
 
+    def _loadData(self, picklePath, verbose=True):
+        with open(picklePath, 'rb') as f:
+            rsltBck = rg.frmtLoadedRslts(pickle.load(f))
+            try:
+                rsltFwd = rg.frmtLoadedRslts(pickle.load(f))
+            except EOFError: # this was an older file (created before Jan 2020)
+                rsltFwd = [rsltBck[-1]] # rsltFwd as a array of len==0 (not totaly backward compatible, it used to be straight dict)
+                rsltBck = rsltBck[:-1]        
+        if verbose: print('Loaded %d pixels from %s.' % (len(rsltBck), picklePath))
+        return rsltFwd, rsltBck
+    
+    def _makeRsltLight(self, rsltFwd, rsltBck):
+        for pmStr in ['angle', 'p11','p12','p22','p33','p34','p44','range','βext']:
+            for rb in rsltBck: rb.pop(pmStr, None)
+            if len(rsltFwd) > 1:
+                for rf in rsltFwd: rf.pop(pmStr, None)
+    
     def _standardizePSD(self):    
         """
         Place all fwd and back PSD on a common radii grid spanning smallest to largest size from all PSDs

@@ -92,30 +92,11 @@ savePATH = os.path.join(inDirPath,saveFN)
 # =============================================================================
 # Load data
 # =============================================================================
-# If already exists, load the file
-if os.path.exists(savePATH):
-    simBase = simulation(picklePath=savePATH)
-    print('Loading from %s - %d' % (saveFN, len(simBase.rsltBck)))
-else:
-    files = glob(os.path.join(inDirPath, fnPtrn))
-    assert len(files)>0, 'No files found!'
-    simBase = simulation()
-    simBase.rsltFwd = np.empty(0, dtype=dict)
-    simBase.rsltBck = np.empty(0, dtype=dict)
-    print('Building %s - Nfiles=%d' % (saveFN, len(files)))
-    for file in files: # loop over all available nAng
-        simA = simulation(picklePath=file)
-        if lightSave:
-            for pmStr in ['angle', 'p11','p12','p22','p33','p34','p44','range','βext']:
-                [rb.pop(pmStr, None) for rb in simA.rsltBck]
-        NrsltBck = len(simA.rsltBck)
-        print('%s - %d' % (file, NrsltBck))
-        Nrepeats = 1 if NrsltBck==len(simA.rsltFwd) else NrsltBck
-        for _ in range(Nrepeats): simBase.rsltFwd = np.r_[simBase.rsltFwd, simA.rsltFwd]
-        simBase.rsltBck = np.r_[simBase.rsltBck, simA.rsltBck]
-    simBase.saveSim(savePATH)
-    print('Saving to %s - %d' % (saveFN, len(simBase.rsltBck)))
-print('--')
+
+# Define the path of the new merged pkl file
+loadPATH = os.path.join(inDirPath,fnPtrn)
+simBase = simulation(picklePath=loadPATH)
+
 
 # print general stats to console
 print('Showing results for %5.3f μm' % simBase.rsltFwd[0]['lambda'][waveInd])
