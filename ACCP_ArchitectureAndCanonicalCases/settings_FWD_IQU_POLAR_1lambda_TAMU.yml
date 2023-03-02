@@ -2,12 +2,12 @@ input: {driver: sdata, file: bench.sdat}
 output:
     segment: {function: classic, stream: bench_FWD_IQU_rslts.txt}
 retrieval:
-    general: {path_to_internal_files: /usr/local/share/grasp/kernels/}
+    general: {path_to_internal_files: /home/shared/GRASP_GSFC/src/retrieval/internal_files}
     mode: forward
     inversion:
         regime: single_pixel
         convergence: {maximum_iterations_for_stopping: 20, maximum_iterations_of_Levenberg-Marquardt: 20, minimization_convention: logarithm, normal_system_solver: sparse_matrix_solver, scale_for_finite_difference: 1.0e-03, shift_for_applying_logarithm_to_negative_values: 1.1, threshold_for_stopping: 0.001, threshold_for_stopping_Q_iterations: 1.0e-05}
-        measurement_fitting: {polarization: relative_polarization_components}
+        measurement_fitting: {polarization: absolute_polarization_components}
         noises:
             noise[1]:
                 error_type: relative
@@ -28,11 +28,11 @@ retrieval:
                 standard_deviation_synthetic: 0.0
     forward_model:
         phase_matrix:
-            kernels_folder: KERNELS_BASE/
+            kernels_folder: TAMU_Ver_sph/
             size_binning_method_for_triangle_bins: logarithm
             number_of_elements: 4
             radius:
-                mode[1]: {max: 15.0, min: 0.005}
+                mode[1]: {max: 15.0, min: 0.05}
         radiative_transfer:
             absolute_error_rt_calculations: 1.0e-06
             aerosol_profile_vertical_type: gaussian
@@ -104,7 +104,7 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [0.5]
+                    max: [0.1]
                     min: [1e-10]
                     value: [0.035]
                 single_pixel:
@@ -138,7 +138,7 @@ retrieval:
                     index_of_wavelength_involved: [0]
                     max:   [0.9999999]
                     min:    [0.0000001]
-                    value: [0.9999998]
+                    value: [0.0000001]
             retrieved: true
             type: sphere_fraction
         characteristic[7]:

@@ -12,19 +12,10 @@ import pickle
 import re
 RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
 sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
+from miscFunctions import logNormal, loguniform, slope4RRI
 import runGRASP as rg
 
-def dvdlnrCustom(radii, rv, lnsigma):
-    temp = 0
-    dvdlnr_ = np.zeros(len(radii))
-    for i in radii:
-        num = np.exp(-((np.log(i)-np.log(rv))/(lnsigma))**2/2)
-        den = np.sqrt(2*np.pi*(lnsigma)**2)
-        dvdlnr_[temp] = num/den
-        temp +=1
-    return dvdlnr_
-
-def conCaseDefinitions(caseStr, nowPix):
+def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
     """ '+' is used to seperate multiple cases (implemented in splitMultipleCases below)
         This function should insensitive to trailing characters in caseStr
             (e.g. 'smokeDesert' and 'smokeDeserta2' should produce same result)
@@ -88,25 +79,30 @@ def conCaseDefinitions(caseStr, nowPix):
     # Added by Anin
     elif 'coarse_mode_campex' in caseStr.lower():
         try:
-            file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_r36.pkl", 'rb')
-            radiusBin = pickle.load(file)
-            file.close()            
             
-            # Multiple mode in coarse mode will crash
-            σ = [0.70] # mode 1, 2,...
-            rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-            vals['triaPSD'] = [dvdlnrCustom(radiusBin, rv[0], σ[0])]
-            vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
-            vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
-            vals['vrtHght'] =[3000] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
-            vals['vrtHghtStd'] = [500] # mode 1, 2,... # Gaussian sigma in meters
-            vals['n'] = [np.repeat(1.4 + (rnd.uniform(-0.05, 0.05)),
-                                   nwl)] # mode 1
-            # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-            vals['k'] = [np.repeat(0.002 + (rnd.uniform(-0.001,0.001)),
-                               nwl)] # mode 1
-            landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+            nbins = 36
+            radiusBin = np.logspace(np.log10(0.005), np.log10(15), nbins)
+            
+            # # Multiple mode in coarse mode will crash            
+            σ = [0.45, 0.70] # mode 1, 2,...
+            rv = [0.1, 0.6]*np.exp(3*np.power(σ,2))
+            dvdr = logNormal(rv[0], σ[0], radiusBin)
+            dvdr2 = logNormal(rv[1], σ[1], radiusBin)
+            dvdlnr1 = dvdr[0]*radiusBin
+            dvdlnr2 = dvdr2[0]*radiusBin
+            vals['triaPSD'] = [np.around(dvdlnr1*[0.18], decimals=6),
+                               np.around(dvdlnr2*[0.20], decimals=6)]
+            vals['triaPSD'] = np.vstack(vals['triaPSD'])
+            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+            # removed to avoid the descrepency in printing the aero vol conc in the output
+            #vals['vol'] = np.array([[0.0477583], [0.7941207]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
+            vals['vrtHght'] = [[2010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
+            vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+            vals['n'] = np.repeat(1.415, nwl) # mode 1
+            vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
+            vals['k'] = np.repeat(0.002, nwl) # mode 1
+            vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
+            landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
         except Exception as e:
             print('File loading error: check if the PSD file path is correct'\
                   ' or not\n %s' %e)
@@ -117,11 +113,11 @@ def conCaseDefinitions(caseStr, nowPix):
         # read PSD bins
         try:
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_dVDlnr36.pkl", 'rb')
+                        "Campex_dVDlnr72_Clean.pkl", 'rb')
             dVdlnr = pickle.load(file)
             file.close()
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_r36.pkl", 'rb')
+                        "Campex_r72.pkl", 'rb')
             radiusBin = pickle.load(file)
             file.close()
             
@@ -168,39 +164,45 @@ def conCaseDefinitions(caseStr, nowPix):
             print('Using the PSD from the flight# %d and layer#'\
                   ' %d' %(flight_num, nlayer))
             
-            # update the PSD based on flight an d layer information
+            # update the PSD based on flight and layer information
             # This needs modification to use multiple layers
             if not nlayer==0:
-                vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,nlayer-1,:], decimals=3)]
+                vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,nlayer-1,:], decimals=6)]
+                vals['triaPSD'] = np.vstack(vals['triaPSD'])
         else:
             # using the first flight PSD
             print('Using the PSD from the first flight and first layer')
-            vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=3)]
-        # vals['triaPSD'] = np.vstack([np.around(dVdlnr[0,0,:], decimals=3),
-        #                              np.around(dVdlnr[0,1,:], decimals=3)]) # needs edit
+            vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=6)]
+            vals['triaPSD'] = np.vstack(vals['triaPSD'])
+
         # parameters above this line has to be modified [AP]
         if multiMode:
             
             # Defining PSD of four layers for a particular flight
-            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:], decimals=3),
-                               np.around(dVdlnr[flight_num-1,1,:], decimals=3),
-                               np.around(dVdlnr[flight_num-1,2,:], decimals=3),
-                               np.around(dVdlnr[flight_num-1,3,:], decimals=3)]
-            sphFrac = 0.999 + rnd.uniform(-0.99, 0)
+            vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.1], decimals=6),
+                               np.around(dVdlnr[flight_num-1,1,:]*[0.1], decimals=6),
+                               np.around(dVdlnr[flight_num-1,2,:]*[0.1], decimals=6),
+                               np.around(dVdlnr[flight_num-1,3,:]*[0.1], decimals=6)]
+            vals['triaPSD'] = np.array(vals['triaPSD'])
+            sphFrac = 0.999 - round(rnd.uniform(0, 1))*0.99
             vals['sph'] = [sphFrac,
                            sphFrac,
                            sphFrac,
                            sphFrac] # mode 1, 2,...
-            vals['vol'] = np.array([[0.1832], [0.1832], [0.1832], [0.1832]]) # gives AOD=4*[0.2165, 0.033499]=1.0
-            vals['vrtHght'] = [[1000], [2000], [3000], [4000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+            vals['vrtHght'] = [[500], [1000], [2000], [3000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [[500], [500], [500], [500]] # mode 1, 2,... # Gaussian sigma in meters
-            nAero = np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)), nwl)
-            kAero = np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),nwl)
+            nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)),nwl)
+            nAero = slope4RRI(nAero_, wvls)
+            λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+            k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
+            lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
+            kAero = loguniform(0.001,0.02)*lamb_k
+            
             vals['n'] = [list(nAero),
                          list(nAero),
                          list(nAero),
                          list(nAero)] # mode 1
-            # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
+            
             vals['k'] = [list(kAero),
                          list(kAero),
                          list(kAero),
@@ -209,30 +211,153 @@ def conCaseDefinitions(caseStr, nowPix):
                 # This is hard coded not great for generalization
                 # GRASP needs to be modified to make use of triangle and lognormal bins
                 # together
-                σ = [0.70] # mode 1, 2,...
-                rv = [0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+                σ = [0.70 +rnd.uniform(-0.05, 0.05)] # mode 1, 2,...
+                rv = [0.6 +rnd.uniform(-0.035, 0.035)]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+                #σ = [0.70]
+                #rv = [0.6]*np.exp(3*np.power(σ,2))
+                nbins = np.size(radiusBin)
+                radiusBin_ = np.logspace(np.log10(0.005), np.log10(15), nbins)
+                dvdr = logNormal(rv[0], σ[0], radiusBin_)
+                dvdlnr = dvdr[0]*radiusBin_
+                if 'nocoarse' in caseStr.lower(): multFac = 0.0001
+                else: multFac=0.77
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
-                                            [dvdlnrCustom(radiusBin, rv[0], σ[0])]])
-                vals['sph'] = vals['sph'] + [sphFrac]
-                vals['vol'] = np.array([[0.14652], [0.14652], [0.14652],
-                                        [0.14652], [0.14652]])
-                vals['vrtHght'] = vals['vrtHght'] + [[3000]]
+                                            [dvdlnr*multFac]])
+                vals['sph'] = vals['sph'] + [0.999 - round(rnd.uniform(0, 1))*0.99]
+                # removed to avoid the descrepency in printing the aero vol conc in the output
+                vals['vrtHght'] = vals['vrtHght'] + [[500]]
                 vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[500]]
-                nAero = np.repeat(1.41 + (rnd.uniform(-0.05, 0.05)), nwl)
-                kAero = np.repeat(0.0005 + (rnd.uniform(-0.0004,0.0004)),nwl)
+                nAero_ = np.repeat(1.40 + (rnd.uniform(-0.05, 0.05)), nwl)
+                nAero = slope4RRI(nAero_, wvls)
+                # k
+                kAero = loguniform(0.0001,0.0005)*lamb_k
                 vals['n'] = vals['n'] + [list(nAero)]
                 vals['k'] = vals['k'] + [list(kAero)]
         else:
-            vals['sph'] = [0.999 + rnd.uniform(-0.99, 0)] # mode 1, 2,...
-            vals['vol'] = np.array([0.7326]) # gives AOD=4*[0.2165, 0.033499]=1.0
+            vals['sph'] = [0.999 - round(rnd.uniform(0, 1))*0.99] # mode 1, 2,...
+            vals['vol'] = np.array([0.0017]) # gives AOD=4*[0.2165, 0.033499]=1.0
             vals['vrtHght'] =[flight_vrtHght] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
-            vals['n'] = [np.repeat(1.5 + (rnd.uniform(-0.14, 0.15)),
-                                   nwl)] # mode 1
-            # vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-            vals['k'] = [np.repeat(0.005 + (rnd.uniform(-0.004,0.004)),
-                               nwl)] # mode 1
-        landPrct = 0 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+            nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)),nwl)
+            nAero = slope4RRI(nAero_, wvls)
+            vals['n'] = np.vstack([vals['n'], nAero]) # mode 2
+            # k
+            λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+            k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
+            lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
+            kAero = loguniform(0.0001,0.0005)*lamb_k
+            vals['k'] = [kAero] # mode 1
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    elif 'fit_campex' in caseStr.lower():
+        
+        # find the params based on the flight and layer #
+        # A function to read the PSD from Jeff's file or ASCII and pass it to
+        # this definition
+        # read PSD bins
+        try:
+            file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
+                        "Campex_dVDlnr72_fitParams_Clean.pkl", 'rb')
+            dVdlnrParams = pickle.load(file)
+            file.close()
+            file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
+                        "Campex_r72.pkl", 'rb')
+            radiusBin = pickle.load(file)
+            file.close()
+        except Exception as e:
+            print('File loading error: check if the PSD file path is correct'\
+                  ' or not\n %s' %e)
+        # flight
+        if 'flight#' in caseStr.lower():
+            try:
+                matchRe = re.compile(r'flight#\d{2}')
+                flight_numtemp = matchRe.search(caseStr.lower())
+                flight_num = int(flight_numtemp.group(0)[7:])
+                
+            except Exception as e:
+                print('Could not find a matching string pattern: %s' %e)
+                flight_num = 1
+        
+            nlayer = 1
+            flight_vrtHght = 1000
+            flight_vrtHghtStd = 500
+            multiMode = False
+            # layer
+            if 'layer#' in caseStr.lower():
+                try:
+                    matchRe = re.compile(r'layer#\d{2}')
+                    layer_numtemp = matchRe.search(caseStr.lower())
+                    nlayer = int(layer_numtemp.group(0)[6:]) 
+                    # to use all layers
+                    if not nlayer:
+                        multiMode = True
+                    # to use only one layer
+                    else:
+                        flight_vrtHght = 1000*nlayer
+                        flight_vrtHghtStd = 500   
+                except Exception as e:
+                    print('Could not find a matching string pattern: %s' %e)
+                    flight_vrtHght = 500
+                    flight_vrtHghtStd = 500
+
+            print('Using the PSD from the flight# %d and layer#'\
+                  ' %d' %(flight_num, nlayer))
+        else:
+            # using the first flight PSD
+            print('Using the PSD from the first flight and first layer')
+            vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=6)]
+            vals['triaPSD'] = np.vstack(vals['triaPSD'])
+        flight_num = flight_num-1 
+        rndmSigma = 0.70 +rnd.uniform(-0.05, 0.05) # mode 1, 2,...
+        rndmMuFit = (0.6 +rnd.uniform(-0.035, 0.035))*np.exp(3*np.power(rndmSigma,2))
+        sigmaFit = [dVdlnrParams['sigma'][flight_num, 0],
+                    dVdlnrParams['sigma'][flight_num, 1],
+                    dVdlnrParams['sigma'][flight_num, 2],
+                    dVdlnrParams['sigma'][flight_num, 3],
+                    rndmSigma]               
+        muFit = [dVdlnrParams['mu'][flight_num, 0],
+                dVdlnrParams['mu'][flight_num, 1],
+                dVdlnrParams['mu'][flight_num, 2],
+                dVdlnrParams['mu'][flight_num, 3],
+                rndmMuFit] # The values based on the rndm variation limit in the previous model 
+        # Not using this at the moment (but if we randomize the fine mode fraction 
+        # we wil have to play with/adjust this)
+        V0Fit = [dVdlnrParams['V0'][flight_num, 0],
+                dVdlnrParams['V0'][flight_num, 1],
+                dVdlnrParams['V0'][flight_num, 2],
+                dVdlnrParams['V0'][flight_num, 3],
+                1]
+        
+        σ = sigmaFit # mode 1, 2,...
+        rv = muFit
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        sphFrac = 0.999 - round(rnd.uniform(0, 1))*0.99
+        vals['sph'] = [sphFrac, sphFrac, sphFrac, sphFrac, sphFrac] # mode 1, 2,...
+        vals['vol'] = np.array([[0.35], [0.35],[0.35], [0.35], [4.1]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
+        vals['vrtHght'] = [[500], [1010], [2010], [3010],  [500]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [500, 500, 500, 500, 500] # mode 1, 2,... # Gaussian sigma in meters
+        # n
+        nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)), nwl)
+        nAero = slope4RRI(nAero_, wvls)
+        # k
+        λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+        k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
+        lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
+        kAero = loguniform(0.001,0.02)*lamb_k
+        vals['n'] = np.vstack([nAero,
+                               nAero,
+                               nAero,
+                               nAero]) # mode 1,2,...
+    
+        nAero_ = np.repeat(1.40 + rnd.uniform(-0.05, 0.05), nwl)
+        nAero = slope4RRI(nAero_, wvls)
+        vals['n'] = np.vstack([vals['n'], nAero]) # mode 2
+        vals['k'] = np.vstack([kAero,
+                               kAero,
+                               kAero,
+                               kAero])# mode 1,2,...
+        kAero = loguniform(0.0001,0.0005)*lamb_k
+        vals['k'] = np.vstack([vals['k'], kAero]) # mode 5
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
         rv = [0.2, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -292,6 +417,53 @@ def conCaseDefinitions(caseStr, nowPix):
         mode2Intrp = np.interp(wvls, mode2λ, mode2k)
         vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    # case01 is blank in V22 of the canoncial case spreadsheet...
+    elif 'd_tamu' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
+        if defineRandom is not None: random_r = defineRandom # array of random numbers at least 4 element for this case
+        
+        rv = [0.8+random_r[0]*3.2,0.8+random_r[1]*3.2] #coarse mode
+        vals['vol'] = np.array([[1.5+random_r[2]*1.5]])/3 
+        σ = [0.5, 0.75] # mode 1, 2,...
+        rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
+        if 'nonsph' in caseStr.lower():
+            vals['sph'] = [[0.00001], [0.00001]] # mode fine sphere, coarse spheroid
+            vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # spheroids require scaling to maintain AOD
+        else:
+            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.46, nwl) # mode 1
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
+        vals['k'] = np.repeat(1e-8, nwl) # mode 1
+        mode2λ = [0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
+        mode2k = [0.0025, 0.0025, 0.0024, 0.0021, 0.0019, 0.0011, 0.0010, 0.0010]
+        mode2Intrp = np.interp(wvls, mode2λ, mode2k)
+        vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    # case01 is blank in V22 of the canoncial case spreadsheet...
+    
+    elif 'var_tamu' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
+        if defineRandom is not None: random_r  = defineRandom # array of random numbers
+        
+        σ = 0.35+random_r[0]*0.3
+        if 'fine' in caseStr.lower():
+            rv = 0.145+random_r[1]*0.105
+            vals['vol'] = np.array([[0.5+random_r[2]*0.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
+        elif 'coarse' in caseStr.lower():
+            rv = 0.8+random_r[4]*3.2
+            vals['vol'] = np.array([[1.5+random_r[3]*1.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
+        else:
+            assert False, 'variable aerosol case must be appended with either fine or coarse'
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999]] # mode 1, 2,...
+        vals['vrtHght'] = [[3010]] if 'lofted' in caseStr.lower() else  [[1010]]  # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500]] # Gaussian sigma in meters
+        vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.36+np.array([random_r[5],random_r[6]])*0.15)[None,:] # mode 1 # linear w/ λ
+        vals['k'] =  np.repeat(0.0001+np.array(random_r[7])*0.015, len(wvls))# mode 1 # linear w/ λ
+        # vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+np.array([random_r[7],random_r[8]])*0.015)[None,:] # mode 1 # linear w/ λ
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0    
     # case01 is blank in V22 of the canoncial case spreadsheet...
     elif 'case02' in caseStr.lower(): # VERSION 22 (except vol & 2.1μm RI)
         σ = [0.4, 0.4] # mode 1, 2,...
@@ -355,7 +527,9 @@ def conCaseDefinitions(caseStr, nowPix):
         if 'chl' in caseStr.lower():
             #R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.00000002, 0.00000002, 0.00000002] # SIT-A canonical values, TODO: need to double check these units
             R=[0.02, 0.02, 0.02, 0.02,  0.01, 0.0005, 0.00000002, 0.00000002] # Figure 8, Chowdhary et al, APPLIED OPTICS Vol. 45, No. 22 (2006), also need to check units...
-        else:
+        elif 'open_ocean' in caseStr.lower():
+            R=[0.012, 0.014, 0.010, 0.00249109,	0.00169515, 0.00000002, 0.00000002, 0.00000002]
+        else: 
             R=[0.00000002, 0.00000002, 0.00000002, 0.00000002,	0.00000002, 0.00000002, 0.00000002, 0.00000002]
         lambR = np.interp(wvls, λ, R)
         FresFrac = 0.999999*np.ones(nwl)
@@ -402,17 +576,19 @@ def conCaseDefinitions(caseStr, nowPix):
         del vals['vrtHghtStd']
     return vals, landPrct
 
-def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=None, simBldProfs=None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
+def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=None, simBldProfs=None, defineRandom = None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
     """ nowPix needed to: 1) set land percentage of nowPix and 2) get number of wavelengths """
     aeroKeys = ['traiPSD','lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k', 'landPrct']
     vals = dict()
     for caseStr,loading in splitMultipleCases(caseStrs, caseLoadFctr): # loop over all cases and add them together
-        valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix)
+        valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix, defineRandom)
         for key in valsTmp.keys():
             if key=='vol':
                 valsTmp[key] = loading*valsTmp[key]
             elif key=='vrtHght' and caseHeightKM:
                 valsTmp[key][:] = caseHeightKM*1000
+            if key=='triaPSD':
+                valsTmp[key] = loading*valsTmp[key]
             if key in aeroKeys and key in vals:
                     vals[key] = np.vstack([vals[key], valsTmp[key]])
             else: # implies we take the surface parameters from the last case
@@ -564,14 +740,31 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.1)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.7*caseLoadFct)
-        elif 'campex' in case.lower():
-            cases.append(case.replace('campex','aerosol_campex')) # smoke base τ550=1.0
-            loadings.append(0.25*caseLoadFct)
+        elif 'campex_tria' in case.lower():
+            cases.append(case.replace('campex','aerosol_campex_open_ocean')) # smoke base τ550=1.0
+            loadings.append(0.5*caseLoadFct)
             # cases.append(case.replace('campex','coarse_mode_campex')) # smoke base τ550=1.0
             # loadings.append(0.25*caseLoadFct)
-        elif 'camp_test' in case.lower():
-            cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
-            loadings.append(0.25*caseLoadFct)
+        elif 'campex_bi' in case.lower():
+            # cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
+            # loadings.append(caseLoadFct)
+            cases.append(case.replace('campex','fit_campex_open_ocean'))
+            loadings.append(0.0937*caseLoadFct)
+        # added greema
+           #Added by Greema
+        elif 'tamu_variable_sphere' in case.lower():
+        
+            cases.append(case.replace('tamu_variable_sphere','var_tamufine'))
+            loadings.append(0.1*caseLoadFct)
+            cases.append(case.replace('tamu_variable_sphere','var_tamucoarse'))
+            loadings.append(0.4*caseLoadFct)
+
+        elif 'tamu_variable' in case.lower():
+        
+            cases.append(case.replace('tamu_variable','var_tamufine_nonsph'))
+            loadings.append(0.1*caseLoadFct)
+            cases.append(case.replace('tamu_variable','var_tamucoarse_nonsph'))
+            loadings.append(0.4*caseLoadFct)
         else:
             cases.append(case)
             loadings.append(caseLoadFct)

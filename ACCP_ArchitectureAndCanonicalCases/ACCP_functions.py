@@ -128,7 +128,7 @@ def selectGeometryEntryModis(geomFile, ind):
         geomVals = np.loadtxt(fid)
     return geomVals[ind,0], geomVals[ind,2], geomVals[ind,1] # θs, φ, θv
 
-def selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA, \
+def selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA,
                         orbit=None, pcaVarPtrn='n_row_best_107sets_%s', verbose=False):
     """
     Pull scalars θs, φ (NADIR ONLY) from Pete's files at index specified by Feng's PCA
