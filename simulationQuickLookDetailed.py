@@ -1,18 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-This python script is a modified verison of the simulationQuickLook.py, with 
-the abiltity to plot 2D density and histograms of errors for retrieved parameters.
-Specifically designed to accomodate the simulation retreieval study based on
-CAMP2Ex measurments
-
-Created on Wed Jul 13 14:18:11 2022
-
-@author: aputhukkudy
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # =============================================================================
 # Import the librarires
@@ -36,9 +23,8 @@ except:
 from matplotlib.colors import LinearSegmentedColormap
 
 # =============================================================================
-# Initiation
+# Initiation and User Provided Settings
 # =============================================================================
-
 
 # coarseModeFwd = 4 # ANIN
 coarseModeFwd = 4
@@ -57,7 +43,6 @@ inDirPath = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeo
 inDirPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/'
 
 # pklPathPatern = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/DRS_V01_Lidar050_case08m1_tFct1.00_orbSS_multiAngles_n204_nAngALL.pkl'
-
 
 # Anin's CAMP2Ex Settings
 # waveInd = 2 # Wavelength index for plotting
@@ -93,6 +78,49 @@ clrText = '#FF6347' #[0,0.7,0.7]
 nBins = 200 # no. of bins for histogram
 nBins2 = 50 # no. of bins for 2D density plot
 
+"""
+# TODO:
+<DONE> 1 - Make figure number of subplots automatic
+<DONE> 2 - Link axis control to vars2plot
+<DONE> 3  - Can function definitions below be cleaned up?
+<DONE> 4  - Can some common code under each vars elif statement be refactored into common function?
+5  - Are all the inputs directly above here needed?
+6  - Test against open version in other terminal tab
+<DONE> 7  - How does Anin have runs without land_prct in either fwd or bck?
+8  - Printing of N pixels passing convergence filter is confusing; should just happen once
+9  - Why is this so slow?
+<DONE> 10 - The definition of histogram bins nBins_ are hardcoded, and sometimes are outside the range of data...
+11 – There should be an option in genPlots for forced [max, min] (e.g., [0,100] for SPH)
+"""
+
+vars2plot = [
+    'aod',
+    'aod_f',
+    'angstrom',
+    'aaod',
+    'sph_f',
+    'fmf',
+    'reff_sub_um',
+    'sph_f',
+    'sph_c',
+    'aod_c',
+    'g',
+    'n_f',
+    'n_c',
+    'k_f',
+    'k_c',
+    'intensity',
+    'ssa',
+    'reff_abv_um',
+    'vol_c',
+    'vol_f',
+    'blandAltman',
+]
+
+nRows = int(np.sqrt(len(vars2plot)))
+nCols = int(np.ceil(len(vars2plot)/nRows))
+axesInd = [[i,j] for i in range(nRows) for j in range(nCols)]
+
 
 # =============================================================================
 # Definition to plot the 2D histogram
@@ -109,12 +137,14 @@ white_viridis = LinearSegmentedColormap.from_list('white_viridis', [
     (1, '#fde624'),
 ], N=512)
 
-def using_mpl_scatter_density(x, y, ax, fig=None):
-    density = ax.scatter_density(x, y,
-                                 cmap=white_viridis, dpi=60)
-    # ax.colorbar(density, label='Number of points per pixel')
-    if fig:
-        fig.colorbar(density, label='Frequency')
+def fmfCalc(r,dvdlnr):
+    assert np.all(r[0]==r[-1]), 'First and last mode defined with different radii!' # This is not perfect, but likely to catch non-standardized PSDs
+    if r.ndim==2: r=r[0] # We hope all modes defined over same radii (partial check above)
+    dvdlnr = dvdlnr.sum(axis=0)  # Loading checks are in place in runGRASP.py to guarantee 2D arrays of absolute dvdlnr
+    cutRadius = 0.5
+    fInd = r<=cutRadius
+    logr = np.log(r)
+    return np.trapz(dvdlnr[fInd],logr[fInd])/np.trapz(dvdlnr,logr)
     
 def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20,
                     mplscatter=True, **kwargs):
@@ -127,12 +157,6 @@ def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20,
         data, x_e, y_e = np.histogram2d(x, y, bins=bins, density=True)
         z = interpolate.interpn((0.5 * (x_e[1:] + x_e[:-1]), 0.5 * (y_e[1:] + y_e[:-1])),
                     data, np.vstack([x, y]).T, method="splinef2d", bounds_error=False)
-        # Calculate the point density
-        # xy = np.vstack([x_e, y_e])
-        # z = gaussian_kde(xy)(xy)
-
-        # To be sure to plot all data
-        # z[np.where(np.isnan(z))] = 0.0
 
         # Sort the points by density, so that the densest points are plotted last
         if sort:
@@ -147,35 +171,30 @@ def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20,
             cbar.ax.set_ylabel('Density')
     else:
         # use mpl_scatter_density library    
-        if fig:
-            using_mpl_scatter_density( x, y, ax, fig)
-        else:
-            using_mpl_scatter_density( x, y, ax)
+        ax.scatter_density(x, y, cmap=white_viridis, dpi=60)
+        density = using_mpl_scatter_density( x, y, ax, figFnd)
+        if fig: fig.colorbar(density, label='Density')
     return ax
 
-def plotProp(axs, titleStr ='', scale='linear', ylabel=None,
-             xlabel=None, stat=True, MinMax=True, moreDigits=False):
-    
+
+def plotProp(true, rtrv, axs, titleStr ='', scale='linear', xlabel=False, ylabel=False, MinMax=None, stat=True, moreDigits=False):
+    """
+    Formatting and statistics for scatter plots
+    """
     # min max
-    if MinMax:
-        axs.plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121) # line plot
-        axs.set_xlim(minAOD,maxAOD)
-        axs.set_ylim(minAOD,maxAOD)
-    
+    if MinMax is not None:
+        axs.plot(MinMax, MinMax, 'k', linewidth=LW121) # line plot
+        axs.set_xlim(MinMax[0],MinMax[1])
+        axs.set_ylim(MinMax[0],MinMax[1])
     # Title of the plot
     axs.set_title(titleStr)
-    
     # x and y label
-    if ylabel:
-        axs.set_ylabel(ylabel)
-    if xlabel:
-        axs.set_xlabel(xlabel)
+    if xlabel: axs.set_xlabel('Truth')
+    if ylabel: axs.set_ylabel('Retrieved')
     # scale
-    if scale == 'log':
-        axs.set_xscale('log')
-        axs.set_yscale('log')
-    elif scale == 'linear':
-        axs.ticklabel_format(axis='both', style='plain', useOffset=False)
+    axs.set_xscale(scale)
+    axs.set_yscale(scale)
+    if scale=='linear': axs.ticklabel_format(axis='both', style='plain', useOffset=False)
         
     # Plot the statistics
     if stat:
@@ -191,67 +210,30 @@ def plotProp(axs, titleStr ='', scale='linear', ylabel=None,
         textstr = frmt % (Rcoef, RMSE, bias)
         tHnd = axs.annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
                             textcoords='offset points', color=clrText, fontsize=FS)
-    return tHnd
 
-def modifiedHist(x, axs, fig=None, titleStr ='', xscale=None, ylabel=None,
-             xlabel=None, stat=True, MinMax=False, nBins=20, err=0.05,
-             yscale=None, fit='norm'):
 
+def modifiedHist(x, axs, titleStr='', xlabel=False, ylabel=False, nBins=20, stat=True):
     # Creating histogram
-    N, bins, patches = axs.hist(x, bins = nBins, density=False)
+    N, bins, patches = axs.hist(x, bins=nBins, density=False)
      
-    # Setting color
+    # Setting colors
+    assert not np.isclose(N.max(), 0), 'N.max() was zero... No values exist within the provided bins.' 
     fracs = ((N**(1 / 2)) / N.max())
     norm_ = mpl.colors.Normalize(fracs.min(), fracs.max())
      
     for thisfrac, thispatch in zip(fracs, patches):
         color = plt.cm.viridis(norm_(thisfrac))
         thispatch.set_facecolor(color)
-    # min max
-    if MinMax:
-        axs.set_xlim(-err, err)
-    
     # Title of the plot
-    axs.set_title(titleStr)
-    
+    axs.set_title(titleStr)    
     # x and y label
-    if ylabel:
-        axs.set_ylabel(ylabel)
-    if xlabel:
-        axs.set_xlabel(xlabel)
-    # scale
-    if yscale == 'log':
-        axs.set_yscale('log')
-    if xscale == 'log':
-        axs.set_xscale('log')
-        
-    # Fit a normal distribution to the data:
+    if xlabel: axs.set_xlabel('Retrieved-Simulated')
+    if ylabel: axs.set_ylabel('Frequency')
+
     # mean and standard deviation
-    if stat:
-        
-        # Plot the PDF.
-        # x_ = [abs(np.percentile(x,1)), 
-        #       abs(np.percentile(x,99))]
-        # # x_ = [abs(np.min(x)), 
-        # #       abs(np.max(x))]       
-        # xmax = np.max(x_)
-        # xmin = -xmax
-        # x2 = np.linspace(xmin, xmax, 100)
-        # if fit=='norm':
-        #     mu, std = norm.fit(x)
-        #     p = norm.pdf(x2, mu, std)
-            
-        # elif fit=='ncx2':
-        #     mu, std = ncx2.fit(x)
-        #     p = ncx2.pdf(x2, mu, std)
-        # elif fit=='moyal':
-        #     mu, std = moyal.fit(x)
-        #     p = moyal.pdf(x2, mu, std)
-        
-        # axs.plot(x2, p, 'C03', linewidth=1.5)
-        
-        RMSE = np.sqrt(np.median((true - rtrv)**2))
-        bias = np.mean((rtrv-true))
+    if stat:        
+        RMSE = np.sqrt(np.median(diff**2))
+        bias = np.mean(diff)
         frmt = 'RMS=%5.3f\nbias=%5.3f'
         textstr = frmt % (RMSE, bias)
         tHnd = axs.annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top',
@@ -260,19 +242,32 @@ def modifiedHist(x, axs, fig=None, titleStr ='', xscale=None, ylabel=None,
                             fontsize=FS)
     
     
+def genPlots(true, rtrv, axScat, axHist, varName, xlabel, ylabel, scale='linear', moreDig=False, stats=False):
+    minVal = np.percentile(true, 1)
+    maxVal = np.percentile(true, 99)
+    logMin = min(0.0001, np.log10(minVal))
+    logBins = np.logspace(start=logMin, stop=np.log10(maxVal), num=nBins2)
+    density_scatter(true, rtrv, ax=axScat, mplscatter=mpl_scatter)
+    plotProp(true, rtrv, axScat, varName, scale, xlabel, ylabel, [minVal,maxVal], moreDigits=moreDig, stat=stats)
+    
+    if not stats: return # If stats do not make sense, a histogram probably will not either (e.g., for Bland Altman)
+    # histogram
+    diff = rtrv-true
+    maxDiff = np.percentile(np.abs(diff), 99)
+    nBins_ = np.linspace(-maxDiff,maxDiff, nBins)
+    modifiedHist(diff, axHist, varName, xlabel, ylabel, nBins_)
+
+
 # =============================================================================
 # Loading and filtering data and prepping plots
 # =============================================================================
-
-# define the fig and axes handles
 # Figure for 2D density plots
 # fig, ax = plt.subplots(3,5, figsize=(15,9), subplot_kw={'projection': 'scatter_density'})
-fig, ax = plt.subplots(3,5, figsize=(15,9))
+fig, ax = plt.subplots(nRows, nCols, figsize=(15,9))
 plt.locator_params(nbins=3)
 # Figure for histograms
-fig_hist, ax_hist = plt.subplots(3,5, figsize=(15,9))
+fig_hist, ax_hist = plt.subplots(nRows, nCols, figsize=(15,9))
 plt.locator_params(nbins=3)
-lightSave = True # Omit PM elements and extinction profiles from MERGED files to save space
 
 # Define the path of the new merged pkl file
 loadPATH = os.path.join(inDirPath,fnPtrn)
@@ -282,396 +277,139 @@ simBase = simulation(picklePath=loadPATH)
 print('Showing results for %5.3f μm' % simBase.rsltFwd[0]['lambda'][waveInd])
 pprint(simBase.analyzeSim(waveInd)[0])
 
-# lp = np.array([rf['land_prct'] for rf in simBase.rsltFwd])
-# TODO: this has to be generalized so that it can be ran without crashing the code
-# at the moment, this hard coded to be ocean pixels
-lp = np.array([0 for rf in simBase.rsltFwd])
-keepInd = lp>99 if surf2plot=='land' else lp<1 if surf2plot=='ocean' else lp>-1
+if 'land_prct' in simBase.rsltBck[0]:
+    lp = np.array([rb['land_prct'] for rb in simBase.rsltBck])
+    keepInd = lp>99 if surf2plot=='land' else lp<1 if surf2plot=='ocean' else lp>-1
+else:
+    print('WARNING: land_prct key not found, using all pixels!')
+    keepInd = np.ones(len(simBase.rsltBck), dtype='int32')
 
 # apply convergence filter
 simBase.conerganceFilter(forceχ2Calc=True) # ours looks more normal, but GRASP's produces slightly lower RMSE
 costThresh = np.percentile([rb['costVal'] for rb in simBase.rsltBck[keepInd]], 95)
 keepInd = np.logical_and(keepInd, [rb['costVal']<costThresh for rb in simBase.rsltBck])
 keepIndAll = keepInd
-
-# variable to color point by in all subplots
-# clrVar = np.sqrt([rb['costVal'] for rb in simBase.rsltBck[keepInd]]) # this is slow!
-clrVar = np.asarray([rb['costVal'] for rb in simBase.rsltBck[keepInd]])
-clrVarAll = clrVar
 print('%d/%d fit surface type %s and convergence filter' % (keepInd.sum(), len(simBase.rsltBck), surf2plot))
-
-
-
-# =============================================================================
-# Plotting
-# =============================================================================
-
-# =============================================================================
-# AOD
-# =============================================================================
-true = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepInd]
-rtrv = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltBck])[keepInd]
-
-minAOD = np.min(true)*0.95
-maxAOD = np.max(true)*1.05
-logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
-density_scatter(true, rtrv, ax=ax[0,0], bins=logBins, fig=fig, mplscatter=mpl_scatter)
-plotProp(ax[0,0], titleStr='AOD', scale='log', ylabel='Retrieved')
-
-# histogram
-nBins_ = np.linspace(-0.05,0.05, nBins)
-modifiedHist((rtrv-true), axs=ax_hist[0,0], titleStr='AOD', ylabel= 'Frequency',
-             fig=fig_hist, nBins=nBins_)
-
-# =============================================================================
-# Coarse mode AOD
-# =============================================================================
-true = np.asarray([rf['aodMode'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,crsFwdInd]
-rtrv = np.asarray([rf['aodMode'][:,waveInd] for rf in simBase.rsltBck])[keepInd][:,crsBckInd]
-
-minAOD = np.min(true)*0.95
-maxAOD = np.max(true)*1.05
-logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
-density_scatter(true, rtrv, ax=ax[1,0], bins=logBins, mplscatter=mpl_scatter)
-plotProp(ax[1,0], titleStr='Coarse mode AOD', scale='log', ylabel='Retrieved')
-
-# histogram
-nBins_ = np.linspace(-0.025,0.025, nBins)
-modifiedHist((rtrv-true), axs=ax_hist[2,4], titleStr='Coarse mode AOD',
-             fig=fig_hist, nBins=nBins_, xlabel='Retrieved-Simulated')
-# =============================================================================
-# # AAOD – [0,2]
-# =============================================================================
-true = np.asarray([(1-rf['ssa'][waveInd])*rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepIndAll]
-rtrv = np.asarray([(1-rb['ssa'][waveInd])*rb['aod'][waveInd] for rb in simBase.rsltBck])[keepIndAll]
-minAOD = np.min(true)*0.9
-maxAOD = np.max(true)*1.1
-logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
-density_scatter(true, rtrv, ax=ax[0,2], bins=logBins, mplscatter=mpl_scatter)
-plotProp(ax[0,2], titleStr='AAOD', scale='log')
-
-# histogram
-nBins_ = np.linspace(-0.05,0.05, nBins)
-modifiedHist((rtrv-true), axs=ax_hist[0,2], titleStr='AAOD',
-             fig=fig_hist, nBins=nBins_)
 
 # apply AOD min after we plot AOD
 keepInd = np.logical_and(keepInd, [rf['aod'][waveInd]>=aodMin for rf in simBase.rsltFwd])
 print('%d/%d fit surface type %s and aod≥%4.2f' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, aodMin))
 keepInd = np.logical_and(keepInd, [rf['aod'][waveInd]<=aodMax for rf in simBase.rsltFwd])
 print('%d/%d fit surface type %s and aod≤%4.2f' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, aodMax))
-# clrVar = np.sqrt([rb['costVal'] for rb in simBase.rsltBck[keepInd]]) # this is slow!
-clrVar = np.asarray([rb['costVal'] for rb in simBase.rsltBck[keepInd]]) 
-
 
 # apply Reff min
-# simBase._addReffMode(0.008, True) # reframe so pretty much all of the PSD is in the second "coarse" mode
 simBase._addReffMode(1.0, True) # reframe with cut at 1 micron diameter
 #keepInd = np.logical_and(keepInd, [rf['rEffMode']>=2.0 for rf in simBase.rsltBck])
 #print('%d/%d fit surface type %s and aod≥%4.2f AND retrieved Reff>2.0μm' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, aodMin))
-#clrVar = np.sqrt([rb['rEff']/rf['rEff']-1 for rb,rf in zip(simBase.rsltBck[keepInd], simBase.rsltFwd[keepInd])])
-
-# =============================================================================
-# # ANGSTROM
-# =============================================================================
-aod1 = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepInd]
-aod2 = np.asarray([rf['aod'][waveInd2] for rf in simBase.rsltFwd])[keepInd]
-logLamdRatio = np.log(simBase.rsltFwd[0]['lambda'][waveInd]/simBase.rsltFwd[0]['lambda'][waveInd2])
-true = -np.log(aod1/aod2)/logLamdRatio
-
-aod1 = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltBck])[keepInd]
-aod2 = np.asarray([rf['aod'][waveInd2] for rf in simBase.rsltBck])[keepInd]
-rtrv = -np.log(aod1/aod2)/logLamdRatio
-
-minAOD = np.percentile(rtrv,1) # BUG: Why is Angstrom >50 in at least one OSSE cases?
-maxAOD = np.percentile(rtrv,99)
-density_scatter(true, rtrv, ax=ax[0,1], mplscatter=mpl_scatter)
-plotProp(ax[0,1], titleStr='Angstrom Exponent', MinMax=True)
-
-# histogram
-nBins_ = np.linspace(-0.5,0.5, nBins)
-modifiedHist((rtrv-true), axs=ax_hist[0,1], titleStr='Angstrom Exponent',
-             fig=fig_hist, nBins=nBins_)
-
-# =============================================================================
-# # k (fine) – [1,3]
-# =============================================================================
-
-# TODO: We shouldn't need this hack to handle single mode cases... they should be treated by runGRASP as Npix x 1 size arrays (ndim==2)
-# aodWght = lambda x,τ : np.sum(x*τ)/np.sum(τ)
-# true = np.asarray([rf['k'][waveInd] for rf in simBase.rsltFwd])[keepInd]
-# rtrv = np.asarray([aodWght(rf['k'][:,waveInd], rf['aodMode'][:,waveInd]) for rf in simBase.rsltBck])[keepInd]
-# Modifying the true value based on the NDIM
-# if 5 modes present, for the case of ACCDAM-CAMP2EX four modes have one refractive index
-# and the coarse mode 'sea salt' have different value. So based on the dimension of the var
-# We can distinguish each run type and generalize the code
-
-true = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,fineFwdInd]
-rtrv = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltBck])[keepInd][:,fineBckInd]
-minAOD = 0.0005
-maxAOD = np.max(true)*1.15
-logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
-density_scatter(true, rtrv, ax=ax[1,3], bins=logBins, mplscatter=mpl_scatter)
-plotProp(ax[1,3], titleStr=r'k$_{fine}$', scale='log')
-ax[1,3].set_xticks([0.001, 0.01])
-ax[1,3].set_yticks([0.001, 0.01])
-# histogram
-modifiedHist((rtrv-true), axs=ax_hist[1,3], titleStr=r'k$_{fine}$',
-             fig=fig_hist, nBins=nBins)
 
 
 # =============================================================================
-# # k (coarse) – [1,4]
+# Plotting
 # =============================================================================
 
-true = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,crsFwdInd]
-rtrv = np.asarray([rf['k'][:,waveInd] for rf in simBase.rsltBck])[keepInd][:,crsBckInd]
-minAOD = 0.0001
-maxAOD = 0.001
-logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
-density_scatter(true, rtrv, ax=ax[1,4], bins=logBins, mplscatter=mpl_scatter)
-plotProp(ax[1,4], titleStr=r'k$_{coarse}$', scale='log', moreDigits=True)
-ax[1,4].set_xticks([0.0001, 0.001])
-ax[1,4].set_yticks([0.0001, 0.001])
-# histogram
-modifiedHist((rtrv-true), axs=ax_hist[1,4], titleStr=r'k$_{coarse}$',
-             fig=fig_hist, nBins=nBins)
+for var,axInd in zip(vars2plot, axesInd[0:len(vars2plot)]):
+    axScat = ax[tuple(axInd)]
+    axHist = ax_hist[tuple(axInd)]
+    xlabel = axInd[0]==(nRows-1)
+    ylabel = axInd[1]==0
+    if var=='aod':     # AOD
+        true = np.asarray([rslt['aod'][waveInd] for rslt in simBase.rsltFwd])[keepIndAll]
+        rtrv = np.asarray([rslt['aod'][waveInd] for rslt in simBase.rsltBck])[keepIndAll]
+        genPlots(true, rtrv, axScat, axHist, 'AOD', xlabel, ylabel, scale='log')
+    elif var=='aod_f':    # Fine mode AOD
+        true = np.asarray([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltFwd])[keepIndAll][:,fineFwdInd]
+        rtrv = np.asarray([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltBck])[keepIndAll][:,fineBckInd]
+        genPlots(true, rtrv, axScat, axHist, 'Fine mode AOD', xlabel, ylabel, scale='log')        
+    elif var=='aod_c':    # Coarse mode AOD
+        true = np.asarray([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltFwd])[keepIndAll][:,crsFwdInd]
+        rtrv = np.asarray([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltBck])[keepIndAll][:,crsBckInd]
+        genPlots(true, rtrv, axScat, axHist, 'Coarse mode AOD', xlabel, ylabel, scale='log')
+    elif var=='aaod':     # # AAOD
+        true = np.asarray([(1-rslt['ssa'][waveInd])*rslt['aod'][waveInd] for rslt in simBase.rsltFwd])[keepIndAll]
+        rtrv = np.asarray([(1-rslt['ssa'][waveInd])*rslt['aod'][waveInd] for rslt in simBase.rsltBck])[keepIndAll]
+        genPlots(true, rtrv, axScat, axHist, 'Absorbing AOD', xlabel, ylabel, scale='log')
+    elif var=='angstrom':     # # ANGSTROM
+        aod1 = np.asarray([rslt['aod'][waveInd] for rslt in simBase.rsltFwd])[keepInd]
+        aod2 = np.asarray([rslt['aod'][waveInd2] for rslt in simBase.rsltFwd])[keepInd]
+        logLamdRatio = np.log(simBase.rsltFwd[0]['lambda'][waveInd]/simBase.rsltFwd[0]['lambda'][waveInd2])
+        true = -np.log(aod1/aod2)/logLamdRatio
+        aod1 = np.asarray([rslt['aod'][waveInd] for rslt in simBase.rsltBck])[keepInd]
+        aod2 = np.asarray([rslt['aod'][waveInd2] for rslt in simBase.rsltBck])[keepInd]
+        rtrv = -np.log(aod1/aod2)/logLamdRatio
+        genPlots(true, rtrv, axScat, axHist, 'Angstrom Exponent', xlabel, ylabel)
+    elif var=='k_f':     # # k (fine)
+        true = np.asarray([rslt['k'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd][:,fineFwdInd]
+        rtrv = np.asarray([rslt['k'][:,waveInd] for rslt in simBase.rsltBck])[keepInd][:,fineBckInd]
+        genPlots(true, rtrv, axScat, axHist, r'k$_{fine}$', xlabel, ylabel, scale='log', moreDigits=True)
+    elif var=='k_c':    # # k (coarse)
+        true = np.asarray([rslt['k'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd][:,crsFwdInd]
+        rtrv = np.asarray([rslt['k'][:,waveInd] for rslt in simBase.rsltBck])[keepInd][:,crsBckInd]
+        genPlots(true, rtrv, axScat, axHist, r'k$_{coarse}$', xlabel, ylabel, scale='log', moreDigits=True)
+    elif var=='fmf':    # # FMF (vol)
+        true = np.asarray([fmfCalc(rslt['r'], rslt['dVdlnr']) for rslt in simBase.rsltFwd])[keepInd]
+        rtrv = np.asarray([fmfCalc(rslt['r'], rslt['dVdlnr']) for rslt in simBase.rsltBck])[keepInd]
+        genPlots(true, rtrv, axScat, axHist, 'Fine Mode Fraction', xlabel, ylabel)
+    elif var=='g':    # # Asymmetry Parameter
+        true = np.asarray([rslt['g'][waveInd] for rslt in simBase.rsltFwd])[keepInd]
+        rtrv = np.asarray([rslt['g'][waveInd] for rslt in simBase.rsltBck])[keepInd]
+        genPlots(true, rtrv, axScat, axHist, 'g', xlabel, ylabel)
+    elif var=='blandAltman':     # # Bland Altman of AOD
+        true = np.asarray([rslt['aod'][waveInd] for rslt in simBase.rsltFwd])[keepIndAll]
+        rtrv = true - np.asarray([rslt['aod'][waveInd] for rslt in simBase.rsltBck])[keepIndAll]
+        genPlots(true, rtrv, axScat, axHist, 'Difference in AOD', xlabel, ylabel, scale='log', stats=False)
+        minAOD = np.min(true)*0.9
+        maxAOD = np.max(true)*1.1
+        axNow.plot([minAOD,maxAOD], [0,0], 'k', linewidth=LW121)
+        axNow.set_ylabel('true-retrieved')
+        axNow.set_xlabel('true')
+        logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
+        density_scatter(true, rtrv, ax=axNow, bins=logBins, mplscatter=mpl_scatter)
+        axNow.set_xlim(minAOD,maxAOD)
+        yRng = np.percentile(np.abs(rtrv), 99)
+        axNow.set_ylim(-yRng, yRng)
+    elif var=='ssa':     # # Single Scattering Albedo
+        true = np.asarray([rslt['ssa'][waveInd] for rslt in simBase.rsltFwd])[keepInd]
+        rtrv = np.asarray([rslt['ssa'][waveInd] for rslt in simBase.rsltBck])[keepInd]
+        genPlots(true, rtrv, axScat, axHist, 'SSA', xlabel, ylabel)
+    elif var=='sph_f':    # # spherical fraction (fine)
+        true = np.asarray([rslt['sph']for rslt in simBase.rsltFwd])[keepInd][:,fineFwdInd]
+        rtrv = np.asarray([rslt['sph']for rslt in simBase.rsltBck])[keepInd][:,fineBckInd]
+        genPlots(true, rtrv, axScat, axHist, 'Fine Mode SPH', xlabel, ylabel)
+    elif var=='sph_c':     # # spherical fraction (coarse)
+        true = np.asarray([rslt['sph']for rslt in simBase.rsltFwd])[keepInd][:,crsFwdInd]
+        rtrv = np.asarray([rslt['sph']for rslt in simBase.rsltBck])[keepInd][:,crsBckInd]
+        genPlots(true, rtrv, axScat, axHist, 'Coarse Mode SPH', xlabel, ylabel)
+    elif var=='reff_sub_um':     # # rEff (sub micron)
+        true = np.asarray([rslt['rEffMode'][0] for rslt in simBase.rsltFwd])[keepInd]
+        rtrv = np.asarray([rslt['rEffMode'][0] for rslt in simBase.rsltBck])[keepInd]
+        genPlots(true, rtrv, axScat, axHist, r'Submicron r$_{eff}$', xlabel, ylabel)
+    elif var=='reff_abv_um':     # # rEff (super micron)
+        true = np.asarray([rslt['rEffMode'][1] for rslt in simBase.rsltFwd])[keepInd]
+        rtrv = np.asarray([rslt['rEffMode'][1] for rslt in simBase.rsltBck])[keepInd]
+        genPlots(true, rtrv, axScat, axHist, r'above micron r$_{eff}$', xlabel, ylabel)
+    elif var=='n_f':     # # n (fine)
+        true = np.asarray([rslt['n'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd][:,fineFwdInd]
+        rtrv = np.asarray([rslt['n'][:,waveInd] for rslt in simBase.rsltBck])[keepInd][:,fineBckInd]
+        genPlots(true, rtrv, axScat, axHist, r'n$_{fine}$', xlabel, ylabel)
+    elif var=='n_c':     # # n (coarse)
+        true = np.asarray([rslt['n'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd][:,crsFwdInd]
+        rtrv = np.asarray([rslt['n'][:,waveInd] for rslt in simBase.rsltBck])[keepInd][:,crsBckInd]
+        genPlots(true, rtrv, axScat, axHist, r'n$_{coarse}$', xlabel, ylabel)
+    elif var=='intensity':     # # %% intensity
+        true = np.sum([rslt['meas_I'][:,waveInd] for rslt in simBase.rsltBck[keepInd]], axis=1)
+        rtrv = np.sum([rslt['fit_I'][:,waveInd] for rslt in simBase.rsltBck[keepInd]], axis=1)
+        genPlots(true, rtrv, axScat, axHist, 'sum(intensity)', xlabel, ylabel, stats=False)
+    elif var=='vol_f':     # # volume conc (fine)
+        true = fineFwdScale*np.asarray([rslt['vol'] for rslt in simBase.rsltFwd])[keepInd][:,fineFwdInd]
+        rtrv = np.asarray([rslt['vol'] for rslt in simBase.rsltBck])[keepInd][:,fineBckInd]
+        genPlots(true, rtrv, axScat, axHist, 'Fine Mode Volume', xlabel, ylabel)
+    elif var=='vol_c':     # # volume conc (coarse)
+        true = np.asarray([rslt['vol'] for rslt in simBase.rsltFwd])[keepInd][:,crsFwdInd]
+        rtrv = np.asarray([rslt['vol'] for rslt in simBase.rsltBck])[keepInd][:,crsBckInd]
+        genPlots(true, rtrv, axScat, axHist, 'Coarse Mode Volume', xlabel, ylabel)
+    else:
+        assert False, 'Variable name: %s was not recognized!' % var                         
 
-
-# =============================================================================
-# # FMF (vol)
-# =============================================================================
-def fmfCalc(r,dvdlnr):
-    cutRadius = 0.5
-    fInd = r<=cutRadius
-    logr = np.log(r)
-    return np.trapz(dvdlnr[fInd],logr[fInd])/np.trapz(dvdlnr,logr)
-try:
-    true = np.asarray([fmfCalc(rf['r'], rf['dVdlnr']) for rf in simBase.rsltFwd])[keepInd]
-    rtrv = np.asarray([fmfCalc(rb['r'][0,:], rb['dVdlnr'].sum(axis=0)) for rb in simBase.rsltBck])[keepInd]
-    minAOD = 0.01
-    maxAOD = 1.0
-    ax[0,4].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-    ax[0,4].set_title('Volume FMF')
-    ax[0,4].set_xscale('log')
-    ax[0,4].set_yscale('log')
-    ax[0,4].set_xlim(minAOD,maxAOD)
-    ax[0,4].set_ylim(minAOD,maxAOD)
-    ax[0,4].set_xticks([minAOD, maxAOD])
-    ax[0,4].set_yticks([minAOD, maxAOD])
-    ax[0,4].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
-    Rcoef = np.corrcoef(true, rtrv)[0,1]
-    RMSE = np.sqrt(np.median((true - rtrv)**2))
-    bias = np.mean((rtrv-true))
-    frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
-    tHnd = ax[0,4].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-                textcoords='offset points', color=clrText, fontsize=FS)
-    textstr = frmt % (Rcoef, RMSE, bias)
-    tHnd = ax[0,4].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-                        textcoords='offset points', color=clrText, fontsize=FS)
-    
-    # g
-    true = np.asarray([rf['g'][waveInd] for rf in simBase.rsltFwd])[keepInd]
-    rtrv = np.asarray([rf['g'][waveInd] for rf in simBase.rsltBck])[keepInd]
-    minAOD = np.min(true)*0.95
-    maxAOD = np.max(true)*1.05
-    ax[1,0].plot([minAOD,maxAOD], [minAOD,maxAOD], 'k', linewidth=LW121)
-    ax[1,0].set_title('g')
-    # ax[1,0].set_xlabel(xlabel)
-    ax[1,0].set_ylabel('Retrieved')
-    ax[1,0].set_xlim(minAOD,maxAOD)
-    ax[1,0].set_ylim(minAOD,maxAOD)
-    ax[1,0].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
-    Rcoef = np.corrcoef(true, rtrv)[0,1]
-    RMSE = np.sqrt(np.median((true - rtrv)**2))
-    bias = np.mean((rtrv-true))
-    frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
-    tHnd = ax[1,0].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-                textcoords='offset points', color=clrText, fontsize=FS)
-    textstr = frmt % (Rcoef, RMSE, bias)
-    tHnd = ax[1,0].annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-                        textcoords='offset points', color=clrText, fontsize=FS)
-except Exception as err:
-    print('Error in plotting FMF: \n error: %s \n Retrying with keepIndAll (SHOULD LOOK INTO THIS)' %err)
-    
-    # try plotting bland altman
-    true = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepIndAll]
-    rtrv = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltBck])[keepIndAll]
-    rtrv = true - rtrv
-    minAOD = np.min(true)*0.9
-    maxAOD = np.max(true)*1.1
-    ax[2,4].plot([minAOD,maxAOD], [0,0], 'k', linewidth=LW121)
-    ax[2,4].set_title('difference in AOD')
-    ax[2,4].set_ylabel('true-retrieved')
-    ax[2,4].set_xlabel('true')
-    ax[2,4].set_xscale('log')
-    logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
-    density_scatter(true, rtrv, ax=ax[2,4], bins=logBins, mplscatter=mpl_scatter)
-    ax[2,4].set_xlim(minAOD,maxAOD)
-    ax[2,4].set_ylim(-0.3,0.3)
-
-    Rcoef = np.corrcoef(true, rtrv)[0,1]
-    RMSE = np.sqrt(np.median((true - rtrv)**2))
-    bias = np.mean((rtrv-true))
-    tHnd = ax[2,4].annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-                textcoords='offset points', color=clrText, fontsize=FS)   
-    
-# =============================================================================
-#     # SSA
-# =============================================================================
-true = np.asarray([rf['ssa'][waveInd] for rf in simBase.rsltFwd])[keepInd]
-rtrv = np.asarray([rf['ssa'][waveInd] for rf in simBase.rsltBck])[keepInd]
-minAOD = np.min(true)*0.95
-maxAOD = 1
-
-ax[2,0].set_xlim(minAOD,maxAOD)
-ax[2,0].set_ylim(minAOD,maxAOD)
-
-density_scatter(true, rtrv, ax=ax[2,0], mplscatter=mpl_scatter)
-plotProp(ax[2,0], titleStr=r'SSA', scale='linear', ylabel='Retrieved', xlabel=xlabel)
-# histogram
-nBins_ = np.linspace(-0.1,0.1, nBins)
-modifiedHist((rtrv-true), axs=ax_hist[1,0], titleStr='SSA',
-             fig=fig_hist, nBins=nBins_, ylabel= 'Frequency')
-    
-# =============================================================================
-# # spherical fraction
-# =============================================================================
-
-true = np.asarray([rf['sph']for rf in simBase.rsltFwd])[keepInd][:,fineFwdInd]
-rtrv = np.asarray([rb['sph']for rb in simBase.rsltBck])[keepInd][:,fineBckInd]
-minAOD = 0
-maxAOD = 100.1
-
-ax[0,3].set_xticks(np.arange(minAOD, maxAOD, 25))
-ax[0,3].set_yticks(np.arange(minAOD, maxAOD, 25))
-
-density_scatter(true, rtrv, ax=ax[0,3], mplscatter=mpl_scatter)
-plotProp(ax[0,3], titleStr='fine mode spherical vol. frac.')
-
-# histogram
-modifiedHist((rtrv-true), axs=ax_hist[0,3], titleStr='Fine mode SF',
-             fig=fig_hist, nBins=nBins)
-
-# coarse mode SF
-true = np.asarray([rf['sph']for rf in simBase.rsltFwd])[keepInd][:,crsFwdInd]
-rtrv = np.asarray([rb['sph']for rb in simBase.rsltBck])[keepInd][:,crsBckInd]
-modifiedHist((rtrv-true), axs=ax_hist[0,4], titleStr='coarse mode SF',
-             fig=fig_hist, nBins=nBins)
-
-# =============================================================================
-# # rEff
-# =============================================================================
-#simBase._addReffMode(0.008, True) # reframe so pretty much all of the PSD is in the second "coarse" mode
-true = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltFwd])[keepInd]
-rtrv = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltBck])[keepInd]
-minAOD = np.min(rtrv)*0.8
-maxAOD = np.max(rtrv)*1.2
-
-density_scatter(true, rtrv, ax=ax[0,4], mplscatter=mpl_scatter)
-plotProp(ax[0,4], titleStr=r'Submicron r$_{eff}$', scale=None)
-# histogram
-modifiedHist((rtrv-true), axs=ax_hist[2,0], titleStr=r'Submicron r$_{eff}$',
-             fig=fig_hist, nBins=nBins, xlabel='Retrieved-Simulated', ylabel='Frequency')
-
-# Corase mode rEff
-true = np.asarray([rf['rEffMode'][1] for rf in simBase.rsltFwd])[keepInd]
-rtrv = np.asarray([rf['rEffMode'][1] for rf in simBase.rsltBck])[keepInd]
-minAOD = np.min(rtrv)*0.8
-maxAOD = np.max(rtrv)*1.2
-
-density_scatter(true, rtrv, ax=ax[2,1], mplscatter=mpl_scatter)
-plotProp(ax[2,1], titleStr=r'above micron r$_{eff}$', scale=None, xlabel=xlabel)
-# histogram
-nBins_ = np.linspace(-0.5,0.5, nBins)
-modifiedHist((rtrv-true), axs=ax_hist[2,1], titleStr=r'above micron r$_{eff}$',
-             fig=fig_hist, nBins=nBins_, xlabel='Retrieved-Simulated')
-
-# =============================================================================
-# # n (fine)
-# =============================================================================
-
-
-true = np.asarray([rf['n'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,fineFwdInd]
-rtrv = np.asarray([rf['n'][:,waveInd] for rf in simBase.rsltBck])[keepInd][:,fineBckInd]
-minAOD = np.min(true)*0.95
-maxAOD = np.max(true)*1.05
-density_scatter(true, rtrv, ax=ax[1,1], mplscatter=mpl_scatter)
-plotProp(ax[1,1], titleStr=r'n$_{fine}$', scale=None)
-# histogram
-modifiedHist((rtrv-true), axs=ax_hist[1,1], titleStr=r'n$_{fine}$',
-             fig=fig_hist, nBins=nBins)
-
-
-# =============================================================================
-# # n (coarse)
-# =============================================================================
-
-true = np.asarray([rf['n'][:,waveInd] for rf in simBase.rsltFwd])[keepInd][:,crsFwdInd]
-rtrv = np.asarray([rf['n'][:,waveInd] for rf in simBase.rsltBck])[keepInd][:,crsBckInd]
-minAOD = np.min(true)*0.95
-maxAOD = np.max(true)*1.05
-density_scatter(true, rtrv, ax=ax[1,2], mplscatter=mpl_scatter)
-plotProp(ax[1,2], titleStr=r'n$_{coarse}$', scale=None)
-# histogram
-modifiedHist((rtrv-true), axs=ax_hist[1,2], titleStr=r'n$_{coarse}$',
-             fig=fig_hist, nBins=nBins)
-
-
-# =============================================================================
-# # %% intensity (if on, overwrites k)
-# =============================================================================
-intensity = False
-if intensity:
-    true = np.sum([rb['meas_I'][:,waveInd] for rb in simBase.rsltBck[keepInd]], axis=1)
-    rtrv = np.sum([rb['fit_I'][:,waveInd] for rb in simBase.rsltBck[keepInd]], axis=1)
-    minAOD = np.min(true)*0.95
-    maxAOD = np.max(true)*1.05
-
-    density_scatter(true, rtrv, ax=ax[1,4], xlabel=xlabel, mplscatter=mpl_scatter)
-    plotProp(ax[2,4], titleStr='sum(intensity)', scale='linear')
-
-
-
-# =============================================================================
-# # volume conc (fine)
-# =============================================================================
-
-true = fineFwdScale*np.asarray([rf['vol'] for rf in simBase.rsltFwd])[keepInd][:,fineFwdInd]
-rtrv = np.asarray([rf['vol'] for rf in simBase.rsltBck])[keepInd][:,fineBckInd]
-minAOD = np.min(rtrv)*0.90
-maxAOD = np.max(rtrv)*1.10
-
-density_scatter(true, rtrv, ax=ax[2,3], mplscatter=mpl_scatter)
-plotProp(ax[2,3], titleStr='Fine mode \n Vol concentration',
-         scale='linear', xlabel=xlabel, MinMax=True)
-# histogram
-nBins_ = np.linspace(-0.10,0.10, nBins)
-modifiedHist((rtrv-true), axs=ax_hist[2,3],
-             titleStr='Fine mode \n Vol concentration',
-             fig=fig_hist, nBins=nBins_,
-             xlabel='Retrieved-Simulated')
-
-
-# =============================================================================
-# # volume conc (coarse)
-# =============================================================================
-
-true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[keepInd][:,crsFwdInd]
-rtrv = np.asarray([rf['vol'] for rf in simBase.rsltBck])[keepInd][:,crsBckInd]
-minAOD = np.min(rtrv)*0.90
-maxAOD = np.max(rtrv)*1.10
-
-density_scatter(true, rtrv, ax=ax[2,2], mplscatter=mpl_scatter)
-plotProp(ax[2,2], titleStr='Coarse mode \n Vol concentration',
-         scale='linear', xlabel=xlabel, MinMax=True)
-# histogram
-nBins_ = np.linspace(-0.25,0.25, nBins)
-modifiedHist((rtrv-true), axs=ax_hist[2,2],
-             titleStr='Coarse mode \n Vol concentration',
-             fig=fig_hist, nBins=nBins_,
-             xlabel='Retrieved-Simulated')
-                         
 
 # =============================================================================
 # Save the figure
