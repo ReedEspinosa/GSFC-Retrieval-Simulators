@@ -9,7 +9,7 @@ from pprint import pprint
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'});mpl.rcParams.update({'ytick.right': 'True'});mpl.rcParams.update({'xtick.top': 'True'});plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
+mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'}); mpl.rcParams.update({'ytick.right': 'True'}); mpl.rcParams.update({'xtick.top': 'True'}); plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
 from scipy import interpolate
 from scipy.stats import norm, gaussian_kde, ncx2, moyal
 from simulateRetrieval import simulation
@@ -26,25 +26,24 @@ from matplotlib.colors import LinearSegmentedColormap
 # Initiation and User Provided Settings
 # =============================================================================
 
-# coarseModeFwd = 4 # ANIN
-coarseModeFwd = 4
-
-# Define the string pattern for the file name
-fnPtrnList = []
-#fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
-# fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-fnPtrn = 'Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
+### Reed's ABI/testing Settings###
+waveInd = 2 # Wavelength index for plotting
+waveInd2 = 4 # Wavelength index for AE calculation
+fineFwdInd = 0 # index in forward data to use for fine mode plots 
+fineBckInd = 0 # index in backward data to use for fine mode plots
+crsFwdInd = 3 # index in forward data to use for coarse mode plots
+crsBckInd = 1 # index in backward data to use for coarse mode plots
+fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
+inDirPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/' # Location/dir where the pkl files are
 fnPtrn = 'DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
-# fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl'
-# fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
+
+### Anin's CAMP2Ex Settings ###
 # Location/dir where the pkl files are
-inDirPath = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/'
-inDirPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/'
-
-# pklPathPatern = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/DRS_V01_Lidar050_case08m1_tFct1.00_orbSS_multiAngles_n204_nAngALL.pkl'
-
-# Anin's CAMP2Ex Settings
+# inDirPath = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/'
+# fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
+# fnPtrn = 'Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
+# fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl'
 # waveInd = 2 # Wavelength index for plotting
 # waveInd2 = 4 # Wavelength index for AE calculation
 # fineFwdInd = 0 # index in forward data to use for fine mode plots 
@@ -53,29 +52,18 @@ inDirPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_
 # crsBckInd = 1 # index in backward data to use for coarse mode plots
 # fineFwdScale = 4 # hack for CAMP2Ex data where fine mode is spread over 4 fwd modes 
 
-# Reed's ABI Settings
-waveInd = 2 # Wavelength index for plotting
-waveInd2 = 4 # Wavelength index for AE calculation
-fineFwdInd = 0 # index in forward data to use for fine mode plots 
-fineBckInd = 0 # index in backward data to use for fine mode plots
-crsFwdInd = 3 # index in forward data to use for coarse mode plots
-crsBckInd = 1 # index in backward data to use for coarse mode plots
-fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
 
 
 # more tags and specifiations for the scatter plot
 surf2plot = 'both' # land, ocean or both
 aodMin = 0.02 # does not apply to first AOD plot
-aodMax = 2
-nMode = 0 # Select which layer or mode to plot
+aodMax = 2 # Pixels with AOD above this will be filtered from plots of intensive parameters
 fnTag = 'AllCases'
 xlabel = 'Simulated Truth'
-MS = 2
-FS = 10
-LW121 = 1
-pointAlpha = 0.20
-clrText = '#FF6347' #[0,0.7,0.7]
-nBins = 200 # no. of bins for histogram
+FS = 10 # Plot font size
+LW121 = 1 # line width of the one-to-one line
+clrText = '#FF6347' # color of statistics text
+nBins = 200 # no. of bins for histogram of differences plots
 nBins2 = 50 # no. of bins for 2D density plot
 
 """
@@ -84,8 +72,8 @@ nBins2 = 50 # no. of bins for 2D density plot
 <DONE> 2 - Link axis control to vars2plot
 <DONE> 3  - Can function definitions below be cleaned up?
 <DONE> 4  - Can some common code under each vars elif statement be refactored into common function?
-5  - Are all the inputs directly above here needed?
-6  - Test against open version in other terminal tab
+<DONE> 5  - Are all the inputs directly above here needed?
+6  - Test against open version in other terminal tab... that ship has sailed, but we can look at old commits
 <DONE> 7  - How does Anin have runs without land_prct in either fwd or bck?
 8  - Printing of N pixels passing convergence filter is confusing; should just happen once
 9  - Why is this so slow?
