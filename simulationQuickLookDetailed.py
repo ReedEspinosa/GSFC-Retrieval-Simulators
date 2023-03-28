@@ -5,11 +5,12 @@
 # Import the librarires
 # =============================================================================
 import os
+import warnings
 from pprint import pprint
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'}); mpl.rcParams.update({'ytick.right': 'True'}); mpl.rcParams.update({'xtick.top': 'True'}); plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
+# mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'}); mpl.rcParams.update({'ytick.right': 'True'}); mpl.rcParams.update({'xtick.top': 'True'}); plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
 from scipy import interpolate
 from scipy.stats import norm, gaussian_kde, ncx2, moyal
 from simulateRetrieval import simulation
@@ -21,6 +22,7 @@ except:
     print('mpl_scatter_density library not available')
     mpl_scatter = False
 from matplotlib.colors import LinearSegmentedColormap
+
 
 # =============================================================================
 # Initiation and User Provided Settings
@@ -53,7 +55,6 @@ fnPtrn = 'DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngA
 # fineFwdScale = 4 # hack for CAMP2Ex data where fine mode is spread over 4 fwd modes 
 
 
-
 # more tags and specifiations for the scatter plot
 surf2plot = 'both' # land, ocean or both
 aodMin = 0.02 # does not apply to first AOD plot
@@ -65,54 +66,31 @@ LW121 = 1 # line width of the one-to-one line
 clrText = '#FF6347' # color of statistics text
 nBins = 200 # no. of bins for histogram of differences plots
 nBins2 = 50 # no. of bins for 2D density plot
+showOverallStats = True # print RMSE of many GVs to terminal (may be slow for large Npixels)
 
-"""
-# TODO:
-<DONE> 1 - Make figure number of subplots automatic
-<DONE> 2 - Link axis control to vars2plot
-<DONE> 3  - Can function definitions below be cleaned up?
-<DONE> 4  - Can some common code under each vars elif statement be refactored into common function?
-<DONE> 5  - Are all the inputs directly above here needed?
-6  - Test against open version in other terminal tab... that ship has sailed, but we can look at old commits
-<DONE> 7  - How does Anin have runs without land_prct in either fwd or bck?
-8  - Printing of N pixels passing convergence filter is confusing; should just happen once
-9  - Why is this so slow?
-<DONE> 10 - The definition of histogram bins nBins_ are hardcoded, and sometimes are outside the range of data...
-11 – There should be an option in genPlots for forced [max, min] (e.g., [0,100] for SPH)
-"""
-
-vars2plot = [
-    'aod',
-    'aod_f',
-    'angstrom',
-    'aaod',
-    'sph_f',
-    'fmf',
-    'reff_sub_um',
-    'sph_f',
-    'sph_c',
-    'aod_c',
-    'g',
-    'n_f',
-    'n_c',
-    'k_f',
-    'k_c',
-    'intensity',
-    'ssa',
-    'reff_abv_um',
-    'vol_c',
-    'vol_f',
-    'blandAltman',
-]
-
-nRows = int(np.sqrt(len(vars2plot)))
-nCols = int(np.ceil(len(vars2plot)/nRows))
-axesInd = [[i,j] for i in range(nRows) for j in range(nCols)]
-
-
-# =============================================================================
-# Definition to plot the 2D histogram
-# =============================================================================
+# The variables to plot; will automatically remove variables for which rsltDict is missing
+vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_variable_key
+    'aod':'aod',
+    'aod_c':'aodModeX',
+    'aod_f':'aodMode',
+    'angstrom':'aod',
+    'aaod':'ssa',
+    'fmf':'dVdlnr',
+    'sph_f':'sph',
+    'sph_c':'sph',
+    'g':'g',
+    'n_f':'n',
+    'n_c':'n',
+    'k_f':'k',
+    'k_c':'k',
+    'intensity':'meas_I',
+    'ssa':'ssa',
+    'reff_sub_um':'rEffMode',
+    'reff_abv_um':'rEffMode',
+    'vol_c':'vol',
+    'vol_f':'vol',
+    'blandAltman':'aod',
+}
 
 # "Viridis-like" colormap with white background
 white_viridis = LinearSegmentedColormap.from_list('white_viridis', [
@@ -125,6 +103,11 @@ white_viridis = LinearSegmentedColormap.from_list('white_viridis', [
     (1, '#fde624'),
 ], N=512)
 
+
+# =============================================================================
+# Function Definitions for Plots
+# =============================================================================
+
 def fmfCalc(r,dvdlnr):
     assert np.all(r[0]==r[-1]), 'First and last mode defined with different radii!' # This is not perfect, but likely to catch non-standardized PSDs
     if r.ndim==2: r=r[0] # We hope all modes defined over same radii (partial check above)
@@ -133,7 +116,8 @@ def fmfCalc(r,dvdlnr):
     fInd = r<=cutRadius
     logr = np.log(r)
     return np.trapz(dvdlnr[fInd],logr[fInd])/np.trapz(dvdlnr,logr)
-    
+
+ 
 def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20,
                     mplscatter=True, **kwargs):
     """
@@ -171,6 +155,7 @@ def plotProp(true, rtrv, axs, titleStr ='', scale='linear', xlabel=False, ylabel
     """
     # min max
     if MinMax is not None:
+        assert MinMax[0]<MinMax[1], 'Plot minimum value was not less than maximum!'
         axs.plot(MinMax, MinMax, 'k', linewidth=LW121) # line plot
         axs.set_xlim(MinMax[0],MinMax[1])
         axs.set_ylim(MinMax[0],MinMax[1])
@@ -186,6 +171,7 @@ def plotProp(true, rtrv, axs, titleStr ='', scale='linear', xlabel=False, ylabel
         
     # Plot the statistics
     if stat:
+        axs.text(0.6,0.1, 'N=%d' % len(true), transform=axs.transAxes, color=clrText, fontsize=FS) 
         Rcoef = np.corrcoef(true, rtrv)[0,1]
         RMSE = np.sqrt(np.median((true - rtrv)**2))
         bias = np.mean((rtrv-true))
@@ -193,11 +179,8 @@ def plotProp(true, rtrv, axs, titleStr ='', scale='linear', xlabel=False, ylabel
             frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
         else:
             frmt = 'R=%5.3f\nRMS=%5.4f\nbias=%5.4f'
-        tHnd = axs.annotate('N=%4d' % len(true), xy=(0, 1), xytext=(85, -124), va='top', xycoords='axes fraction',
-                    textcoords='offset points', color=clrText, fontsize=FS)
         textstr = frmt % (Rcoef, RMSE, bias)
-        tHnd = axs.annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top', xycoords='axes fraction',
-                            textcoords='offset points', color=clrText, fontsize=FS)
+        axs.text(0.07,0.65, textstr, transform=axs.transAxes, color=clrText, fontsize=FS)
 
 
 def modifiedHist(x, axs, titleStr='', xlabel=False, ylabel=False, nBins=20, stat=True):
@@ -220,23 +203,25 @@ def modifiedHist(x, axs, titleStr='', xlabel=False, ylabel=False, nBins=20, stat
 
     # mean and standard deviation
     if stat:        
-        RMSE = np.sqrt(np.median(diff**2))
-        bias = np.mean(diff)
+        RMSE = np.sqrt(np.median(x**2))
+        bias = np.mean(x)
         frmt = 'RMS=%5.3f\nbias=%5.3f'
         textstr = frmt % (RMSE, bias)
         tHnd = axs.annotate(textstr, xy=(0, 1), xytext=(5.5, -4.5), va='top',
                             xycoords='axes fraction',
                             textcoords='offset points', color=clrText,
                             fontsize=FS)
+
     
-    
-def genPlots(true, rtrv, axScat, axHist, varName, xlabel, ylabel, scale='linear', moreDig=False, stats=False):
-    minVal = np.percentile(true, 1)
-    maxVal = np.percentile(true, 99)
-    logMin = min(0.0001, np.log10(minVal))
-    logBins = np.logspace(start=logMin, stop=np.log10(maxVal), num=nBins2)
+def genPlots(true, rtrv, axScat, axHist, varName, xlabel, ylabel, scale='linear', moreDigits=False, stats=True, MinMax=None):
+    if scale=='log' and (np.any(true<=0) or np.any(rtrv<=0)):
+        warnings.warn('Log scale set for %s with true and/or rtrv values that are less than or equal to zero!' % varName)
+    if MinMax is None:
+        minVal = np.percentile(np.r_[true, rtrv], 1)
+        maxVal = np.percentile(np.r_[true, rtrv], 99)
+        MinMax = [minVal,maxVal]
     density_scatter(true, rtrv, ax=axScat, mplscatter=mpl_scatter)
-    plotProp(true, rtrv, axScat, varName, scale, xlabel, ylabel, [minVal,maxVal], moreDigits=moreDig, stat=stats)
+    plotProp(true, rtrv, axScat, varName, scale, xlabel, ylabel, MinMax, moreDigits=moreDigits, stat=stats)
     
     if not stats: return # If stats do not make sense, a histogram probably will not either (e.g., for Bland Altman)
     # histogram
@@ -249,8 +234,11 @@ def genPlots(true, rtrv, axScat, axHist, varName, xlabel, ylabel, scale='linear'
 # =============================================================================
 # Loading and filtering data and prepping plots
 # =============================================================================
+
+nRows = int(np.sqrt(len(vars2plot)))
+nCols = int(np.ceil(len(vars2plot)/nRows))
+axesInd = [[i,j] for i in range(nRows) for j in range(nCols)]
 # Figure for 2D density plots
-# fig, ax = plt.subplots(3,5, figsize=(15,9), subplot_kw={'projection': 'scatter_density'})
 fig, ax = plt.subplots(nRows, nCols, figsize=(15,9))
 plt.locator_params(nbins=3)
 # Figure for histograms
@@ -262,14 +250,21 @@ loadPATH = os.path.join(inDirPath,fnPtrn)
 simBase = simulation(picklePath=loadPATH)
 
 # print general stats to console
-print('Showing results for %5.3f μm' % simBase.rsltFwd[0]['lambda'][waveInd])
-pprint(simBase.analyzeSim(waveInd)[0])
-
+fwdLambda = simBase.rsltFwd[0]['lambda'][waveInd]
+bckLambda = simBase.rsltBck[0]['lambda'][waveInd]
+print('Showing results for λ_fwd = %5.3f μm.' % fwdLambda)
+if not np.isclose(fwdLambda, bckLambda, atol=0.001):
+    warnings.warn('The values of lambda for the forward and backward differed by more than 1 nm at waveInd=%d!' % waveInd)
+if showOverallStats: 
+    print('------ RMSE ------')
+    pprint(simBase.analyzeSim(waveInd)[0])
+    print('------------------')
+    
 if 'land_prct' in simBase.rsltBck[0]:
     lp = np.array([rb['land_prct'] for rb in simBase.rsltBck])
     keepInd = lp>99 if surf2plot=='land' else lp<1 if surf2plot=='ocean' else lp>-1
 else:
-    print('WARNING: land_prct key not found, using all pixels!')
+    warnings.warn('land_prct key not found, using all pixels!')
     keepInd = np.ones(len(simBase.rsltBck), dtype='int32')
 
 # apply convergence filter
@@ -285,17 +280,23 @@ print('%d/%d fit surface type %s and aod≥%4.2f' % (keepInd.sum(), len(simBase.
 keepInd = np.logical_and(keepInd, [rf['aod'][waveInd]<=aodMax for rf in simBase.rsltFwd])
 print('%d/%d fit surface type %s and aod≤%4.2f' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, aodMax))
 
-# apply Reff min
-simBase._addReffMode(1.0, True) # reframe with cut at 1 micron diameter
-#keepInd = np.logical_and(keepInd, [rf['rEffMode']>=2.0 for rf in simBase.rsltBck])
-#print('%d/%d fit surface type %s and aod≥%4.2f AND retrieved Reff>2.0μm' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, aodMin))
+# Calculate modal Reff above and below a micron
+if np.any(['reff' in var.lower() for var in vars2plot.keys()]): 
+    simBase._addReffMode(1.0, True) # reframe with cut at 1 micron diameter
 
+# Purge variables for which we do not have sufficient data in Fwd/Bck rsltsDicts
+for key in list(vars2plot):
+    inFwd = vars2plot[key] in simBase.rsltFwd[0].keys() 
+    inBck = vars2plot[key] in simBase.rsltBck[0].keys()
+    if not (inFwd and inBck): 
+        print('%s not found in fwd and/or bck rsltsDict. %s will not be plotted.' % (vars2plot[key],key))
+        del vars2plot[key]
 
 # =============================================================================
 # Plotting
 # =============================================================================
 
-for var,axInd in zip(vars2plot, axesInd[0:len(vars2plot)]):
+for var,axInd in zip(vars2plot.keys(), axesInd[0:len(vars2plot)]):
     axScat = ax[tuple(axInd)]
     axHist = ax_hist[tuple(axInd)]
     xlabel = axInd[0]==(nRows-1)
@@ -344,17 +345,7 @@ for var,axInd in zip(vars2plot, axesInd[0:len(vars2plot)]):
     elif var=='blandAltman':     # # Bland Altman of AOD
         true = np.asarray([rslt['aod'][waveInd] for rslt in simBase.rsltFwd])[keepIndAll]
         rtrv = true - np.asarray([rslt['aod'][waveInd] for rslt in simBase.rsltBck])[keepIndAll]
-        genPlots(true, rtrv, axScat, axHist, 'Difference in AOD', xlabel, ylabel, scale='log', stats=False)
-        minAOD = np.min(true)*0.9
-        maxAOD = np.max(true)*1.1
-        axNow.plot([minAOD,maxAOD], [0,0], 'k', linewidth=LW121)
-        axNow.set_ylabel('true-retrieved')
-        axNow.set_xlabel('true')
-        logBins = np.logspace(start=np.log10(minAOD), stop=np.log10(maxAOD), num=nBins2)
-        density_scatter(true, rtrv, ax=axNow, bins=logBins, mplscatter=mpl_scatter)
-        axNow.set_xlim(minAOD,maxAOD)
-        yRng = np.percentile(np.abs(rtrv), 99)
-        axNow.set_ylim(-yRng, yRng)
+        genPlots(true, rtrv, axScat, axHist, 'Difference in AOD', xlabel, ylabel, scale='linear', stats=False)
     elif var=='ssa':     # # Single Scattering Albedo
         true = np.asarray([rslt['ssa'][waveInd] for rslt in simBase.rsltFwd])[keepInd]
         rtrv = np.asarray([rslt['ssa'][waveInd] for rslt in simBase.rsltBck])[keepInd]
@@ -362,11 +353,11 @@ for var,axInd in zip(vars2plot, axesInd[0:len(vars2plot)]):
     elif var=='sph_f':    # # spherical fraction (fine)
         true = np.asarray([rslt['sph']for rslt in simBase.rsltFwd])[keepInd][:,fineFwdInd]
         rtrv = np.asarray([rslt['sph']for rslt in simBase.rsltBck])[keepInd][:,fineBckInd]
-        genPlots(true, rtrv, axScat, axHist, 'Fine Mode SPH', xlabel, ylabel)
+        genPlots(true, rtrv, axScat, axHist, 'Fine Mode SPH', xlabel, ylabel, MinMax=[0,100])
     elif var=='sph_c':     # # spherical fraction (coarse)
         true = np.asarray([rslt['sph']for rslt in simBase.rsltFwd])[keepInd][:,crsFwdInd]
         rtrv = np.asarray([rslt['sph']for rslt in simBase.rsltBck])[keepInd][:,crsBckInd]
-        genPlots(true, rtrv, axScat, axHist, 'Coarse Mode SPH', xlabel, ylabel)
+        genPlots(true, rtrv, axScat, axHist, 'Coarse Mode SPH', xlabel, ylabel, MinMax=[0,100])
     elif var=='reff_sub_um':     # # rEff (sub micron)
         true = np.asarray([rslt['rEffMode'][0] for rslt in simBase.rsltFwd])[keepInd]
         rtrv = np.asarray([rslt['rEffMode'][0] for rslt in simBase.rsltBck])[keepInd]
@@ -400,20 +391,19 @@ for var,axInd in zip(vars2plot, axesInd[0:len(vars2plot)]):
 
 
 # =============================================================================
-# Save the figure
+# Save the figures
 # =============================================================================
 saveFN = os.path.basename(loadPATH)
-figSavePath = saveFN.replace('.pkl',('_%s_%s_%04dnm.png' % (surf2plot, fnTag, simBase.rsltFwd[0]['lambda'][waveInd]*1000)))
-print('Saving figure to: %s' % (os.path.join(inDirPath,figSavePath)))
+figSavePath = saveFN.replace('.pkl',('_%s_%s_%04dnm_ScatterPlot.png' % (surf2plot, fnTag, simBase.rsltFwd[0]['lambda'][waveInd]*1000)))
+print('Saving scatter plot figure to: %s' % (os.path.join(inDirPath,figSavePath)))
 ttlStr = '%s (λ=%5.3fμm, %s surface, AOD≥%4.2f)' % (saveFN, simBase.rsltFwd[0]['lambda'][waveInd], surf2plot, aodMin)
+ttlStr = ttlStr.replace('MERGED_','')
 fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-# fig.tight_layout()
-fig.suptitle(ttlStr.replace('MERGED_',''))
+fig.suptitle(ttlStr)
 fig_hist.tight_layout(rect=[0, 0.03, 1, 0.95])
-# fig_hist.tight_layout()
-fig_hist.suptitle(ttlStr.replace('MERGED_','Hist_'))
+fig_hist.suptitle(ttlStr)
 fig.savefig(inDirPath + figSavePath, dpi=330)
-fig_hist.savefig(inDirPath + figSavePath.replace('MERGED_','Hist_'), dpi=330)
-print('Saving figure to: %s' % (os.path.join(inDirPath,figSavePath.replace('MERGED_','Hist_'))))
+fig_hist.savefig(inDirPath + figSavePath.replace('ScatterPlot','HistErrPlot'), dpi=330)
+print('Saving error histogram figure to: %s' % (os.path.join(inDirPath,figSavePath.replace('MERGED_','Hist_'))))
 # plt.show()
 
