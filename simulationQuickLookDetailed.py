@@ -36,8 +36,10 @@ fineBckInd = 0 # index in backward data to use for fine mode plots
 crsFwdInd = 3 # index in forward data to use for coarse mode plots
 crsBckInd = 1 # index in backward data to use for coarse mode plots
 fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
-inDirPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/' # Location/dir where the pkl files are
-fnPtrn = 'DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
+# inDirPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/' # Location/dir where the pkl files are
+# fnPtrn = 'DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
+inDirPath = '/Users/wrespino/Synced/Working/ABI_initialTests/' # Location/dir where the pkl files are
+fnPtrn = 'Test_threeSites_Ocean_V02.pkl'
 
 
 ### Anin's CAMP2Ex Settings ###
@@ -67,11 +69,12 @@ clrText = '#FF6347' # color of statistics text
 nBins = 200 # no. of bins for histogram of differences plots
 nBins2 = 50 # no. of bins for 2D density plot
 showOverallStats = True # print RMSE of many GVs to terminal (may be slow for large Npixels)
+recalcChi = False # If True, we recalculate chi^2 using difference between fwd and bck fit variables
 
 # The variables to plot; will automatically remove variables for which rsltDict is missing
 vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_variable_key
     'aod':'aod',
-    'aod_c':'aodModeX',
+    'aod_c':'aodMode',
     'aod_f':'aodMode',
     'angstrom':'aod',
     'aaod':'ssa',
@@ -268,7 +271,7 @@ else:
     keepInd = np.ones(len(simBase.rsltBck), dtype='int32')
 
 # apply convergence filter
-simBase.conerganceFilter(forceχ2Calc=True) # ours looks more normal, but GRASP's produces slightly lower RMSE
+simBase.conerganceFilter(forceχ2Calc=recalcChi) # ours looks more normal, but GRASP's produces slightly lower RMSE
 costThresh = np.percentile([rb['costVal'] for rb in simBase.rsltBck[keepInd]], 95)
 keepInd = np.logical_and(keepInd, [rb['costVal']<costThresh for rb in simBase.rsltBck])
 keepIndAll = keepInd
