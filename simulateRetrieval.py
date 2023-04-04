@@ -229,6 +229,7 @@ class simulation(object):
         """
         Place all fwd and back PSD on a common radii grid spanning smallest to largest size from all PSDs
         """
+        if ('r' not in self.rsltFwd[0]) or ('r' not in self.rsltBck[0]): return # we have no PSD to standardize
         fidelityFactor = 2 # increase to shrink new grid spacing (dlnr_new = min(dlnr)/fidelityFactor)
           # This handles radii that vary from pixel-to-pixel but takes ~1 sec for sim with 100k pixels
 #         if np.all([rs['r'][:,0]==rs['r'][0,0] for rs in self.rsltFwd]) & \
@@ -311,6 +312,8 @@ class simulation(object):
                             DFwd = rf[fitKey][~np.isnan(rf[fitKey])]
                         elif measType in ['QoI', 'UoI'] and fitKey[:-2] in rf: # rf has X while rb has XoI
                             DFwd = rf[fitKey[:-2]][~np.isnan(rf[fitKey[:-2]])]/rf['fit_I'][~np.isnan(rf[fitKey[:-2]])]
+                        else:
+                            assert False, 'Fwd lacked a rsltDict key for an observable that Bck had... Do you really need forceχ2Calc=True? If so, see issue #3 on GitHub' 
                         if measType in ['I', 'LS', 'VBS']: # relative errors
                             with np.errstate(divide='ignore'): # possible for DBck+DFwd=0, inf's will be removed below
                                 χLocal = ((2*(DBck-DFwd)/(DBck+DFwd))/σ[measType])**2
