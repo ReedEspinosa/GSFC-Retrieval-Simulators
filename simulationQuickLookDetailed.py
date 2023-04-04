@@ -4,7 +4,7 @@
 # =============================================================================
 # Import the librarires
 # =============================================================================
-import os
+from os import path
 import warnings
 from pprint import pprint
 import numpy as np
@@ -36,18 +36,15 @@ fineBckInd = 0 # index in backward data to use for fine mode plots
 crsFwdInd = 3 # index in forward data to use for coarse mode plots
 crsBckInd = 1 # index in backward data to use for coarse mode plots
 fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
-# inDirPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/' # Location/dir where the pkl files are
-# fnPtrn = 'DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
-inDirPath = '/Users/wrespino/Synced/Working/ABI_initialTests/' # Location/dir where the pkl files are
-fnPtrn = 'Test_threeSites_Ocean_V02.pkl'
+# filePathPtrn = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
+filePathPtrn = '/Users/wrespino/Synced/Working/ABI_initialTests/Test_threeSites_Ocean_V02.pkl'
 
 
 ### Anin's CAMP2Ex Settings ###
 # Location/dir where the pkl files are
-# inDirPath = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/'
-# fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-# fnPtrn = 'Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
-# fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl'
+# filePathPtrn = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
+# filePathPtrn = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
+# filePathPtrn = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl'
 # waveInd = 2 # Wavelength index for plotting
 # waveInd2 = 4 # Wavelength index for AE calculation
 # fineFwdInd = 0 # index in forward data to use for fine mode plots 
@@ -249,15 +246,14 @@ fig_hist, ax_hist = plt.subplots(nRows, nCols, figsize=(15,9))
 plt.locator_params(nbins=3)
 
 # Define the path of the new merged pkl file
-loadPATH = os.path.join(inDirPath,fnPtrn)
-simBase = simulation(picklePath=loadPATH)
+simBase = simulation(picklePath=filePathPtrn)
 
 # print general stats to console
 fwdLambda = simBase.rsltFwd[0]['lambda'][waveInd]
 bckLambda = simBase.rsltBck[0]['lambda'][waveInd]
 print('Showing results for λ_fwd = %5.3f μm.' % fwdLambda)
 if not np.isclose(fwdLambda, bckLambda, atol=0.001):
-    warnings.warn('The values of lambda for the forward and backward differed by more than 1 nm at waveInd=%d!' % waveInd)
+    warnings.warn('\nThe values of lambda for the forward (%.3f μm) and backward (%.3f μm) differed by more than 1 nm at waveInd=%d!' % (fwdLambda, bckLambda, waveInd))
 if showOverallStats: 
     print('------ RMSE ------')
     pprint(simBase.analyzeSim(waveInd)[0])
@@ -396,9 +392,10 @@ for var,axInd in zip(vars2plot.keys(), axesInd[0:len(vars2plot)]):
 # =============================================================================
 # Save the figures
 # =============================================================================
-saveFN = os.path.basename(loadPATH)
+saveFN = path.basename(filePathPtrn)
+inDirPath = path.dirname(filePathPtrn)
 figSavePath = saveFN.replace('.pkl',('_%s_%s_%04dnm_ScatterPlot.png' % (surf2plot, fnTag, simBase.rsltFwd[0]['lambda'][waveInd]*1000)))
-print('Saving scatter plot figure to: %s' % (os.path.join(inDirPath,figSavePath)))
+print('Saving scatter plot figure to: %s' % (path.join(inDirPath,figSavePath)))
 ttlStr = '%s (λ=%5.3fμm, %s surface, AOD≥%4.2f)' % (saveFN, simBase.rsltFwd[0]['lambda'][waveInd], surf2plot, aodMin)
 ttlStr = ttlStr.replace('MERGED_','')
 fig.tight_layout(rect=[0, 0.03, 1, 0.95])
@@ -407,6 +404,6 @@ fig_hist.tight_layout(rect=[0, 0.03, 1, 0.95])
 fig_hist.suptitle(ttlStr)
 fig.savefig(inDirPath + figSavePath, dpi=330)
 fig_hist.savefig(inDirPath + figSavePath.replace('ScatterPlot','HistErrPlot'), dpi=330)
-print('Saving error histogram figure to: %s' % (os.path.join(inDirPath,figSavePath.replace('MERGED_','Hist_'))))
+print('Saving error histogram figure to: %s' % (path.join(inDirPath,figSavePath.replace('MERGED_','Hist_'))))
 # plt.show()
 
