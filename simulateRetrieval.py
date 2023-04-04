@@ -13,7 +13,7 @@ import sys
 from os import path
 GRASP_Python_Path = path.join(path.dirname(path.dirname(__file__)), "GSFC-GRASP-Python-Interface")
 if GRASP_Python_Path not in sys.path: sys.path.append(GRASP_Python_Path)
-import runGRASP as rg
+import runGRASP as rg, RSLT_DICT_KEYS
 import miscFunctions as ms
 from glob import glob
 
@@ -103,7 +103,6 @@ class simulation(object):
                 nowPix.dtObj = nowPix.dtObj + dt.timedelta(seconds=tOffset) # increment hour otherwise GRASP will whine
             gObjBck.addPix(nowPix) # addPix performs a deepcopy on nowPix, won't be impact by next iteration through loopInd
             localVerbose = False # verbose output for just one pixel should be sufficient
-        # TODO: the following should go after gDB.processData, and only include cases for which rsltBck was successfully derived
         if len(self.rsltFwd)>1: self.rsltFwd = np.tile(self.rsltFwd, Nsims) # make len(rsltBck)==len(rsltFwd)... very memory inefficient though so only do it in more complicated len(self.rstlFwd)>1 cases
         gDB = rg.graspDB(gObjBck, maxCPU=maxCPU, maxT=maxT)
         if not dryRun:
@@ -119,7 +118,7 @@ class simulation(object):
         else:
             if savePath: warnings.warn('This was a dry run. No retrievals were performed and no results were saved.')
             for gObj in gDB.grObjs: gObj.writeSDATA()
-        if workingFileSave and savePath: # TODO: build zip from original tmp folders without making extra copies to disk, see first answer here: https://stackoverflow.com/questions/458436/adding-folders-to-a-zip-file-using-python
+        if workingFileSave and savePath:
             fullSaveDir = savePath[0:-4]
             if verbose: print('Packing GRASP working files up into %s' %  fullSaveDir + '.zip')
             if os.path.exists(fullSaveDir): shutil.rmtree(fullSaveDir)
@@ -286,7 +285,7 @@ class simulation(object):
         if oneAdded:
             warnings.warn('We added rEffMode to one of fwd/bck but not the other. This may cause inconsistency if definitions differ.')
 
-    def conerganceFilter(self, χthresh=None, σ=None, forceχ2Calc=False, verbose=False, minSaved=2): # TODO: LIDAR bins with ~0 concentration are dominating this metric...
+    def conerganceFilter(self, χthresh=None, σ=None, forceχ2Calc=False, verbose=False, minSaved=2):
         """ Only removes data from resltBck if χthresh is provided, χthresh=1.5 seems to work well
         Now we use costVal from GRASP if available (or if forceχ2Calc==True), χthresh≈2.5 is probably better
         NOTE: if forceχ2Calc==True or χthresh~=None this will permanatly alter the values of rsltBck/rsltFwd
@@ -504,7 +503,6 @@ class simulation(object):
                 rmsErr['rEff_sub%dnm' % modeCut_nm] = rmsFun(true, rtrvd)
                 bias['rEff_sub%dnm' % modeCut_nm] = biasFun(true, rtrvd)
                 trueOut['rEff_sub%dnm' % modeCut_nm] = true
-                # TODO: add sph fraction here? It would use volWghtedAvg, I think in its exact current form
             if av in rmsErr: rmsErr[av] = np.atleast_1d(rmsErr[av]) # HACK: n was coming back as scalar in some cases, we should do this right though
         return rmsErr, bias, trueOut
 
@@ -593,7 +591,7 @@ class simulation(object):
             Vfc = self.volWghtedAvg(None, [rs], modeCut)
             Amode = rs['vol']/rs['rv']*np.exp(rs['sigma']**2/2) # convert N to rv and then ratio 1st and 4th rows of Table 1 of Grainger's "Useful Formulae for Aerosol Size Distributions"
             Afc = self.volWghtedAvg(None, [rs], modeCut, Amode)
-            return Vfc/Afc # NOTE: ostensibly this should be Vfc/Afc/3 but we ommited the factor of 3 from Amode as well
+            return Vfc/Afc # ostensibly this should be Vfc/Afc/3 but we ommited the factor of 3 from Amode as well
         elif 'dVdlnr' in rs and 'r' in rs:
             fnCrsReff = []
             if modeCut is None: 
@@ -630,6 +628,30 @@ class simulation(object):
             else:
                 Bimode[i] = np.sum(crsWght*val[i], axis=1)
         return Bimode
+    
+    def spectralInterpFwdToBck(self): # TODO this needs to become a wrapper for the runGRASP.py version of this
+        """Performs linear interpolation on all aerosol state vars, except AOD which use angstrom exponent interpolation."""
+        assert len(self.rsltBck)==len(self.rsltFwd), 'rsltFwd (N=%d) and rsltBck (N=%d) currently must be same length to use this method, although that could be fixed farily easily.' % (len(self.rsltFwd), len(self.rsltBck))
+        2Dkeys = RSLT_DICT_KEYS['stateModeSpctrl'] + RSLT_DICT_KEYS['observeSpctrl'] + RSLT_DICT_KEYS['stateSurfSpctrl']
+        for rb,rf in zip(self.rsltBck, self.rsltFwd):
+            lNew = rb['lambda']
+            for key in RSLT_DICT_KEYS['stateTotSpctrl']:
+                if key in rf: 
+                    rf[key] = self._intrpHelp(rf['lambda'], rf[key], lNew, key)
+            for key in 2Dkeys:
+                if key in rf:
+                    yNew = np.empty(rf[key].shape)
+                    for i,vect1D in enumerate(yNew):
+                        vect1D = self._intrpHelp(rf['lambda'], rf[key][i], lNew, key)
+                    rf[key] = yNew
+            rf['lambda'] = lNew
+        
+        
+    def _intrpHelp(self, x, y, xn, key):
+        if 'aod' in key.lower():
+            return ms.angstrmIntrp(x,y,xNew) # TODO: I don't think this works with xNew as a vector
+        else
+            return np.interp(xn, x, y)
         
     def classifyAerosolType(self, verbose=False):
         """
