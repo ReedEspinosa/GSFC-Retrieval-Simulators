@@ -41,7 +41,7 @@ class simulation(object):
                lightSave=False, intrnlFileGRASP=None, releaseYAML=True, rndIntialGuess=False,
                dryRun=False, workingFileSave=False, fixRndmSeed=False, radianceNoiseFun=None, verbose=False, delTempFiles=False):
         """
-        <> runs the simulation for given set of simulated and inversion conditions <>
+        Runs the simulation for given set of simulated and inversion conditions
         fwdData -> yml file path for GRASP fwd model OR graspYAML object OR a list of either of the prior two OR "results style" list of dicts
                         if a list of YAML files, len(self.nowPix) can be unity OR len(fwdData) [if latter, they pair one-to-one]
         bckYAML -> yml file path for GRASP inversion OR graspYAML object [only one allowed here, no lists]
@@ -189,6 +189,7 @@ class simulation(object):
         # If already exists, load the file
         if os.path.exists(savePATH) and not forceMerge:
             files = [savePATH]
+            saveMerge = False
         else:
             files = glob(picklePath)
         assert len(files)>0, 'No files found!'
@@ -629,7 +630,7 @@ class simulation(object):
                 Bimode[i] = np.sum(crsWght*val[i], axis=1)
         return Bimode
     
-    def spectralInterpFwdToBck(self): # TODO this needs to become a wrapper for the runGRASP.py version of this
+    def spectralInterpFwdToBck(self):
         """Performs linear interpolation on all aerosol state vars, except AOD which use angstrom exponent interpolation."""
         assert len(self.rsltBck)==len(self.rsltFwd), 'rsltFwd (N=%d) and rsltBck (N=%d) currently must be same length to use this method, although that could be fixed farily easily.' % (len(self.rsltFwd), len(self.rsltBck))
         for i,(rb,rf) in enumerate(zip(self.rsltBck, self.rsltFwd)):

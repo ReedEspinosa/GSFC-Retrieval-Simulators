@@ -254,6 +254,8 @@ bckLambda = simBase.rsltBck[0]['lambda'][waveInd]
 print('Showing results for λ_fwd = %5.3f μm.' % fwdLambda)
 if not np.isclose(fwdLambda, bckLambda, atol=0.001):
     warnings.warn('\nThe values of lambda for the forward (%.3f μm) and backward (%.3f μm) differed by more than 1 nm at waveInd=%d!' % (fwdLambda, bckLambda, waveInd))
+    print('Interpolating forward results to back wavelengths... (this should fix wavelength misalignment noted in prior warning)')
+    simBase.spectralInterpFwdToBck()
 if showOverallStats: 
     print('------ RMSE ------')
     pprint(simBase.analyzeSim(waveInd)[0])
@@ -287,7 +289,7 @@ if np.any(['reff' in var.lower() for var in vars2plot.keys()]):
 for key in list(vars2plot):
     inFwd = vars2plot[key] in simBase.rsltFwd[0].keys() 
     inBck = vars2plot[key] in simBase.rsltBck[0].keys()
-    if not (inFwd and inBck): 
+    if not (inFwd and inBck):
         print('%s not found in fwd and/or bck rsltsDict. %s will not be plotted.' % (vars2plot[key],key))
         del vars2plot[key]
 
