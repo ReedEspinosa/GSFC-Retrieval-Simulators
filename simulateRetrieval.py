@@ -13,7 +13,7 @@ import sys
 from os import path
 GRASP_Python_Path = path.join(path.dirname(path.dirname(__file__)), "GSFC-GRASP-Python-Interface")
 if GRASP_Python_Path not in sys.path: sys.path.append(GRASP_Python_Path)
-import runGRASP as rg, RSLT_DICT_KEYS
+import runGRASP as rg
 import miscFunctions as ms
 from glob import glob
 
@@ -159,8 +159,8 @@ class simulation(object):
             print('savePath (%s) did not exist, creating it...' % os.path.dirname(savePath))
             os.makedirs(os.path.dirname(savePath))
         if lightSave: self._makeRsltLight(self.rsltFwd, self.rsltBck)
-        self.rsltBck[0]['version'] = rg.RSLT_DICT_VERSION if 'RSLT_DICT_VERSION' in dir(rg) else '0.0'
-        self.rsltFwd[0]['version'] = rg.RSLT_DICT_VERSION if 'RSLT_DICT_VERSION' in dir(rg) else '0.0'
+        self.rsltBck[0]['version'] = rg.rsltDictTools.VERSION if 'rsltDictTools' in dir(rg) else '0.0'
+        self.rsltFwd[0]['version'] = rg.rsltDictTools.VERSION if 'rsltDictTools' in dir(rg) else '0.0'
         if verbose: print('Saving simulation results to %s' %  savePath)
         with open(savePath, 'wb') as f:
             pickle.dump(list(self.rsltBck), f, pickle.HIGHEST_PROTOCOL)
@@ -209,9 +209,9 @@ class simulation(object):
 
     def _loadData(self, picklePath, verbose=True):
         with open(picklePath, 'rb') as f:
-            rsltBck = rg.frmtLoadedRslts(pickle.load(f))
+            rsltBck = rg.rsltDictTools.frmtLoadedRslts(pickle.load(f))
             try:
-                rsltFwd = rg.frmtLoadedRslts(pickle.load(f))
+                rsltFwd = rg.rsltDictTools.frmtLoadedRslts(pickle.load(f))
             except EOFError: # this was an older file (created before Jan 2020)
                 rsltFwd = [rsltBck[-1]] # rsltFwd as a array of len==0 (not totaly backward compatible, it used to be straight dict)
                 rsltBck = rsltBck[:-1]        
@@ -632,27 +632,9 @@ class simulation(object):
     def spectralInterpFwdToBck(self): # TODO this needs to become a wrapper for the runGRASP.py version of this
         """Performs linear interpolation on all aerosol state vars, except AOD which use angstrom exponent interpolation."""
         assert len(self.rsltBck)==len(self.rsltFwd), 'rsltFwd (N=%d) and rsltBck (N=%d) currently must be same length to use this method, although that could be fixed farily easily.' % (len(self.rsltFwd), len(self.rsltBck))
-        2Dkeys = RSLT_DICT_KEYS['stateModeSpctrl'] + RSLT_DICT_KEYS['observeSpctrl'] + RSLT_DICT_KEYS['stateSurfSpctrl']
-        for rb,rf in zip(self.rsltBck, self.rsltFwd):
-            lNew = rb['lambda']
-            for key in RSLT_DICT_KEYS['stateTotSpctrl']:
-                if key in rf: 
-                    rf[key] = self._intrpHelp(rf['lambda'], rf[key], lNew, key)
-            for key in 2Dkeys:
-                if key in rf:
-                    yNew = np.empty(rf[key].shape)
-                    for i,vect1D in enumerate(yNew):
-                        vect1D = self._intrpHelp(rf['lambda'], rf[key][i], lNew, key)
-                    rf[key] = yNew
-            rf['lambda'] = lNew
-        
-        
-    def _intrpHelp(self, x, y, xn, key):
-        if 'aod' in key.lower():
-            return ms.angstrmIntrp(x,y,xNew) # TODO: I don't think this works with xNew as a vector
-        else
-            return np.interp(xn, x, y)
-        
+        for i,(rb,rf) in enumerate(zip(self.rsltBck, self.rsltFwd)):
+            rf = rg.rsltDictTools.spectralInterp(rf, rb['lambda'], verbose=(i==0))
+
     def classifyAerosolType(self, verbose=False):
         """
         0 Dust
