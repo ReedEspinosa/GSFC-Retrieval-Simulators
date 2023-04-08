@@ -38,11 +38,11 @@ except:
 # waveInd2 = 4 # Wavelength index for AE calculation
 # fineFwdInd = 0 # index in forward data to use for fine mode plots 
 # fineBckInd = 0 # index in backward data to use for fine mode plots
-# crsFwdInd = 3 # index in forward data to use for coarse mode plots
+# crsFwdInd = 0 # index in forward data to use for coarse mode plots
 # crsBckInd = 1 # index in backward data to use for coarse mode plots
 # fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
+# pubQuality = False # If True, we use publication quality figures
 # filePathPtrn = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
-# filePathPtrn = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
 
 
 ### Anin's CAMP2Ex Settings ###
@@ -60,7 +60,7 @@ fineFwdScale = 4 # hack for CAMP2Ex data where fine mode is spread over 4 fwd mo
 pubQuality = True # If True, we use publication quality figures
 
 # Set the matplotlib parameters to use publication quality figures
-if pubQuality:
+if pubQuality: # QUESTION: Would it impact things if we moved this down with the rest of the functions?
     mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'})
     mpl.rcParams.update({'ytick.right': 'True'}); mpl.rcParams.update({'xtick.top': 'True'})
     plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
@@ -315,8 +315,8 @@ def modifiedHist(x, axs, titleStr='', xlabel=False, ylabel=False, nBins=20, stat
                             fontsize=FS)
 
     
-def genPlots(true, rtrv, axScat, axHist, varName, xlabel, ylabel, scale='linear',
-             moreDigits=False, stats=True, MinMax=None):
+
+def genPlots(true, rtrv, axScat, axHist, varName, xlabel, ylabel, scale='linear', moreDigits=False, stats=True, MinMax=None):
     '''Generate scatter and histogram plots
     
     Parameters
@@ -345,6 +345,14 @@ def genPlots(true, rtrv, axScat, axHist, varName, xlabel, ylabel, scale='linear'
     -------
     None
     '''
+    nonNan = np.logical_and(~np.isnan(true), ~np.isnan(rtrv))
+    if not nonNan.all():
+        true = true[nonNan]
+        rtrv = rtrv[nonNan]
+        if len(true)<=1: 
+            print('%s not plotted – all but ≤1 pixels were NAN! (At least two pixels needed to plot.)' % varName)
+            return
+        print('Removing %d NAN pixels from %s plots...' % (sum(~nonNan), varName))
     if scale=='log' and (np.any(true<=0) or np.any(rtrv<=0)):
         warnings.warn('Log scale set for %s with true and/or rtrv values that are less than or equal to zero!' % varName)
     if MinMax is None:
@@ -389,6 +397,8 @@ print('Showing results for λ_fwd = %5.3f μm.' % fwdLambda)
 # check if the forward and backward lambdas are close
 if not np.isclose(fwdLambda, bckLambda, atol=0.001):
     warnings.warn('\nThe values of lambda for the forward (%.3f μm) and backward (%.3f μm) differed by more than 1 nm at waveInd=%d!' % (fwdLambda, bckLambda, waveInd))
+    print('Interpolating forward results to back wavelengths... (this should fix wavelength misalignment noted in prior warning)')
+    simBase.spectralInterpFwdToBck()
 if showOverallStats: 
     print('------ RMSE ------')
     pprint(simBase.analyzeSim(waveInd)[0])
@@ -423,7 +433,7 @@ if np.any(['reff' in var.lower() for var in vars2plot.keys()]):
 for key in list(vars2plot):
     inFwd = vars2plot[key] in simBase.rsltFwd[0].keys() 
     inBck = vars2plot[key] in simBase.rsltBck[0].keys()
-    if not (inFwd and inBck): 
+    if not (inFwd and inBck):
         print('%s not found in fwd and/or bck rsltsDict. %s will not be plotted.' % (vars2plot[key],key))
         del vars2plot[key]
 
@@ -443,12 +453,12 @@ for var,axInd in zip(vars2plot.keys(), axesInd[0:len(vars2plot)]):
         rtrv = np.asarray([rslt['aod'][waveInd] for rslt in simBase.rsltBck])[keepIndAll]
         genPlots(true, rtrv, axScat, axHist, 'AOD', xlabel, ylabel, scale='log')
     elif var=='aod_f':    # Fine mode AOD
-        true = np.asarray([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltFwd])[keepIndAll][:,fineFwdInd]
-        rtrv = np.asarray([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltBck])[keepIndAll][:,fineBckInd]
+        true = np.vstack([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltFwd])[keepIndAll,fineFwdInd]
+        rtrv = np.vstack([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltBck])[keepIndAll,fineBckInd]
         genPlots(true, rtrv, axScat, axHist, 'Fine mode AOD', xlabel, ylabel, scale='log')        
     elif var=='aod_c':    # Coarse mode AOD
-        true = np.asarray([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltFwd])[keepIndAll][:,crsFwdInd]
-        rtrv = np.asarray([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltBck])[keepIndAll][:,crsBckInd]
+        true = np.vstack([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltFwd])[keepIndAll,crsFwdInd]
+        rtrv = np.vstack([rslt['aodMode'][:,waveInd] for rslt in simBase.rsltBck])[keepIndAll,crsBckInd]
         genPlots(true, rtrv, axScat, axHist, 'Coarse mode AOD', xlabel, ylabel, scale='log')
     elif var=='aaod':     # # AAOD
         true = np.asarray([(1-rslt['ssa'][waveInd])*rslt['aod'][waveInd] for rslt in simBase.rsltFwd])[keepIndAll]
@@ -464,12 +474,12 @@ for var,axInd in zip(vars2plot.keys(), axesInd[0:len(vars2plot)]):
         rtrv = -np.log(aod1/aod2)/logLamdRatio
         genPlots(true, rtrv, axScat, axHist, 'Angstrom Exponent', xlabel, ylabel)
     elif var=='k_f':     # # k (fine)
-        true = np.asarray([rslt['k'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd][:,fineFwdInd]
-        rtrv = np.asarray([rslt['k'][:,waveInd] for rslt in simBase.rsltBck])[keepInd][:,fineBckInd]
+        true = np.vstack([rslt['k'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd,fineFwdInd]
+        rtrv = np.vstack([rslt['k'][:,waveInd] for rslt in simBase.rsltBck])[keepInd,fineBckInd]
         genPlots(true, rtrv, axScat, axHist, r'k$_{fine}$', xlabel, ylabel, scale='log', moreDigits=True)
     elif var=='k_c':    # # k (coarse)
-        true = np.asarray([rslt['k'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd][:,crsFwdInd]
-        rtrv = np.asarray([rslt['k'][:,waveInd] for rslt in simBase.rsltBck])[keepInd][:,crsBckInd]
+        true = np.vstack([rslt['k'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd,crsFwdInd]
+        rtrv = np.vstack([rslt['k'][:,waveInd] for rslt in simBase.rsltBck])[keepInd,crsBckInd]
         genPlots(true, rtrv, axScat, axHist, r'k$_{coarse}$', xlabel, ylabel, scale='log', moreDigits=True)
     elif var=='fmf':    # # FMF (vol)
         true = np.asarray([fmfCalc(rslt['r'], rslt['dVdlnr']) for rslt in simBase.rsltFwd])[keepInd]
@@ -488,12 +498,12 @@ for var,axInd in zip(vars2plot.keys(), axesInd[0:len(vars2plot)]):
         rtrv = np.asarray([rslt['ssa'][waveInd] for rslt in simBase.rsltBck])[keepInd]
         genPlots(true, rtrv, axScat, axHist, 'SSA', xlabel, ylabel)
     elif var=='sph_f':    # # spherical fraction (fine)
-        true = np.asarray([rslt['sph']for rslt in simBase.rsltFwd])[keepInd][:,fineFwdInd]
-        rtrv = np.asarray([rslt['sph']for rslt in simBase.rsltBck])[keepInd][:,fineBckInd]
+        true = np.vstack([rslt['sph'] for rslt in simBase.rsltFwd])[keepInd,fineFwdInd]
+        rtrv = np.vstack([rslt['sph'] for rslt in simBase.rsltBck])[keepInd,fineBckInd]
         genPlots(true, rtrv, axScat, axHist, 'Fine Mode SPH', xlabel, ylabel, MinMax=[0,100])
     elif var=='sph_c':     # # spherical fraction (coarse)
-        true = np.asarray([rslt['sph']for rslt in simBase.rsltFwd])[keepInd][:,crsFwdInd]
-        rtrv = np.asarray([rslt['sph']for rslt in simBase.rsltBck])[keepInd][:,crsBckInd]
+        true = np.vstack([rslt['sph'] for rslt in simBase.rsltFwd])[keepInd,crsFwdInd]
+        rtrv = np.vstack([rslt['sph'] for rslt in simBase.rsltBck])[keepInd,crsBckInd]
         genPlots(true, rtrv, axScat, axHist, 'Coarse Mode SPH', xlabel, ylabel, MinMax=[0,100])
     elif var=='reff_sub_um':     # # rEff (sub micron)
         true = np.asarray([rslt['rEffMode'][0] for rslt in simBase.rsltFwd])[keepInd]
@@ -504,24 +514,24 @@ for var,axInd in zip(vars2plot.keys(), axesInd[0:len(vars2plot)]):
         rtrv = np.asarray([rslt['rEffMode'][1] for rslt in simBase.rsltBck])[keepInd]
         genPlots(true, rtrv, axScat, axHist, r'above micron r$_{eff}$', xlabel, ylabel)
     elif var=='n_f':     # # n (fine)
-        true = np.asarray([rslt['n'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd][:,fineFwdInd]
-        rtrv = np.asarray([rslt['n'][:,waveInd] for rslt in simBase.rsltBck])[keepInd][:,fineBckInd]
+        true = np.vstack([rslt['n'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd,fineFwdInd]
+        rtrv = np.vstack([rslt['n'][:,waveInd] for rslt in simBase.rsltBck])[keepInd,fineBckInd]
         genPlots(true, rtrv, axScat, axHist, r'n$_{fine}$', xlabel, ylabel)
     elif var=='n_c':     # # n (coarse)
-        true = np.asarray([rslt['n'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd][:,crsFwdInd]
-        rtrv = np.asarray([rslt['n'][:,waveInd] for rslt in simBase.rsltBck])[keepInd][:,crsBckInd]
+        true = np.vstack([rslt['n'][:,waveInd] for rslt in simBase.rsltFwd])[keepInd,crsFwdInd]
+        rtrv = np.vstack([rslt['n'][:,waveInd] for rslt in simBase.rsltBck])[keepInd,crsBckInd]
         genPlots(true, rtrv, axScat, axHist, r'n$_{coarse}$', xlabel, ylabel)
     elif var=='intensity':     # # %% intensity
         true = np.sum([rslt['meas_I'][:,waveInd] for rslt in simBase.rsltBck[keepInd]], axis=1)
         rtrv = np.sum([rslt['fit_I'][:,waveInd] for rslt in simBase.rsltBck[keepInd]], axis=1)
         genPlots(true, rtrv, axScat, axHist, 'sum(intensity)', xlabel, ylabel, stats=False)
     elif var=='vol_f':     # # volume conc (fine)
-        true = fineFwdScale*np.asarray([rslt['vol'] for rslt in simBase.rsltFwd])[keepInd][:,fineFwdInd]
-        rtrv = np.asarray([rslt['vol'] for rslt in simBase.rsltBck])[keepInd][:,fineBckInd]
+        true = fineFwdScale*np.asarray([rslt['vol'] for rslt in simBase.rsltFwd])[keepInd,fineFwdInd]
+        rtrv = np.asarray([rslt['vol'] for rslt in simBase.rsltBck])[keepInd,fineBckInd]
         genPlots(true, rtrv, axScat, axHist, 'Fine Mode Volume', xlabel, ylabel)
     elif var=='vol_c':     # # volume conc (coarse)
-        true = np.asarray([rslt['vol'] for rslt in simBase.rsltFwd])[keepInd][:,crsFwdInd]
-        rtrv = np.asarray([rslt['vol'] for rslt in simBase.rsltBck])[keepInd][:,crsBckInd]
+        true = np.vstack([rslt['vol'] for rslt in simBase.rsltFwd])[keepInd,crsFwdInd]
+        rtrv = np.vstack([rslt['vol'] for rslt in simBase.rsltBck])[keepInd,crsBckInd]
         genPlots(true, rtrv, axScat, axHist, 'Coarse Mode Volume', xlabel, ylabel)
     else:
         # confirm that the variable name is recognized
