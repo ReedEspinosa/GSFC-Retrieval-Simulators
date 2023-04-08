@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+''' This script is used to quickly look at the results of a retrieval simulation. 
+It is intended to be used with the output from the runSimulation.py script. 
+It will plot the results of the simulation for a given wavelength and a given variable. 
+'''
+
 # =============================================================================
 # Import the librarires
 # =============================================================================
@@ -10,49 +15,55 @@ from pprint import pprint
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-# mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'}); mpl.rcParams.update({'ytick.right': 'True'}); mpl.rcParams.update({'xtick.top': 'True'}); plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
+from matplotlib.colors import LinearSegmentedColormap
+
 from scipy import interpolate
 from scipy.stats import norm, gaussian_kde, ncx2, moyal
 from simulateRetrieval import simulation
-from glob import glob
+
+# Modified version of mpl_scatter_density library to allow for custom colorbar
 try:
     import mpl_scatter_density # adds projection='scatter_density'
     mpl_scatter = True
 except:
     print('mpl_scatter_density library not available')
     mpl_scatter = False
-from matplotlib.colors import LinearSegmentedColormap
-
 
 # =============================================================================
 # Initiation and User Provided Settings
 # =============================================================================
 
 ### Reed's ABI/testing Settings###
-waveInd = 2 # Wavelength index for plotting
-waveInd2 = 4 # Wavelength index for AE calculation
-fineFwdInd = 0 # index in forward data to use for fine mode plots 
-fineBckInd = 0 # index in backward data to use for fine mode plots
-crsFwdInd = 0 # index in forward data to use for coarse mode plots
-crsBckInd = 1 # index in backward data to use for coarse mode plots
-fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
+# waveInd = 2 # Wavelength index for plotting
+# waveInd2 = 4 # Wavelength index for AE calculation
+# fineFwdInd = 0 # index in forward data to use for fine mode plots 
+# fineBckInd = 0 # index in backward data to use for fine mode plots
+# crsFwdInd = 0 # index in forward data to use for coarse mode plots
+# crsBckInd = 1 # index in backward data to use for coarse mode plots
+# fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
+# pubQuality = False # If True, we use publication quality figures
 # filePathPtrn = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
-filePathPtrn = '/Users/wrespino/Synced/Working/ABI_initialTests/Test_threeSites_Ocean_V02.pkl'
 
 
 ### Anin's CAMP2Ex Settings ###
 # Location/dir where the pkl files are
 # filePathPtrn = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-# filePathPtrn = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
+filePathPtrn = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
 # filePathPtrn = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl'
-# waveInd = 2 # Wavelength index for plotting
-# waveInd2 = 4 # Wavelength index for AE calculation
-# fineFwdInd = 0 # index in forward data to use for fine mode plots 
-# fineBckInd = 0 # index in backward data to use for fine mode plots
-# crsFwdInd = 4 # index in forward data to use for coarse mode plots
-# crsBckInd = 1 # index in backward data to use for coarse mode plots
-# fineFwdScale = 4 # hack for CAMP2Ex data where fine mode is spread over 4 fwd modes 
+waveInd = 2 # Wavelength index for plotting
+waveInd2 = 4 # Wavelength index for AE calculation
+fineFwdInd = 0 # index in forward data to use for fine mode plots 
+fineBckInd = 0 # index in backward data to use for fine mode plots
+crsFwdInd = 4 # index in forward data to use for coarse mode plots
+crsBckInd = 1 # index in backward data to use for coarse mode plots
+fineFwdScale = 4 # hack for CAMP2Ex data where fine mode is spread over 4 fwd modes
+pubQuality = True # If True, we use publication quality figures
 
+# Set the matplotlib parameters to use publication quality figures
+if pubQuality: # QUESTION: Would it impact things if we moved this down with the rest of the functions?
+    mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'})
+    mpl.rcParams.update({'ytick.right': 'True'}); mpl.rcParams.update({'xtick.top': 'True'})
+    plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
 
 # more tags and specifiations for the scatter plot
 surf2plot = 'both' # land, ocean or both
@@ -108,7 +119,22 @@ white_viridis = LinearSegmentedColormap.from_list('white_viridis', [
 # Function Definitions for Plots
 # =============================================================================
 
-def fmfCalc(r,dvdlnr):
+def fmfCalc(r, dvdlnr):
+    '''Calculate fmf from r and dvdlnr
+    
+    Parameters
+    ----------
+    
+    r : array-like, shape (N,)
+        Radii in microns
+    dvdlnr : array-like, shape (N,)
+        dV/dlnr in m^-3 um^-1
+    
+    Returns
+    -------
+    
+    fineModeFraction : float
+        Fine mode fraction'''
     assert np.all(r[0]==r[-1]), 'First and last mode defined with different radii!' # This is not perfect, but likely to catch non-standardized PSDs
     if r.ndim==2: r=r[0] # We hope all modes defined over same radii (partial check above)
     dvdlnr = dvdlnr.sum(axis=0)  # Loading checks are in place in runGRASP.py to guarantee 2D arrays of absolute dvdlnr
@@ -122,6 +148,30 @@ def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20,
                     mplscatter=True, **kwargs):
     """
     Scatter plot colored by 2d histogram
+    
+    Parameters
+    ----------
+    
+    x, y : array-like, shape (n, )
+        Input data
+    ax : matplotlib.axes.Axes, optional
+        Axes in which to draw the plot, otherwise use the current Axes.
+    fig : matplotlib.figure.Figure, optional
+        Figure in which to draw the plot, otherwise use the current Figure.
+    sort : bool, optional
+        Whether to sort the points by density, so that the densest points are
+        plotted last
+    bins : int, optional
+        Number of bins in the 2d histogram
+    mplscatter : bool, optional
+        Whether to use plt.scatter or ax.scatter to draw the points
+    
+    Returns
+    -------
+    
+    ax : matplotlib.axes.Axes
+        Axes object with the plot.
+        
     """
     if ax is None:
         fig, ax = plt.subplots()
@@ -148,10 +198,37 @@ def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20,
         if fig: fig.colorbar(density, label='Density')
     return ax
 
-
-def plotProp(true, rtrv, axs, titleStr ='', scale='linear', xlabel=False, ylabel=False, MinMax=None, stat=True, moreDigits=False):
+def plotProp(true, rtrv, axs, titleStr ='', scale='linear', xlabel=False, ylabel=False,
+             MinMax=None, stat=True, moreDigits=False):
     """
     Formatting and statistics for scatter plots
+    
+    Parameters
+    ----------
+    
+    true : array-like, shape (n, )
+        True values
+    rtrv : array-like, shape (n, )
+        Retrieved values
+    axs : matplotlib.axes.Axes
+        Axes object with the plot.
+    titleStr : str, optional
+        Title of the plot
+    scale : str, optional
+        Scale of the plot, 'linear' or 'log'
+    xlabel : bool, optional
+    ylabel : bool, optional
+    MinMax : tuple, optional
+        Minimum and maximum values of the plot
+    stat : bool, optional
+        Whether to plot the statistics
+    moreDigits : bool, optional
+        Whether to use more digits in the statistics
+        
+    Returns
+    -------
+    None
+    
     """
     # min max
     if MinMax is not None:
@@ -184,6 +261,30 @@ def plotProp(true, rtrv, axs, titleStr ='', scale='linear', xlabel=False, ylabel
 
 
 def modifiedHist(x, axs, titleStr='', xlabel=False, ylabel=False, nBins=20, stat=True):
+    '''Modified histogram plot
+    
+    Parameters
+    ----------
+    
+    x : array-like, shape (n, )
+        Input data
+    axs : matplotlib.axes.Axes
+        Axes in which to draw the plot
+    titleStr : str, optional
+        Title of the plot
+    xlabel : bool, optional
+    ylabel : bool, optional
+    nBins : int, optional
+        Number of bins in the histogram
+    stat : bool, optional
+        Whether to plot the statistics
+        
+    Returns
+    -------
+    
+    none
+    
+    '''
     # Creating histogram
     N, bins, patches = axs.hist(x, bins=nBins, density=False)
      
@@ -195,6 +296,7 @@ def modifiedHist(x, axs, titleStr='', xlabel=False, ylabel=False, nBins=20, stat
     for thisfrac, thispatch in zip(fracs, patches):
         color = plt.cm.viridis(norm_(thisfrac))
         thispatch.set_facecolor(color)
+        
     # Title of the plot
     axs.set_title(titleStr)    
     # x and y label
@@ -213,7 +315,36 @@ def modifiedHist(x, axs, titleStr='', xlabel=False, ylabel=False, nBins=20, stat
                             fontsize=FS)
 
     
+
 def genPlots(true, rtrv, axScat, axHist, varName, xlabel, ylabel, scale='linear', moreDigits=False, stats=True, MinMax=None):
+    '''Generate scatter and histogram plots
+    
+    Parameters
+    ----------
+    
+    true : array-like, shape (n, )
+        True values
+    rtrv : array-like, shape (n, )
+        Retrieved values
+    axScat : matplotlib.axes.Axes
+        Axes object with the scatter plot
+    varName : str
+        Name of the variable
+    xlabel : bool
+    ylabel : bool
+    scale : str, optional
+        Scale of the plot, 'linear' or 'log'
+    moreDigits : bool, optional
+        Whether to use more digits in the statistics
+    stats : bool, optional
+        Whether to plot the statistics
+    MinMax : tuple, optional
+        Minimum and maximum values of the plot
+    
+    Returns
+    -------
+    None
+    '''
     nonNan = np.logical_and(~np.isnan(true), ~np.isnan(rtrv))
     if not nonNan.all():
         true = true[nonNan]
@@ -246,9 +377,11 @@ def genPlots(true, rtrv, axScat, axHist, varName, xlabel, ylabel, scale='linear'
 nRows = int(np.sqrt(len(vars2plot)))
 nCols = int(np.ceil(len(vars2plot)/nRows))
 axesInd = [[i,j] for i in range(nRows) for j in range(nCols)]
+
 # Figure for 2D density plots
 fig, ax = plt.subplots(nRows, nCols, figsize=(15,9))
 plt.locator_params(nbins=3)
+
 # Figure for histograms
 fig_hist, ax_hist = plt.subplots(nRows, nCols, figsize=(15,9))
 plt.locator_params(nbins=3)
@@ -260,6 +393,8 @@ simBase = simulation(picklePath=filePathPtrn)
 fwdLambda = simBase.rsltFwd[0]['lambda'][waveInd]
 bckLambda = simBase.rsltBck[0]['lambda'][waveInd]
 print('Showing results for λ_fwd = %5.3f μm.' % fwdLambda)
+
+# check if the forward and backward lambdas are close
 if not np.isclose(fwdLambda, bckLambda, atol=0.001):
     warnings.warn('\nThe values of lambda for the forward (%.3f μm) and backward (%.3f μm) differed by more than 1 nm at waveInd=%d!' % (fwdLambda, bckLambda, waveInd))
     print('Interpolating forward results to back wavelengths... (this should fix wavelength misalignment noted in prior warning)')
@@ -268,7 +403,8 @@ if showOverallStats:
     print('------ RMSE ------')
     pprint(simBase.analyzeSim(waveInd)[0])
     print('------------------')
-    
+
+# filter out pixels that are not on the surface of interest    
 if 'land_prct' in simBase.rsltBck[0]:
     lp = np.array([rb['land_prct'] for rb in simBase.rsltBck])
     keepInd = lp>99 if surf2plot=='land' else lp<1 if surf2plot=='ocean' else lp>-1
@@ -310,6 +446,8 @@ for var,axInd in zip(vars2plot.keys(), axesInd[0:len(vars2plot)]):
     axHist = ax_hist[tuple(axInd)]
     xlabel = axInd[0]==(nRows-1)
     ylabel = axInd[1]==0
+    
+    # based on the variable name, plot the appropriate data
     if var=='aod':     # AOD
         true = np.asarray([rslt['aod'][waveInd] for rslt in simBase.rsltFwd])[keepIndAll]
         rtrv = np.asarray([rslt['aod'][waveInd] for rslt in simBase.rsltBck])[keepIndAll]
@@ -396,12 +534,14 @@ for var,axInd in zip(vars2plot.keys(), axesInd[0:len(vars2plot)]):
         rtrv = np.vstack([rslt['vol'] for rslt in simBase.rsltBck])[keepInd,crsBckInd]
         genPlots(true, rtrv, axScat, axHist, 'Coarse Mode Volume', xlabel, ylabel)
     else:
+        # confirm that the variable name is recognized
         assert False, 'Variable name: %s was not recognized!' % var                         
 
 
 # =============================================================================
 # Save the figures
 # =============================================================================
+
 saveFN = path.basename(filePathPtrn)
 inDirPath = path.dirname(filePathPtrn)
 figSavePath = saveFN.replace('.pkl',('_%s_%s_%04dnm_ScatterPlot.png' % (surf2plot, fnTag, simBase.rsltFwd[0]['lambda'][waveInd]*1000)))
@@ -417,3 +557,4 @@ fig_hist.savefig(inDirPath + figSavePath.replace('ScatterPlot','HistErrPlot'), d
 print('Saving error histogram figure to: %s' % (path.join(inDirPath,figSavePath.replace('MERGED_','Hist_'))))
 # plt.show()
 
+# =============================================================================
