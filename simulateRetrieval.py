@@ -286,45 +286,16 @@ class simulation(object):
         if oneAdded:
             warnings.warn('We added rEffMode to one of fwd/bck but not the other. This may cause inconsistency if definitions differ.')
 
-    def conerganceFilter(self, χthresh=None, σ=None, forceχ2Calc=False, verbose=False, minSaved=2):
+    def conerganceFilter(self, χthresh=None, forceχ2Calc=False, verbose=False, minSaved=2):
         """ Only removes data from resltBck if χthresh is provided, χthresh=1.5 seems to work well
         Now we use costVal from GRASP if available (or if forceχ2Calc==True), χthresh≈2.5 is probably better
         NOTE: if forceχ2Calc==True or χthresh~=None this will permanatly alter the values of rsltBck/rsltFwd
         """
-        if σ is None:
-            σ={'I'   :0.003, # relative
-               'QoI' :0.0015, # absolute
-               'UoI' :0.005, # absolute
-               'Q'   :0.0015, # absolute in terms of Q/I
-               'U'   :0.005, # absolute in terms of U/I
-               'LS'  :0.15, # relative
-               'VBS' :0.05, # relative
-               'VExt':5e-6} # absolute
         if 'costVal' not in self.rsltBck[0] or forceχ2Calc:
-            for i,rb in enumerate(self.rsltBck):
-                rf = self.rsltFwd[0] if len(self.rsltFwd)==1 else self.rsltFwd[i]
-                χΤοtal = np.array([])
-                for measType in ['VExt', 'VBS', 'LS', 'I', 'QoI', 'UoI', 'Q', 'U']:
-                    fitKey = 'fit_'+measType
-                    if fitKey in rb:
-                        DBck = rb[fitKey][~np.isnan(rb[fitKey])]
-                        if fitKey in rf:
-                            DFwd = rf[fitKey][~np.isnan(rf[fitKey])]
-                        elif measType in ['QoI', 'UoI'] and fitKey[:-2] in rf: # rf has X while rb has XoI
-                            DFwd = rf[fitKey[:-2]][~np.isnan(rf[fitKey[:-2]])]/rf['fit_I'][~np.isnan(rf[fitKey[:-2]])]
-                        else:
-                            assert False, 'Fwd lacked a rsltDict key for an observable that Bck had... Do you really need forceχ2Calc=True? If so, see issue #3 on GitHub' 
-                        if measType in ['I', 'LS', 'VBS']: # relative errors
-                            with np.errstate(divide='ignore'): # possible for DBck+DFwd=0, inf's will be removed below
-                                χLocal = ((2*(DBck-DFwd)/(DBck+DFwd))/σ[measType])**2
-                            χLocal[χLocal>100] = 100 # cap at 10σ (small values may produce huge relative errors)
-                        else: # absolute errors
-                            if measType in ['Q', 'U']: # we need to normalize by I, all Q[U] errors given in terms of q[u]
-                                DBck = DBck/rb['fit_I'][~np.isnan(rb[fitKey])]
-                                DFwd = DFwd/rf['fit_I'][~np.isnan(rf[fitKey])]
-                            χLocal = ((DBck-DFwd)/σ[measType])**2
-                        χΤοtal = np.r_[χΤοtal, χLocal]
-                rb['costVal'] = np.sqrt(np.mean(χΤοtal))
+            for i,rb in enumerate(fitRslt): % TODO: FIX!!!
+                rf = measRslt[0] if len(measRslt)==1 else measRslt[i] # preserves compatibility with some instances of simulation class that have a single fwd calculation paired with many retrievals 
+                calcChi2(fitRslt=self.rsltBck, measRslt=self.rsltFwd, fitPrfx='fit', measPrfx='fit')
+         
         if χthresh and len(self.rsltBck) > 2: # we will always keep at least 2 entries
             validInd = np.array([rb['costVal']<=χthresh for rb in self.rsltBck])
             if verbose: print('%d/%d met χthresh' % (validInd.sum(), len(self.rsltBck)))
