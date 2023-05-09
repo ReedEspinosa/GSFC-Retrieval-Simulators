@@ -748,6 +748,78 @@ except Exception as e:
 # close the file
 f.close()
     
+# %%
+import seaborn as sns
+# fig11, ax11 = plt.subplots(3,2, figsize=(15,8))
 
+# define the 3D array
+spectralVars = ['aod', 'aodCM', 'aaod', 'ssa', 'ssaCM', 'kFM', 'kCM', 'nFM', 'nCM', 'ssaFM', 'wtrSurf']
+nVar  = len(spectralVars)
+nWav = len(statsDict_[spectralVars[0]]['R'])
+nStats = len(statsDict_[spectralVars[0]])
 
+statsArr = np.zeros((nVar, nWav, nStats))
+
+# fill the array
+for i, var in enumerate(spectralVars):
+    for j, stat in enumerate(statsDict_[var]):
+        statsArr[i,:,j] = statsDict_[var][stat]
+        
+def plotStats(statsArr_, ax, title, cmap='viridis',
+              fmt=".2f", **kwargs):
+    
+    # plot the array
+    hm = sns.heatmap(statsArr_, annot=True, fmt=fmt, cmap=cmap, ax=ax, **kwargs)
+    ax.set_xticklabels(bands)
+    ax.set_yticklabels(spectralVars)
+    
+    hm.set_xticklabels(hm.get_xticklabels(), rotation=60)
+    hm.set_yticklabels(hm.get_yticklabels(), rotation=0)
+    ax.set_title(title)
+    
+            
+# plot the array
+# hm = sns.heatmap(statsArr[:,:,0], annot=True, fmt=".2f", cmap='viridis', ax=ax11.flatten()[0])
+# ax11[0,0].set_xticklabels(bands)
+# ax11[0,0].set_yticklabels(spectralVars)
+
+# hm.set_xticklabels(hm.get_xticklabels(), rotation=60)
+# hm.set_yticklabels(hm.get_yticklabels(), rotation=0)
+#%%
+fig_ = {}
+ax_ = {} 
+for j, stat in enumerate(statsDict_[spectralVars[0]]):
+    fig_['j'], ax_['j'] = plt.subplots(1, 1, figsize=(6,4))
+    if 'bias' in stat:
+        plotStats(statsArr[:,:,j], ax_['j'], stat, cmap='RdBu_r',
+                  fmt=".4f", vmin=-0.1, vmax=0.1)
+    elif 'RMSE' in stat:
+        plotStats(statsArr[:,:,j], ax_['j'], stat, cmap='magma',
+                  fmt=".4f", vmin=0, vmax=0.05)
+    elif '90th' in stat:
+        plotStats(statsArr[:,:,j], ax_['j'], stat, fmt=".3f", cmap='YlGn_r')
+    else:
+        plotStats(statsArr[:,:,j], ax_['j'], stat, fmt=".3f", cmap='YlGn')
+# %%
+
+fig12, ax12 = plt.subplots(1,1, figsize=(6,3))
+
+# define the 3D array
+spectralVars2 = ['volFine', 'volCoarse', 'rEffFine', 'rEffCoarse', 'sphFine', 'sphCoarse', 'volFineAOD', 'volFineCoarse']
+nVar2  = len(spectralVars2)
+nStats = len(statsDict_[spectralVars2[0]])
+statKeys = list(statsDict_[spectralVars2[0]].keys())
+statsArr2 = np.zeros((nVar2, nStats))
+
+# fill the array
+for i, var in enumerate(spectralVars2):
+    for j, stat in enumerate(statsDict_[var]):
+        statsArr2[i,j] = statsDict_[var][stat][0]
+        
+# plot the array
+hm2 = sns.heatmap(statsArr2[:,:], annot=True, fmt=".5f", vmin= -1, vmax=1, cmap='RdYlGn', ax=ax12)
+ax12.set_xticklabels(statKeys)
+ax12.set_yticklabels(spectralVars2)
+hm2.set_yticklabels(hm2.get_yticklabels(), rotation=0)
+hm2.set_xticklabels(hm2.get_xticklabels(), rotation=60)
 # %%
