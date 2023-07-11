@@ -76,8 +76,9 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['k'] = np.repeat(0.01, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
-    # Added by Anin
-    elif 'coarse_mode_campex' in caseStr.lower():
+    
+    # Added by Anin to account for the aerosol models, PSD for the CAMP2Ex based simulation study
+    elif 'coarse_mode_campex' in caseStr.lower(): # 
         try:
             
             nbins = 36
@@ -178,7 +179,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         # parameters above this line has to be modified [AP]
         if multiMode:
             
-            # Defining PSD of four layers for a particular flight
+            # Defining PSD of four layers for a particular flight (fine mode for the case of CAMP2Ex
             vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,1,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,2,:]*[0.1], decimals=6),
@@ -191,12 +192,21 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                            sphFrac] # mode 1, 2,...
             vals['vrtHght'] = [[500], [1000], [2000], [3000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [[500], [500], [500], [500]] # mode 1, 2,... # Gaussian sigma in meters
-            nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)),nwl)
-            nAero = slope4RRI(nAero_, wvls)
-            λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
-            k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
-            lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
-            kAero = loguniform(0.001,0.02)*lamb_k
+            nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)),nwl) # fine mode aerosols
+			
+			# redefining the spectral refractive index based on the runtype (options are either 
+            if 'flatfine' in caseStr.lower():
+                nAero = slope4RRI(nAero_, wvls, slope=0)
+                kAero = loguniform(0.001,0.05)*np.repeat(1, nwl)
+            elif 'urban' in caseStr.lower():
+                nAero = slope4RRI(nAero_, wvls)
+                kAero = loguniform(0.001,0.05)*np.repeat(1, nwl)
+            else:
+                nAero = slope4RRI(nAero_, wvls)
+                λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+                k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
+                lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
+                kAero = loguniform(0.001,0.05)*lamb_k
             
             vals['n'] = [list(nAero),
                          list(nAero),
@@ -207,18 +217,18 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                          list(kAero),
                          list(kAero),
                          list(kAero)]# mode 1
+            # Adding the coarse mode in the simulation
             if 'coarse' in caseStr.lower():
-                # This is hard coded not great for generalization
+                # This is hard-coded, which limits its applicability for generalization
                 # GRASP needs to be modified to make use of triangle and lognormal bins
                 # together
                 σ = [0.70 +rnd.uniform(-0.05, 0.05)] # mode 1, 2,...
                 rv = [0.6 +rnd.uniform(-0.035, 0.035)]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-                #σ = [0.70]
-                #rv = [0.6]*np.exp(3*np.power(σ,2))
                 nbins = np.size(radiusBin)
                 radiusBin_ = np.logspace(np.log10(0.005), np.log10(15), nbins)
                 dvdr = logNormal(rv[0], σ[0], radiusBin_)
                 dvdlnr = dvdr[0]*radiusBin_
+                
                 if 'nocoarse' in caseStr.lower(): multFac = 0.0001
                 else: multFac=0.77
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
@@ -228,9 +238,17 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 vals['vrtHght'] = vals['vrtHght'] + [[500]]
                 vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[500]]
                 nAero_ = np.repeat(1.40 + (rnd.uniform(-0.05, 0.05)), nwl)
-                nAero = slope4RRI(nAero_, wvls)
-                # k
-                kAero = loguniform(0.0001,0.0005)*lamb_k
+                # redefining the spectral refractive index based on the runtype (options are either 
+                if 'flatcoarse' in caseStr.lower():
+                    nAero = slope4RRI(nAero_, wvls, slope=0)
+                    kAero = loguniform(0.0001,0.0005)*np.repeat(1, nwl)
+                else:
+                    nAero = slope4RRI(nAero_, wvls)
+                    # k
+                    λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+                    k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
+                    lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
+                    kAero = loguniform(0.0001,0.0005)*lamb_k
                 vals['n'] = vals['n'] + [list(nAero)]
                 vals['k'] = vals['k'] + [list(kAero)]
         else:
@@ -239,16 +257,24 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
             vals['vrtHght'] =[flight_vrtHght] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
             nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)),nwl)
-            nAero = slope4RRI(nAero_, wvls)
-            vals['n'] = np.vstack([vals['n'], nAero]) # mode 2
-            # k
-            λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
-            k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
-            lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
-            kAero = loguniform(0.0001,0.0005)*lamb_k
+            if 'flat' in caseStr.lower():
+                nAero = slope4RRI(nAero_, wvls, slope=0)
+                kAero = loguniform(0.0001,0.0003)*np.repeat(1, nwl)
+            elif 'urban' in caseStr.lower():
+                nAero = slope4RRI(nAero_, wvls, slope=0)
+                kAero = loguniform(0.001,0.02)*np.repeat(1, nwl)
+            else:
+                nAero = slope4RRI(nAero_, wvls)
+                # k
+                λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+                k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
+                lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
+                kAero = loguniform(0.0001,0.0003)*lamb_k
+            # may have bug here!!!
+            vals['n'] = np.vstack([vals['n'], nAero]) # mode 2 
             vals['k'] = [kAero] # mode 1
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
-    elif 'fit_campex' in caseStr.lower():
+    elif 'fit_campex' in caseStr.lower(): #Fix: This has to be modified to make it work with latest simulation setup
         
         # find the params based on the flight and layer #
         # A function to read the PSD from Jeff's file or ASCII and pass it to
@@ -337,25 +363,34 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['vrtHghtStd'] = [500, 500, 500, 500, 500] # mode 1, 2,... # Gaussian sigma in meters
         # n
         nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)), nwl)
-        nAero = slope4RRI(nAero_, wvls)
-        # k
-        λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
-        k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
-        lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
-        kAero = loguniform(0.001,0.02)*lamb_k
+        if 'flat' in caseStr.lower():
+            nAero = slope4RRI(nAero_, wvls, slope=0)
+            kAero = loguniform(0.001,0.02)*np.repeat(1, nwl)
+        else:
+            nAero = slope4RRI(nAero_, wvls)
+            # k
+            λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+            k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
+            lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
+            kAero = loguniform(0.001,0.02)*lamb_k
         vals['n'] = np.vstack([nAero,
                                nAero,
                                nAero,
                                nAero]) # mode 1,2,...
     
         nAero_ = np.repeat(1.40 + rnd.uniform(-0.05, 0.05), nwl)
-        nAero = slope4RRI(nAero_, wvls)
+        if 'flat' in caseStr.lower():
+            nAero = slope4RRI(nAero_, wvls, slope=0)
+            kAero = loguniform(0.0001,0.0005)**np.repeat(1, nwl)
+        else:
+            nAero = slope4RRI(nAero_, wvls)
+            kAero = loguniform(0.0001,0.0005)*lamb_k
         vals['n'] = np.vstack([vals['n'], nAero]) # mode 2
         vals['k'] = np.vstack([kAero,
                                kAero,
                                kAero,
                                kAero])# mode 1,2,...
-        kAero = loguniform(0.0001,0.0005)*lamb_k
+        
         vals['k'] = np.vstack([vals['k'], kAero]) # mode 5
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
@@ -740,18 +775,26 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.1)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.7*caseLoadFct)
-        elif 'campex_tria' in case.lower():
-            cases.append(case.replace('campex','aerosol_campex_open_ocean')) # smoke base τ550=1.0
+        elif 'campex_tria' in case.lower(): # if the size distribution is in the triangular bin
+            if 'flat' in case.lower(): 	# for flat optical properties (n and k)
+                cases.append(case.replace('campex','aerosol_campex_flat'))
+            elif 'urban': # Optical properties have close resemblence to the urban aerosols
+                cases.append(case.replace('campex','aerosol_campex_fine_urban'))
+            else:
+                cases.append(case.replace('campex','aerosol_campex')) # smoke base τ550=1.0
             loadings.append(0.5*caseLoadFct)
             # cases.append(case.replace('campex','coarse_mode_campex')) # smoke base τ550=1.0
             # loadings.append(0.25*caseLoadFct)
         elif 'campex_bi' in case.lower():
             # cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
-            # loadings.append(caseLoadFct)
-            cases.append(case.replace('campex','fit_campex_open_ocean'))
+            # loadings.append(caseLoadFct) 
+            if 'flat' in case.lower():
+                cases.append(case.replace('campex','fit_campex_flat'))
+            else:
+                cases.append(case.replace('campex','fit_campex'))
             loadings.append(0.0937*caseLoadFct)
-        # added greema
-           #Added by Greema
+
+        #Added by Greema
         elif 'tamu_variable_sphere' in case.lower():
         
             cases.append(case.replace('tamu_variable_sphere','var_tamufine'))

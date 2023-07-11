@@ -35,7 +35,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     # instrument
     instrument=instrument
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Jun2022/29/'\
+    savePath = '../../../ACCDAM/2022/Campex_Simulations/Feb2023/22/'\
         'Test/withCoarseMode/%s/'\
         '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_%s.pkl' %( psd_type,instrument,
                                                 psd_type,
@@ -45,7 +45,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
-    binGRASP = '../../GRASP_GSFC/build_megaharp01/bin/grasp_app'
+    binGRASP = '../../GRASP_GSFC/build_megaharp01_AGU/bin/grasp_app'
     
     # Full path grasp precomputed single scattering kernels
     krnlPath = '../../GRASP_GSFC/src/retrieval/internal_files'
