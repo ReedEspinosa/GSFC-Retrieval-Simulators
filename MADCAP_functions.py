@@ -126,7 +126,7 @@ def findNewestMatch(directory, pattern='*'):
 
 
 def ordinal2datetime(ordinal):
-    dtObjDay = dt.fromordinal(np.int(np.floor(ordinal)))
+    dtObjDay = dt.fromordinal(np.int32(np.floor(ordinal)))
     dtObjTime = timedelta(seconds=np.remainder(ordinal, 1)*86400)
     dtObj = dtObjDay + dtObjTime
     return dtObj
