@@ -37,12 +37,12 @@ krnlPath = './src/retrieval/internal_files'
 # Directory containing the foward and inversion YAML files you would like to use
 ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
 fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda_CustomBins.yml') # foward YAML file
-bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes_Campex_urban_SS_RI_darkOcean.yml') # inversion YAML file
+bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes_Campex_flatRI_darkOcean.yml') # inversion YAML file
 
 # Other non-path related settings
 Nsims = 3 # the number of inversions to perform, each with its own random noise
 maxCPU = 1 # the number of processes to lssaunch, effectivly the # of CPU cores you want to dedicate to the simulation
-conCase = 'dark_ocean_coarse_campex_tria_urban_flatcoarse_flight#01_layer#00' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+conCase = 'dark_ocean_coarse_campex_tria_flatfine_flatcoarse_flight#01_layer#00' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
 SZA = 30 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
 Phi = 0 # relative azimuth angle, φsolar-φsensor
 τFactor = 1 # scaling factor for total AOD
