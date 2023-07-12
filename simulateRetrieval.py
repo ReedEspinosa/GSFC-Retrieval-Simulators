@@ -212,9 +212,9 @@ class simulation(object):
 
     def _loadData(self, picklePath, verbose=True):
         with open(picklePath, 'rb') as f:
-            rsltBck = rg.frmtLoadedRslts(pickle.load(f))
+            rsltBck = rg.rsltDictTools.frmtLoadedRslts(pickle.load(f))
             try:
-                rsltFwd = rg.frmtLoadedRslts(pickle.load(f))
+                rsltFwd = rg.rsltDictTools.frmtLoadedRslts(pickle.load(f))
             except EOFError: # this was an older file (created before Jan 2020)
                 rsltFwd = [rsltBck[-1]] # rsltFwd as a array of len==0 (not totaly backward compatible, it used to be straight dict)
                 rsltBck = rsltBck[:-1]
