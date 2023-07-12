@@ -41,7 +41,7 @@ class simulation(object):
                lightSave=False, intrnlFileGRASP=None, releaseYAML=True, rndIntialGuess=False,
                dryRun=False, workingFileSave=False, fixRndmSeed=False, radianceNoiseFun=None, verbose=False, delTempFiles=False):
         """
-        <> runs the simulation for given set of simulated and inversion conditions <>
+        Runs the simulation for given set of simulated and inversion conditions
         fwdData -> yml file path for GRASP fwd model OR graspYAML object OR a list of either of the prior two OR "results style" list of dicts
                         if a list of YAML files, len(self.nowPix) can be unity OR len(fwdData) [if latter, they pair one-to-one]
         bckYAML -> yml file path for GRASP inversion OR graspYAML object [only one allowed here, no lists]
@@ -103,7 +103,6 @@ class simulation(object):
                 nowPix.dtObj = nowPix.dtObj + dt.timedelta(seconds=tOffset) # increment hour otherwise GRASP will whine
             gObjBck.addPix(nowPix) # addPix performs a deepcopy on nowPix, won't be impact by next iteration through loopInd
             localVerbose = False # verbose output for just one pixel should be sufficient
-        # TODO: the following should go after gDB.processData, and only include cases for which rsltBck was successfully derived
         if len(self.rsltFwd)>1: self.rsltFwd = np.tile(self.rsltFwd, Nsims) # make len(rsltBck)==len(rsltFwd)... very memory inefficient though so only do it in more complicated len(self.rstlFwd)>1 cases
         gDB = rg.graspDB(gObjBck, maxCPU=maxCPU, maxT=maxT)
         if not dryRun:
@@ -119,7 +118,7 @@ class simulation(object):
         else:
             if savePath: warnings.warn('This was a dry run. No retrievals were performed and no results were saved.')
             for gObj in gDB.grObjs: gObj.writeSDATA()
-        if workingFileSave and savePath: # TODO: build zip from original tmp folders without making extra copies to disk, see first answer here: https://stackoverflow.com/questions/458436/adding-folders-to-a-zip-file-using-python
+        if workingFileSave and savePath:
             fullSaveDir = savePath[0:-4]
             if verbose: print('Packing GRASP working files up into %s' %  fullSaveDir + '.zip')
             if os.path.exists(fullSaveDir): shutil.rmtree(fullSaveDir)
@@ -160,8 +159,8 @@ class simulation(object):
             print('savePath (%s) did not exist, creating it...' % os.path.dirname(savePath))
             os.makedirs(os.path.dirname(savePath))
         if lightSave: self._makeRsltLight(self.rsltFwd, self.rsltBck)
-        self.rsltBck[0]['version'] = rg.RSLT_DICT_VERSION if 'RSLT_DICT_VERSION' in dir(rg) else '0.0'
-        self.rsltFwd[0]['version'] = rg.RSLT_DICT_VERSION if 'RSLT_DICT_VERSION' in dir(rg) else '0.0'
+        self.rsltBck[0]['version'] = rg.rsltDictTools.VERSION if 'rsltDictTools' in dir(rg) else '0.0'
+        self.rsltFwd[0]['version'] = rg.rsltDictTools.VERSION if 'rsltDictTools' in dir(rg) else '0.0'
         if verbose: print('Saving simulation results to %s' %  savePath)
         with open(savePath, 'wb') as f:
             pickle.dump(list(self.rsltBck), f, pickle.HIGHEST_PROTOCOL)
@@ -190,6 +189,7 @@ class simulation(object):
         # If already exists, load the file
         if os.path.exists(savePATH) and not forceMerge:
             files = [savePATH]
+            saveMerge = False
         else:
             files = glob(picklePath)
         assert len(files)>0, 'No files found!'
@@ -210,9 +210,9 @@ class simulation(object):
 
     def _loadData(self, picklePath, verbose=True):
         with open(picklePath, 'rb') as f:
-            rsltBck = rg.frmtLoadedRslts(pickle.load(f))
+            rsltBck = rg.rsltDictTools.frmtLoadedRslts(pickle.load(f))
             try:
-                rsltFwd = rg.frmtLoadedRslts(pickle.load(f))
+                rsltFwd = rg.rsltDictTools.frmtLoadedRslts(pickle.load(f))
             except EOFError: # this was an older file (created before Jan 2020)
                 rsltFwd = [rsltBck[-1]] # rsltFwd as a array of len==0 (not totaly backward compatible, it used to be straight dict)
                 rsltBck = rsltBck[:-1]        
@@ -286,7 +286,7 @@ class simulation(object):
         if oneAdded:
             warnings.warn('We added rEffMode to one of fwd/bck but not the other. This may cause inconsistency if definitions differ.')
 
-    def conerganceFilter(self, χthresh=None, σ=None, forceχ2Calc=False, verbose=False, minSaved=2): # TODO: LIDAR bins with ~0 concentration are dominating this metric...
+    def conerganceFilter(self, χthresh=None, σ=None, forceχ2Calc=False, verbose=False, minSaved=2):
         """ Only removes data from resltBck if χthresh is provided, χthresh=1.5 seems to work well
         Now we use costVal from GRASP if available (or if forceχ2Calc==True), χthresh≈2.5 is probably better
         NOTE: if forceχ2Calc==True or χthresh~=None this will permanatly alter the values of rsltBck/rsltFwd
@@ -504,7 +504,6 @@ class simulation(object):
                 rmsErr['rEff_sub%dnm' % modeCut_nm] = rmsFun(true, rtrvd)
                 bias['rEff_sub%dnm' % modeCut_nm] = biasFun(true, rtrvd)
                 trueOut['rEff_sub%dnm' % modeCut_nm] = true
-                # TODO: add sph fraction here? It would use volWghtedAvg, I think in its exact current form
             if av in rmsErr: rmsErr[av] = np.atleast_1d(rmsErr[av]) # HACK: n was coming back as scalar in some cases, we should do this right though
         return rmsErr, bias, trueOut
 
@@ -593,7 +592,7 @@ class simulation(object):
             Vfc = self.volWghtedAvg(None, [rs], modeCut)
             Amode = rs['vol']/rs['rv']*np.exp(rs['sigma']**2/2) # convert N to rv and then ratio 1st and 4th rows of Table 1 of Grainger's "Useful Formulae for Aerosol Size Distributions"
             Afc = self.volWghtedAvg(None, [rs], modeCut, Amode)
-            return Vfc/Afc # NOTE: ostensibly this should be Vfc/Afc/3 but we ommited the factor of 3 from Amode as well
+            return Vfc/Afc # ostensibly this should be Vfc/Afc/3 but we ommited the factor of 3 from Amode as well
         elif 'dVdlnr' in rs and 'r' in rs:
             fnCrsReff = []
             if modeCut is None: 
@@ -630,7 +629,13 @@ class simulation(object):
             else:
                 Bimode[i] = np.sum(crsWght*val[i], axis=1)
         return Bimode
-        
+    
+    def spectralInterpFwdToBck(self):
+        """Performs linear interpolation on all aerosol state vars, except AOD which use angstrom exponent interpolation."""
+        assert len(self.rsltBck)==len(self.rsltFwd), 'rsltFwd (N=%d) and rsltBck (N=%d) currently must be same length to use this method, although that could be fixed farily easily.' % (len(self.rsltFwd), len(self.rsltBck))
+        for i,(rb,rf) in enumerate(zip(self.rsltBck, self.rsltFwd)):
+            rf = rg.rsltDictTools.spectralInterp(rf, rb['lambda'], verbose=(i==0))
+
     def classifyAerosolType(self, verbose=False):
         """
         0 Dust
