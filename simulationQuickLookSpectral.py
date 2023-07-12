@@ -442,11 +442,11 @@ rs_['fnPtrnList'] = []
 # fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
 # rs_['fnPtrn'] = 'Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
 
-rs_['fnPtrn'] = 'Camp2ex_AOD_*_550nm_*_conf#01_dark_ocean_fwd_RndmGsOn_test_addCoarse_campex_tria_flatfine_flatcoarse_flight#*_layer#00.pkl' #'Camp2ex_AOD_*_550nm_*_campex_flight#*_layer#00.pkl'# fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl'
+rs_['fnPtrn'] = 'Camp2ex_AOD_*_550nm_*_campex_tria_spectral_flight#*_layer#00.pkl'# fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl' #'Camp2ex_AOD_*_550nm_*_conf#01_dark_ocean_fwd_RndmGsOn_test_addCoarse_campex_tria_flatfine_flatcoarse_flight#*_layer#00.pkl' #
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
-rs_['inDirPath'] = '/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'
+rs_['inDirPath'] = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Mar2023/01/fullGeometry/withCoarseMode/openOcean/2modes/megaharp01/'#'/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'
 
 # more tags and specifiations for the scatter plot
 rs_['surf2plot'] = 'both' # land, ocean or both

@@ -118,7 +118,7 @@ class simulation(object):
         else:
             if savePath: warnings.warn('This was a dry run. No retrievals were performed and no results were saved.')
             for gObj in gDB.grObjs: gObj.writeSDATA()
-        if workingFileSave and savePath:
+        if workingFileSave and savePath: # TODO: build zip from original tmp folders without making extra copies to disk, see first answer here: https://stackoverflow.com/questions/458436/adding-folders-to-a-zip-file-using-python
             fullSaveDir = savePath[0:-4]
             if verbose: print('Packing GRASP working files up into %s' %  fullSaveDir + '.zip')
             if os.path.exists(fullSaveDir): shutil.rmtree(fullSaveDir)
@@ -185,7 +185,9 @@ class simulation(object):
         forceMerge – Force a merge, even if a matching saved merged file exists
         """
         splitPath = path.split(picklePath)
-        savePATH = path.join(splitPath[0], 'MERGED_' + splitPath[1].replace('*','ALL'))
+        saveFN = 'MERGED_' + splitPath[1].replace('*','ALL')
+        savePATH = path.join(splitPath[0],saveFN)
+        
         # If already exists, load the file
         if os.path.exists(savePATH) and not forceMerge:
             files = [savePATH]
@@ -210,12 +212,13 @@ class simulation(object):
 
     def _loadData(self, picklePath, verbose=True):
         with open(picklePath, 'rb') as f:
-            rsltBck = rg.rsltDictTools.frmtLoadedRslts(pickle.load(f))
+            rsltBck = rg.frmtLoadedRslts(pickle.load(f))
             try:
-                rsltFwd = rg.rsltDictTools.frmtLoadedRslts(pickle.load(f))
+                rsltFwd = rg.frmtLoadedRslts(pickle.load(f))
             except EOFError: # this was an older file (created before Jan 2020)
                 rsltFwd = [rsltBck[-1]] # rsltFwd as a array of len==0 (not totaly backward compatible, it used to be straight dict)
-                rsltBck = rsltBck[:-1]        
+                rsltBck = rsltBck[:-1]
+                print('Using an older version of the GRASP pickle file')        
         if verbose: print('Loaded %d pixels from %s.' % (len(rsltBck), picklePath))
         return rsltFwd, rsltBck
     
@@ -286,7 +289,7 @@ class simulation(object):
         if oneAdded:
             warnings.warn('We added rEffMode to one of fwd/bck but not the other. This may cause inconsistency if definitions differ.')
 
-    def conerganceFilter(self, χthresh=None, σ=None, forceχ2Calc=False, verbose=False, minSaved=2):
+    def conerganceFilter(self, χthresh=None, σ=None, forceχ2Calc=False, verbose=False, minSaved=2): # TODO: LIDAR bins with ~0 concentration are dominating this metric...
         """ Only removes data from resltBck if χthresh is provided, χthresh=1.5 seems to work well
         Now we use costVal from GRASP if available (or if forceχ2Calc==True), χthresh≈2.5 is probably better
         NOTE: if forceχ2Calc==True or χthresh~=None this will permanatly alter the values of rsltBck/rsltFwd
@@ -504,6 +507,7 @@ class simulation(object):
                 rmsErr['rEff_sub%dnm' % modeCut_nm] = rmsFun(true, rtrvd)
                 bias['rEff_sub%dnm' % modeCut_nm] = biasFun(true, rtrvd)
                 trueOut['rEff_sub%dnm' % modeCut_nm] = true
+                # TODO: add sph fraction here? It would use volWghtedAvg, I think in its exact current form
             if av in rmsErr: rmsErr[av] = np.atleast_1d(rmsErr[av]) # HACK: n was coming back as scalar in some cases, we should do this right though
         return rmsErr, bias, trueOut
 
@@ -592,7 +596,7 @@ class simulation(object):
             Vfc = self.volWghtedAvg(None, [rs], modeCut)
             Amode = rs['vol']/rs['rv']*np.exp(rs['sigma']**2/2) # convert N to rv and then ratio 1st and 4th rows of Table 1 of Grainger's "Useful Formulae for Aerosol Size Distributions"
             Afc = self.volWghtedAvg(None, [rs], modeCut, Amode)
-            return Vfc/Afc # ostensibly this should be Vfc/Afc/3 but we ommited the factor of 3 from Amode as well
+            return Vfc/Afc # NOTE: ostensibly this should be Vfc/Afc/3 but we ommited the factor of 3 from Amode as well
         elif 'dVdlnr' in rs and 'r' in rs:
             fnCrsReff = []
             if modeCut is None: 
