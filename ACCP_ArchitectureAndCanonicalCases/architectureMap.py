@@ -62,7 +62,19 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errStr = 'polar0700' if 'megaharp0100' in archName.lower() else 'polar07'
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
-            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)    
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel)  
+    # UVSWIR-MAP Configuration added in July,2023
+    if 'uvswirmap01' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
+        msTyp = [41, 42, 43] # must be in ascending order
+        thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
+        wvls = [0.380, 0.410, 0.550, 0.670, 0.870, 1.200, 1.570]
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
+        phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
+        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
+            errStr = 'polar0700' if 'uvswirmap0100' in archName.lower() else 'polar07'
+            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel) 
     if 'modis' in archName.lower() or 'misr' in archName.lower(): # -- ModisMisrPolar --
         msTyp = [41, 42, 43] if 'polar' in archName.lower() else [41] # must be in ascending order
         if 'misr' in archName.lower():

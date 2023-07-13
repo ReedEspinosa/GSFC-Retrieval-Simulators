@@ -7,7 +7,7 @@ retrieval:
     inversion:
         regime: single_pixel
         convergence: {maximum_iterations_for_stopping: 20, maximum_iterations_of_Levenberg-Marquardt: 20, minimization_convention: logarithm, normal_system_solver: sparse_matrix_solver, scale_for_finite_difference: 1.0e-03, shift_for_applying_logarithm_to_negative_values: 1.1, threshold_for_stopping: 0.001, threshold_for_stopping_Q_iterations: 1.0e-05}
-        measurement_fitting: {polarization: relative_polarization_components}
+        measurement_fitting: {polarization: absolute_polarization_components}
         noises:
             noise[1]:
                 error_type: relative

@@ -20,7 +20,7 @@ job_directory = "%s" %os.getcwd()
 mkdir_p(job_directory+'/job')
 
 # list of AOD/nPCA
-tau = np.logspace(np.log10(0.004), np.log10(1.2), 20)
+tau = -np.logspace(np.log10(0.01), np.log10(2.0), 5)
 # splitting into chunks to make the code efficient and run easily in DISCOVER
 try:
     arrayNum= int(sys.argv[1])
@@ -36,14 +36,14 @@ SZA = 30
 sza_ = [0, 30, 60]# For running multible simulations in DISCOVER
 sza = list(itertools.chain.from_iterable(itertools.repeat(x, 12) for x in sza_))
 # realGeometry: True if using the real geometry provided in the .mat file
-useRealGeometry = 0
+useRealGeometry = 1
 # Job name
-jobName = 'H1%d_' %arrayNum # 'A' for 2modes, 'Z' for realGeometry
+jobName = 'T%d_' %arrayNum # 'A' for 2modes, 'Z' for realGeometry
 if not useRealGeometry: jobName = jobName + str(SZA); varStr = 'aod'
 else: varStr = 'nPCA'
 
 # Instrment name
-instrument = 'harp20'
+instrument = 'uvswirmap01'
 
 # looping through the var string
 for aod in tau:
@@ -61,10 +61,10 @@ for aod in tau:
         fh.writelines("#SBATCH --job-name=%s%.4d\n" % (jobName, aod_))
         fh.writelines("#SBATCH --output=./job/%s_%.4d.out.%s\n" % (jobName, aod_, '%A'))
         fh.writelines("#SBATCH --error=./job/%s_%.4d.err.%s\n" % (jobName, aod_, '%A'))
-        fh.writelines("#SBATCH --time=01:29:59\n")
+        fh.writelines("#SBATCH --time=02:59:59\n")
         # In Discover
         if 'discover' in hostname:
-            fh.writelines('#SBATCH --constraint="sky|cas"\n')
+            fh.writelines('#SBATCH --constraint="sky"\n')
             fh.writelines("#SBATCH --ntasks=36\n")
             # fh.writelines("#SBATCH --array=0\n")
         # In Uranus
@@ -100,7 +100,12 @@ for aod in tau:
         fh.writelines("echo End: \n")
         fh.writelines("rm -rf ${TMPDIR}\n")
         fh.writelines("date")
-        # fh.writelines("python hello.py %.3d" % aod_)
+
     fh.close()
-    os.system("sbatch %s" %job_file)
+    
+    # dry run option
+    if not sys.argv[1] == '--dryrun':
+    	os.system("sbatch %s" %job_file)
+    else:
+    	print('<><><><> dry run, check the ./job directory for slurm files <><><><>')
 print('Jobs sumitted succesfully check the ./job/ folder for output/error')

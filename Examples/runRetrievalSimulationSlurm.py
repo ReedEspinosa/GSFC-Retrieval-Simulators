@@ -17,6 +17,8 @@ sys.path.append(os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases"))
 grandParentDir = os.path.dirname(parentDir)# THIS_FILE_PATH/../../ in POSIX (this is folder that contains GRASP_scripts and GSFC-Retrieval-Simulators
 sys.path.append(os.path.join(grandParentDir, "GSFC-GRASP-Python-Interface"))
 
+# import the random number generator (uniform dstribution in logscale)
+from miscFunctions import loguniform
 
 # import top level class that peforms the retrieval simulation, defined in THIS_FILE_PATH/../simulateRetrieval.py
 import simulateRetrieval as rs
@@ -34,20 +36,18 @@ from ACCP_functions import selectGeometryEntry
 def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
                 conCase='campex', instrument='polar07'):
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
-
-    # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Aug2022/08/'\
-        'specificGeometry/withCoarseMode/ocean/%s/%s/'\
+    # Full path to save simulation results ass a Python pickle
+    savePath = '../../../ACCDAM/2023/Campex_Simulations/Jul2023/11/'\
+        'fullGeometry/withCoarseMode/darkOcean/%s/%s/'\
         'Camp2ex_AOD_%sp%s_550nm_SZA_%0.4d_PHI_%0.4d_%s.pkl' %( psd_type,instrument,
                                                 str(τFactor).split('.')[0],
                                                 str(τFactor).split('.')[1][:3],
                                                 int(round(SZA, 2)*100),
                                                 int(round(Phi, 2)*100),
                                                 conCase)
-
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
-    binGRASP = '../../GRASP_GSFC/build_megaharp01/bin/grasp_app'
+    binGRASP = '../../GRASP_GSFC/build_megaharp01_AGU/bin/grasp_app'
         
     # Full path grasp precomputed single scattering kernels
     krnlPath = '../../GRASP_GSFC/src/retrieval/internal_files'
@@ -55,15 +55,18 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     # Directory containing the foward and inversion YAML files you would like to use
     ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
     fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda_CustomBins.yml') # foward YAML file
-    bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex.yml' %psd_type) # inversion YAML file
+    bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex_flatRI_darkOcean.yml' %psd_type) # inversion YAML file
 
     # Other non-path related settings
-    Nsims = 5 # the number of inversion to perform, each with its own random noise
+    Nsims = 3 # the number of inversion to perform, each with its own random noise
     maxCPU = 1 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
-    conCase = conCase #'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+    conCase = conCase #'camp_test' # Canonical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
     Phi = Phi # relative azimuth angle, φsolar-φsensor
-    τFactor = τFactor # scaling factor for total AOD
+    if τFactor > 0:
+        τFactor = τFactor # scaling factor for total AOD
+    else:
+        τFactor = loguniform(0.01, 2) # lower and upper limits for AOD
 
     # %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
 
@@ -79,7 +82,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     # run the simulation, see below the definition of runSIM in simulateRetrieval.py for more input argument explanations
     simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
                 binPathGRASP=binGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, \
-                rndIntialGuess=False, dryRun=False, workingFileSave=False, verbose=True, delTempFiles=True)
+                rndIntialGuess=True, dryRun=False, workingFileSave=False, verbose=True, delTempFiles=True)
 
     # print some results to the console/terminal
     wavelengthIndex = 2
@@ -111,8 +114,12 @@ else:
     instrument = 'polar07'
     print('AOD not given as an argument so using the 0.05 at 550 nm')
 
+# Properties of the run
+surface = 'conf#18_open_ocean_fwd_RndmGsOn' # for ocean either open_ocean or dark_ocean
+spectral = 'flatfine_flatcoarse' # flatfine_flatcoarse for spectrally flat RI, urban for fine urban, use nothing if it is spectrally dependent
 psd_type = '2modes' # '2modes' or '16bins'
 # conCase = 'campex_flight#16_layer#01'#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+
 phi = 0
 start_time = time.time()
 useRealGeometry = False
@@ -130,21 +137,25 @@ if len(sys.argv) > 3:
     
 nFlights = 18 # number of flights used for simulation (should be 18 for full camp2ex measurements)
 deleteTemp = False # Flag for deleting temp files regularly
- 
-def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
+
+# definition for looping through different geometries
+def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18, dryRun=False):
     for i in tau:
         loop_start_time = time.time()
         tempVAR = 0
         for j in np.r_[1:nFlights+1]:
             flight_loop_start_time = time.time()
             for k in np.r_[0]:
-                conCase = 'Coarse_campex_flight#%.2d_layer#%.2d' %(j,k)
+                conCase = '%s_addCoarse_campex_tria_%s_flight#%.2d_layer#%.2d' %(surface, spectral,j,k)
                 print('<-->'*20)
                 try:
                     print('<-->'*20)
                     print('Running runRetrievalSimulationSlurm.py for τ(550nm) = %0.3f' %i)
-                    runMultiple(τFactor=i, psd_type=psd_type, SZA=SZA, Phi=phi,
-                                conCase=conCase, instrument=instrument)
+                    if dryRun:
+                    	print(conCase)
+                    else:
+                    	runMultiple(τFactor=i, psd_type=psd_type, SZA=SZA, Phi=phi,
+                                	conCase=conCase, instrument=instrument)
                 except Exception as e:
                     print('<---->'*10)
                     print('Run error: Running runRetrievalSimulationSlurm.py for τ(550nm) = %0.3f' %i)
@@ -152,7 +163,7 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18):
             print('Time to comple one loop for flight: %s'%(time.time()-flight_loop_start_time))
             if deleteTemp:
                 tempVAR+=1
-                # Delete the temp files after each aod loop
+                # Delete the temp files after each aod loops
                 if 'borg' in os.uname()[1] and tempVAR==5:
                     tempFileDir = tempfile.gettempdir()
                     os.system('rm -rf temp%s' %tempFileDir)
@@ -172,7 +183,7 @@ if useRealGeometry:
         loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
     
 else:
-    print('Running retrieval simulations for pricipal plane')
+    print('Running retrieval simulations for pricipal plane with fixed SZA')
     loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
 
 # Total time
