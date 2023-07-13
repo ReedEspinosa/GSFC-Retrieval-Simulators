@@ -118,7 +118,7 @@ class simulation(object):
         else:
             if savePath: warnings.warn('This was a dry run. No retrievals were performed and no results were saved.')
             for gObj in gDB.grObjs: gObj.writeSDATA()
-        if workingFileSave and savePath: # TODO: build zip from original tmp folders without making extra copies to disk, see first answer here: https://stackoverflow.com/questions/458436/adding-folders-to-a-zip-file-using-python
+        if workingFileSave and savePath:
             fullSaveDir = savePath[0:-4]
             if verbose: print('Packing GRASP working files up into %s' %  fullSaveDir + '.zip')
             if os.path.exists(fullSaveDir): shutil.rmtree(fullSaveDir)
@@ -289,7 +289,7 @@ class simulation(object):
         if oneAdded:
             warnings.warn('We added rEffMode to one of fwd/bck but not the other. This may cause inconsistency if definitions differ.')
 
-    def conerganceFilter(self, χthresh=None, σ=None, forceχ2Calc=False, verbose=False, minSaved=2): # TODO: LIDAR bins with ~0 concentration are dominating this metric...
+    def conerganceFilter(self, χthresh=None, σ=None, forceχ2Calc=False, verbose=False, minSaved=2):
         """ Only removes data from resltBck if χthresh is provided, χthresh=1.5 seems to work well
         Now we use costVal from GRASP if available (or if forceχ2Calc==True), χthresh≈2.5 is probably better
         NOTE: if forceχ2Calc==True or χthresh~=None this will permanatly alter the values of rsltBck/rsltFwd
@@ -507,7 +507,7 @@ class simulation(object):
                 rmsErr['rEff_sub%dnm' % modeCut_nm] = rmsFun(true, rtrvd)
                 bias['rEff_sub%dnm' % modeCut_nm] = biasFun(true, rtrvd)
                 trueOut['rEff_sub%dnm' % modeCut_nm] = true
-                # TODO: add sph fraction here? It would use volWghtedAvg, I think in its exact current form
+                
             if av in rmsErr: rmsErr[av] = np.atleast_1d(rmsErr[av]) # HACK: n was coming back as scalar in some cases, we should do this right though
         return rmsErr, bias, trueOut
 
@@ -688,23 +688,3 @@ class simulation(object):
             rf['aeroType'] = np.argmin(typeDist)
             if verbose and rf['aeroType'] == 1 and 'vol_DU' in rf:
                 print('Dust volume fraction was %f and we still IDed as dust' % (dustVolFrac))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

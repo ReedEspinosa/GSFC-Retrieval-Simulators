@@ -14,7 +14,7 @@ Created on Wed Jul 13 14:18:11 2022
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Import the librarires
+# Import the libraries
 # =============================================================================
 
 import os
@@ -432,21 +432,21 @@ class statsCalc():
 rs_ = {}
 
 # Wavelength index for plotting
-rs_['waveInd'] = 1
+rs_['waveInd'] = 2
 # Wavelength index for AE calculation
-rs_['waveInd2'] = 3
+rs_['waveInd2'] = 4
 
 # Define the string pattern for the file name
 rs_['fnPtrnList'] = []
-#fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
+
 # fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
 # rs_['fnPtrn'] = 'Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
 
-rs_['fnPtrn'] = 'Camp2ex_AOD_*_550nm_*_campex_tria_spectral_flight#*_layer#00.pkl'# fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl' #'Camp2ex_AOD_*_550nm_*_conf#01_dark_ocean_fwd_RndmGsOn_test_addCoarse_campex_tria_flatfine_flatcoarse_flight#*_layer#00.pkl' #
+rs_['fnPtrn'] = 'Camp2ex_AOD_*_550nm_*_conf#01_dark_ocean_fwd_RndmGsOn_test_addCoarse_campex_tria_flatfine_flatcoarse_flight#*_layer#00.pkl'# fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl' #'Camp2ex_AOD_*_550nm_*_conf#01_dark_ocean_fwd_RndmGsOn_test_addCoarse_campex_tria_flatfine_flatcoarse_flight#*_layer#00.pkl' #
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
-rs_['inDirPath'] = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Mar2023/01/fullGeometry/withCoarseMode/openOcean/2modes/megaharp01/'#'/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'
+rs_['inDirPath'] = '/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/' #'/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'#'/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'
 
 # more tags and specifiations for the scatter plot
 rs_['surf2plot'] = 'both' # land, ocean or both
@@ -463,7 +463,7 @@ rs_['clrText'] = '#FF6347' #[0,0.7,0.7]
 rs_['nBins'] = 200 # no. of bins for histogram
 rs_['nBins2'] = 200 # no. of bins for 2D density plot
 rs_['lightSave'] = True # Omit PM elements and extinction profiles from MERGED files to save space
-
+rs_['chiMax'] = 3
 # Define the path of the new merged pkl file
 rs_['saveFN'] = 'MERGED_'+rs_['fnPtrn'].replace('*','ALL')
 rs_['savePATH'] = os.path.join(rs_['inDirPath'],rs_['saveFN'])
@@ -493,15 +493,17 @@ rs_['keepInd'] = lp>99 if rs_['surf2plot']=='land' else lp<1 if rs_['surf2plot']
 
 # apply convergence filter
 simBase.conerganceFilter(forceχ2Calc=True) # ours looks more normal, but GRASP's produces slightly lower RMSE
-rs_['costThresh'] = np.percentile([rb['costVal'] for rb in simBase.rsltBck[rs_['keepInd']]], 95)
+rs_['costThresh'] = np.percentile(np.array([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']],90)
+rs_['costThresh'] = min(rs_['costThresh'], rs_['chiMax'])
+rs_['keepIndAll'] = rs_['keepInd'] # saving all indexes before the chi2 filter
 rs_['keepInd'] = np.logical_and(rs_['keepInd'], [rb['costVal']<rs_['costThresh'] for rb in simBase.rsltBck])
-rs_['keepIndAll'] = rs_['keepInd']
+
 
 # variable to color point by in all subplots
-# clrVar = np.sqrt([rb['costVal'] for rb in simBase.rsltBck[keepInd]]) # this is slow!
-rs_['clrVar'] = np.asarray([rb['costVal'] for rb in simBase.rsltBck[rs_['keepInd']]])
+clrVar = np.sqrt(np.array([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']]) # this is slow!
+rs_['clrVar'] = np.asarray([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']]
 rs_['clrVarAll'] = rs_['clrVar']
-print('%d/%d fit surface type %s and convergence filter' % (rs_['keepInd'].sum(), len(simBase.rsltBck), rs_['surf2plot']))
+# print('%d/%d fit surface type %s and convergence filter' % (rs_['keepInd'].sum(), len(simBase.rsltBck), rs_['surf2plot']))
 
 # =============================================================================
 # %% Plotting
@@ -968,5 +970,3 @@ ax12.set_xticklabels(statKeys)
 ax12.set_yticklabels(spectralVars2)
 hm2.set_yticklabels(hm2.get_yticklabels(), rotation=0)
 hm2.set_xticklabels(hm2.get_xticklabels(), rotation=60)
-
-# %% 
