@@ -20,7 +20,7 @@ job_directory = "%s" %os.getcwd()
 mkdir_p(job_directory+'/job')
 
 # list of AOD/nPCA
-tau = -np.logspace(np.log10(0.01), np.log10(2.0), 5)
+tau = -np.logspace(np.log10(0.01), np.log10(2.0), 3)
 # splitting into chunks to make the code efficient and run easily in DISCOVER
 try:
     arrayNum= int(sys.argv[1])

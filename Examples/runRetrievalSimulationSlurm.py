@@ -37,7 +37,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
                 conCase='campex', instrument='polar07'):
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
     # Full path to save simulation results ass a Python pickle
-    savePath = '../../../ACCDAM/2023/Campex_Simulations/Jul2023/11/'\
+    savePath = '../../../ACCDAM/2023/Campex_Simulations/Jul2023/12/'\
         'fullGeometry/withCoarseMode/darkOcean/%s/%s/'\
         'Camp2ex_AOD_%sp%s_550nm_SZA_%0.4d_PHI_%0.4d_%s.pkl' %( psd_type,instrument,
                                                 str(τFactor).split('.')[0],
@@ -115,7 +115,7 @@ else:
     print('AOD not given as an argument so using the 0.05 at 550 nm')
 
 # Properties of the run
-surface = 'conf#18_open_ocean_fwd_RndmGsOn' # for ocean either open_ocean or dark_ocean
+surface = 'conf#01_dark_ocean_fwd_RndmGsOn_test' # for ocean either open_ocean or dark_ocean
 spectral = 'flatfine_flatcoarse' # flatfine_flatcoarse for spectrally flat RI, urban for fine urban, use nothing if it is spectrally dependent
 psd_type = '2modes' # '2modes' or '16bins'
 # conCase = 'campex_flight#16_layer#01'#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
