@@ -18,3 +18,5 @@ Examples/*.slurm
 Examples/job/*.err
 Examples/job/*.out
 /Examples/temp/
+*.zip
+Examples/job/

@@ -123,6 +123,16 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         nCM = 1.4                       # refractive index of the coarse mode
         nFMStd = 0.15                   # standard deviation of the refractive index of the fine mode
         nCMStd = 0.05                   # standard deviation of the refractive index of the coarse mode
+        sigma_ = 0.70                   # sigma of the coarse mode lognormal distribution
+        mu_ = 0.6                       # mu of the coarse mode lognormal distribution
+        sigma_Std = 0.05                # standard deviation of the sigma of the coarse mode lognormal distribution
+        mu_Std = 0.035                  # standard deviation of the mu of the coarse mode lognormal distribution
+        rMin = 0.005                    # minimum radius of the coarse mode lognormal distribution
+        rMax = 15                       # maximum radius of the coarse mode lognormal distribution
+        
+        λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+        k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7]   # dependency from Lei Bi et al 2019 [modified]
+        lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7                              # multiplied by 1e7 to make the k at 440 nm to be unity
 
         # read PSD bins
         try:
@@ -134,8 +144,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                         "Campex_r72.pkl", 'rb')
             radiusBin = pickle.load(file)
             file.close()
-            
-            
+                
         except Exception as e:
             print('File loading error: check if the PSD file path is correct'\
                   ' or not\n %s' %e)
@@ -172,8 +181,8 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                         flight_vrtHghtStd = ALHStd   
                 except Exception as e:
                     print('Could not find a matching string pattern: %s' %e)
-                    flight_vrtHght = 1000
-                    flight_vrtHghtStd = 500
+                    flight_vrtHght = ALH[0]
+                    flight_vrtHghtStd = ALHStd
 
             print('Using the PSD from the flight# %d and layer#'\
                   ' %d' %(flight_num, nlayer))
@@ -216,9 +225,6 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 kAero = loguniform(kFMin, kFMax)*np.repeat(1, nwl)
             else:
                 nAero = slope4RRI(nAero_, wvls)
-                λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
-                k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
-                lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
                 kAero = loguniform(kFMin, kFMax)*lamb_k
             
             vals['n'] = [list(nAero),
@@ -235,10 +241,10 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 # This is hard-coded, which limits its applicability for generalization
                 # GRASP needs to be modified to make use of triangle and lognormal bins
                 # together
-                σ = [0.70 +rnd.uniform(-0.05, 0.05)] # mode 1, 2,...
-                rv = [0.6 +rnd.uniform(-0.035, 0.035)]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+                σ = [sigma_ +rnd.uniform(-sigma_Std, sigma_Std)] # Coarse mode
+                rv = [mu_ +rnd.uniform(-mu_Std, mu_Std)]*np.exp(3*np.power(σ,2)) # Coarse mode (rv = rn*e^3σ)
                 nbins = np.size(radiusBin)
-                radiusBin_ = np.logspace(np.log10(0.005), np.log10(15), nbins)
+                radiusBin_ = np.logspace(np.log10(rMin), np.log10(rMax), nbins)
                 dvdr = logNormal(rv[0], σ[0], radiusBin_)
                 dvdlnr = dvdr[0]*radiusBin_
                 
@@ -248,8 +254,8 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                                             [dvdlnr*multFac]])
                 vals['sph'] = vals['sph'] + [0.999 - round(rnd.uniform(0, 1))*0.99]
                 # removed to avoid the descrepency in printing the aero vol conc in the output
-                vals['vrtHght'] = vals['vrtHght'] + [[500]]
-                vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[500]]
+                vals['vrtHght'] = vals['vrtHght'] + [[ALH_C]]
+                vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[ALHStd]]
                 nAero_ = np.repeat(nCM + (rnd.uniform(-nCMStd, nCMStd)), nwl)
                 # redefining the spectral refractive index based on the runtype (options are either 
                 if 'flatcoarse' in caseStr.lower():
@@ -258,9 +264,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 else:
                     nAero = slope4RRI(nAero_, wvls)
                     # k
-                    λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
-                    k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
-                    lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
+                    
                     kAero = loguniform(kCMin, kCMax)*lamb_k
                 vals['n'] = vals['n'] + [list(nAero)]
                 vals['k'] = vals['k'] + [list(kAero)]
@@ -279,9 +283,6 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
             else:
                 nAero = slope4RRI(nAero_, wvls)
                 # k
-                λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
-                k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
-                lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
                 kAero = loguniform(kCMin, kCMax)*lamb_k
             # may have bug here!!!
             vals['n'] = np.vstack([vals['n'], nAero]) # mode 2 
@@ -309,7 +310,17 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         nFM = 1.5                       # refractive index of the fine mode
         nCM = 1.4                       # refractive index of the coarse mode
         nFMStd = 0.15                   # standard deviation of the refractive index of the fine mode
-        nCMStd = 0.05                   # standard deviation of the refractive index of the coarse mode        
+        nCMStd = 0.05                   # standard deviation of the refractive index of the coarse mode
+        sigma_ = 0.70                   # sigma of the coarse mode lognormal distribution
+        mu_ = 0.6                       # mu of the coarse mode lognormal distribution
+        sigma_Std = 0.05                # standard deviation of the sigma of the coarse mode lognormal distribution
+        mu_Std = 0.035                  # standard deviation of the mu of the coarse mode lognormal distribution
+        rMin = 0.005                    # minimum radius of the coarse mode lognormal distribution
+        rMax = 15                       # maximum radius of the coarse mode lognormal distribution
+
+        λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
+        k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7]   # dependency from Lei Bi et al 2019 [modified]
+        lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7                              # multiplied by 1e7 to make the k at 440 nm to be unity
 
         # read PSD bins
         try:
@@ -364,9 +375,12 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
             print('Using the PSD from the first flight and first layer')
             vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=6)]
             vals['triaPSD'] = np.vstack(vals['triaPSD'])
-        flight_num = flight_num-1 
-        rndmSigma = 0.70 +rnd.uniform(-0.05, 0.05) # mode 1, 2,...
-        rndmMuFit = (0.6 +rnd.uniform(-0.035, 0.035))*np.exp(3*np.power(rndmSigma,2))
+        flight_num = flight_num-1
+        # Defining a random PSD for coarse mode 
+        rndmSigma = sigma_ +rnd.uniform(-sigma_Std, sigma_Std) # mode 1, 2,...
+        rndmMuFit = (mu_ +rnd.uniform(-mu_Std, mu_Std))*np.exp(3*np.power(rndmSigma,2))
+
+        # Stacking up PSD info
         sigmaFit = [dVdlnrParams['sigma'][flight_num, 0],
                     dVdlnrParams['sigma'][flight_num, 1],
                     dVdlnrParams['sigma'][flight_num, 2],
@@ -389,7 +403,8 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         rv = muFit
         vals['lgrnm'] = np.vstack([rv, σ]).T
         sphFrac = 0.999 - round(rnd.uniform(0, 1))*0.99
-        vals['sph'] = [sphFrac, sphFrac, sphFrac, sphFrac, sphFrac]         # mode 1, 2,...
+        sphFrac2= 0.999 - round(rnd.uniform(0, 1))*0.99                     # Coarse mode
+        vals['sph'] = [sphFrac, sphFrac, sphFrac, sphFrac, sphFrac2]        # mode 1, 2,...
         vals['vol'] = np.array([[0.35], [0.35],[0.35], [0.35], [4.1]])      # gives AOD=10*[0.0287, 0.0713]=1.0 total
         vals['vrtHght'] = [[ALH[0]], [ALH[1]], [ALH[2]], [ALH[3]], [ALH_C]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [ALHStd, ALHStd, ALHStd, ALHStd, ALHStd]       # mode 1, 2,... # Gaussian sigma in meters
@@ -404,17 +419,16 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         else:
             nAero = slope4RRI(nAero_, wvls)
             # k
-            λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
-            k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
-            lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
             kAero = loguniform(kFMin, kFMax)*lamb_k
         vals['n'] = np.vstack([nAero,
                                nAero,
                                nAero,
                                nAero]) # mode 1,2,...
-    
+        #-----------------------------------------------------------------------#
+        # Coarse mode
+        #-----------------------------------------------------------------------#
         nAero_ = np.repeat(nCM + rnd.uniform(-nCMStd, nCMStd), nwl)         # Coarse mode aerosols real refractive index
-        if 'flat' in caseStr.lower():
+        if 'flatcoarse' in caseStr.lower():
             nAero = slope4RRI(nAero_, wvls, slope=0)
             kAero = loguniform(kCMin, kCMax)**np.repeat(1, nwl)
         else:
@@ -810,21 +824,20 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.1)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.7*caseLoadFct)
-        elif 'campex_tria' in case.lower(): # if the size distribution is in the triangular bin
-            if 'flat' in case.lower(): 	# for flat optical properties (n and k)
+        elif 'campex_tria' in case.lower():                             # if the size distribution is in the triangular bin
+            if 'flat' in case.lower(): 	                                # for flat optical properties (n and k)
                 cases.append(case.replace('campex','aerosol_campex_flat'))
-            elif 'urban': # Optical properties have close resemblence to the urban aerosols
+            elif 'urban':                                               # Optical properties have close resemblence to the urban aerosols
                 cases.append(case.replace('campex','aerosol_campex_fine_urban'))
             else:
-                cases.append(case.replace('campex','aerosol_campex')) # smoke base τ550=1.0
+                cases.append(case.replace('campex','aerosol_campex'))   # smoke base τ550=1.0
             loadings.append(0.5*caseLoadFct)
-            # cases.append(case.replace('campex','coarse_mode_campex')) # smoke base τ550=1.0
-            # loadings.append(0.25*caseLoadFct)
+            
         elif 'campex_bi' in case.lower():
-            # cases.append(case.replace('camp_test','coarse_mode_campex')) # smoke base τ550=1.0
-            # loadings.append(caseLoadFct) 
             if 'flat' in case.lower():
                 cases.append(case.replace('campex','fit_campex_flat'))
+            elif 'urban':
+                cases.append(case.replace('campex','fit_campex_fine_urban'))
             else:
                 cases.append(case.replace('campex','fit_campex'))
             loadings.append(0.0937*caseLoadFct)
