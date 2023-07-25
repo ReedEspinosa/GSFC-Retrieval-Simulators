@@ -668,11 +668,17 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=No
         valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix)
         for key in valsTmp.keys():
             if key=='vol':
-                valsTmp[key] = loading*valsTmp[key]
+                if 'fixedcoarse' in caseStr.lower(): # HACK: this is a hack to get the coarse mode to be fixed and works for only CAMP2EX data, because index 4 is the coarse mode
+                    valsTmp[key] = np.vstack([loading*valsTmp[key][:4], valsTmp[key][4]/44])
+                else:
+                    valsTmp[key] = loading*valsTmp[key]
             elif key=='vrtHght' and caseHeightKM:
                 valsTmp[key][:] = caseHeightKM*1000
             if key=='triaPSD':
-                valsTmp[key] = loading*valsTmp[key]
+                if 'fixedcoarse' in caseStr.lower(): # HACK: this is a hack to get the coarse mode to be fixed and works for only CAMP2EX data, because index 4 is the coarse mode
+                    valsTmp[key] = np.vstack([loading*valsTmp[key][:4], valsTmp[key][4]/6.6])
+                else:
+                    valsTmp[key] = loading*valsTmp[key]
             if key in aeroKeys and key in vals:
                     vals[key] = np.vstack([vals[key], valsTmp[key]])
             else: # implies we take the surface parameters from the last case
