@@ -16,7 +16,10 @@ if GRASP_Python_Path not in sys.path: sys.path.append(GRASP_Python_Path)
 import runGRASP as rg
 import miscFunctions as ms
 
-
+#------------------------#----------------------------#------------------------#
+# This section of the script contains the functions used to simulate the retrieval.
+# It is defined as a class and the results can be saved as a pickle file.
+#------------------------#----------------------------#------------------------#
 class simulation(object):
     def __init__(self, nowPix=None, picklePath=None, standardizePSD=True):
         """
@@ -253,6 +256,18 @@ class simulation(object):
         """ Only removes data from resltBck if χthresh is provided, χthresh=1.5 seems to work well
         Now we use costVal from GRASP if available (or if forceχ2Calc==True), χthresh≈2.5 is probably better
         NOTE: if forceχ2Calc==True or χthresh~=None this will permanatly alter the values of rsltBck/rsltFwd
+
+        Parameters
+        ----------
+        Input:
+            χthresh – χ^2 threshold for removing data, if None no data will be removed
+            σ – dictionary of error estimates for each measType, if None default values will be used
+            forceχ2Calc – if True, χ^2 will be calculated even if it is already present in rsltBck
+            verbose – print out some info
+            minSaved – minimum number of rsltBck elements to keep, even if they do not meet χthresh
+        Output:
+            None, but rsltBck/rsltFwd will be altered if χthresh or forceχ2Calc is True
+
         """
         if σ is None:
             σ={'I'   :0.003, # relative
@@ -358,6 +373,19 @@ class simulation(object):
         return rmse, bias, true # each w/ keys: βext, βextFine, ssa
 
     def _findExtScaProf(self, rslt, wvlnthInd):
+        '''
+        This is a helper function for analyzeSimProfile
+
+        Parameters
+        ----------
+        Input:
+            rslt – dictionary of GRASP results
+            wvlnthInd – index of wavelength to use
+        Output:
+            extPrf – extinction profile (summed over all modes)
+            scaPrf – scattering profile (summed over all modes)
+
+        '''
         Nmodes = len(rslt['aodMode'][:,0])
         rng = rslt['range'][0,:]
         Nrange = len(rng)
@@ -470,6 +498,21 @@ class simulation(object):
         return rmsErr, bias, trueOut
 
     def getStateVals(self, av, rslts, varsSpctrl, wvlnthInd, modeInd=None):
+        '''
+        This is a helper function for analyzeSim
+
+        Parameters
+        ----------
+        Input:
+            av – variable name to extract from rslts
+            rslts – list of dictionaries containing GRASP results
+            varsSpctrl – list of variables that are spectrally resolved
+            wvlnthInd – index of wavelength to use
+            modeInd – index of mode to use (None -> use all modes)
+        Output:
+            stateVals – array of values for variable av
+            
+        '''
         assert av in rslts[0], 'Variable %s was not found in the rslts dictionary!' % av
         stateVals = np.array([rf[av] for rf in rslts])
         if av.replace('_PBL','').replace('_FT','').replace('_fine','').replace('_coarse','') in varsSpctrl:
@@ -640,23 +683,4 @@ class simulation(object):
             rf['aeroType'] = np.argmin(typeDist)
             if verbose and rf['aeroType'] == 1 and 'vol_DU' in rf:
                 print('Dust volume fraction was %f and we still IDed as dust' % (dustVolFrac))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return

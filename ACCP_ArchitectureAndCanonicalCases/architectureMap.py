@@ -68,7 +68,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
         wvls = [0.380, 0.410, 0.550, 0.670, 0.870, 1.200, 1.570]
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int) # `np.int` was a deprecated alias for the builtin `int`
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry

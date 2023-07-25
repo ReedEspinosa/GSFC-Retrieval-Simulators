@@ -80,7 +80,6 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
     # Added by Anin to account for the aerosol models, PSD for the CAMP2Ex based simulation study
     elif 'coarse_mode_campex' in caseStr.lower(): # 
         try:
-            
             nbins = 36
             radiusBin = np.logspace(np.log10(0.005), np.log10(15), nbins)
             
@@ -111,6 +110,20 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
 
         # A function to read the PSD from Jeff's file or ASCII and pass it to
         # this definition
+
+        # Defining PSD of four layers for a particular flight (fine mode for the case of CAMP2Ex
+        kFMin = 0.001                   # minimum k value for fine mode
+        kFMax = 0.05                    # maximum k value for fine mode
+        kCMin = 0.0001                  # minimum k value for coarse mode
+        kCMax = 0.0005                  # maximum k value for coarse mode
+        ALH = [500, 1000, 2000, 3000]   # altitude of the fine mode layers in meters
+        ALH_C = 1000                    # altitude of the coarse mode layer in meters
+        ALHStd = 500                    # standard deviation of the altitude of the fine mode layers in meters
+        nFM = 1.5                       # refractive index of the fine mode
+        nCM = 1.4                       # refractive index of the coarse mode
+        nFMStd = 0.15                   # standard deviation of the refractive index of the fine mode
+        nCMStd = 0.05                   # standard deviation of the refractive index of the coarse mode
+
         # read PSD bins
         try:
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
@@ -141,8 +154,8 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 flight_num = 1
         
             nlayer = 1
-            flight_vrtHght = 1000
-            flight_vrtHghtStd = 500
+            flight_vrtHght = ALH[0]
+            flight_vrtHghtStd = ALHStd
             multiMode = False
             # layer
             if 'layer#' in caseStr.lower():
@@ -155,8 +168,8 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                         multiMode = True
                     # to use only one layer
                     else:
-                        flight_vrtHght = 1000*nlayer
-                        flight_vrtHghtStd = 500   
+                        flight_vrtHght = ALH[0]*nlayer
+                        flight_vrtHghtStd = ALHStd   
                 except Exception as e:
                     print('Could not find a matching string pattern: %s' %e)
                     flight_vrtHght = 1000
@@ -190,23 +203,23 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                            sphFrac,
                            sphFrac,
                            sphFrac] # mode 1, 2,...
-            vals['vrtHght'] = [[500], [1000], [2000], [3000]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
-            vals['vrtHghtStd'] = [[500], [500], [500], [500]] # mode 1, 2,... # Gaussian sigma in meters
-            nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)),nwl) # fine mode aerosols
+            vals['vrtHght'] = [[ALH[0]], [ALH[1]], [ALH[2]], [ALH[3]]]      # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
+            vals['vrtHghtStd'] = [[ALHStd], [ALHStd], [ALHStd], [ALHStd]]   # mode 1, 2,... # Gaussian sigma in meters
+            nAero_ = np.repeat(nFM + (rnd.uniform(-nFMStd, nFMStd)),nwl)        # fine mode aerosols
 			
 			# redefining the spectral refractive index based on the runtype (options are either 
             if 'flatfine' in caseStr.lower():
                 nAero = slope4RRI(nAero_, wvls, slope=0)
-                kAero = loguniform(0.001,0.05)*np.repeat(1, nwl)
+                kAero = loguniform(kFMin, kFMax)*np.repeat(1, nwl)
             elif 'urban' in caseStr.lower():
                 nAero = slope4RRI(nAero_, wvls)
-                kAero = loguniform(0.001,0.05)*np.repeat(1, nwl)
+                kAero = loguniform(kFMin, kFMax)*np.repeat(1, nwl)
             else:
                 nAero = slope4RRI(nAero_, wvls)
                 λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
                 k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
                 lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
-                kAero = loguniform(0.001,0.05)*lamb_k
+                kAero = loguniform(kFMin, kFMax)*lamb_k
             
             vals['n'] = [list(nAero),
                          list(nAero),
@@ -237,18 +250,18 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 # removed to avoid the descrepency in printing the aero vol conc in the output
                 vals['vrtHght'] = vals['vrtHght'] + [[500]]
                 vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[500]]
-                nAero_ = np.repeat(1.40 + (rnd.uniform(-0.05, 0.05)), nwl)
+                nAero_ = np.repeat(nCM + (rnd.uniform(-nCMStd, nCMStd)), nwl)
                 # redefining the spectral refractive index based on the runtype (options are either 
                 if 'flatcoarse' in caseStr.lower():
                     nAero = slope4RRI(nAero_, wvls, slope=0)
-                    kAero = loguniform(0.0001,0.0005)*np.repeat(1, nwl)
+                    kAero = loguniform(kCMin, kCMax)*np.repeat(1, nwl)
                 else:
                     nAero = slope4RRI(nAero_, wvls)
                     # k
                     λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
                     k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
                     lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
-                    kAero = loguniform(0.0001,0.0005)*lamb_k
+                    kAero = loguniform(kCMin, kCMax)*lamb_k
                 vals['n'] = vals['n'] + [list(nAero)]
                 vals['k'] = vals['k'] + [list(kAero)]
         else:
@@ -256,29 +269,48 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
             vals['vol'] = np.array([0.0017]) # gives AOD=4*[0.2165, 0.033499]=1.0
             vals['vrtHght'] =[flight_vrtHght] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [flight_vrtHghtStd] # mode 1, 2,... # Gaussian sigma in meters
-            nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)),nwl)
+            nAero_ = np.repeat(nFM + (rnd.uniform(-nFMStd, nFMStd)),nwl)
             if 'flat' in caseStr.lower():
                 nAero = slope4RRI(nAero_, wvls, slope=0)
-                kAero = loguniform(0.0001,0.0003)*np.repeat(1, nwl)
+                kAero = loguniform(kFMin,kFMax)*np.repeat(1, nwl)
             elif 'urban' in caseStr.lower():
                 nAero = slope4RRI(nAero_, wvls, slope=0)
-                kAero = loguniform(0.001,0.02)*np.repeat(1, nwl)
+                kAero = loguniform(kFMin,kFMax)*np.repeat(1, nwl)
             else:
                 nAero = slope4RRI(nAero_, wvls)
                 # k
                 λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
                 k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
                 lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
-                kAero = loguniform(0.0001,0.0003)*lamb_k
+                kAero = loguniform(kCMin, kCMax)*lamb_k
             # may have bug here!!!
             vals['n'] = np.vstack([vals['n'], nAero]) # mode 2 
             vals['k'] = [kAero] # mode 1
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'fit_campex' in caseStr.lower(): #Fix: This has to be modified to make it work with latest simulation setup
+        '''
+        This is a special case where the PSD is read from the Jeff's file and fitted a lognormal distribution to the fine mode
+        and some modifications has been done to the >500nm diameter bin to make it a lognormal distribution. The documentation 
+        regarding this technique is available in the GSFC_ESI_Scripts/Jeff-Project/README.md file
+        '''
         
         # find the params based on the flight and layer #
         # A function to read the PSD from Jeff's file or ASCII and pass it to
         # this definition
+
+        # Defining PSD of four layers for a particular flight (fine mode for the case of CAMP2Ex
+        kFMin = 0.001                   # minimum k value for fine mode
+        kFMax = 0.05                    # maximum k value for fine mode
+        kCMin = 0.0001                  # minimum k value for coarse mode
+        kCMax = 0.0005                  # maximum k value for coarse mode
+        ALH = [500, 1000, 2000, 3000]   # altitude of the fine mode layers in meters
+        ALH_C = 1000                    # altitude of the coarse mode layer in meters
+        ALHStd = 500                    # standard deviation of the altitude of the fine mode layers in meters
+        nFM = 1.5                       # refractive index of the fine mode
+        nCM = 1.4                       # refractive index of the coarse mode
+        nFMStd = 0.15                   # standard deviation of the refractive index of the fine mode
+        nCMStd = 0.05                   # standard deviation of the refractive index of the coarse mode        
+
         # read PSD bins
         try:
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
@@ -304,8 +336,8 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 flight_num = 1
         
             nlayer = 1
-            flight_vrtHght = 1000
-            flight_vrtHghtStd = 500
+            flight_vrtHght = ALH[0]
+            flight_vrtHghtStd = ALHStd
             multiMode = False
             # layer
             if 'layer#' in caseStr.lower():
@@ -318,12 +350,12 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                         multiMode = True
                     # to use only one layer
                     else:
-                        flight_vrtHght = 1000*nlayer
-                        flight_vrtHghtStd = 500   
+                        flight_vrtHght = ALH[0]*nlayer # FIXME: this is hard-coded, it needs to changed to make it work with other cases
+                        flight_vrtHghtStd = ALHStd   
                 except Exception as e:
                     print('Could not find a matching string pattern: %s' %e)
-                    flight_vrtHght = 500
-                    flight_vrtHghtStd = 500
+                    flight_vrtHght = ALH[0]
+                    flight_vrtHghtStd = ALHStd
 
             print('Using the PSD from the flight# %d and layer#'\
                   ' %d' %(flight_num, nlayer))
@@ -357,34 +389,37 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         rv = muFit
         vals['lgrnm'] = np.vstack([rv, σ]).T
         sphFrac = 0.999 - round(rnd.uniform(0, 1))*0.99
-        vals['sph'] = [sphFrac, sphFrac, sphFrac, sphFrac, sphFrac] # mode 1, 2,...
-        vals['vol'] = np.array([[0.35], [0.35],[0.35], [0.35], [4.1]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
-        vals['vrtHght'] = [[500], [1010], [2010], [3010],  [500]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [500, 500, 500, 500, 500] # mode 1, 2,... # Gaussian sigma in meters
+        vals['sph'] = [sphFrac, sphFrac, sphFrac, sphFrac, sphFrac]         # mode 1, 2,...
+        vals['vol'] = np.array([[0.35], [0.35],[0.35], [0.35], [4.1]])      # gives AOD=10*[0.0287, 0.0713]=1.0 total
+        vals['vrtHght'] = [[ALH[0]], [ALH[1]], [ALH[2]], [ALH[3]], [ALH_C]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [ALHStd, ALHStd, ALHStd, ALHStd, ALHStd]       # mode 1, 2,... # Gaussian sigma in meters
         # n
-        nAero_ = np.repeat(1.5 + (rnd.uniform(-0.15, 0.15)), nwl)
-        if 'flat' in caseStr.lower():
+        nAero_ = np.repeat(nFM + (rnd.uniform(-nFMStd, nFMStd)), nwl)
+        if 'flatfine' in caseStr.lower():
             nAero = slope4RRI(nAero_, wvls, slope=0)
-            kAero = loguniform(0.001,0.02)*np.repeat(1, nwl)
+            kAero = loguniform(kFMin, kFMax)*np.repeat(1, nwl)
+        elif 'urban' in caseStr.lower():
+            nAero = slope4RRI(nAero_, wvls)
+            kAero = loguniform(kFMin, kFMax)*np.repeat(1, nwl)
         else:
             nAero = slope4RRI(nAero_, wvls)
             # k
             λ_LeiBi = [0.360, 0.380, 0.440, 0.550, 0.670, 0.870, 1.000, 1.570, 2.100]
             k_LeiBi = [3.e-7, 2.e-7, 1.e-7, 1.e-7, 1.e-7, 2.e-7, 3.e-7, 4.e-7, 5.e-7] # dependency from Lei Bi et al 2019 [modified]
             lamb_k = np.interp(wvls, λ_LeiBi, k_LeiBi)*1e7 # multiplied by 1e7 to make the k at 440 nm to be unity
-            kAero = loguniform(0.001,0.02)*lamb_k
+            kAero = loguniform(kFMin, kFMax)*lamb_k
         vals['n'] = np.vstack([nAero,
                                nAero,
                                nAero,
                                nAero]) # mode 1,2,...
     
-        nAero_ = np.repeat(1.40 + rnd.uniform(-0.05, 0.05), nwl)
+        nAero_ = np.repeat(nCM + rnd.uniform(-nCMStd, nCMStd), nwl)         # Coarse mode aerosols real refractive index
         if 'flat' in caseStr.lower():
             nAero = slope4RRI(nAero_, wvls, slope=0)
-            kAero = loguniform(0.0001,0.0005)**np.repeat(1, nwl)
+            kAero = loguniform(kCMin, kCMax)**np.repeat(1, nwl)
         else:
             nAero = slope4RRI(nAero_, wvls)
-            kAero = loguniform(0.0001,0.0005)*lamb_k
+            kAero = loguniform(kCMin, kCMax)*lamb_k
         vals['n'] = np.vstack([vals['n'], nAero]) # mode 2
         vals['k'] = np.vstack([kAero,
                                kAero,
