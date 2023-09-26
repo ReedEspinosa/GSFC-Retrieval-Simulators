@@ -97,7 +97,7 @@ class simulation(object):
         localVerbose = verbose
         for tOffset, i in enumerate(loopInd): # loop over each simulated pixel, later split up into maxCPU calls to GRASP
             if fixRndmSeed: np.random.seed(strtSeed) # reset to same seed, adding same noise to every pixel
-            nowPix = self.nowPix[0] if len(self.nowPix)==1 else self.nowPix[i]
+            nowPix = self.nowPix[0] if len(self.nowPix)==1 else self.nowPix[i] 
             nowPix.populateFromRslt(self.rsltFwd[i], radianceNoiseFun=radianceNoiseFun, verbose=localVerbose)
             if len(np.unique(loopInd)) != len(loopInd): # we are using the same rsltFwd dictionary more than once
                 nowPix.dtObj = nowPix.dtObj + dt.timedelta(seconds=tOffset) # increment hour otherwise GRASP will whine

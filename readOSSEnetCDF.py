@@ -308,7 +308,7 @@ class osseData(object):
         for i, λi in enumerate(surfλ):
             brdf[:, 0, i] = surf_data['%s%d' % (keyVarNm, (λi*1000))].squeeze()
             if keyVarNm=='Riso':
-                with np.errstate(divide='ignore'):
+                with np.errstate(divide='ignore'): # TODO: this is not suppressing warning...
                     brdf[:, 1, i] = surf_data['Rvol%d' % (λi*1000)]/brdf[:, 0, i] # GRASP normalizes geo and vol by iso weight
                     brdf[:, 2, i] = surf_data['Rgeo%d' % (λi*1000)]/brdf[:, 0, i]
         return surfλ, brdf
