@@ -31,9 +31,9 @@ except:
 npca_ = [range(0,36), range(36,72), range(72, 107)]
 npca = npca_[arrayNum] # max is 107
 
-# Solar Zenith angle (used if no real sun-satelliote geometry is used)
+# Solar Zenith angle (used if no real sun-satellite geometry is used)
 SZA = 30
-sza_ = [0, 30, 60]# For running multible simulations in DISCOVER
+sza_ = [0, 30, 60]# For running multiple simulations in DISCOVER
 sza = list(itertools.chain.from_iterable(itertools.repeat(x, 12) for x in sza_))
 # realGeometry: True if using the real geometry provided in the .mat file
 useRealGeometry = 1
@@ -105,7 +105,7 @@ for aod in tau:
     
     # dry run option
     if not sys.argv[1] == '--dryrun':
-    	os.system("sbatch %s" %job_file)
+        os.system("sbatch %s" %job_file)
     else:
     	print('<><><><> dry run, check the ./job directory for slurm files <><><><>')
 print('Jobs sumitted succesfully check the ./job/ folder for output/error')

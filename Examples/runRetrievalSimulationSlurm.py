@@ -145,7 +145,7 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18, dry
         tempVAR = 0
         for j in np.r_[1:nFlights+1]:
             flight_loop_start_time = time.time()
-            for k in np.r_[0]:
+            for k in np.r_[0]: # 0 means use information from all layers, 1 means use only information from layer 1, so on
                 conCase = '%s_addCoarse_campex_tria_%s_flight#%.2d_layer#%.2d' %(surface, spectral,j,k)
                 print('<-->'*20)
                 try:

@@ -93,12 +93,12 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
             vals['triaPSD'] = [np.around(dvdlnr1*[0.18], decimals=6),
                                np.around(dvdlnr2*[0.20], decimals=6)]
             vals['triaPSD'] = np.vstack(vals['triaPSD'])
-            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+            vals['sph'] = [[0.99999], [0.99999]]  # mode 1, 2,...
             # removed to avoid the descrepency in printing the aero vol conc in the output
             #vals['vol'] = np.array([[0.0477583], [0.7941207]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
             vals['vrtHght'] = [[2010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
-            vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
-            vals['n'] = np.repeat(1.415, nwl) # mode 1
+            vals['vrtHghtStd'] = [[500],  [500]]  # mode 1, 2,... # Gaussian sigma in meters
+            vals['n'] = np.repeat(1.415, nwl)  # mode 1
             vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
             vals['k'] = np.repeat(0.002, nwl) # mode 1
             vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
@@ -146,22 +146,22 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
             file.close()
                 
         except Exception as e:
-            print('File loading error: check if the PSD file path is correct'\
-                  ' or not\n %s' %e)
+            print('File loading error: check if the PSD file path is correct'
+                  ' or not\n %s' % e)
         # modifying PSD based on the flight and layer. This will be updated to
         # include multiple layer information
-        
+       
         # flight
         if 'flight#' in caseStr.lower():
             try:
                 matchRe = re.compile(r'flight#\d{2}')
                 flight_numtemp = matchRe.search(caseStr.lower())
                 flight_num = int(flight_numtemp.group(0)[7:])
-                
+            
             except Exception as e:
-                print('Could not find a matching string pattern: %s' %e)
+                print('Could not find a matching string pattern: %s' % e)
                 flight_num = 1
-        
+    
             nlayer = 1
             flight_vrtHght = ALH[0]
             flight_vrtHghtStd = ALHStd
@@ -171,41 +171,56 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 try:
                     matchRe = re.compile(r'layer#\d{2}')
                     layer_numtemp = matchRe.search(caseStr.lower())
-                    nlayer = int(layer_numtemp.group(0)[6:]) 
+                    nlayer = int(layer_numtemp.group(0)[6:])
                     # to use all layers
                     if not nlayer:
                         multiMode = True
+                        print('Using all layers')
                     # to use only one layer
                     else:
                         flight_vrtHght = ALH[0]*nlayer
                         flight_vrtHghtStd = ALHStd   
                 except Exception as e:
-                    print('Could not find a matching string pattern: %s' %e)
+                    print('Could not find a matching string pattern: %s' % e)
                     flight_vrtHght = ALH[0]
                     flight_vrtHghtStd = ALHStd
 
-            print('Using the PSD from the flight# %d and layer#'\
-                  ' %d' %(flight_num, nlayer))
+            print('Using the PSD from the flight# %d and layer#'
+                  ' %d' % (flight_num, nlayer))
             
             # update the PSD based on flight and layer information
             # This needs modification to use multiple layers
-            if not nlayer==0:
-                vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,nlayer-1,:], decimals=6)]
+            if not nlayer == 0:
+                vals['triaPSD'] = [np.around(dVdlnr[flight_num-1, nlayer-1, :], decimals=6)]
                 vals['triaPSD'] = np.vstack(vals['triaPSD'])
         else:
             # using the first flight PSD
             print('Using the PSD from the first flight and first layer')
-            vals['triaPSD'] = [np.around(dVdlnr[0,0,:], decimals=6)]
+            vals['triaPSD'] = [np.around(dVdlnr[0, 0, :], decimals=6)]
             vals['triaPSD'] = np.vstack(vals['triaPSD'])
 
         # parameters above this line has to be modified [AP]
         if multiMode:
+            #HACK: this is a hack to make the code work for the case of of one layer, basically forcing the concentration to be zero
+            #vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,layer-1,:]*[0.1], decimals=6)*0.000001]
+            
+            zeroAeroConc = [0.00000001]
+            oneLayerHack = 1  # True if only one layer is used
+            whichLayer = 0     # layer number to be used
             
             # Defining PSD of four layers for a particular flight (fine mode for the case of CAMP2Ex
             vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,1,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,2,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,3,:]*[0.1], decimals=6)]
+            # Run this if one layer is used
+            if oneLayerHack:
+                for i in range(len(vals['triaPSD'])):
+                    if i != whichLayer:
+                        print(vals['triaPSD'][i])
+                        vals['triaPSD'][i] = zeroAeroConc * vals['triaPSD'][i]
+                        print('Not using the PSD from the layer#%0.2d' % i)
+                        print(vals['triaPSD'][i])
             vals['triaPSD'] = np.array(vals['triaPSD'])
             sphFrac = 0.999 - round(rnd.uniform(0, 1))*0.99
             vals['sph'] = [sphFrac,
@@ -241,15 +256,15 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 # This is hard-coded, which limits its applicability for generalization
                 # GRASP needs to be modified to make use of triangle and lognormal bins
                 # together
-                σ = [sigma_ +rnd.uniform(-sigma_Std, sigma_Std)] # Coarse mode
-                rv = [mu_ +rnd.uniform(-mu_Std, mu_Std)]*np.exp(3*np.power(σ,2)) # Coarse mode (rv = rn*e^3σ)
+                σ = [sigma_ + rnd.uniform(-sigma_Std, sigma_Std)]  # Coarse mode
+                rv = [mu_ + rnd.uniform(-mu_Std, mu_Std)]*np.exp(3*np.power(σ,2)) # Coarse mode (rv = rn*e^3σ)
                 nbins = np.size(radiusBin)
                 radiusBin_ = np.logspace(np.log10(rMin), np.log10(rMax), nbins)
                 dvdr = logNormal(rv[0], σ[0], radiusBin_)
                 dvdlnr = dvdr[0]*radiusBin_
                 
                 if 'nocoarse' in caseStr.lower(): multFac = 0.0001
-                else: multFac=0.77
+                else: multFac = 0.77
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
                                             [dvdlnr*multFac]])
                 vals['sph'] = vals['sph'] + [0.999 - round(rnd.uniform(0, 1))*0.99]
