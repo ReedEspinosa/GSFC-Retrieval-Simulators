@@ -217,10 +217,9 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
             if oneLayerHack:
                 for i in range(len(vals['triaPSD'])):
                     if i != whichLayer:
-                        print(vals['triaPSD'][i])
+                        # print(vals['triaPSD'][i])
                         vals['triaPSD'][i] = zeroAeroConc * vals['triaPSD'][i]
-                        print('Not using the PSD from the layer#%0.2d' % i)
-                        print(vals['triaPSD'][i])
+                        # print('Not using the PSD from the layer#%0.2d' % i)
             vals['triaPSD'] = np.array(vals['triaPSD'])
             sphFrac = 0.999 - round(rnd.uniform(0, 1))*0.99
             vals['sph'] = [sphFrac,
@@ -421,6 +420,21 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         sphFrac2= 0.999 - round(rnd.uniform(0, 1))*0.99                     # Coarse mode
         vals['sph'] = [sphFrac, sphFrac, sphFrac, sphFrac, sphFrac2]        # mode 1, 2,...
         vals['vol'] = np.array([[0.35], [0.35],[0.35], [0.35], [4.1]])      # gives AOD=10*[0.0287, 0.0713]=1.0 total
+        # ----------------------------------------------------------------------#
+        # if using only one layer in fine mode
+        # ----------------------------------------------------------------------#
+        #HACK: this is a hack to make the code work for the case of of one layer, basically forcing the concentration to be zero
+        zeroAeroConc = [0.00001]
+        oneLayerHack = 1  # True if only one layer is used
+        whichLayer = 0     # layer number to be used
+        # Run this if one layer is used
+        if oneLayerHack:
+            for i in range(len(vals['vol'])):
+                if i != whichLayer and i !=4:
+                    # print(vals['vol'][i])
+                    vals['vol'][i] = zeroAeroConc * vals['vol'][i]
+                    # print('Not using the PSD from the layer#%0.2d' % i)
+
         vals['vrtHght'] = [[ALH[0]], [ALH[1]], [ALH[2]], [ALH[3]], [ALH_C]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [ALHStd, ALHStd, ALHStd, ALHStd, ALHStd]       # mode 1, 2,... # Gaussian sigma in meters
         # n

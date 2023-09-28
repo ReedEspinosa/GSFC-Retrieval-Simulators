@@ -36,13 +36,13 @@ krnlPath = './src/retrieval/internal_files'
 
 # Directory containing the foward and inversion YAML files you would like to use
 ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
-fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda_CustomBins.yml') # foward YAML file
+fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml') # foward YAML file
 bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes_Campex_flatRI_darkOcean.yml') # inversion YAML file
 
 # Other non-path related settings
-Nsims = 3 # the number of inversions to perform, each with its own random noise
+Nsims = 5 # the number of inversions to perform, each with its own random noise
 maxCPU = 1 # the number of processes to lssaunch, effectivly the # of CPU cores you want to dedicate to the simulation
-conCase = 'dark_ocean_fixedcoarse_campex_tria_flatfine_flatcoarse_flight#01_layer#00' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+conCase = 'dark_ocean_fixedcoarse_campex_bi_flatfine_flatcoarse_flight#01_layer#00' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
 SZA = 30 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
 Phi = 0 # relative azimuth angle, φsolar-φsensor
 τFactor = 1 # scaling factor for total AOD
@@ -72,3 +72,60 @@ pprint.pprint(simA.analyzeSim(0)[0])
 
 # save simulated truth data to a NetCDF file
 #simA.saveSim_netCDF(savePath[:-4], verbose=True)
+
+# %% <><><> TEST AREA <><><>
+
+# We want to cross check the results of the simulation with the results of the inversion
+# The chi2 values should be cross checked, since we are specifying the noise for Q and U instead of Q/I and U/I
+import numpy as np
+def chi2calc(x,y,sigma, noiseType='absolute'):
+    ''' calculate chi2 for two arrays of data, x and y, with noise of sigma
+    Parameters
+    ----------
+    Input
+    -----
+    x : array_like
+        true array of data
+    y : array_like
+        retrieved array of data
+    sigma : scalar
+        noise value
+    noiseType : str
+        'absolute' or 'relative' noise
+    
+    Returns
+    -------
+    chi2 : scalar
+        chi2 value
+    
+        '''
+    if noiseType == 'absolute':
+        # calculate chi2 for absolute noise
+        return np.sum(((x-y)/sigma)**2)/(len(x)-1)
+    elif noiseType == 'relative':
+        # calculate chi2 for relative noise
+        return np.sum((((x-y)/x)/sigma)**2)/(len(x)-1)
+
+# A simple test case to check the chi2calc function
+c1 = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7, 8, 9, 10, 11, 12])
+c2 = np.array([1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 9.1, 10.1, 11.1, 12.1])
+c3 = np.array([1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9, 9.0, 11.1, 10.8])
+
+print(chi2calc(c1,c2,sigma=0.1))
+print(chi2calc(c1,c3,sigma=0.1, noiseType='relative'))
+
+# Now we want to check the chi2 values for the simulation and inversion'
+
+# calculate chi2 based for different wavelengths
+I_noise = 0.03 # 3% noise in I
+Q_noise = 0.005 # 0.5% noise in Q/I
+U_noise = 0.005 # 0.5% noise in U/I
+for i in range(len(simA.rsltFwd[0]['lambda'])):
+    for j in range (Nsims):
+        print('chi2 for wavelength %5.3f μm:' % simA.rsltFwd[0]['lambda'][i])
+        print('chi2 in I:       %1.4f' % chi2calc(simA.rsltBck[j]['meas_I'][:,i], simA.rsltBck[j]['fit_I'][:,i], I_noise, noiseType='relative'))
+        print('chi2 in I(/n):   %1.4f' % chi2calc(simA.rsltFwd[0]['fit_I'][:,i], simA.rsltBck[j]['fit_I'][:,i], I_noise, noiseType='relative'))
+        print('chi2 in Q/I:     %1.4f' % chi2calc(simA.rsltBck[j]['meas_QoI'][:,i], simA.rsltBck[j]['fit_QoI'][:,i], Q_noise))
+        print('chi2 in U/I:     %1.4f' % chi2calc(simA.rsltBck[j]['meas_UoI'][:,i], simA.rsltBck[j]['fit_UoI'][:,i], U_noise))
+
+# %% <><><> END TEST AREA <><><>
