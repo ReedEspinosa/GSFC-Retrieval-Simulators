@@ -424,7 +424,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         # if using only one layer in fine mode
         # ----------------------------------------------------------------------#
         #HACK: this is a hack to make the code work for the case of of one layer, basically forcing the concentration to be zero
-        zeroAeroConc = [0.00001]
+        zeroAeroConc = [0.001]
         oneLayerHack = 1  # True if only one layer is used
         whichLayer = 0     # layer number to be used
         # Run this if one layer is used

@@ -29,7 +29,7 @@ savePath = './job/exampleSimulationTest#1.pkl'
 
 # Full path grasp binary
 # binGRASP = '/usr/local/bin/grasp'
-binGRASP = '../../GRASP_GSFC/build_uvswirmap/bin/grasp'
+binGRASP = '../../GRASP_GSFC/build_uvswirmap_v3/bin/grasp'
 
 # Full path grasp precomputed single scattering kernels
 krnlPath = './src/retrieval/internal_files'

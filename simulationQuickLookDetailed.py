@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 This python script is a modified verison of the simulationQuickLook.py, with 
-the abiltity to plot 2D density and histograms of errors for retrieved parameters.
+the ability to plot 2D density and histograms of errors for retrieved parameters.
 Specifically designed to accomodate the simulation retreieval study based on
-CAMP2Ex measurments
+CAMP2Ex measurements
 
 Created on Wed Jul 13 14:18:11 2022
 
@@ -212,12 +212,12 @@ waveInd2 = 4
 fnPtrnList = []
 #fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
 # fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-fnPtrn = 'Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
+fnPtrn = 'Camp2ex_AOD_*_550nm_*_campex_bi_*_flight#*_layer#00.pkl'
 # fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl'
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
-inDirPath = '/home/aputhukkudy/ACCDAM/2022/Campex_Simulations/Dec2022/04/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/'
+inDirPath = '/data/ESI/User/aputhukkudy/ACCDAM/2023/Campex_Simulations/Sep2023/27/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'
 
 # more tags and specifiations for the scatter plot
 surf2plot = 'both' # land, ocean or both

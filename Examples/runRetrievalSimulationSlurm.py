@@ -37,7 +37,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
                 conCase='campex', instrument='polar07'):
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
     # Full path to save simulation results ass a Python pickle
-    savePath = '../../../ACCDAM/2023/Campex_Simulations/Jul2023/12/'\
+    savePath = '../../../ACCDAM/2023/Campex_Simulations/Sep2023/27/'\
         'fullGeometry/withCoarseMode/darkOcean/%s/%s/'\
         'Camp2ex_AOD_%sp%s_550nm_SZA_%0.4d_PHI_%0.4d_%s.pkl' %( psd_type,instrument,
                                                 str(τFactor).split('.')[0],
@@ -47,7 +47,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
                                                 conCase)
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
-    binGRASP = '../../GRASP_GSFC/build_megaharp01_AGU/bin/grasp_app'
+    binGRASP = '../../GRASP_GSFC/build_uvswirmap/bin/grasp_app'
         
     # Full path grasp precomputed single scattering kernels
     krnlPath = '../../GRASP_GSFC/src/retrieval/internal_files'
