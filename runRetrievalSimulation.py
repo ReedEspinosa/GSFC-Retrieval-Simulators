@@ -12,7 +12,7 @@ from miscFunctions import checkDiscover
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ACCP_ArchitectureAndCanonicalCases'))
 from architectureMap import returnPixel
 from canonicalCaseMap import setupConCaseYAML
-from ACCP_functions import selectGeometryEntryModis
+from ACCP_functions import selectGeometryEntryModis, selectGeomSabrina
 
 assert sys.version_info.major==3, 'This script requires Python 3'
 if checkDiscover(): # DISCOVER
@@ -20,34 +20,37 @@ if checkDiscover(): # DISCOVER
     nAng = int(sys.argv[2])
     basePath = os.environ['NOBACKUP']
     saveStart = os.path.join(basePath, 'synced/Working/TASNPP_simulation00/MultiPix31_')
-    ymlDir = os.path.join(basePath, 'GSFC-Retrieval-Simulators_multiPix/ACCP_ArchitectureAndCanonicalCases/')
+    ymlDir = os.path.join(basePath, 'GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
-    geomFile = os.path.join(basePath, 'synced/Working/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt')
+    # geomFile = os.path.join(basePath, 'synced/Working/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt')
+    geomFile = '/Users/wrespino/Synced/AOS/Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4'
     Nangles = 16
     Nsims = 2 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 2 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
     n = 0
-    nAng = 11
-    saveStart = '/Users/wrespino/Desktop/TEST_V03_' # end will be appended
-    ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/GSFC-Retrieval-Simulators_multiPix/ACCP_ArchitectureAndCanonicalCases/'
+    nAng = 11 # Sabrina's files have 132 x 5 = 660 angles
+    saveStart = '/Users/wrespino/Desktop/TEST_V01_' # end will be appended
+    ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/'
     dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
-    geomFile = '/Users/wrespino/Synced/Proposals/ROSES_TASNPP_Yingxi_2020/retrievalSimulation/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt'
+    # geomFile = '/Users/wrespino/Synced/Proposals/ROSES_TASNPP_Yingxi_2020/retrievalSimulation/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt'
+    geomFile = '/Users/wrespino/Synced/AOS/Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4'
     krnlPath = None
-    Nangles = 3
-    Nsims = 3
-    maxCPU = 2
+    Nangles = 4 # This many angles will be processed by this call
+    Nsims = 1 # number of runs (if initial guess is not random this just varies the random noise)
+    maxCPU = 2 # number of cores to divide above Nsims (times Nangles?) over... we might need to do some restructuring here
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
 bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes.yml') # will get bumped to 4 modes if needed
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 #bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes_DTarbsorb.yml')
 
-instruments = ['modis']
-conCases = ['HuamboVegetation', 'NasaAmesVegetation'] # a1,a2,b1,..,o2 #180
+instruments = ['polarAOS']
+conCases = ['case08a', 'case08d','case08g'] # a1,a2,b1,..,o2 #180
 τFactor = [1.0] #1 - Syntax error on this line? Make sure you are running Python 3!
 rndIntialGuess = False # initial guess falls in middle 25% of min/max range
+maxSZA = 80
 verbose = True
 # more specific simulation options in runSim call below... 
 
@@ -64,10 +67,16 @@ print('-- Processing ' + os.path.basename(savePath) + ' --')
 # setup forward and back YAML objects and now pixel
 nowPix = []
 for i in range(nAng, nAng+Nangles):
-    SZA, phi, vza = selectGeometryEntryModis(geomFile, i)
-    nowPix.append(returnPixel(paramTple[0], sza=SZA, relPhi=phi, vza=vza, nowPix=None, concase=paramTple[1]))
+    if 'polaraos' in paramTple[0].lower():
+        sza, phi, vza = selectGeomSabrina(geomFile, i)
+    elif 'modis' in paramTple[0].lower():
+        sza, phi, vza = selectGeometryEntryModis(geomFile, i)
+    else:
+        assert False, 'You probably want selectGeometryEntry() for this instrument but call needs to be added here'
+    if sza <= maxSZA and sza>0: # this means nowPix may have slightly fewer than Nangles elements
+        nowPix.append(returnPixel(paramTple[0], sza=sza, relPhi=phi, vza=vza, nowPix=None, concase=paramTple[1]))
 
-print('n = %d, nAng = %d, Nλ = %d' % (n, nAng, nowPix[0].nwl))
+print('n = %d, nAng = %d, len(nowPix) = %d, Nλ = %d' % (n, nAng, len(nowPix), nowPix[0].nwl))
 fwdModelYAMLpath = fwdModelYAMLpathLID if 'lidar' in paramTple[0].lower() else fwdModelYAMLpathPOL
 bckYAML = bckYAMLpathLID if 'lidar' in paramTple[0].lower() else bckYAMLpathPOL
 fwdYAML = [setupConCaseYAML(paramTple[1], nowPix[i], fwdModelYAMLpath, caseLoadFctr=paramTple[2]) for i in range(Nangles)]

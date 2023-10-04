@@ -128,6 +128,36 @@ def selectGeometryEntryModis(geomFile, ind):
         geomVals = np.loadtxt(fid)
     return geomVals[ind,0], geomVals[ind,2], geomVals[ind,1] # θs, φ, θv
 
+def selectGeomSabrina(nc4File, cumInd=None, timeInd=None, crossInd=None):
+    """
+    Pull scalar sza and vectors VZA and PHI from subsampled version of Sabrina's obrit files at a given time and ncross
+    nc4File – path to nc4 file with subsampled angles (e.g., /.../AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4)
+    cumInd - scalar integer index of all pixels in file ordered as (t0,c0),..(tn,co),...(t0,cn),...(tn,cn) where t=time and c=cross
+    timeInd - scalar integer corresponding to time index to pull angles from 
+    crossInd - scalar integer corresponding to across track index to pull angles from
+    """
+    from netCDF4 import Dataset
+    netCDFobj = Dataset(nc4File)
+    if timeInd is None or crossInd is None:
+        Ntime = netCDFobj.dimensions['time'].size
+        assert cumInd, 'cumInd must be provided unless timeInd and crossInd are both provided'
+        timeInd = cumInd%Ntime
+        crossInd = int(np.floor(cumInd/Ntime))
+        if crossInd >= netCDFobj.dimensions['ncross'].size: # there are ≤cumInd pixels in file; return -1 for invalid call
+            return -1, -1, -1
+    phi = np.array(netCDFobj.variables['azimuth'][timeInd,crossInd,:])
+    sza = np.array(netCDFobj.variables['sza'][timeInd,crossInd,:])
+    if np.any((sza-sza[0]) > 1):
+        warnings.warn('Δsza was greater than 1° at timeInd=%d and crossInd=%d' % (timeInd, crossInd))
+    szaAvg = sza.mean()
+    vza = np.array(netCDFobj.variables['vza'][crossInd,:])
+    # Change vza to be signed and phi to be on interval [0°,180°]
+    assert np.all(vza>=0), 'At least one element of vza was less than zero before conversion!'
+    vza = np.sign(phi)*vza
+    phi[phi<0] = phi[phi<0]+180
+    assert np.logical_and(phi>=0, phi<=180).all(), 'At least one element did not satisify 0° ≤ phi ≤ 180° after conversion!'
+    return szaAvg, phi, vza
+
 def selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA,
                         orbit=None, pcaVarPtrn='n_row_best_107sets_%s', verbose=False):
     """
