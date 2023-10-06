@@ -18,7 +18,7 @@ from architectureMap import returnPixel, addError
 from MADCAP_functions import hashFileSHA1
 from runGRASP import graspYAML
 
-if checkDiscover(): # DISCOVER
+if os.path.exists('/discover/'): # DISCOVER
     inInt = int(sys.argv[1])
     nn = inInt
     basePath = os.environ['NOBACKUP']
@@ -28,7 +28,7 @@ if checkDiscover(): # DISCOVER
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     osseDataPath = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/'
     maxCPU = 2
-else: # MacBook Air
+elif os.path.exists('/Users/wrespino'): # MacBook Air
     basePath = '/Users/wrespino/'
     inInt = int(sys.argv[1])
     nn = inInt
@@ -38,6 +38,21 @@ else: # MacBook Air
     krnlPath = None
     maxCPU = 1
     osseDataPath = '/Users/wrespino/Synced/MADCAP_CAPER/testCase_Aug01_0000Z_VersionJune2020/'
+elif os.path.exists('/userhome/dgiles/'): #pcluster
+    basePath = '/userhome/dgiles/'
+    inInt = int(sys.argv[1])
+    nn = inInt #number of retrievals to process
+    bckYAMLpathLID = '/userhome/dgiles/MAWP_Retrieval_Simulator/GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/settings_BCK_POLARandLIDAR_10Vbins_2modes.yml'
+    bckYAMLpathPOL = '/userhome/dgiles/MAWP_Retrieval_Simulator/GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/settings_BCK_POLAR_2modes.yml'
+    dirGRASP = '/userhome/dgiles/MAWP_Retrieval_Simulator/GRASP_GSFC/build/bin/grasp'
+    krnlPath = '/userhome/dgiles/aosp_mawp_aerosols_l2a/src/retrieval/internal_files/'
+    maxCPU = 1
+    osseDataPath = '/userhome/dgiles/MAWP_Retrieval_Simulator/testCase_Aug01_0000Z_VersionJune2020/'
+else:
+    print("cannot find system; check configuration")
+    exit() 
+
+
 rndIntialGuess = False # randomize initial guess before retrieving
 
 year = 2006

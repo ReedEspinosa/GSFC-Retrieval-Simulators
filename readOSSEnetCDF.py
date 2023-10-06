@@ -145,7 +145,7 @@ class osseData(object):
             warnings.warn('No wavelengths found for the patterns:\n%s' % "\n".join(posPaths))
         return wvls
 
-    def osse2graspRslts(self, newLayers=None, dateTimeSorted=True):
+    def osse2graspRslts(self, pixInd=None, newLayers=None, dateTimeSorted=True):
         """ osse2graspRslts will convert that data in measData to the format used to store GRASP's output
                 IN: newLidarLayers -> a list of layer heights (in meters) at which to return the lidar signal
                     dateTimeSorted -> rslts will be sorted by datetime (as GRASP requires), but will lose alignment with order of pixels in this object
@@ -161,7 +161,8 @@ class osseData(object):
             'OSSE observable and state variable data structures contain a differnt number of pixels!'
         assert ('aod' not in self.rtrvdData[0]) or (len(self.rtrvdData[0]['aod']) == Nλ), \
             'OSSE observable and state variable data structures contain a differnt number of wavelengths!'
-        pixInd = np.r_[0:len(self.rtrvdData)]
+        if not pixInd:
+            pixInd = np.r_[0:len(self.rtrvdData)]
         if dateTimeSorted: pixInd = np.take(pixInd, np.argsort(measData[self.vldPolarλind]['dtObj'][pixInd]))
         rslts = []
         for k,rd in zip(pixInd, self.rtrvdData[pixInd]): # loop over pixels
@@ -272,7 +273,7 @@ class osseData(object):
         if not self._loadingChecks(prereqCalls=preReqs, filename=levBFN, functionName='readaerData'): return
         levB_data = loadVARSnetCDF(levBFN, varNames=['AIRDENS', 'DELP'], keepTimeInd=pixInd, verbose=self.verbose) # air density [kg/m^3], pressure thickness [Pa]
         self.Nlayers = levB_data['AIRDENS'].shape[1]
-        self.pblInds = np.zeros((self.Npix, self.Nlayers), dtype=np.bool)
+        self.pblInds = np.zeros((self.Npix, self.Nlayers), dtype=np.bool_)
         for k,(airdens,delp) in enumerate(zip(levB_data['AIRDENS'], levB_data['DELP'])): # loop over pixels
             ze = (delp[::-1]/airdens[::-1]/GRAV).cumsum()[::-1] # profiles run top down so we reverse order for cumsum
             rng = (np.r_[ze[1::],0] + ze)/2 # ze is then the top of the layers (?), so rng is midpoints
@@ -308,9 +309,14 @@ class osseData(object):
         for i, λi in enumerate(surfλ):
             brdf[:, 0, i] = surf_data['%s%d' % (keyVarNm, (λi*1000))].squeeze()
             if keyVarNm=='Riso':
-                with np.errstate(divide='ignore'): # TODO: this is not suppressing warning...
-                    brdf[:, 1, i] = surf_data['Rvol%d' % (λi*1000)]/brdf[:, 0, i] # GRASP normalizes geo and vol by iso weight
-                    brdf[:, 2, i] = surf_data['Rgeo%d' % (λi*1000)]/brdf[:, 0, i]
+                #with np.errstate(divide='ignore'): # TODO: this is not suppressing warning...
+                a = surf_data['Rvol%d' % (λi*1000)]
+                b = brdf[:, 0, i]
+                brdf[:, 1, i]=np.divide(a, b, out=np.zeros_like(a), where=b!=0)
+                brdf[:, 2, i]=np.divide(a, b, out=np.zeros_like(a), where=b!=0)
+    
+                #    brdf[:, 1, i] = surf_data['Rvol%d' % (λi*1000)]/brdf[:, 0, i] # GRASP normalizes geo and vol by iso weight
+                #    brdf[:, 2, i] = surf_data['Rgeo%d' % (λi*1000)]/brdf[:, 0, i]
         return surfλ, brdf
                         
     def readStateVars(self, finemode=False, pixInd=None):
@@ -349,7 +355,7 @@ class osseData(object):
 
     def _rtrvdDataSetPixels(self, timeLoopVars, λ, hghtInds=None, km=''):
         """ hghtInd is a logical 2D array [Npix X Nlayer] with true at index of values to use """
-        if hghtInds is None: hghtInds = np.ones((self.Npix, self.Nlayers), dtype=np.bool)
+        if hghtInds is None: hghtInds = np.ones((self.Npix, self.Nlayers), dtype=np.bool_)
         firstλ = 'aod'+km not in timeLoopVars[-1][0]
         for τ,ω,n,k,V,g,S,rd,hInd in zip(*timeLoopVars, hghtInds): # loop over each pixel and vertically average
             if firstλ:
