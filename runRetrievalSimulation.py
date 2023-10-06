@@ -48,9 +48,9 @@ bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 
 instruments = ['polarAOS']
 conCases = ['case08a', 'case08d','case08g'] # a1,a2,b1,..,o2 #180
-τFactor = [1.0] #1 - Syntax error on this line? Make sure you are running Python 3!
+τFactor = ['randLogNrm0.2'] #1 - Syntax error on this line? Make sure you are running Python 3!
 rndIntialGuess = False # initial guess falls in middle 25% of min/max range
-maxSZA = 80
+maxSZA = 75
 verbose = True
 # more specific simulation options in runSim call below... 
 
@@ -60,8 +60,8 @@ verbose = True
 paramTple = list(itertools.product(*[instruments, conCases, τFactor]))[n] 
 
 # building pickle save path 
-savePathInputTuple = paramTple[0:3] + (n,nAng)
-savePath = saveStart + '%s_%s_tFct%5.3f_n%d_nAng%d.pkl' % savePathInputTuple 
+saveNmTuple = paramTple[0:2] + (0 if type(paramTple[2])==str else paramTple[2],) + (n,nAng)
+savePath = saveStart + '%s_%s_tFct%5.3f_n%d_nAng%d.pkl' % saveNmTuple 
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 
 # setup forward and back YAML objects and now pixel

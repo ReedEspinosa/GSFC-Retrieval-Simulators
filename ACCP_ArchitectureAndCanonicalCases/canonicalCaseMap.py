@@ -4,7 +4,7 @@
 import numpy as np
 import numpy.random as rnd
 # to use the same seed for random number generator
-rnd.default_rng(seed=33)
+# rnd.default_rng(seed=33)
 import tempfile
 import os
 import sys
@@ -615,6 +615,13 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=No
     """ nowPix needed to: 1) set land percentage of nowPix and 2) get number of wavelengths """
     aeroKeys = ['traiPSD','lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k', 'landPrct']
     vals = dict()
+    if type(caseLoadFctr)==str and 'randLogNrm' in caseLoadFctr: # e.g., 'randLogNrm0.2' for aod_median=0.2
+        sigma = np.log(2) # hardcode σg=2 for lognormal 
+        medianAOD = float(re.match('[A-z]+([0-9\.]+)', caseLoadFctr).group(1))
+        loading = [l for _,l in  splitMultipleCases(caseStrs)]
+        normFact = medianAOD/sum(loading) # cases already have loading, we scale by this to get medianAOD
+        caseLoadFctr = np.random.lognormal(np.log(normFact), sigma)
+    assert type(caseLoadFctr)!=str, '%s was not a recognized value for caseLoadFctr!' % caseLoadFctr
     for caseStr,loading in splitMultipleCases(caseStrs, caseLoadFctr): # loop over all cases and add them together
         valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix, defineRandom)
         for key in valsTmp.keys():
