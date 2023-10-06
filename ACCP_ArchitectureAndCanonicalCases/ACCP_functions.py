@@ -140,7 +140,7 @@ def selectGeomSabrina(nc4File, cumInd=None, timeInd=None, crossInd=None):
     netCDFobj = Dataset(nc4File)
     if timeInd is None or crossInd is None:
         Ntime = netCDFobj.dimensions['time'].size
-        assert cumInd, 'cumInd must be provided unless timeInd and crossInd are both provided'
+        assert cumInd is not None, 'cumInd must be provided unless timeInd and crossInd are both provided'
         timeInd = cumInd%Ntime
         crossInd = int(np.floor(cumInd/Ntime))
         if crossInd >= netCDFobj.dimensions['ncross'].size: # there are ≤cumInd pixels in file; return -1 for invalid call

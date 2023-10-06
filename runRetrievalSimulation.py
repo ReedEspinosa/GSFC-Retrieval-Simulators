@@ -17,17 +17,18 @@ from ACCP_functions import selectGeometryEntryModis, selectGeomSabrina
 assert sys.version_info.major==3, 'This script requires Python 3'
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
-    nAng = int(sys.argv[2])
+#     nAng = int(sys.argv[2])
+    nAng = 0
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/Working/TASNPP_simulation00/MultiPix31_')
+    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-02_')
     ymlDir = os.path.join(basePath, 'GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
-    # geomFile = os.path.join(basePath, 'synced/Working/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt')
-    geomFile = '/Users/wrespino/Synced/AOS/Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4'
-    Nangles = 16
-    Nsims = 2 # number of runs (if initial guess is not random this just varies the random noise)
-    maxCPU = 2 # number of cores to divide above Nsims over... we might need to do some restructuring here
+    geomFile = os.path.join(basePath, 'synced/AOS/Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4')
+    Nangles = 660
+#     Nangles = 4
+    Nsims = 1 # number of runs (if initial guess is not random this just varies the random noise)
+    maxCPU = 36 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
     n = 0
     nAng = 11 # Sabrina's files have 132 x 5 = 660 angles
@@ -79,7 +80,7 @@ for i in range(nAng, nAng+Nangles):
 print('n = %d, nAng = %d, len(nowPix) = %d, Nλ = %d' % (n, nAng, len(nowPix), nowPix[0].nwl))
 fwdModelYAMLpath = fwdModelYAMLpathLID if 'lidar' in paramTple[0].lower() else fwdModelYAMLpathPOL
 bckYAML = bckYAMLpathLID if 'lidar' in paramTple[0].lower() else bckYAMLpathPOL
-fwdYAML = [setupConCaseYAML(paramTple[1], nowPix[i], fwdModelYAMLpath, caseLoadFctr=paramTple[2]) for i in range(Nangles)]
+fwdYAML = [setupConCaseYAML(paramTple[1], np, fwdModelYAMLpath, caseLoadFctr=paramTple[2]) for np in nowPix]
 
 # run simulation    
 simA = rs.simulation(nowPix) # defines new instance for architecture described by nowPix
