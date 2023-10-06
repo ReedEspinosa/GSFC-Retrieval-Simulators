@@ -137,26 +137,26 @@ def selectGeomSabrina(nc4File, cumInd=None, timeInd=None, crossInd=None):
     crossInd - scalar integer corresponding to across track index to pull angles from
     """
     from netCDF4 import Dataset
-    netCDFobj = Dataset(nc4File)
-    if timeInd is None or crossInd is None:
-        Ntime = netCDFobj.dimensions['time'].size
-        assert cumInd is not None, 'cumInd must be provided unless timeInd and crossInd are both provided'
-        timeInd = cumInd%Ntime
-        crossInd = int(np.floor(cumInd/Ntime))
-        if crossInd >= netCDFobj.dimensions['ncross'].size: # there are ≤cumInd pixels in file; return -1 for invalid call
-            return -1, -1, -1
-    phi = np.array(netCDFobj.variables['azimuth'][timeInd,crossInd,:])
-    sza = np.array(netCDFobj.variables['sza'][timeInd,crossInd,:])
-    if np.any((sza-sza[0]) > 1):
-        warnings.warn('Δsza was greater than 1° at timeInd=%d and crossInd=%d' % (timeInd, crossInd))
-    szaAvg = sza.mean()
-    vza = np.array(netCDFobj.variables['vza'][crossInd,:])
-    # Change vza to be signed and phi to be on interval [0°,180°]
-    assert np.all(vza>=0), 'At least one element of vza was less than zero before conversion!'
-    vza = np.sign(phi)*vza
-    phi[phi<0] = phi[phi<0]+180
-    assert np.logical_and(phi>=0, phi<=180).all(), 'At least one element did not satisify 0° ≤ phi ≤ 180° after conversion!'
-    return szaAvg, phi, vza
+    with Dataset(nc4File, mode='r') as netCDFobj:
+        if timeInd is None or crossInd is None:
+            Ntime = netCDFobj.dimensions['time'].size
+            assert cumInd is not None, 'cumInd must be provided unless timeInd and crossInd are both provided'
+            timeInd = cumInd%Ntime
+            crossInd = int(np.floor(cumInd/Ntime))
+            if crossInd >= netCDFobj.dimensions['ncross'].size: # there are ≤cumInd pixels in file; return -1 for invalid call
+                return -1, -1, -1
+        phi = np.array(netCDFobj.variables['azimuth'][timeInd,crossInd,:])
+        sza = np.array(netCDFobj.variables['sza'][timeInd,crossInd,:])
+        if np.any((sza-sza[0]) > 1):
+            warnings.warn('Δsza was greater than 1° at timeInd=%d and crossInd=%d' % (timeInd, crossInd))
+        szaAvg = sza.mean()
+        vza = np.array(netCDFobj.variables['vza'][crossInd,:])
+        # Change vza to be signed and phi to be on interval [0°,180°]
+        assert np.all(vza>=0), 'At least one element of vza was less than zero before conversion!'
+        vza = np.sign(phi)*vza
+        phi[phi<0] = phi[phi<0]+180
+        assert np.logical_and(phi>=0, phi<=180).all(), 'At least one element did not satisify 0° ≤ phi ≤ 180° after conversion!'
+        return szaAvg, phi, vza
 
 def selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA,
                         orbit=None, pcaVarPtrn='n_row_best_107sets_%s', verbose=False):
