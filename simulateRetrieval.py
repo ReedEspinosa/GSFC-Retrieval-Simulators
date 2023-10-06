@@ -83,6 +83,10 @@ class simulation(object):
                                               krnlPathGRASP=intrnlFileGRASP,
                                               rndGuess=False)[0]
             assert len(self.rsltFwd)==len(fwdData), 'Forward calucation was not fully successfull, halting the simulation.'
+            if len(np.unique([rf['datetime'] for rf in self.rsltFwd])) != len(fwdData):
+                warnings.warn('Datetime(s) were not unique. Incrementing pixel times... (Original datetimes not preserved!)')
+                for i, rf in enumerate(self.rsltFwd): 
+                    self.rsltFwd[i]['datetime'] = rf['datetime'] + dt.timedelta(seconds=i)
         elif type(fwdData[0]) == dict: # likely OSSE from netCDF
             self.rsltFwd = fwdData
         else:

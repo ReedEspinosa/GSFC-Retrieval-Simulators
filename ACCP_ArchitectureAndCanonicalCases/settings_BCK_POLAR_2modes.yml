@@ -54,13 +54,13 @@ retrieval:
             reference_plane_for_polarization: principal_plane
             simulating_derivatives:
                 number_of_fourier_expansion_coefficients: 6
-                number_of_gaussian_quadratures_for_expansion_coefficients: 8
-                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 12
+                number_of_gaussian_quadratures_for_expansion_coefficients: 10
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
                 order_of_scattering: multiple_scattering
             simulating_observation:
                 number_of_fourier_expansion_coefficients: 6
-                number_of_gaussian_quadratures_for_expansion_coefficients: 8
-                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 12
+                number_of_gaussian_quadratures_for_expansion_coefficients: 10
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
                 order_of_scattering: multiple_scattering
 
     debug:

@@ -36,7 +36,7 @@ else: # MacBook Air
     dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
     # geomFile = '/Users/wrespino/Synced/Proposals/ROSES_TASNPP_Yingxi_2020/retrievalSimulation/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt'
     geomFile = '/Users/wrespino/Synced/AOS/Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4'
-    krnlPath = None
+    krnlPath = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/src/retrieval/internal_files'
     Nangles = 4 # This many angles will be processed by this call
     Nsims = 1 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 2 # number of cores to divide above Nsims (times Nangles?) over... we might need to do some restructuring here
