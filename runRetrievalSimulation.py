@@ -31,16 +31,16 @@ if checkDiscover(): # DISCOVER
     maxCPU = 36 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
     n = 0
-    nAng = 28 # Sabrina's files have 132 x 5 = 660 angles
+    nAng = 2 # Sabrina's files have 132 x 5 = 660 angles
     saveStart = '/Users/wrespino/Desktop/TEST_V01_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/'
     dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
     # geomFile = '/Users/wrespino/Synced/Proposals/ROSES_TASNPP_Yingxi_2020/retrievalSimulation/NASA_Ames_MOD_angles-SZA-VZA-PHI.txt'
     geomFile = '/Users/wrespino/Synced/AOS/Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4'
     krnlPath = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/src/retrieval/internal_files'
-    Nangles = 48 # This many angles will be processed by this call
+    Nangles = 47 # This many angles will be processed by this call
     Nsims = 1 # number of runs (if initial guess is not random this just varies the random noise)
-    maxCPU = 12 # number of cores to divide above Nsims (times Nangles?) over... we might need to do some restructuring here
+    maxCPU = 14 # number of cores to divide above Nsims (times Nangles?) over... we might need to do some restructuring here
 fwdModelYAMLpathLID = os.path.join(ymlDir, 'settings_FWD_POLARandLIDAR_1lambda.yml')
 bckYAMLpathLID = os.path.join(ymlDir, 'settings_BCK_POLARandLIDAR_10Vbins_2modes.yml') # will get bumped to 4 modes if needed
 fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')

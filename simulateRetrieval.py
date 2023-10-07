@@ -201,6 +201,7 @@ class simulation(object):
         assert len(files)>0, 'No files found!'
         if len(files)==1:
             self.rsltFwd, self.rsltBck = self._loadData(files[0])
+            saveMerge = False # no need to save merge if we are not merging anything
         else:
             self.rsltFwd = []
             self.rsltBck = []
