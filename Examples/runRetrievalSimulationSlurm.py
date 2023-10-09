@@ -37,8 +37,8 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
                 conCase='campex', instrument='polar07'):
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
     # Full path to save simulation results ass a Python pickle
-    savePath = '../../../ACCDAM/2023/Campex_Simulations/Sep2023/27/'\
-        'fullGeometry/withCoarseMode/darkOcean/%s/%s/'\
+    savePath = '../../../ACCDAM/2023/Campex_Simulations/Oct2023/05/'\
+        'fullGeometry/withCoarseMode/openOcean/%s/%s/'\
         'Camp2ex_AOD_%sp%s_550nm_SZA_%0.4d_PHI_%0.4d_%s.pkl' %( psd_type,instrument,
                                                 str(τFactor).split('.')[0],
                                                 str(τFactor).split('.')[1][:3],
@@ -55,10 +55,10 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     # Directory containing the foward and inversion YAML files you would like to use
     ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
     fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda_CustomBins.yml') # foward YAML file
-    bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex_flatRI_darkOcean.yml' %psd_type) # inversion YAML file
+    bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex_flatRI_openOcean.yml' %psd_type) # inversion YAML file
 
     # Other non-path related settings
-    Nsims = 3 # the number of inversion to perform, each with its own random noise
+    Nsims = 5 # the number of inversion to perform, each with its own random noise
     maxCPU = 1 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase #'camp_test' # Canonical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
@@ -66,7 +66,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     if τFactor > 0:
         τFactor = τFactor # scaling factor for total AOD
     else:
-        τFactor = loguniform(0.01, 2) # lower and upper limits for AOD
+        τFactor = loguniform(0.1, 2) # lower and upper limits for AOD
 
     # %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
 
@@ -115,7 +115,7 @@ else:
     print('AOD not given as an argument so using the 0.05 at 550 nm')
 
 # Properties of the run
-surface = 'conf#01_dark_ocean_fwd_RndmGsOn_test' # for ocean either open_ocean or dark_ocean
+surface = 'conf#01_open_ocean_fwd_RndmGsOn_test' # for ocean either open_ocean or dark_ocean
 spectral = 'flatfine_flatcoarse' # flatfine_flatcoarse for spectrally flat RI, urban for fine urban, use nothing if it is spectrally dependent
 psd_type = '2modes' # '2modes' or '16bins'
 # conCase = 'campex_flight#16_layer#01'#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
@@ -152,9 +152,9 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18, dry
                     print('<-->'*20)
                     print('Running runRetrievalSimulationSlurm.py for τ(550nm) = %0.3f' %i)
                     if dryRun:
-                    	print(conCase)
-                    else:
-                    	runMultiple(τFactor=i, psd_type=psd_type, SZA=SZA, Phi=phi,
+                        print(conCase)
+                    else: 
+                        runMultiple(τFactor=i, psd_type=psd_type, SZA=SZA, Phi=phi,
                                 	conCase=conCase, instrument=instrument)
                 except Exception as e:
                     print('<---->'*10)
@@ -170,7 +170,7 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18, dry
                     print('Clearing the temp folder in discover and sleep for 1 second')
                     time.sleep(1)
                     tempVAR = 0
-        print('Time to comple one loop for AOD: %s'%(time.time()-loop_start_time))
+        print('Time to complete one loop for AOD: %s'%(time.time()-loop_start_time))
 
 if useRealGeometry:
     print('Running retrieval simulations for real sun-satellite geometry')
@@ -183,7 +183,7 @@ if useRealGeometry:
         loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
     
 else:
-    print('Running retrieval simulations for pricipal plane with fixed SZA')
+    print('Running retrieval simulations for principal plane with fixed SZA')
     loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
 
 # Total time

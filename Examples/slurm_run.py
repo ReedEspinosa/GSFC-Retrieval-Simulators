@@ -38,7 +38,7 @@ sza = list(itertools.chain.from_iterable(itertools.repeat(x, 12) for x in sza_))
 # realGeometry: True if using the real geometry provided in the .mat file
 useRealGeometry = 1
 # Job name
-jobName = 'M%d' %arrayNum # 'A' for 2modes, 'Z' for realGeometry
+jobName = 'W%d' %arrayNum # 'A' for 2modes, 'Z' for realGeometry
 if not useRealGeometry: jobName = jobName + str(SZA); varStr = 'aod'
 else: varStr = 'nPCA'
 
@@ -61,7 +61,7 @@ for aod in tau:
         fh.writelines("#SBATCH --job-name=%s%.4d\n" % (jobName, aod_))
         fh.writelines("#SBATCH --output=./job/%s_%.4d.out.%s\n" % (jobName, aod_, '%A'))
         fh.writelines("#SBATCH --error=./job/%s_%.4d.err.%s\n" % (jobName, aod_, '%A'))
-        fh.writelines("#SBATCH --time=23:59:59\n")
+        fh.writelines("#SBATCH --time=04:59:59\n")
         # In Discover
         if 'discover' in hostname:
             fh.writelines('#SBATCH --constraint="sky"\n')
@@ -114,8 +114,12 @@ for aod in tau:
     fh.close()
     
     # dry run option
-    if not sys.argv[1] == '--dryrun':
+    try:
+        if not sys.argv[1] == '--dryrun':
+            os.system("sbatch %s" %job_file)
+        else:
+            print('<><><><> dry run, check the ./job directory for slurm files <><><><>')
+    except IndexError:
         os.system("sbatch %s" %job_file)
-    else:
-    	print('<><><><> dry run, check the ./job directory for slurm files <><><><>')
+
 print('Jobs submitted successfully check the ./job/ folder for output/error')

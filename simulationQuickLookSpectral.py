@@ -8,10 +8,9 @@ CAMP2Ex measurements
 
 Created on Wed Jul 13 14:18:11 2022
 
-@author: anin puthukkudy
+@author: Anin Puthukkudy
 """
 
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # =============================================================================
 # Import the libraries
@@ -23,17 +22,17 @@ from pprint import pprint
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'});mpl.rcParams.update({'ytick.right': 'True'});mpl.rcParams.update({'xtick.top': 'True'}); plt.rcParams["mathtext.fontset"] = "cm"; plt.rcParams["figure.dpi"]=330
+mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'});mpl.rcParams.update({'ytick.right': 'True'});mpl.rcParams.update({'xtick.top': 'True'}); plt.rcParams['mathtext.fontset'] = 'cm'; plt.rcParams["figure.dpi"]=330
 from scipy import interpolate
 from scipy.stats import norm, gaussian_kde, ncx2, moyal, binned_statistic
 from simulateRetrieval import simulation
 import seaborn as sns
 from matplotlib.colors import LogNorm
 import pickle
+
 # automatic reload option for IPython
 from IPython import get_ipython
 ipython = get_ipython()
-
 if '__IPYTHON__' in globals():
     ipython.magic('load_ext autoreload')
     ipython.magic('autoreload 2')
@@ -450,7 +449,7 @@ rs_['fnPtrn'] = 'Camp2ex_AOD_*_550nm_*_campex_bi_*_flight#*_layer#00.pkl'# fnPtr
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
-rs_['inDirPath'] = '/data/ESI/User/aputhukkudy/ACCDAM/2023/Campex_Simulations/Sep2023/27/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/' #'/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'#'/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'
+rs_['inDirPath'] = '/data/ESI/User/aputhukkudy/ACCDAM/2023/Campex_Simulations/Oct2023/04/fullGeometry/withCoarseMode/openOcean/2modes/uvswirmap01/' #'/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'#'/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'
 
 # more tags and specifiations for the scatter plot
 rs_['surf2plot'] = 'both' # land, ocean or both
@@ -903,7 +902,7 @@ except Exception as e:
 # close the file
 f.close()
     
-# %%
+# %% Load the stats from the file and plot them in a heatmap
 import seaborn as sns
 # fig11, ax11 = plt.subplots(3,2, figsize=(15,8))
 
@@ -940,7 +939,8 @@ def plotStats(statsArr_, ax, title, cmap='viridis',
 
 # hm.set_xticklabels(hm.get_xticklabels(), rotation=60)
 # hm.set_yticklabels(hm.get_yticklabels(), rotation=0)
-#%%
+
+# %% Plotting the stats for the spectral dependent variables 
 fig_ = {}
 ax_ = {} 
 for j, stat in enumerate(statsDict_[spectralVars[0]]):
@@ -955,7 +955,7 @@ for j, stat in enumerate(statsDict_[spectralVars[0]]):
         plotStats(statsArr[:,:,j], ax_['j'], stat, fmt=".3f", cmap='YlGn_r')
     else:
         plotStats(statsArr[:,:,j], ax_['j'], stat, fmt=".3f", cmap='YlGn')
-# %%
+# %% Plotting the stats for the spectral independent variables
 
 fig12, ax12 = plt.subplots(1,1, figsize=(6,3))
 

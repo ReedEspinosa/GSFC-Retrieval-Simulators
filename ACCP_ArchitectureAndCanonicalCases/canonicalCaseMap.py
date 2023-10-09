@@ -267,7 +267,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 vals['triaPSD'] = np.vstack([vals['triaPSD'],
                                             [dvdlnr*multFac]])
                 vals['sph'] = vals['sph'] + [0.999 - round(rnd.uniform(0, 1))*0.99]
-                # removed to avoid the descrepency in printing the aero vol conc in the output
+                # removed to avoid the discrepancy in printing the aero vol conc in the output
                 vals['vrtHght'] = vals['vrtHght'] + [[ALH_C]]
                 vals['vrtHghtStd'] = vals['vrtHghtStd'] + [[ALHStd]]
                 nAero_ = np.repeat(nCM + (rnd.uniform(-nCMStd, nCMStd)), nwl)
@@ -430,7 +430,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         # Run this if one layer is used
         if oneLayerHack:
             for i in range(len(vals['vol'])):
-                if i != whichLayer and i !=4:
+                if i != whichLayer or i !=4: # Bug fixed by Anin to avoid the coarse mode variation
                     # print(vals['vol'][i])
                     vals['vol'][i] = zeroAeroConc * vals['vol'][i]
                     # print('Not using the PSD from the layer#%0.2d' % i)
