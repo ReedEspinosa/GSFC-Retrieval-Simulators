@@ -203,10 +203,13 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         if multiMode:
             #HACK: this is a hack to make the code work for the case of of one layer, basically forcing the concentration to be zero
             #vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,layer-1,:]*[0.1], decimals=6)*0.000001]
-            
-            zeroAeroConc = [0.00000001]
-            oneLayerHack = 1  # True if only one layer is used
-            whichLayer = 0     # layer number to be used
+            if 'olh' in caseStr.lower():
+                zeroAeroConc = [0.000001]
+                oneLayerHack = 1  # True if only one layer is used
+                if 'wlayer' in caseStr.lower():
+                    whichLayer = int(caseStr.lower()[caseStr.lower().find('wlayer')+6:])# layer number to be used
+                else:
+                    whichLayer = 0 # default layer number to be used
             
             # Defining PSD of four layers for a particular flight (fine mode for the case of CAMP2Ex
             vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.1], decimals=6),
@@ -424,16 +427,21 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         # if using only one layer in fine mode
         # ----------------------------------------------------------------------#
         #HACK: this is a hack to make the code work for the case of of one layer, basically forcing the concentration to be zero
-        zeroAeroConc = [0.001]
-        oneLayerHack = 1  # True if only one layer is used
-        whichLayer = 0     # layer number to be used
+        if 'olh' in caseStr.lower():
+            zeroAeroConc = [0.0001]
+            oneLayerHack = 1  # True if only one layer is used
+            if 'wlayer' in caseStr.lower():
+                whichLayer = int(caseStr.lower()[caseStr.lower().find('wlayer')+6:])# layer number to be used
+            else:
+                whichLayer = 0     
         # Run this if one layer is used
         if oneLayerHack:
             for i in range(len(vals['vol'])):
-                if i != whichLayer or i !=4: # Bug fixed by Anin to avoid the coarse mode variation
-                    # print(vals['vol'][i])
-                    vals['vol'][i] = zeroAeroConc * vals['vol'][i]
-                    # print('Not using the PSD from the layer#%0.2d' % i)
+                if i != whichLayer:
+                    if i != 4:
+                        # print(vals['vol'][i])
+                        vals['vol'][i] = zeroAeroConc * vals['vol'][i]
+                        # print('Not using the PSD from the layer#%0.2d' % i)
 
         vals['vrtHght'] = [[ALH[0]], [ALH[1]], [ALH[2]], [ALH[3]], [ALH_C]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [ALHStd, ALHStd, ALHStd, ALHStd, ALHStd]       # mode 1, 2,... # Gaussian sigma in meters
@@ -456,20 +464,22 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         #-----------------------------------------------------------------------#
         # Coarse mode
         #-----------------------------------------------------------------------#
-        nAero_ = np.repeat(nCM + rnd.uniform(-nCMStd, nCMStd), nwl)         # Coarse mode aerosols real refractive index
-        if 'flatcoarse' in caseStr.lower():
-            nAero = slope4RRI(nAero_, wvls, slope=0)
-            kAero = loguniform(kCMin, kCMax)**np.repeat(1, nwl)
-        else:
-            nAero = slope4RRI(nAero_, wvls)
-            kAero = loguniform(kCMin, kCMax)*lamb_k
-        vals['n'] = np.vstack([vals['n'], nAero]) # mode 2
-        vals['k'] = np.vstack([kAero,
-                               kAero,
-                               kAero,
-                               kAero])# mode 1,2,...
-        
-        vals['k'] = np.vstack([vals['k'], kAero]) # mode 5
+        # Adding the coarse mode in the simulation
+        if 'coarse' in caseStr.lower():
+            nAero_ = np.repeat(nCM + rnd.uniform(-nCMStd, nCMStd), nwl)         # Coarse mode aerosols real refractive index
+            if 'flatcoarse' in caseStr.lower():
+                nAero = slope4RRI(nAero_, wvls, slope=0)
+                kAero = loguniform(kCMin, kCMax)**np.repeat(1, nwl)
+            else:
+                nAero = slope4RRI(nAero_, wvls)
+                kAero = loguniform(kCMin, kCMax)*lamb_k
+            vals['n'] = np.vstack([vals['n'], nAero]) # mode 2
+            vals['k'] = np.vstack([kAero,
+                                kAero,
+                                kAero,
+                                kAero])# mode 1,2,...
+            
+            vals['k'] = np.vstack([vals['k'], kAero]) # mode 5
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...

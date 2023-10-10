@@ -1,17 +1,38 @@
 #!/usr/bin/env python
+'''
+This code is used to run the retrieval simulation code in parallel using slurm
+The code is split into 5 chunks to run in parallel in NyX
+The code is split into 3 chunks to run in parallel in Discover
 
+'''
+#--------------------------------------------#
+# Importing the required modules
+#--------------------------------------------#
 import os
 import numpy as np
 import sys
 import itertools
+import yaml
 
+#--------------------------------------------#
+# Checking the input arguments
+#--------------------------------------------#
+
+if sys.argv[1] == '--help':
+    print('options: \n --dry-run: to run the code without submitting the jobs \n --help: to print this message')
+    print('Usage: python slurm_run.py --dry-run')
+    print('Usage: python slurm_run.py 0 for running the first chunk of simulations')
+    print('The code is split into 5 chunks to run in parallel in NyX')
+    print('<><><><> Printing help message <><><><>')
+    sys.exit()
 hostname = os.uname()[1]
 
-
+#--------------------------------------------#
+# Creating the directories
+#--------------------------------------------#
 def mkdir_p(dir):
     '''make a directory (dir) if it doesn't exist'''
     if not os.path.exists(dir): os.mkdir(dir)
-
 
 job_directory = "%s" %os.getcwd()
 
@@ -19,8 +40,27 @@ job_directory = "%s" %os.getcwd()
 # mkdir_p(job_directory)
 mkdir_p(job_directory+'/job')
 
+# --------------------------------------------------------------------------- #
+# Load the YAML settings files for the retrieval simulation configuration
+# --------------------------------------------------------------------------- #
+# Configuration file YAML
+
+if len(sys.argv) > 1:
+    conf_ = sys.argv[2]
+else:
+    conf_ = 'BiModal' # or 'Triangular'
+yamlFile = '../ACCP_ArchitectureAndCanonicalCases/%s-CAMP2Ex.yml' %conf_
+with open(yamlFile, 'r') as f:
+    ymlData = yaml.load(f, Loader=yaml.FullLoader)
+
+#--------------------------------------------#
+# Setting the parameters
+#--------------------------------------------#
+
+# Number of nodes
+nNode = 7
 # list of AOD/nPCA
-tau = -np.logspace(np.log10(0.01), np.log10(2.0), 7)
+tau = -np.logspace(np.log10(0.01), np.log10(2.0), nNode)
 # splitting into chunks to make the code efficient and run easily in DISCOVER
 try:
     arrayNum= int(sys.argv[1])
@@ -31,7 +71,9 @@ except:
 npca_ = [range(0,22), range(22,44), range(44, 66), range(66, 88), range(88, 107)] # modified for NyX
 npca = npca_[arrayNum] # max is 107
 
+#--------------------------------------------#
 # Solar Zenith angle (used if no real sun-satellite geometry is used)
+#--------------------------------------------#
 SZA = 30
 sza_ = [0, 30, 60]# For running multiple simulations in DISCOVER
 sza = list(itertools.chain.from_iterable(itertools.repeat(x, 12) for x in sza_))
@@ -43,9 +85,11 @@ if not useRealGeometry: jobName = jobName + str(SZA); varStr = 'aod'
 else: varStr = 'nPCA'
 
 # Instrment name
-instrument = 'uvswirmap01'
+instrument = ymlData['forward']['instrument']
 
+#--------------------------------------------#
 # looping through the var string
+#--------------------------------------------#
 for aod in tau:
     if useRealGeometry: aod_ = aod*1000; fileName = '%04d' %(aod_)
     else: aod_ = aod*1000; fileName = '%.4d' %(aod_)
@@ -56,6 +100,9 @@ for aod in tau:
     # Create directories
     mkdir_p(job_directory)
 
+    #--------------------------------------------#
+    # Creating the slurm file
+    #--------------------------------------------#
     with open(job_file, 'w') as fh:
         fh.writelines("#!/usr/bin/bash\n\n")
         fh.writelines("#SBATCH --job-name=%s%.4d\n" % (jobName, aod_))
@@ -75,35 +122,47 @@ for aod in tau:
             fh.writelines("#SBATCH --partition=zen4\n")
             fh.writelines("#SBATCH --ntasks=24\n")
             fh.writelines("#SBATCH --mem=120G\n")
-        # fh.writelines("#SBATCH --qos=short\n")
+
         # fh.writelines("#SBATCH --nodes=1\n")
         # fh.writelines("#SBATCH --ntasks-per-node=1\n\n")
-        # fh.writelines("#SBATCH --mail-type=ALL\n")
-        # fh.writelines("#SBATCH --mail-user=$USER@umbc.edu\n")
+
         fh.writelines("date\n")
         fh.writelines("hostname\n")
         fh.writelines('echo "---Running Simulation---"\n')
         fh.writelines("date\n")
+
+        #--------------------------------------------#
+        # Scanning through the AOD/nPCA
+        #--------------------------------------------#
         if useRealGeometry:
             if 'discover' in hostname:
                 for i in npca:
-                    fh.writelines("python runRetrievalSimulationSlurm.py %d %s %s %s %2.3f &\n" %(int(i), instrument,
-                                                                                           SZA, useRealGeometry, aod))
+                    fh.writelines("python runRetrievalSimulationSlurm.py %2d %s %s %s %2.3f %s &\n" %(int(i), instrument,
+                                                                                           SZA, useRealGeometry, aod, conf_))
             elif 'nyx' in hostname:
                 for i in npca:
-                    fh.writelines("python runRetrievalSimulationSlurm.py %d %s %s %s %2.3f &\n" %(int(i), instrument,
-                                                                                           SZA, useRealGeometry, aod))
+                    fh.writelines("python runRetrievalSimulationSlurm.py %2d %s %s %s %2.3f %s &\n" %(int(i), instrument,
+                                                                                           SZA, useRealGeometry, aod, conf_))
             else:
-                fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
+                # dry run option for MBP or other local machines
+                if sys.argv[1] == '--dry-run':
+                    for i in npca:
+                        fh.writelines("python runRetrievalSimulationSlurm.py %2d %s %s %s %2.3f %s &\n" %(int(i), instrument,
+                                                                                           SZA, useRealGeometry, aod, conf_))
+                else:
+                    fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s %s\n" %(aod, instrument, SZA,
+                                                                                               useRealGeometry, conf_))
         else:
             if 'discover' in hostname:
                 temp_num = 1
                 for i in sza:
-                    fh.writelines("python runRetrievalSimulationSlurm.py %d %s %s %s %2.3f &\n" %(int(i), instrument,
-                                                                                           (i+((arrayNum*1.3)/10+temp_num/100)), useRealGeometry, aod))
+                    fh.writelines("python runRetrievalSimulationSlurm.py %2d %s %s %s %2.3f %s &\n" %(int(i), instrument,
+                                                                                           (i+((arrayNum*1.3)/10+temp_num/100)),
+                                                                                             useRealGeometry, aod, conf_))
                     temp_num += 1
             else:
-                fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s\n" %(aod, instrument, SZA, useRealGeometry))
+                fh.writelines("python runRetrievalSimulationSlurm.py %.4f %s %s %s %s\n" %(aod, instrument, SZA,
+                                                                                           useRealGeometry, conf_))
         fh.writelines("wait\n")
         fh.writelines("echo 0\n")
         fh.writelines("echo End: \n")
@@ -112,10 +171,11 @@ for aod in tau:
         fh.writelines("date")
 
     fh.close()
-    
+    #--------------------------------------------#
     # dry run option
+    #--------------------------------------------#
     try:
-        if not sys.argv[1] == '--dryrun':
+        if not sys.argv[1] == '--dry-run':
             os.system("sbatch %s" %job_file)
         else:
             print('<><><><> dry run, check the ./job directory for slurm files <><><><>')

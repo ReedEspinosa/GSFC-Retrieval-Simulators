@@ -9,6 +9,7 @@ import pprint
 import numpy as np
 import time
 import tempfile
+import yaml
 
 # add GRASP_scripts, GSFC-Retrieval-Simulators and ACCP subfolder to paths (assumes GRASP_scripts and GSFC-Retrieval-Simulators are in the same parent folder)
 parentDir = os.path.dirname(os.path.dirname(os.path.realpath("__file__"))) # obtain THIS_FILE_PATH/../ in POSIX
@@ -31,35 +32,58 @@ from canonicalCaseMap import setupConCaseYAML
 
 # import selectGeometryEntry function that can read realsitic sun-satellite geometry
 from ACCP_functions import selectGeometryEntry
-
-# <><><> BEGIN BASIC CONFIGURATION SETTINGS <><><>
-def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
-                conCase='campex', instrument='polar07'):
+#--------------------------------------------#
+# Local functions
+#--------------------------------------------#
+def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, 
+                conCase='campex', instrument='polar07', ymlData='None'):
+    '''
+    This function will run a retrieval simulations on user defined scenes and instruments
+    
+    Parameters
+    ----------
+    Input:
+        τFactor: scaling factor for total AOD
+        SZA: solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
+        Phi: relative azimuth angle, φsolar-φsensor
+        conCase: Canonical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+        instrument: polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+        ymlData: YAML file with the retrieval simulation configuration
+    Output:
+        None
+    '''
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
     # Full path to save simulation results ass a Python pickle
-    savePath = '../../../ACCDAM/2023/Campex_Simulations/Oct2023/05/'\
-        'fullGeometry/withCoarseMode/openOcean/%s/%s/'\
-        'Camp2ex_AOD_%sp%s_550nm_SZA_%0.4d_PHI_%0.4d_%s.pkl' %( psd_type,instrument,
-                                                str(τFactor).split('.')[0],
-                                                str(τFactor).split('.')[1][:3],
-                                                int(round(SZA, 2)*100),
-                                                int(round(Phi, 2)*100),
-                                                conCase)
+    savePath = os.path.join(ymlData['run']['savePathParent'], ymlData['run']['MmmYY'], ymlData['run']['DD'],\
+        ymlData['forward']['geometry'], 'Geometry', 'CoarseMode%s' % ymlData['forward']['coarseMode'], \
+        ymlData['forward']['surfaceType']+ymlData['forward']['surface'], ymlData['forward']['psdType'], \
+        ymlData['forward']['instrument'], ymlData['run']['saveFN'])
+    
+    savePath = savePath %(
+                        ymlData['run']['tagName'],
+                        str(τFactor).split('.')[0],
+                        str(τFactor).split('.')[1][:3],
+                        int(round(SZA, 2)*100),
+                        int(round(Phi, 2)*100),
+                        conCase)
+    
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
-    binGRASP = '../../GRASP_GSFC/build_uvswirmap/bin/grasp_app'
+    binGRASP = ymlData['run']['graspBin']
         
     # Full path grasp precomputed single scattering kernels
-    krnlPath = '../../GRASP_GSFC/src/retrieval/internal_files'
+    krnlPath = ymlData['run']['krnlPath']
 
     # Directory containing the foward and inversion YAML files you would like to use
     ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
-    fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda_CustomBins.yml') # foward YAML file
-    bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_%s_Campex_flatRI_openOcean.yml' %psd_type) # inversion YAML file
+    fwdModelYAMLpath = os.path.join(ymlDir, ymlData['forward']['yaml']) # foward YAML file
+    bckYAMLpath = os.path.join(ymlDir, ymlData['retrieval']['yaml'] % (ymlData['forward']['psdType'],\
+                                                                       ymlData['forward']['surfaceType'],\
+                                                                       ymlData['forward']['surface'])) # inversion YAML file
 
     # Other non-path related settings
-    Nsims = 5 # the number of inversion to perform, each with its own random noise
-    maxCPU = 1 # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+    Nsims = ymlData['run']['nSims'] # the number of inversion to perform, each with its own random noise
+    maxCPU = ymlData['run']['maxCPU'] # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase #'camp_test' # Canonical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
     Phi = Phi # relative azimuth angle, φsolar-φsensor
@@ -68,9 +92,9 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     else:
         τFactor = loguniform(0.1, 2) # lower and upper limits for AOD
 
-    # %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
+    #  <><><> END BASIC CONFIGURATION SETTINGS <><><>
 
-    # create a dummy pixel object, conveying the measurement geometry, wavlengths, etc. (i.e. information in a GRASP SDATA file)
+    # create a dummy pixel object, conveying the measurement geometry, wavelengths, etc. (i.e. information in a GRASP SDATA file)
     nowPix = returnPixel(instrument, sza=SZA, relPhi=Phi, nowPix=None)
 
     # generate a YAML file with the forward model "truth" state variable values for this simulated scene
@@ -78,21 +102,87 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
 
     # Define a new instance of the simulation class for the instrument defined by nowPix (an instance of the pixel class)
     simA = rs.simulation(nowPix)
-
+    
     # run the simulation, see below the definition of runSIM in simulateRetrieval.py for more input argument explanations
     simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
                 binPathGRASP=binGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, \
-                rndIntialGuess=True, dryRun=False, workingFileSave=False, verbose=True, delTempFiles=True)
+                rndIntialGuess=ymlData['retrieval']['randmGsOn'], dryRun=False, workingFileSave=False, \
+                verbose=True, delTempFiles=True)
 
     # print some results to the console/terminal
-    wavelengthIndex = 2
-    wavelengthValue = simA.rsltFwd[0]['lambda'][wavelengthIndex]
-    print('RMS deviations (retrieved-truth) at wavelength of %5.3f μm:' % wavelengthValue)
-    pprint.pprint(simA.analyzeSim(0)[0])
+    if ymlData['run']['verbose']:
+        wavelengthIndex = 2
+        wavelengthValue = simA.rsltFwd[0]['lambda'][wavelengthIndex]
+        print('RMS deviations (retrieved-truth) at wavelength of %5.3f μm:' % wavelengthValue)
+        pprint.pprint(simA.analyzeSim(0)[0])
 
-    # save simulated truth data to a NetCDF file
-    # simA.saveSim_netCDF(savePath[:-4], verbose=True)
-
+# definition for looping through different geometries
+def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18, dryRun=False):
+    '''
+    This function will run a retrieval simulations on user defined scenes and instruments
+    
+    Parameters
+    ----------
+    
+    Input:
+        runMultiple: function to run the retrieval simulation
+        tau: AOD at 550 nm
+        instrument: polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+        SZA: solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
+        psd_type: '2modes' or '16bins'
+        phi: relative azimuth angle, φsolar-φsensor
+        nFlights: number of flights used for simulation (should be 18 for full camp2ex measurements)
+        dryRun: True if you want to print the command line arguments without running the retrieval simulation
+    Output:
+        None
+    '''
+    # --------------------------------------------------------------------------- #
+    # Loop through different AOD
+    # --------------------------------------------------------------------------- #
+    for i in tau:
+        loop_start_time = time.time()
+        tempVAR = 0
+        for j in np.r_[1:nFlights+1]:
+            flight_loop_start_time = time.time()
+            for k in np.r_[0]: # 0 means use information from all layers, 1 means use only information from layer 1, so on
+                if ymlData['forward']['coarseMode']:
+                    cmStr = 'addCoarse'
+                else:
+                    cmStr = 'noCoarse'
+                conCase = '%s_%s_%s_%s_flight#%.2d_layer#%.2d' %(surface, cmStr,
+                                                                ymlData['forward']['psdMode'],
+                                                                spectral,j,k)
+                print('<-->'*20)
+                try:
+                    print('<-->'*20)
+                    print('Running runRetrievalSimulationSlurm.py for τ(550nm) = %0.3f' %i)
+                    if dryRun:
+                        print(conCase)
+                    else:
+                        print(conCase) 
+                        runMultiple(τFactor=i, SZA=SZA, Phi=phi,
+                                	conCase=conCase, instrument=instrument,
+                                    ymlData=ymlData)
+                except Exception as e:
+                    print('<---->'*10)
+                    print('Run error: Running runRetrievalSimulationSlurm.py for τ(550nm) = %0.3f' %i)
+                    print('Error message: %s' %e)
+            
+            print('Time to complete one loop for flight: %s'%(time.time()-flight_loop_start_time))
+            if deleteTemp:
+                tempVAR+=1
+                # Delete the temp files after each aod loops
+                if 'borg' in os.uname()[1] and tempVAR==5:
+                    tempFileDir = tempfile.gettempdir()
+                    os.system('rm -rf temp%s' %tempFileDir)
+                    print('Clearing the temp folder in discover and sleep for 1 second')
+                    time.sleep(1)
+                    tempVAR = 0
+        print('Time to complete one loop for AOD: %s'%(time.time()-loop_start_time))
+#--------------------------------------------#
+# <> BEGIN BASIC CONFIGURATION SETTINGS <>
+#--------------------------------------------#
+start_time = time.time()
 # %% Run multiple times
 # Based on the input arguments modify the parameters
 if len(sys.argv) > 0:
@@ -114,14 +204,7 @@ else:
     instrument = 'polar07'
     print('AOD not given as an argument so using the 0.05 at 550 nm')
 
-# Properties of the run
-surface = 'conf#01_open_ocean_fwd_RndmGsOn_test' # for ocean either open_ocean or dark_ocean
-spectral = 'flatfine_flatcoarse' # flatfine_flatcoarse for spectrally flat RI, urban for fine urban, use nothing if it is spectrally dependent
-psd_type = '2modes' # '2modes' or '16bins'
-# conCase = 'campex_flight#16_layer#01'#'camp_test' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
-
 phi = 0
-start_time = time.time()
 useRealGeometry = False
 # For real geometry
 if len(sys.argv) > 3:
@@ -134,44 +217,38 @@ if len(sys.argv) > 3:
         tau = tau1[0:5]
     # read the nPCA using the sys arg
     npca = [int(float(sys.argv[1]))]
+    if len(sys.argv) > 5:
+        conf_ = sys.argv[6]
+    else:
+        conf_ = 'BiModal'
+
+# --------------------------------------------------------------------------- #
+# Load the YAML settings files for the retrieval simulation configuration
+# --------------------------------------------------------------------------- #
+yamlFile = '../ACCP_ArchitectureAndCanonicalCases/%s-CAMP2Ex.yml' %conf_
+with open(yamlFile, 'r') as f:
+    ymlData = yaml.load(f, Loader=yaml.FullLoader)
+
+# --------------------------------------------------------------------------- #
+# Define the retrieval simulation settings
+# --------------------------------------------------------------------------- #
+if ymlData is None:
+    print('Loading YAML file: %s resulted in an error' % yamlFile)
+    sys.exit()
+else:
+    # Properties of the run
+    surface = ymlData['run']['tagName'] + '_' + ymlData['run']['config'] +\
+        '_' + ymlData['forward']['surfaceType']+'_'\
+         + ymlData['forward']['surface']+'_RndmGsOn-'\
+         + str(ymlData['retrieval']['randmGsOn'])   # for ocean either open_ocean or dark_ocean
+    spectral = ymlData['forward']['spectralInfo']   # flatfine_flatcoarse for spectrally flat RI, urban for fine urban, use nothing if it is spectrally dependent
+    psd_type = ymlData['forward']['psdType']        # '2modes' or '16bins'
+
+    nFlights =  ymlData['run']['nFlights'] # number of flights used for simulation (should be 18 for full camp2ex measurements)
+
+deleteTemp = ymlData['run']['deleteTemp'] # Flag for deleting temp files regularly
     
-nFlights = 18 # number of flights used for simulation (should be 18 for full camp2ex measurements)
-deleteTemp = False # Flag for deleting temp files regularly
-
-# definition for looping through different geometries
-def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18, dryRun=False):
-    for i in tau:
-        loop_start_time = time.time()
-        tempVAR = 0
-        for j in np.r_[1:nFlights+1]:
-            flight_loop_start_time = time.time()
-            for k in np.r_[0]: # 0 means use information from all layers, 1 means use only information from layer 1, so on
-                conCase = '%s_addCoarse_campex_tria_%s_flight#%.2d_layer#%.2d' %(surface, spectral,j,k)
-                print('<-->'*20)
-                try:
-                    print('<-->'*20)
-                    print('Running runRetrievalSimulationSlurm.py for τ(550nm) = %0.3f' %i)
-                    if dryRun:
-                        print(conCase)
-                    else: 
-                        runMultiple(τFactor=i, psd_type=psd_type, SZA=SZA, Phi=phi,
-                                	conCase=conCase, instrument=instrument)
-                except Exception as e:
-                    print('<---->'*10)
-                    print('Run error: Running runRetrievalSimulationSlurm.py for τ(550nm) = %0.3f' %i)
-                    print('Error message: %s' %e)
-            print('Time to comple one loop for flight: %s'%(time.time()-flight_loop_start_time))
-            if deleteTemp:
-                tempVAR+=1
-                # Delete the temp files after each aod loops
-                if 'borg' in os.uname()[1] and tempVAR==5:
-                    tempFileDir = tempfile.gettempdir()
-                    os.system('rm -rf temp%s' %tempFileDir)
-                    print('Clearing the temp folder in discover and sleep for 1 second')
-                    time.sleep(1)
-                    tempVAR = 0
-        print('Time to complete one loop for AOD: %s'%(time.time()-loop_start_time))
-
+# Use real geometry and loop through different nPCA. This file is based on the geometry selected by Feng and Lans
 if useRealGeometry:
     print('Running retrieval simulations for real sun-satellite geometry')
     rawAngleDir = '../../../ACCDAM/onOrbitObservationGeometryACCP/angularSampling/colarco_20200520_g5nr_pdfs'
