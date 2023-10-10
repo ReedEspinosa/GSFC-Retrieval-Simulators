@@ -269,13 +269,13 @@ retrieval:
             retrieved: false
             mode[1]:
                 initial_guess:                      #1          
-                    value:                          [500.0 ]
+                    value:                          [1500.0 ]
                     min:                            [200.0  ] 
                     max:                            [3000.0 ]
                     index_of_wavelength_involved:   [0      ]
             mode[2]:
                 initial_guess:                      #1          
-                    value:                          [500.0 ]
+                    value:                          [1500.0 ]
                     min:                            [200.0  ] 
                     max:                            [3000.0 ]
                     index_of_wavelength_involved:   [0      ]

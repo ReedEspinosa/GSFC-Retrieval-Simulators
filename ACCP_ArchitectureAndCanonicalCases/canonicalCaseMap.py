@@ -769,17 +769,17 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.12*caseLoadFct)
         elif 'case08m' in case.lower():
             cases.append(case.replace('case08','smokeDesert'))
-            loadings.append(0.1)
+            loadings.append(0.1*caseLoadFct)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.09*caseLoadFct)
         elif 'case08n' in case.lower():
             cases.append(case.replace('case08','smokeDesert'))
-            loadings.append(0.1)
+            loadings.append(0.1*caseLoadFct)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.33*caseLoadFct)
         elif 'case08o' in case.lower():
             cases.append(case.replace('case08','smokeDesert'))
-            loadings.append(0.1)
+            loadings.append(0.1*caseLoadFct)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.7*caseLoadFct)
         elif 'campex_tria' in case.lower(): # if the size distribution is in the triangular bin
