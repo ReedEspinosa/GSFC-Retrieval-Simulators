@@ -9,22 +9,23 @@ from glob import glob
 from simulateRetrieval import simulation # This should ensure GSFC-GRASP-Python-Interface is in the path
 from miscFunctions import calculatePM
 
-waveInd = 0
+waveInd = 2
 waveInd2 = 5
-waveIndAOD = 3
+waveIndAOD = 2
 fineIndFwd = [0,2]
 fineIndBck = [0]
 # pklDataPath = '/Users/wrespino/Synced/Working/OSSE_Test_Run/MERGED_ss450-g5nr.leV210.GRASP.example.polarimeter07.200608ALL_ALLz.pkl' # None to skip reloading of data
-pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl' # None to skip reloading of data
+pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-06_polarAOS_case08*_tFct0.000_n*_nAng0.pkl' # None to skip reloading of data
 # pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_Lidar050+polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl'
 # pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_Lidar090+polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl'
 # pklDataPath = None # None to skip reloading of data
 # plotSaveDir = '/Users/wrespino/Synced/AOS/PLRA/Figures_AODF_bugFixApr11'
-plotSaveDir = '/Users/wrespino/Synced/Presentations/UMBC_Earthday_2022/figs'
-surf2plot = 'ocean' # land, ocean or both
+plotSaveDir = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationPlots'
+surf2plot = 'both' # land, ocean or both
 aodMax = 9990.801 # only for plot limits
 hist2D = False
 Nbins = 300 # NbinsxNbins bins in hist density plots
+szaMin = 0
 
 varVsAOD = False
 saveScatter = True # This can be slow (?)
@@ -34,28 +35,29 @@ scatAlpha = 0.1
 scatSize = 5
 MS = 1
 FS = 10
+FStitle = 8 # title may run off plot, make this smaller to fix
 LW121 = 1
 clrText = [0.5,0,0.0]
 clrText = [0.0,0,0.5]
 errFun = lambda t,r : np.abs(r-t)
 aodWght = lambda x,τ : np.sum(x*τ)/np.sum(τ)
 
-inst = 'polar07'
-orb = 'Alt800'
-simType = 'CanCase'
+inst = 'polarAOS'
+orb = '1330LTAN_%s' % surf2plot
+simType = 'ConCase_Run06_SZAgt%d' % szaMin
 # simType = 'G5NR' 
-version = 'PM25_UMBC_EDS2022-%s-%s-%s-VXX' % (inst, orb, simType) # for PDF file names
+version = 'PLRA-Oct2023-%s-%s-%s-V02' % (inst, orb, simType) # for PDF file names
 
-# waveSeries = [0,3,5,0,3,0]
-# gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'reff']
+waveSeries = [0,2,4,0,2,0]
+gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'reff']
 # waveSeries = [0,3,5]
 # gvSeries = ['aodf', 'aodf', 'aodf']
-waveSeries = [5]
-gvSeries = ['pm25']
+# waveSeries = [5]
+# gvSeries = ['pm25']
 
 
 # CDF error plot
-figC, axC = plt.subplots(1,1, figsize=(5,5))
+figC, axC = plt.subplots(1,1, figsize=(6,6))
 axC.grid()
 
 if pklDataPath is not None:
@@ -64,7 +66,10 @@ if pklDataPath is not None:
     if 'reff' in gvSeries:
         print('Calculcating fine-mode effective radii')
         simBase._addReffMode(0.5, True) # reframe with cut at 1 micron diameter
+simBase.rsltFwd = np.asarray(simBase.rsltFwd)
+simBase.rsltBck = np.asarray(simBase.rsltBck)
 print('--')
+
 
 if 'land_prct' not in simBase.rsltFwd[0] or surf2plot=='both':
     keepInd = range(len(simBase.rsltFwd))
@@ -79,13 +84,19 @@ costThresh = np.percentile([rb['costVal'] for rb in simBase.rsltBck[keepInd]], 9
 keepInd = np.logical_and(keepInd, [rb['costVal']<costThresh for rb in simBase.rsltBck])
 print('%d/%d fit surface type %s and convergence filter' % (keepInd.sum(), len(simBase.rsltBck), surf2plot))
 
+# apply convergence filter
+# simBase.conerganceFilter(forceχ2Calc=True) # ours looks more normal, but GRASP's produces slightly lower RMSE
+keepInd = np.logical_and(keepInd, [rb['sza'][0,0]>=szaMin for rb in simBase.rsltBck])
+print('%d/%d fit surface type %s, convergence filter and sza≥%3.0f' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, szaMin))
+
+
 GVlegTxt = []
 prctInEE = []
 for waveInd, gv in zip(waveSeries, gvSeries):
     if varVsAOD:
         fig, ax = plt.subplots(1,2, figsize=(7.7,3.5))
     else:
-        fig, ax = plt.subplots(1,1, figsize=(4.5,4))
+        fig, ax = plt.subplots(1,1, figsize=(5.1,4.5))
         ax = [ax]
     ax[0].locator_params(nbins=3)
 
@@ -104,7 +115,7 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         # EE_fun = lambda t : 0.02+0.05*t
         # EEttlTxt = EEttlTxt + ', EE=±0.02+0.05*τ'
         EE_fun = lambda t : 0.03+0.1*t
-        EEttlTxt = EEttlTxt + ', EE=±0.03+0.1*τ'
+        EEttlTxt = EEttlTxt + ', EE=±(0.03+0.1*τ)'
         GVlegTxt.append('AOD-%s' % waveName)
     elif gv=='aodf': # AOD Fine
         ylabel = 'AOD_fine (λ=%4.2fμm)' % wavelng
@@ -113,7 +124,7 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         maxVar = None
         aodMin = 0.0 # does not apply to AOD plot
         EE_fun = lambda t : 0.03+0.1*t
-        EEttlTxt = EEttlTxt + ', EE=±0.03+0.1*τ'
+        EEttlTxt = EEttlTxt + ', EE=±(0.03+0.1*τ)'
         GVlegTxt.append('AODF-%s' % waveName)
     elif gv=='aaod': # AAOD
         ylabel = 'AAOD (λ=%4.2fμm)' % wavelng
@@ -122,8 +133,10 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         maxVar = 0.11
         # maxVar = None
         aodMin = 0.0 
-        EE_fun = lambda t : np.maximum(0.003, t*0.5) # NEEDS updating 
-        EEttlTxt = EEttlTxt + ', EE=max(0.003, 50%)'
+#         EE_fun = lambda t : np.maximum(0.003, t*0.5) # NEEDS updating 
+#         EEttlTxt = EEttlTxt + ', EE=max(0.003, 50%)'
+        EE_fun = lambda t : 0.003 + t*0.3 # NEEDS updating 
+        EEttlTxt = EEttlTxt + ', EE=0.003 + 30%'
         GVlegTxt.append('AAOD-%s' % waveName)
     elif gv=='pm25': # AAOD
         logScatPlot = True
@@ -194,10 +207,10 @@ for waveInd, gv in zip(waveSeries, gvSeries):
     elif gv=='reff': # REFF
         ylabel = 'Fine Mode Effective Radius'
         true = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltFwd])[keepInd]
-        rtrv = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltBck])[keepInd]-0.04
+        rtrv = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltBck])[keepInd]
         maxVar = 0.32
-        rtrv[rtrv>maxVar] = maxVar+0.01
-        aodMin = 0.05  # will be for fine mode given fineAOD=True below
+#         rtrv[rtrv>maxVar] = maxVar+0.01
+        aodMin = 0.005  # will be for fine mode given fineAOD=True below
         EE_fun = lambda t : 0.04
         EEttlTxt = EEttlTxt + ', EE=0.04μm'
         GVlegTxt.append('rEff_fine')
@@ -216,7 +229,8 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         maxVar = np.max(true[vldI])*1.1
     else:
         findMaxVar = False
-        minVar = 4 if logScatPlot else 0
+        minVar = np.min(rtrv[vldI])-0.1*np.mean(rtrv[vldI])
+#         minVar = 4 if logScatPlot else 0
     ax[0].plot([minVar,maxVar], [minVar,maxVar], 'k', linewidth=LW121)
     EE_color = [0.5,0.5,0.5]
     errX = np.linspace(minVar,maxVar,100)
@@ -285,7 +299,7 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         tHnd = ax[1].annotate('N=%4d\n(All AODs)' % sum(vldI), xy=(0, 1), xytext=(90, -4.5), va='top', xycoords='axes fraction',
                     textcoords='offset points', color=clrText, fontsize=FS)
 
-    ax[0].set_title(EEttlTxt, fontsize=10)
+    ax[0].set_title(EEttlTxt, fontsize=FStitle)
     fig.tight_layout()
     
     if saveScatter:
@@ -303,7 +317,7 @@ axC.plot([1], [0.65], '.', markersize=10, color=[0.5,0,0], alpha=0.4)
 axC.set_xlim(0,3)
 axC.set_ylim(0,1)
 axC.set_yticks([0,0.25, 0.5, 0.65, 0.75, 1])
-axC.set_title(version[:-4])
+axC.set_title(version[:-4], fontsize=FStitle)
 
 fn = 'CDFPlots_AODgt%05.3f_%s.pdf' % (aodMin, version)
 figC.savefig(os.path.join(plotSaveDir, fn))
