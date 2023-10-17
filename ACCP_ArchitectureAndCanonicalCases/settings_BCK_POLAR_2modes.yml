@@ -262,7 +262,7 @@ retrieval:
                     value: [5.0]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
-            retrieved: false
+            retrieved: true
             type: surface_land_polarized_maignan_breon
         characteristic[10]:
             type: vertical_profile_parameter_standard_deviation
