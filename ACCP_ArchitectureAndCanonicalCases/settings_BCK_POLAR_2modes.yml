@@ -133,8 +133,8 @@ retrieval:
                     value: [1.4]
                 single_pixel:
                     smoothness_constraints:
-                        difference_order: 1
-                        lagrange_multiplier: 10.1
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -143,8 +143,8 @@ retrieval:
                     value: [1.4]
                 single_pixel:
                     smoothness_constraints:
-                        difference_order: 1
-                        lagrange_multiplier: 10.1
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             retrieved: true
             type: real_part_of_refractive_index_spectral_dependent
         characteristic[4]:
@@ -156,8 +156,8 @@ retrieval:
                     value: [0.002]
                 single_pixel:
                     smoothness_constraints:
-                        difference_order: 1
-                        lagrange_multiplier: 10.1
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -166,8 +166,8 @@ retrieval:
                     value: [0.002]
                 single_pixel:
                     smoothness_constraints:
-                        difference_order: 1
-                        lagrange_multiplier: 10.1
+                        difference_order: 2
+                        lagrange_multiplier: 0.1
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
         characteristic[5]:
@@ -262,7 +262,7 @@ retrieval:
                     value: [5.0]
                 single_pixel:
                     smoothness_constraints: {difference_order: 1, lagrange_multiplier: 10}
-            retrieved: false
+            retrieved: true
             type: surface_land_polarized_maignan_breon
         characteristic[10]:
             type: vertical_profile_parameter_standard_deviation
