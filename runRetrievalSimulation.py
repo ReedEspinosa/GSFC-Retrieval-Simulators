@@ -20,7 +20,7 @@ if checkDiscover(): # DISCOVER
 #     nAng = int(sys.argv[2])
     nAng = 0
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-08_')
+    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-09_')
     ymlDir = os.path.join(basePath, 'GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -50,7 +50,7 @@ bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 instruments = ['polarAOS']
 #conCases = ['case08a', 'case08d','case08g'] 
 conCases = ['case08'+chr(ord('a')+x) for x in range(15)]
-τFactor = ['randLogNrm0.4'] #1 - Syntax error on this line? Make sure you are running Python 3!
+τFactor = ['randLogNrm0.2','randLogNrm0.4'] #1 - Syntax error on this line? Make sure you are running Python 3!
 rndIntialGuess = False # initial guess falls in middle 25% of min/max range
 maxSZA = 75
 verbose = True
@@ -61,9 +61,10 @@ verbose = True
 # parse input argument n to instrument/case
 paramTple = list(itertools.product(*[instruments, conCases, τFactor]))[n] 
 
-# building pickle save path 
-saveNmTuple = paramTple[0:2] + (0 if type(paramTple[2])==str else paramTple[2],) + (n,nAng)
-savePath = saveStart + '%s_%s_tFct%5.3f_n%d_nAng%d.pkl' % saveNmTuple 
+# building pickle save path
+tFacSaveStr = paramTple[2] if type(paramTple[2])==str else ('%5.3f' % paramTple[2])
+saveNmTuple = paramTple[0:2] + (tFacSaveStr,) + (n,nAng)
+savePath = saveStart + '%s_%s_tFct%s_n%d_nAng%d.pkl' % saveNmTuple  
 print('-- Processing ' + os.path.basename(savePath) + ' --')
 
 # setup forward and back YAML objects and now pixel
