@@ -395,8 +395,8 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
-        # rv = [0.2, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        rv = [0.12, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        rv = [0.18, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+#         rv = [0.12, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = np.array([[0.0477583], [0.7941207]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
@@ -783,6 +783,36 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.1*caseLoadFct)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.7*caseLoadFct)
+        elif 'case08p' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(1.0*caseLoadFct)
+        elif 'case08q' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','smokeDesert'))
+            loadings.append(1.0*caseLoadFct)
+        elif 'case08r' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','pollution'))
+            loadings.append(1.0*caseLoadFct)
+        elif 'case08s' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','pollutionDesert'))
+            loadings.append(1.0*caseLoadFct)
+        elif 'case08t' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','dust'))
+            loadings.append(1.0*caseLoadFct)
+        elif 'case08u' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','dustDesert'))
+            loadings.append(1.0*caseLoadFct)
         elif 'campex_tria' in case.lower(): # if the size distribution is in the triangular bin
             if 'flat' in case.lower(): 	# for flat optical properties (n and k)
                 cases.append(case.replace('campex','aerosol_campex_flat'))
