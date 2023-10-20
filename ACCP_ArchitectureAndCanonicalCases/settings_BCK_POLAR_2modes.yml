@@ -104,7 +104,7 @@ retrieval:
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [3.0]
+                    max: [5.0]
                     min: [0.00000001]
                     value: [0.002]
             retrieved: true
@@ -213,7 +213,7 @@ retrieval:
 #        DESERT INSPIRED (lower mins)
         characteristic[7]:
             mode[1]:
-                initial_guess:                         #0.0859 , 0.0859 ,0.23386 0.38797,0.46342,0.5762 ,0.62179
+                initial_guess:                         #0.0859 , 0.0859 ,0.23386 0.38797,0.46342,0.5762 ,0.62179 [DESERT]
                     index_of_wavelength_involved: [1] # 0.38,    0.41,   0.55,   0.67,  0.87,   1.24,   1.59] μm
                     max:                               [0.2,     0.2,    0.4,    0.5,   0.6,    0.8,    1.0]
                     min:                               [0.0050, 0.0050, 0.0050, 0.0050, 0.0050, 0.0200, 0.0200]

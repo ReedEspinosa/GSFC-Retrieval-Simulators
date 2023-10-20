@@ -11,7 +11,11 @@ from glob import glob
 from simulateRetrieval import simulation # This should ensure GSFC-GRASP-Python-Interface is in the path
 from miscFunctions import calculatePM
 
-conCase = 'case08'+chr(ord('a')+int(sys.argv[1]))
+# conCase = 'case08'+chr(ord('a')+int(sys.argv[1]))
+
+# conCases = ['case08l','case08k']+['case08'+chr(ord('p')+x) for x in range(6)]
+# conCase = conCases[int(sys.argv[1])]
+# print(conCase)
 
 waveInd = 2
 waveInd2 = 5
@@ -19,8 +23,8 @@ waveIndAOD = 2
 fineIndFwd = [0,2]
 fineIndBck = [0]
 # pklDataPath = '/Users/wrespino/Synced/Working/OSSE_Test_Run/MERGED_ss450-g5nr.leV210.GRASP.example.polarimeter07.200608ALL_ALLz.pkl' # None to skip reloading of data
-pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-09_polarAOS_case08*_tFct*_n*_nAng0.pkl' # None to skip reloading of data
-# pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-09_polarAOS_'+conCase+'*_tFct*_n*_nAng0.pkl' # None to skip reloading of data
+pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-11_polarAOS_case08*_tFct*_n*_nAng0.pkl' # None to skip reloading of data
+# pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-11_polarAOS_'+conCase+'*_tFct*_n*_nAng0.pkl' # None to skip reloading of data
 # pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_Lidar050+polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl'
 # pklDataPath = None # None to skip reloading of data
 # plotSaveDir = '/Users/wrespino/Synced/AOS/PLRA/Figures_AODF_bugFixApr11'
@@ -47,7 +51,7 @@ aodWght = lambda x,τ : np.sum(x*τ)/np.sum(τ)
 
 inst = 'polarAOS'
 orb = '1330LTAN_%s' % surf2plot
-pklNmMtch = re.match('.+\/V0\/Run-([0-9]+)\_polarAOS\_case08([a-o\*])', pklDataPath)
+pklNmMtch = re.match('.+\/V0\/Run-([0-9]+)\_polarAOS\_case08([a-z\*])', pklDataPath)
 runNum = int(pklNmMtch.group(1))
 caseLet = pklNmMtch.group(2).replace('*','ALL')
 simType = 'CC8%s_Run%02d_SZAgt%d' % (caseLet, runNum, szaMin)

@@ -438,11 +438,11 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
-        if 'nonsph' in caseStr.lower():
+        if 'onlysph' in caseStr.lower():
+            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        else:
             vals['sph'] = [[0.99999], [0.00001]] # mode fine sphere, coarse spheroid
             vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # spheroids require scaling to maintain AOD
-        else:
-            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.46, nwl) # mode 1

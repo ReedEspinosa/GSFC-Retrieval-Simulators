@@ -85,7 +85,7 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [5.00001]
+                    max: [10.00001]
                     min: [0.00000001]
                     value: [0.009357605939569125]
             retrieved: true
@@ -195,6 +195,5 @@ retrieval:
                     value: [2.0e-10]
             retrieved: true
             type: surface_land_polarized_maignan_breon
-
 settings:
     strict: true
