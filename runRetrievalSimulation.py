@@ -20,13 +20,13 @@ if checkDiscover(): # DISCOVER
 #     nAng = int(sys.argv[2])
     nAng = 0
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-10_')
+    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-11_')
     ymlDir = os.path.join(basePath, 'GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     geomFile = os.path.join(basePath, 'synced/AOS/Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4')
     Nangles = 660
-#     Nangles = 4
+#    Nangles = 4
     Nsims = 1 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 46 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
@@ -52,7 +52,7 @@ instruments = ['polarAOS']
 # conCases = ['case08'+chr(ord('a')+x) for x in range(15)]
 conCases = ['case08l','case08k']+['case08'+chr(ord('p')+x) for x in range(6)]
 τFactor = ['randLogNrm0.2','randLogNrm0.4'] #1 - Syntax error on this line? Make sure you are running Python 3!
-rndIntialGuess = False # initial guess falls in middle 25% of min/max range
+rndIntialGuess = True # initial guess falls in middle 25% of min/max range
 maxSZA = 75
 verbose = True
 # more specific simulation options in runSim call below... 
