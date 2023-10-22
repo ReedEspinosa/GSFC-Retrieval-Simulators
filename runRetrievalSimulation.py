@@ -20,13 +20,13 @@ if checkDiscover(): # DISCOVER
 #     nAng = int(sys.argv[2])
     nAng = 0
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-12_')
+    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-14_')
     ymlDir = os.path.join(basePath, 'GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     geomFile = os.path.join(basePath, 'synced/AOS/Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4')
-#     Nangles = 660
-    Nangles = 4
+    Nangles = 660
+#    Nangles = 4
     Nsims = 1 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 46 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
@@ -47,7 +47,8 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 #bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes_DTarbsorb.yml')
 
-instruments = ['polarAOS']
+# instruments = ['polarAOS']
+instruments = ['3mi']
 #conCases = ['case08a', 'case08d','case08g'] 
 conCases = ['case08'+chr(ord('a')+x) for x in range(15)]
 # conCases = ['case08l','case08k']+['case08'+chr(ord('p')+x) for x in range(6)]
@@ -71,7 +72,7 @@ print('-- Processing ' + os.path.basename(savePath) + ' --')
 # setup forward and back YAML objects and now pixel
 nowPix = []
 for i in range(nAng, nAng+Nangles):
-    if 'polaraos' in paramTple[0].lower():
+    if 'polaraos' in paramTple[0].lower() or 'polder' in paramTple[0].lower() or '3mi' in paramTple[0].lower():
         sza, phi, vza = selectGeomSabrina(geomFile, i)
     elif 'modis' in paramTple[0].lower():
         sza, phi, vza = selectGeometryEntryModis(geomFile, i)

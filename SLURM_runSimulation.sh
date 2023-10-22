@@ -1,7 +1,7 @@
 #!/usr/local/bin/bash
 #SBATCH --job-name=AOSP
 #SBATCH --nodes=1
-#SBATCH --time=00:25:00
+#SBATCH --time=00:45:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
 #SBATCH --account=s2190
