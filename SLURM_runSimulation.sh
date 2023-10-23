@@ -5,7 +5,7 @@
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
 #SBATCH --account=s2190
-#SBATCH --array=0-31
+#SBATCH --array=0-29
 
 date
 hostname
