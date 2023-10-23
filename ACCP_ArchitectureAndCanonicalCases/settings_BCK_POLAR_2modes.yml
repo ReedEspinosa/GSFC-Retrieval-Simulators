@@ -11,11 +11,11 @@ retrieval:
     inversion:
         regime: single_pixel
         convergence:
-            maximum_iterations_for_stopping: 15
-            maximum_iterations_of_Levenberg-Marquardt: 15
+            maximum_iterations_for_stopping: 20
+            maximum_iterations_of_Levenberg-Marquardt: 20
             minimization_convention: logarithm
             normal_system_solver: sparse_matrix_solver
-            scale_for_finite_difference:          1.0e-3 
+            scale_for_finite_difference: 3.0e-05 #2.0e-5
             shift_for_applying_logarithm_to_negative_values: 1.1
             threshold_for_stopping: 1.0e-9 #0.001
             threshold_for_stopping_Q_iterations: 1.0e-09 #1.0e-06
@@ -47,21 +47,21 @@ retrieval:
                 mode[1]: {max: 15.0, min: 0.05}
                 mode[2]: {max: 15.0, min: 0.05}
         radiative_transfer:
-            absolute_error_rt_calculations: 0.0005
+            absolute_error_rt_calculations: 1.0e-06
             aerosol_profile_vertical_type: gaussian
             molecular_profile_vertical_type: exponential
             number_of_layers: 50
             reference_plane_for_polarization: principal_plane
-            simulating_observation:
-                order_of_scattering: multiple_scattering
-                number_of_gaussian_quadratures_for_expansion_coefficients:  15
-                number_of_guassian_quadratures_for_fourier_expansion_coefficients:  5
-                number_of_fourier_expansion_coefficients:  4
             simulating_derivatives:
+                number_of_fourier_expansion_coefficients: 6
+                number_of_gaussian_quadratures_for_expansion_coefficients: 10
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
                 order_of_scattering: multiple_scattering
-                number_of_gaussian_quadratures_for_expansion_coefficients:  15
-                number_of_guassian_quadratures_for_fourier_expansion_coefficients:   4
-                number_of_fourier_expansion_coefficients:   4
+            simulating_observation:
+                number_of_fourier_expansion_coefficients: 6
+                number_of_gaussian_quadratures_for_expansion_coefficients: 10
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
+                order_of_scattering: multiple_scattering
 
     debug:
         additional_information: false
