@@ -46,6 +46,7 @@ FStitle = 8 # title may run off plot, make this smaller to fix
 LW121 = 1
 clrText = [0.5,0,0.0]
 clrText = [0.0,0,0.5]
+maxNrmErr = 2.5 # normalized uncertainty max in CDF plots
 errFun = lambda t,r : np.abs(r-t)
 aodWght = lambda x,τ : np.sum(x*τ)/np.sum(τ)
 
@@ -330,7 +331,9 @@ for waveInd, gv in zip(waveSeries, gvSeries):
 
     # Cumulative error
     normedErr = np.abs(diffs)/EE_fun(true[vldI])
-    n, bins, patches = axC.hist(normedErr, int(np.sqrt(vldI.sum())), histtype='step', density=1, cumulative=True)
+    normedErr[normedErr > maxNrmErr] = maxNrmErr
+    #     n, bins, patches = axC.hist(normedErr, 5*int(np.sqrt(vldI.sum())), histtype='step', density=1, cumulative=True)
+    n, bins, patches = axC.hist(normedErr, 1000, histtype='step', density=1, cumulative=True)
     patches[0].set_xy(patches[0].get_xy()[:-1])
 
     # Variable Vs AOD
@@ -376,7 +379,7 @@ axC.legend(GVlegTxt, loc='lower right')
 # axC.plot([1,1], [0, 0.65], '..', color=[0.5,0,0], alpha=0.4)
 # axC.plot([0,1], [0.65, 0.65], '-', color=[0.5,0,0], alpha=0.4)
 axC.plot([1], [0.65], '.', markersize=10, color=[0.5,0,0], alpha=0.4)
-axC.set_xlim(0,3)
+axC.set_xlim(0,maxNrmErr)
 axC.set_ylim(0,1)
 axC.set_yticks([0,0.25, 0.5, 0.65, 0.75, 1])
 axC.set_title(version[:-4], fontsize=FStitle)
