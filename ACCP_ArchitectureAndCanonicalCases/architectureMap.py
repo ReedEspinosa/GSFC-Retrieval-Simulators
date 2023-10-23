@@ -20,7 +20,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
     if not nowPix: nowPix = rg.pixel(dt.datetime.now(), 1, 1, 0, 0, 0, landPrct) # can be called for multiple instruments, BUT they must all have unqiue wavelengths
     assert nowPix.land_prct == landPrct, 'landPrct provided did not match land percentage in nowPix'
     assert lidarLayers is None or np.all(np.diff(lidarLayers)<0), 'LidarLayers must be descending, starting with top of profile'
-    assert np.ndim(relPhi)==0 or 'polaraos' in archName.lower(), 'relPhi should be a scalar, unless using polarAOS archName'
+    assert np.ndim(relPhi)==0 or 'polaraos' in archName.lower() or 'polder' in archName.lower() or '3mi' in archName.lower(), 'relPhi should be a scalar, unless using polarAOS archName'
     if lidarLayers is None: # we use the below for lidar range bins
         botLayer = 10 # bottom layer in meters
         topLayer = 4510
@@ -162,13 +162,27 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         assert len(vza)==len(relPhi), 'vza and relPhi should have the same length!'
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile(vza, len(msTyp)) # corresponds to 450 km orbit
-        wvls = [0.44, 0.49, 0.56, 0.67, 0.86, 1.02] # Nλ=6
+        wvls = [0.44, 0.49, 0.56, 0.67, 0.86, 1.02] # nλ=6
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.tile(relPhi, len(msTyp))
         errStr = 'polar11'
-        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
-            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+        for wvl in wvls: # this will be expanded for wavelength dependent measurement types/geometry
+            errModel = functools.partial(addError, errStr) # this must link to an error model in adderror() below
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
+    if '3mi' in archName.lower():
+        assert np.ndim(vza)==1, 'VZA must be explicitly provided for polarAOS as a 1D list or array!'
+        assert np.ndim(relPhi)==1, 'relPhi must be explicitly provided for polarAOS as a 1D list or array!'
+        assert len(vza)==len(relPhi), 'vza and relPhi should have the same length!'
+        msTyp = [41, 42, 43] # must be in ascending order
+        thtv = np.tile(vza, len(msTyp)) # corresponds to 450 km orbit
+        wvls = [0.410, 0.443, 0.49, 0.555, 0.67, 0.865, 1.02, 1.65, 2.13] # nλ=6
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
+        phi = np.tile(relPhi, len(msTyp))
+        errStr = 'polar11'
+        for wvl in wvls: # this will be expanded for wavelength dependent measurement types/geometry
+            errModel = functools.partial(addError, errStr) # this must link to an error model in adderror() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
     #   Lidar Instruments (msTyp: Battn-> 31, depol -> 35, VExt->36, VBS->39)
     if 'lidar05' in archName.lower() or 'lidar06' in archName.lower():
