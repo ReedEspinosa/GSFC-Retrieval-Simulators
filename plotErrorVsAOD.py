@@ -49,21 +49,22 @@ clrText = [0.0,0,0.5]
 errFun = lambda t,r : np.abs(r-t)
 aodWght = lambda x,τ : np.sum(x*τ)/np.sum(τ)
 
-inst = 'polarAOS'
+
 orb = '1330LTAN_%s' % surf2plot
-pklNmMtch = re.match('.+\/V0\/Run-([0-9]+)\_polarAOS\_case08([a-z\*])', pklDataPath)
+pklNmMtch = re.match('.+\/V0\/Run-([0-9]+)\_([a-zA-Z0-9]+)\_case08([a-z\*])', pklDataPath)
 runNum = int(pklNmMtch.group(1))
-caseLet = pklNmMtch.group(2).replace('*','ALL')
+caseLet = pklNmMtch.group(3).replace('*','ALL')
+inst = pklNmMtch.group(2)
 simType = 'CC8%s_Run%02d_SZAgt%d' % (caseLet, runNum, szaMin)
 # simType = 'G5NR' 
 version = 'PLRA-Oct2023-%s-%s-%s-V04' % (inst, orb, simType) # for PDF file names
 
 modeIndFwd = [0,2]
 modeIndBck = [0]
+waveSeries = [0,3,5,0,3,0] if inst=='3mi' else [0,2,4,0,2,0] 
+gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'reff']
 # waveSeries = [0,2,4,0,2,0]
-# gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'reff']
-waveSeries = [0,2,4,0,2,4]
-gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'aaod']
+# gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'aaod']
 # waveSeries = [0,0,0,2,4,0,2,4,0,2,4]
 # gvSeries = ['aod','aaod', 'k', 'k', 'k', 'n', 'n', 'n']
 # waveSeries = [0,3,5]
@@ -123,10 +124,12 @@ for waveInd, gv in zip(waveSeries, gvSeries):
     logScatPlot=False
     EEttlTxt = '%s, %s, %s' % (inst, orb, simType)
     if gv=='aod': # AOD Total
+        logScatPlot = True
         ylabel = 'AOD (λ=%4.2fμm)' % wavelng
         true = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepInd]
         rtrv = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltBck])[keepInd]
-        maxVar = 2
+        minVar = 0.01
+        maxVar = 3
         aodMin = 0.0 # does not apply to AOD plot
         # EE_fun = lambda t : 0.02+0.05*t
         # EEttlTxt = EEttlTxt + ', EE=±0.02+0.05*τ'
@@ -143,12 +146,14 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         EEttlTxt = EEttlTxt + ', EE=±(0.03+0.1*τ)'
         GVlegTxt.append('AODF-%s' % waveName)
     elif gv=='aaod': # AAOD
+        logScatPlot = True
         ylabel = 'AAOD (λ=%4.2fμm)' % wavelng
         true = np.asarray([(1-rf['ssa'][waveInd])*rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepInd]
         rtrv = np.asarray([(1-rb['ssa'][waveInd])*rb['aod'][waveInd] for rb in simBase.rsltBck])[keepInd]
-        maxVar = 0.11
+        minVar = 0.0005
+        maxVar = 0.3
         # maxVar = None
-        aodMin = 0.0 
+        aodMin = 0.00001
 #         EE_fun = lambda t : np.maximum(0.003, t*0.5) # NEEDS updating 
 #         EEttlTxt = EEttlTxt + ', EE=max(0.003, 50%)'
 #         EE_fun = lambda t : 0.003 + t*0.3 # NEEDS updating 
@@ -245,11 +250,12 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         ylabel = 'Fine Mode Effective Radius'
         true = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltFwd])[keepInd]
         rtrv = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltBck])[keepInd]
-        maxVar = 0.32
+        maxVar = 0.09
+        maxVar = 0.31
 #         rtrv[rtrv>maxVar] = maxVar+0.01
         aodMin = 0.005  # will be for fine mode given fineAOD=True below
-        EE_fun = lambda t : 0.04
-        EEttlTxt = EEttlTxt + ', EE=0.04μm'
+        EE_fun = lambda t : 0.05
+        EEttlTxt = EEttlTxt + ', EE=0.05μm'
         GVlegTxt.append('rEff_fine')
     else:
         assert False, 'gv %s is not valid' % gv
@@ -264,15 +270,19 @@ for waveInd, gv in zip(waveSeries, gvSeries):
     vldI = np.logical_and(trueAOD>=aodMin, trueAOD<=aodMax)
     if maxVar is None:
         findMaxVar = True
-        minVar = np.min(true[vldI])-0.1*np.mean(true[vldI])
         maxVar = np.max(true[vldI])*1.1
     else:
         findMaxVar = False
-        minVar = np.min(rtrv[vldI])-0.1*np.mean(rtrv[vldI])
-#         minVar = 4 if logScatPlot else 0
+    if minVar is None:
+        minVar = np.min(true[vldI])-0.1*np.mean(true[vldI])
+        if minVar < 0.001 and logScatPlot: minVar=0.001
+    
     ax[0].plot([minVar,maxVar], [minVar,maxVar], 'k', linewidth=LW121)
     EE_color = [0.5,0.5,0.5]
-    errX = np.linspace(minVar,maxVar,100)
+    if logScatPlot:
+        errX = np.exp(np.linspace(np.log(minVar),np.log(maxVar),200))
+    else:
+        errX = np.linspace(minVar,maxVar,200)
     errX-EE_fun(errX)
     ax[0].plot(errX, errX+EE_fun(errX), '--', color=EE_color, linewidth=LW121)
     ax[0].plot(errX, errX-EE_fun(errX), '--', color=EE_color, linewidth=LW121)
@@ -293,7 +303,7 @@ for waveInd, gv in zip(waveSeries, gvSeries):
 
     Rcoef = np.corrcoef(true[vldI], rtrv[vldI])[0,1]
     diffs = rtrv[vldI] - true[vldI]
-    RMSE = np.sqrt(np.mean(diffs**2))
+    RMSE = np.sqrt(np.median(diffs**2))
     bias = np.mean(diffs)
     inEE = np.sum(np.abs(diffs) < (EE_fun(true[vldI])))/sum(vldI)*100
     prctInEE.append(inEE)
