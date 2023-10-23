@@ -23,7 +23,7 @@ waveIndAOD = 2
 fineIndFwd = [0,2]
 fineIndBck = [0]
 # pklDataPath = '/Users/wrespino/Synced/Working/OSSE_Test_Run/MERGED_ss450-g5nr.leV210.GRASP.example.polarimeter07.200608ALL_ALLz.pkl' # None to skip reloading of data
-pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-11_polarAOS_case08*_tFct*_n*_nAng0.pkl' # None to skip reloading of data
+pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-19_polarAOS_case08*_tFct*_n*_nAng0.pkl' # None to skip reloading of data
 # pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-11_polarAOS_'+conCase+'*_tFct*_n*_nAng0.pkl' # None to skip reloading of data
 # pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_Lidar050+polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl'
 # pklDataPath = None # None to skip reloading of data
@@ -57,14 +57,14 @@ caseLet = pklNmMtch.group(3).replace('*','ALL')
 inst = pklNmMtch.group(2)
 simType = 'CC8%s_Run%02d_SZAgt%d' % (caseLet, runNum, szaMin)
 # simType = 'G5NR' 
-version = 'PLRA-Oct2023-%s-%s-%s-V04' % (inst, orb, simType) # for PDF file names
+version = 'PLRA-Oct2023-%s-%s-%s-V06' % (inst, orb, simType) # for PDF file names
 
 modeIndFwd = [0,2]
 modeIndBck = [0]
-waveSeries = [0,3,5,0,3,0] if inst=='3mi' else [0,2,4,0,2,0] 
-gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'reff']
-# waveSeries = [0,2,4,0,2,0]
-# gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'aaod']
+# waveSeries = [0,3,5,0,3,0] if inst=='3mi' else [0,2,4,0,2,0]
+# gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'reff']
+waveSeries = [0,2,4,0,2,0,2,4]
+gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'ssa', 'ssa', 'ssa']
 # waveSeries = [0,0,0,2,4,0,2,4,0,2,4]
 # gvSeries = ['aod','aaod', 'k', 'k', 'k', 'n', 'n', 'n']
 # waveSeries = [0,3,5]
@@ -136,6 +136,19 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         EE_fun = lambda t : 0.03+0.1*t
         EEttlTxt = EEttlTxt + ', EE=±(0.03+0.1*τ)'
         GVlegTxt.append('AOD-%s' % waveName)
+    elif gv=='ssa': # SSA Total
+        logScatPlot = False
+        ylabel = 'SSA (λ=%4.2fμm)' % wavelng
+        true = np.asarray([rf['ssa'][waveInd] for rf in simBase.rsltFwd])[keepInd]
+        rtrv = np.asarray([rf['ssa'][waveInd] for rf in simBase.rsltBck])[keepInd]
+        minVar = 0.8
+        maxVar = 1
+        aodMin = 0.0 # does not apply to AOD plot
+        # EE_fun = lambda t : 0.02+0.05*t
+        # EEttlTxt = EEttlTxt + ', EE=±0.02+0.05*τ'
+        EE_fun = lambda t : 0.03
+        EEttlTxt = EEttlTxt + ', EE=±0.03'
+        GVlegTxt.append('SSA-%s' % waveName)
     elif gv=='aodf': # AOD Fine
         ylabel = 'AOD_fine (λ=%4.2fμm)' % wavelng
         true = np.asarray([rf['aodMode'][fineIndFwd, waveInd].sum() for rf in simBase.rsltFwd])[keepInd]
@@ -154,12 +167,12 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         maxVar = 0.3
         # maxVar = None
         aodMin = 0.00001
-#         EE_fun = lambda t : np.maximum(0.003, t*0.5) # NEEDS updating 
-#         EEttlTxt = EEttlTxt + ', EE=max(0.003, 50%)'
+#         EE_fun = lambda t : np.maximum(0.003, t*0.3) # NEEDS updating 
+#         EEttlTxt = EEttlTxt + ', EE=max(0.003, 30%)'
 #         EE_fun = lambda t : 0.003 + t*0.3 # NEEDS updating 
 #         EEttlTxt = EEttlTxt + ', EE=0.003 + 30%'
-        EE_fun = lambda t : 0.003 + t*0.4 # NEEDS updating 
-        EEttlTxt = EEttlTxt + ', EE=0.003 + 40%'
+        EE_fun = lambda t : 0.003 + t*0.5 # NEEDS updating 
+        EEttlTxt = EEttlTxt + ', EE=0.003 + 50%'
         GVlegTxt.append('AAOD-%s' % waveName)
     elif gv=='pm25': # AAOD
         logScatPlot = True

@@ -259,6 +259,9 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
         fwdSimQ = fwdSimQ*(1+dpRnd*dPol)
         dpRnd = np.random.normal(size=len(trueSimI), scale=absDoLPErr) # We do not want correlated errors so we do a separate random draw for U
         fwdSimU = fwdSimU*(1+dpRnd*dPol)
+        dolp = np.sqrt(fwdSimQ**2 + fwdSimU**2) / fwdSimI
+        fwdSimQ[dolp>=1] = 0.9999*fwdSimQ[dolp>=1]/dolp[dolp>=1] # This and following should only make changes to Q and U if dolp≥1
+        fwdSimU[dolp>=1] = 0.9999*fwdSimU[dolp>=1]/dolp[dolp>=1]        
         return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
         vertRange = rsltFwd['RangeLidar'][:,l]
