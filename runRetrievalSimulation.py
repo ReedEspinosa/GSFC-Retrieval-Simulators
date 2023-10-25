@@ -20,7 +20,7 @@ if checkDiscover(): # DISCOVER
 #     nAng = int(sys.argv[2])
     nAng = 0
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-21_')
+    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-17dark_')
     ymlDir = os.path.join(basePath, 'GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -47,11 +47,11 @@ fwdModelYAMLpathPOL = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml')
 bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 #bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes_DTarbsorb.yml')
 
-instruments = ['polder','3mi']
-# instruments = ['polarAOS']
+# instruments = ['polder','3mi']
+instruments = ['polarAOS']
 conCases = ['case08'+chr(ord('a')+x) for x in range(15)]
 # conCases = ['case08l','case08k']+['case08'+chr(ord('p')+x) for x in range(6)]
-τFactor = ['randLogNrm0.1','randLogNrm0.3'] #1 - Syntax error on this line? Make sure you are running Python 3!
+τFactor = ['randLogNrm0.2','randLogNrm0.4'] #1 - Syntax error on this line? Make sure you are running Python 3!
 rndIntialGuess = True # initial guess falls in middle 25% of min/max range
 maxSZA = 75
 verbose = True
