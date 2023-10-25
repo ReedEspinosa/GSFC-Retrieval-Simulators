@@ -26,7 +26,7 @@ retrieval:
                 measurement_type[1]:
                     index_of_wavelength_involved: [1, 2, 3]
                     type: I
-                standard_deviation: 0.03
+                standard_deviation: 0.05
                 standard_deviation_synthetic: 0.0
             noise[2]:
                 error_type: absolute
@@ -36,7 +36,7 @@ retrieval:
                 measurement_type[2]:
                     index_of_wavelength_involved: [1, 2, 3]
                     type: U
-                standard_deviation: 0.005
+                standard_deviation: 0.030
                 standard_deviation_synthetic: 0.0
     forward_model:
         phase_matrix:

@@ -162,7 +162,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         assert len(vza)==len(relPhi), 'vza and relPhi should have the same length!'
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile(vza, len(msTyp)) # corresponds to 450 km orbit
-        wvls = [0.44, 0.49, 0.56, 0.67, 0.86, 1.02] # nλ=6
+        wvls = [0.44, 0.49, 0.55, 0.67, 0.86, 1.02] # nλ=6
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.tile(relPhi, len(msTyp))
