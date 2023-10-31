@@ -73,8 +73,8 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.54, nwl) # mode 1
         vals['n'] = np.vstack([vals['n'], np.repeat(1.47, nwl)]) # mode 2
-        vals['k'] = 1.8*np.repeat(0.01, nwl) # mode 1
-        vals['k'] = 1.8*np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.01, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     
     # Added by Anin to account for the aerosol models, PSD for the CAMP2Ex based simulation study
@@ -450,7 +450,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['k'] = np.repeat(1e-8, nwl) # mode 1
         mode2λ = [0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
         mode2k = [0.0025, 0.0025, 0.0024, 0.0021, 0.0019, 0.0011, 0.0010, 0.0010]
-        mode2Intrp = 1.8*np.interp(wvls, mode2λ, mode2k)
+        mode2Intrp = np.interp(wvls, mode2λ, mode2k)
         vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     # case01 is blank in V22 of the canoncial case spreadsheet...
