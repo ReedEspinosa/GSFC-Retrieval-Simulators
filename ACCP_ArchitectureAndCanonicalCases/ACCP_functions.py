@@ -128,7 +128,15 @@ def selectGeometryEntryModis(geomFile, ind):
         geomVals = np.loadtxt(fid)
     return geomVals[ind,0], geomVals[ind,2], geomVals[ind,1] # θs, φ, θv
 
-def selectGeomSabrina(nc4File, cumInd=None, timeInd=None, crossInd=None):
+def calcScatteringAngle(sza, phi, vza):
+    szaR = np.radians(sza)
+    phiR = np.radians(phi)
+    vzaR = np.radians(vza)
+    argVal = np.cos(szaR)*np.cos(vzaR) + np.sin(szaR)*np.sin(vzaR)*np.cos(phiR)
+    scatAngR = np.degrees(np.pi - np.arccos(argVal))
+    return scatAngR
+
+def selectGeomSabrina(nc4File, cumInd=None, timeInd=None, crossInd=None, addVZA=None):
     """
     Pull scalar sza and vectors VZA and PHI from subsampled version of Sabrina's obrit files at a given time and ncross
     nc4File – path to nc4 file with subsampled angles (e.g., /.../AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4)
@@ -156,7 +164,24 @@ def selectGeomSabrina(nc4File, cumInd=None, timeInd=None, crossInd=None):
         vza = np.sign(phi)*vza
         phi[phi<0] = phi[phi<0]+180
         assert np.logical_and(phi>=0, phi<=180).all(), 'At least one element did not satisify 0° ≤ phi ≤ 180° after conversion!'
+
+    if addVZA is None:
         return szaAvg, phi, vza
+    vzaNewN = len(vza)-1 #double the number of angles (minus one)
+    if addVZA == 'even':
+        vzaStrt = vza[0:2].mean()
+        vzaEnd = vza[-2:].mean()
+        vzaNew = np.linspace(vzaStrt, vzaEnd, vzaNewN)
+    elif addVZA == 'backscat':
+        vzaTest = np.arange(vza.min()+1, vza.max(), 1)
+        phiTest = np.interp(vzaTest, vza, phi)
+        scaAngTest = calcScatteringAngle(sza, phiTest, vzaTest)
+        keepIndTest = np.argsort(scaAngTest)[-vzaNewN:]
+        vzaNew = vzaTest(keepIndTest)
+    vzaAll = np.unique(np.sort(np.hstack([vza, vzaNew]))) # unique very unlikely to have impact, but just incase we land on original angle to within machine precision
+    phiAll = np.interp(vzaAll, vza, phi)
+    return szaAvg, phiAll, vzaAll        
+        
 
 def selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA,
                         orbit=None, pcaVarPtrn='n_row_best_107sets_%s', verbose=False):
