@@ -22,7 +22,7 @@ waveIndAOD = 2
 fineIndFwd = [0,2]
 fineIndBck = [0]
 # pklDataPath = '/Users/wrespino/Synced/Working/OSSE_Test_Run/MERGED_ss450-g5nr.leV210.GRASP.example.polarimeter07.200608ALL_ALLz.pkl' # None to skip reloading of data
-pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-16_polarAOS_case08*_tFctrandLogNrm*_n*_nAng0.pkl' # None to skip reloading of data
+pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-17_polarAOS_case08*_tFctrandLogNrm*_n*_nAng0.pkl' # None to skip reloading of data
 # pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-11_polarAOS_'+conCase+'*_tFct*_n*_nAng0.pkl' # None to skip reloading of data
 # pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_Lidar050+polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl'
 # pklDataPath = None # None to skip reloading of data
@@ -57,7 +57,7 @@ caseLet = pklNmMtch.group(3).replace('*','ALL')
 inst = pklNmMtch.group(2)
 simType = 'CC8%s_Run%02d_SZAgt%d' % (caseLet, runNum, szaMin)
 # simType = 'G5NR' 
-version = 'PLRA-Oct2023-%s-%s-%s-V23' % (inst, orb, simType) # for PDF file names
+version = 'PLRA-Oct2023-%s-%s-%s-V24' % (inst, orb, simType) # for PDF file names
 
 # Tracking AAOD target update #
 # V12 all tau, GCOS targets, POLDER (RUN20)
@@ -78,8 +78,8 @@ version = 'PLRA-Oct2023-%s-%s-%s-V23' % (inst, orb, simType) # for PDF file name
 
 modeIndFwd = [0,2]
 modeIndBck = [0]
-# waveSeries = [0,3,5,0,3,0] if inst=='3mi' else [0,2,4,0,2,0]
-# gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'reff']
+waveSeries = [0,3,5,0,3,0] if inst=='3mi' else [1,2,4,1,2,0]
+gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'reff']
 # waveSeries = [3,5,3,5,3,5,3,5,0] if inst=='3mi' else [2,4,2,4,2,4,3,5,0]
 # gvSeries = ['aod', 'aod', 'ssa', 'ssa', 'aodf', 'aodf', 'aaod', 'aaod', 'reff']
 # waveSeries = [3,5,3,5,3,5,3,5] if inst=='3mi' else [2,4,2,4,2,4,3,5]
@@ -153,10 +153,10 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         minVar = 0.01
         maxVar = 3
         aodMin = 0.0 # does not apply to AOD plot
-        EE_fun = lambda t : np.maximum(0.03, 0.1*t)
-        EEttlTxt = EEttlTxt + ', EE=max(0.03, 10%)'
-#         EE_fun = lambda t : 0.03+0.1*t
-#         EEttlTxt = EEttlTxt + ', EE=±(0.03+0.1*τ)'
+#         EE_fun = lambda t : np.maximum(0.03, 0.1*t)
+#         EEttlTxt = EEttlTxt + ', EE=max(0.03, 10%)'
+        EE_fun = lambda t : 0.03+0.1*t
+        EEttlTxt = EEttlTxt + ', EE=±(0.03+0.1*τ)'
         GVlegTxt.append('AOD-%s' % waveName)
     elif gv=='ssa': # SSA Total
         logScatPlot = False
@@ -196,10 +196,10 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         rtrv = np.asarray([(1-rb['ssa'][waveInd])*rb['aod'][waveInd] for rb in simBase.rsltBck])[keepInd]
 
         aodMin = 0.00
-        EE_fun = lambda t : np.maximum(0.003, t*0.5) # NEEDS updating 
-        EEttlTxt = EEttlTxt + ', EE=max(0.003, 50%)'
-#         EE_fun = lambda t : 0.008 + t*0.5 # NEEDS updating 
-#         EEttlTxt = EEttlTxt + ', EE=±(0.008 + 50%)'
+#         EE_fun = lambda t : np.maximum(0.003, t*0.5) # NEEDS updating 
+#         EEttlTxt = EEttlTxt + ', EE=max(0.003, 50%)'
+        EE_fun = lambda t : 0.008 + t*0.5 # NEEDS updating 
+        EEttlTxt = EEttlTxt + ', EE=±(0.008 + 50%)'
 #         EE_fun = lambda t : 0.003 + t*0.5 # NEEDS updating 
 #         EEttlTxt = EEttlTxt + ', EE=0.003 + 50%'
         GVlegTxt.append('AAOD-%s' % waveName)
@@ -297,10 +297,11 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         maxVar = 0.31
 #         rtrv[rtrv>maxVar] = maxVar+0.01
         aodMin = 0.0  # will be for fine mode given fineAOD=True below
-#         EE_fun = lambda t : 0.6*0.05
-#         EE_fun_ext = lambda aod,t : 0.6*np.maximum(0.05, 0.1*0.1**aod)
-        EE_fun = lambda t : 0.05
-        EE_fun_ext = lambda aod,t : np.maximum(0.05, 0.1*0.1**aod)
+#         EE_fun = lambda t : 0.03
+        EE_fun_ext = lambda aod,t : np.maximum(0.03, 0.06*0.1**aod)
+        EEttlTxt = EEttlTxt + ', EE=0.03μm'
+#         EE_fun = lambda t : 0.05
+#         EE_fun_ext = lambda aod,t : np.maximum(0.05, 0.1*0.1**aod)
         EEttlTxt = EEttlTxt + ', EE=0.05μm'
         GVlegTxt.append('rEff_fine')
         
