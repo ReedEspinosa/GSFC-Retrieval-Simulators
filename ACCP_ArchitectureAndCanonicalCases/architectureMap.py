@@ -177,6 +177,7 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
     βscaLowLim = 2.0e-10
     βscaUprLim = 0.999
     mtch = re.match('^([A-z]+)([0-9]+)$', measNm)
+    # standard polarimeters
     if mtch.group(1).lower() == 'polar': # measNm should be string w/ format 'polarN', where N is polarimeter number
         if int(mtch.group(2)) in [4, 7, 8]: # S-Polar04 (a-d), S-Polar07, S-Polar08
             relErr = 0.03
@@ -201,11 +202,30 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
         trueSimI = rsltFwd['fit_I'][:,l]
         trueSimQ = rsltFwd['fit_Q'][:,l]
         trueSimU = rsltFwd['fit_U'][:,l]
+        assert len(trueSimI)==len(trueSimQ) and len(trueSimI)==len(trueSimU), wrngNumMeasMsg
+        noiseVctI = np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimI)) # draw from log-normal distribution for relative errors
+        fwdSimI = trueSimI*noiseVctI
+        fwdSimQ = trueSimQ*noiseVctI # scale Q and U too so that the correct values of q, u and DoLP are preserved
+        fwdSimU = trueSimU*noiseVctI
+        dPol = trueSimI*np.sqrt((trueSimQ**2+trueSimU**2)/(trueSimQ**4+trueSimU**4)) # dPol*absDoLPErr = sigma_Q/Q = sigma_U/U
+        dpRnd = np.random.normal(size=len(trueSimI), scale=absDoLPErr)
+        fwdSimQ = fwdSimQ*(1+dpRnd*dPol)
+        dpRnd = np.random.normal(size=len(trueSimI), scale=absDoLPErr) # We do not want correlated errors so we do a separate random draw for U
+        fwdSimU = fwdSimU*(1+dpRnd*dPol)
+        return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py
+    # HARP angle dependent error polarimeters
+    if mtch.group(1).lower() == 'harp': # measNm should be string w/ format 'polarN', where N is polarimeter number
+        if int(mtch.group(2)) in [2]: # PACE HARP2
+            relErr = 0.01 # relErr is the 1 sigma error in the intensity I
+            absDoLPErr = 0.005 # absDoLPErr is the absolute 1 sigma error in DoLP, independent of I,Q or U
+        else:
+            assert False, 'No error model found for %s!' % measNm # S-Polar06 has DoLP dependent ΔDoLP
+        trueSimI = rsltFwd['fit_I'][:,l]
+        trueSimQ = rsltFwd['fit_Q'][:,l]
+        trueSimU = rsltFwd['fit_U'][:,l]
         viewAng = rsltFwd['vis'][:,l]
         # bandWvl = rsltFwd['lambda'][l]
         assert len(trueSimI)==len(trueSimQ) and len(trueSimI)==len(trueSimU), wrngNumMeasMsg
-        relErr = 0.01 # relErr is the 1 sigma error in the intensity I
-        absDoLPErr = 0.005 # absDoLPErr is the absolute 1 sigma error in DoLP, independent of I,Q or U
         #############################################################################
         #                   Added error by view angle (Intensity)
         #############################################################################
@@ -215,12 +235,10 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
         for n in range(len(viewAng)):
             noiseVctI[n] = np.random.lognormal(sigma=np.log(1+relErr_byView[n]), size=1) # draw from log-normal distribution for relative errors
         #############################################################################
-        
         fwdSimI = trueSimI*noiseVctI
         fwdSimQ = trueSimQ*noiseVctI # scale Q and U too so that the correct values of q, u and DoLP are preserved
         fwdSimU = trueSimU*noiseVctI
         dPol = trueSimI*np.sqrt((trueSimQ**2+trueSimU**2)/(trueSimQ**4+trueSimU**4)) # dPol*absDoLPErr = sigma_Q/Q = sigma_U/U
-        
         #############################################################################
         #                   Added error by view angle (Dolp)
         #############################################################################
@@ -231,11 +249,10 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
             dpRnd_Q[n] = np.random.normal(size=1, scale=dolpErr_byView[n]) # draw from log-normal distribution for relative errors
             dpRnd_U[n] = np.random.normal(size=1, scale=dolpErr_byView[n]) # draw from log-normal distribution for relative errors
         #############################################################################
-        
         fwdSimQ = fwdSimQ*(1+dpRnd_Q*dPol)
         fwdSimU = fwdSimU*(1+dpRnd_U*dPol)
-        
         return np.r_[fwdSimI, fwdSimQ, fwdSimU] # safe because of ascending order check in simulateRetrieval.py
+    # lidar systems
     if mtch.group(1).lower() == 'lidar': # measNm should be string w/ format 'lidarN', where N is lidar number
         vertRange = rsltFwd['RangeLidar'][:,l]
         if not np.isnan(rsltFwd['fit_LS'][:,l]).any(): # atten. backscatter
@@ -262,7 +279,7 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
                 assert False, 'Lidar ID number %d not recognized!' % mtch.group(2)
             fwdSimβsca = trueSimβsca*np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimβsca)) # works w/ relErr as scalar or vector
             fwdSimβsca[fwdSimβsca<βscaLowLim] = βscaLowLim
-#            fwdSimβscaNrm = np.r_[fwdSimβsca]/simps(fwdSimβsca, x=-vertRange) # normalize profile to unity (GRASP requirement)
+            # fwdSimβscaNrm = np.r_[fwdSimβsca]/simps(fwdSimβsca, x=-vertRange) # normalize profile to unity (GRASP requirement)
             fwdSimβscaNrm = np.r_[fwdSimβsca]
             return fwdSimβscaNrm # safe because of ascending order check in simulateRetrieval.py
         elif not (np.isnan(rsltFwd['fit_VBS'][:,l]).any() or np.isnan(rsltFwd['fit_VExt'][:,l]).any()): # HSRL
@@ -302,6 +319,7 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
             return np.r_[fwdSimβext, fwdSimβsca] # safe because of ascending order check in simulateRetrieval.py
         else:
             assert False, 'Lidar data type not VBS, VExt or LS!' % mtch.group(2)
+    # intensity only instruments
     if mtch.group(1).lower() == 'modismisr':
         relErr = 0.03
         trueSimI = rsltFwd['fit_I'][:,l]
