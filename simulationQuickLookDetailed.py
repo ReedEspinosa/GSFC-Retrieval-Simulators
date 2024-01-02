@@ -34,17 +34,29 @@ except:
 # =============================================================================
 
 ### Reed's ABI Settings###
+# waveInd = 2 # Wavelength index for plotting
+# waveInd2 = 4 # Wavelength index for AE calculation
+# fineFwdInd = 0 # index in forward data to use for fine mode plots 
+# fineBckInd = 0 # index in backward data to use for fine mode plots
+# crsFwdInd = 0 # index in forward data to use for coarse mode plots
+# crsBckInd = 1 # index in backward data to use for coarse mode plots
+# fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
+# pubQuality = True # If True, we use publication quality figures
+# # filePathPtrn = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
+# filePathPtrn = '/Users/wrespino/Synced/Working/ABI_initialTests/Test_threeSites_Ocean_V02.pkl'
+
+
+### Reed's PLRA Validation Settings###
 waveInd = 2 # Wavelength index for plotting
 waveInd2 = 4 # Wavelength index for AE calculation
 fineFwdInd = 0 # index in forward data to use for fine mode plots 
 fineBckInd = 0 # index in backward data to use for fine mode plots
-crsFwdInd = 0 # index in forward data to use for coarse mode plots
+crsFwdInd = 1 # index in forward data to use for coarse mode plots
 crsBckInd = 1 # index in backward data to use for coarse mode plots
 fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
 pubQuality = True # If True, we use publication quality figures
-# filePathPtrn = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
-filePathPtrn = '/Users/wrespino/Synced/Working/ABI_initialTests/Test_threeSites_Ocean_V02.pkl'
-
+filePathPtrn = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-02_polarAOS_case08d_tFct0.000_n1_nAng0.pkl'
+# filePathPtrn = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-02_polarAOS_case08a_tFct0.000_n0_nAng0.pkl'
 
 ### Anin's CAMP2Ex Settings ###
 # Location/dir where the pkl files are
@@ -75,28 +87,40 @@ showOverallStats = True # print RMSE of many GVs to terminal (may be slow for la
 recalcChi = False # If True, we recalculate chi^2 using difference between fwd and bck fit variables
 
 # The variables to plot; will automatically remove variables for which rsltDict is missing
+# vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_variable_key
+#     'aod':'aod',
+#     'aod_c':'aodMode',
+#     'aod_f':'aodMode',
+#     'angstrom':'aod',
+#     'aaod':'ssa',
+#     'fmf':'dVdlnr',
+#     'sph_f':'sph',
+#     'sph_c':'sph',
+#     'g':'g',
+#     'n_f':'n',
+#     'n_c':'n',
+#     'k_f':'k',
+#     'k_c':'k',
+#     'intensity':'meas_I',
+#     'ssa':'ssa',
+#     'reff_sub_um':'rEffMode',
+#     'reff_abv_um':'rEffMode',
+#     'vol_c':'vol',
+#     'vol_f':'vol',
+#     'blandAltman':'aod',
+# }
+
 vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_variable_key
     'aod':'aod',
-    'aod_c':'aodMode',
-    'aod_f':'aodMode',
     'angstrom':'aod',
     'aaod':'ssa',
-    'fmf':'dVdlnr',
-    'sph_f':'sph',
-    'sph_c':'sph',
-    'g':'g',
-    'n_f':'n',
-    'n_c':'n',
-    'k_f':'k',
-    'k_c':'k',
     'intensity':'meas_I',
     'ssa':'ssa',
     'reff_sub_um':'rEffMode',
     'reff_abv_um':'rEffMode',
-    'vol_c':'vol',
-    'vol_f':'vol',
     'blandAltman':'aod',
 }
+
 
 # "Viridis-like" colormap with white background
 white_viridis = LinearSegmentedColormap.from_list('white_viridis', [
@@ -108,6 +132,10 @@ white_viridis = LinearSegmentedColormap.from_list('white_viridis', [
     (0.45, '#78d151'),
     (1, '#fde624'),
 ], N=512)
+
+forceReff = True #Force rEff claculations of fine/coarse in both fwd and back
+modeCuttOff = 0.5 # Separation between fine and coarse mode in μm of radius 
+
 
 
 # =============================================================================
@@ -379,6 +407,8 @@ plt.locator_params(nbins=3)
 
 # Define the path of the new merged pkl file
 simBase = simulation(picklePath=filePathPtrn)
+simBase.rsltFwd = np.asarray(simBase.rsltFwd)
+simBase.rsltBck = np.asarray(simBase.rsltBck)
 # # HACK: makes Test_threeSites_Ocean_V02.pkl work; just for testing
 # for 
 #     rs['meas_I_ocean'] = rs.pop('meas_ocean_I') # this is format populateFromRslt() can handle; should have just started with it in convert_YingxiFile2_to_rsltsPkl.py
@@ -421,9 +451,9 @@ print('%d/%d fit surface type %s and aod≥%4.2f' % (keepInd.sum(), len(simBase.
 keepInd = np.logical_and(keepInd, [rf['aod'][waveInd]<=aodMax for rf in simBase.rsltFwd])
 print('%d/%d fit surface type %s and aod≤%4.2f' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, aodMax))
 
-# Calculate modal Reff above and below a micron
+# Calculate modal Reff above and below a micron in diameter
 if np.any(['reff' in var.lower() for var in vars2plot.keys()]): 
-    simBase._addReffMode(1.0, True) # reframe with cut at 1 micron diameter
+    simBase._addReffMode(modeCuttOff, Force=forceReff) # reframe with cut at 0.5 micron radius
 
 # Purge variables for which we do not have sufficient data in Fwd/Bck rsltsDicts
 for key in list(vars2plot):

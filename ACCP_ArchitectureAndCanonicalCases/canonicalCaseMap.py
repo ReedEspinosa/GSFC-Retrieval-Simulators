@@ -4,7 +4,7 @@
 import numpy as np
 import numpy.random as rnd
 # to use the same seed for random number generator
-rnd.default_rng(seed=33)
+# rnd.default_rng(seed=33)
 import tempfile
 import os
 import sys
@@ -395,7 +395,8 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
         σ = [0.45, 0.70] # mode 1, 2,...
-        rv = [0.2, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        rv = [0.18, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+#         rv = [0.12, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = np.array([[0.0477583], [0.7941207]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
@@ -437,11 +438,11 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
-        if 'nonsph' in caseStr.lower():
+        if 'onlysph' in caseStr.lower():
+            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        else:
             vals['sph'] = [[0.99999], [0.00001]] # mode fine sphere, coarse spheroid
             vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # spheroids require scaling to maintain AOD
-        else:
-            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.46, nwl) # mode 1
@@ -615,6 +616,13 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=No
     """ nowPix needed to: 1) set land percentage of nowPix and 2) get number of wavelengths """
     aeroKeys = ['traiPSD','lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k', 'landPrct']
     vals = dict()
+    if type(caseLoadFctr)==str and 'randLogNrm' in caseLoadFctr: # e.g., 'randLogNrm0.2' for aod_median=0.2
+        sigma = np.log(2) # hardcode σg=2 for lognormal 
+        medianAOD = float(re.match('[A-z]+([0-9\.]+)', caseLoadFctr).group(1))
+        loading = [l for _,l in  splitMultipleCases(caseStrs)]
+        normFact = medianAOD/sum(loading) # cases already have loading, we scale by this to get medianAOD
+        caseLoadFctr = np.random.lognormal(np.log(normFact), sigma)
+    assert type(caseLoadFctr)!=str, '%s was not a recognized value for caseLoadFctr!' % caseLoadFctr
     for caseStr,loading in splitMultipleCases(caseStrs, caseLoadFctr): # loop over all cases and add them together
         valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix, defineRandom)
         for key in valsTmp.keys():
@@ -762,19 +770,49 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.12*caseLoadFct)
         elif 'case08m' in case.lower():
             cases.append(case.replace('case08','smokeDesert'))
-            loadings.append(0.1)
+            loadings.append(0.1*caseLoadFct)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.09*caseLoadFct)
         elif 'case08n' in case.lower():
             cases.append(case.replace('case08','smokeDesert'))
-            loadings.append(0.1)
+            loadings.append(0.1*caseLoadFct)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.33*caseLoadFct)
         elif 'case08o' in case.lower():
             cases.append(case.replace('case08','smokeDesert'))
-            loadings.append(0.1)
+            loadings.append(0.1*caseLoadFct)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.7*caseLoadFct)
+        elif 'case08p' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(1.0*caseLoadFct)
+        elif 'case08q' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','smokeDesert'))
+            loadings.append(1.0*caseLoadFct)
+        elif 'case08r' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','pollution'))
+            loadings.append(1.0*caseLoadFct)
+        elif 'case08s' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','pollutionDesert'))
+            loadings.append(1.0*caseLoadFct)
+        elif 'case08t' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','dust'))
+            loadings.append(1.0*caseLoadFct)
+        elif 'case08u' in case.lower():
+            cases.append(case.replace('case08','smoke'))
+            loadings.append(0.00001)
+            cases.append(case.replace('case08','dustDesert'))
+            loadings.append(1.0*caseLoadFct)
         elif 'campex_tria' in case.lower(): # if the size distribution is in the triangular bin
             if 'flat' in case.lower(): 	# for flat optical properties (n and k)
                 cases.append(case.replace('campex','aerosol_campex_flat'))
