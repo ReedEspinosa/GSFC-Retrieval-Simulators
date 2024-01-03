@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
+import sys
 from pprint import pprint
+import re
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -9,53 +11,91 @@ from glob import glob
 from simulateRetrieval import simulation # This should ensure GSFC-GRASP-Python-Interface is in the path
 from miscFunctions import calculatePM
 
-waveInd = 0
+# conCase = 'case08'+chr(ord('a')+int(sys.argv[1]))
+
+# conCases = ['case08l','case08k']+['case08'+chr(ord('p')+x) for x in range(6)]
+# conCase = conCases[int(sys.argv[1])]
+# print(conCase)
+
 waveInd2 = 5
-waveIndAOD = 3
+waveIndAOD = 2
 fineIndFwd = [0,2]
 fineIndBck = [0]
 # pklDataPath = '/Users/wrespino/Synced/Working/OSSE_Test_Run/MERGED_ss450-g5nr.leV210.GRASP.example.polarimeter07.200608ALL_ALLz.pkl' # None to skip reloading of data
-pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl' # None to skip reloading of data
+pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-17_polarAOS_case08*_tFctrandLogNrm*_n*_nAng0.pkl' # None to skip reloading of data
+# pklDataPath = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-11_polarAOS_'+conCase+'*_tFct*_n*_nAng0.pkl' # None to skip reloading of data
 # pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_Lidar050+polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl'
-# pklDataPath = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults_MERGED/DRS_V01_Lidar090+polar07_caseAll_tFct1.00_orbSS_multiAngles_nAll_nAngALL.pkl'
 # pklDataPath = None # None to skip reloading of data
 # plotSaveDir = '/Users/wrespino/Synced/AOS/PLRA/Figures_AODF_bugFixApr11'
-plotSaveDir = '/Users/wrespino/Synced/Presentations/UMBC_Earthday_2022/figs'
-surf2plot = 'ocean' # land, ocean or both
+plotSaveDir = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationPlots'
+surf2plot = 'both' # land, ocean or both
 aodMax = 9990.801 # only for plot limits
 hist2D = False
 Nbins = 300 # NbinsxNbins bins in hist density plots
+szaMin = 0
 
 varVsAOD = False
 saveScatter = True # This can be slow (?)
-fineAOD = False # use fine mode for varVsAOD plots AND AOD threshold for intensives
-fnTag = 'AllCases'
+fineAOD = True # use fine mode for varVsAOD plots AND AOD threshold for intensives
 scatAlpha = 0.1
 scatSize = 5
 MS = 1
 FS = 10
+FStitle = 8 # title may run off plot, make this smaller to fix
 LW121 = 1
 clrText = [0.5,0,0.0]
 clrText = [0.0,0,0.5]
+maxNrmErr = 2.5 # normalized uncertainty max in CDF plots
 errFun = lambda t,r : np.abs(r-t)
 aodWght = lambda x,τ : np.sum(x*τ)/np.sum(τ)
 
-inst = 'polar07'
-orb = 'Alt800'
-simType = 'CanCase'
-# simType = 'G5NR' 
-version = 'PM25_UMBC_EDS2022-%s-%s-%s-VXX' % (inst, orb, simType) # for PDF file names
 
-# waveSeries = [0,3,5,0,3,0]
-# gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'reff']
-# waveSeries = [0,3,5]
-# gvSeries = ['aodf', 'aodf', 'aodf']
-waveSeries = [5]
-gvSeries = ['pm25']
+orb = '1330LTAN_%s' % surf2plot
+pklNmMtch = re.match('.+\/V0\/Run-([0-9]+).*\_([a-zA-Z0-9]+)\_case08([a-z\*])', pklDataPath)
+runNum = int(pklNmMtch.group(1))
+caseLet = pklNmMtch.group(3).replace('*','ALL')
+inst = pklNmMtch.group(2)
+simType = 'CC8%s_Run%02d_SZAgt%d' % (caseLet, runNum, szaMin)
+# simType = 'G5NR' 
+version = 'PLRA-Oct2023-%s-%s-%s-V24' % (inst, orb, simType) # for PDF file names
+
+# Tracking AAOD target update #
+# V12 all tau, GCOS targets, POLDER (RUN20)
+# V14 original AAOD target
+# V13 suggested new AAOD target
+# V15 suggested new AAOD target #2
+# V16 regular variables with final AAOD target
+# V20 new target after discussion with Feng
+# V21 new targets and extra low SSA cases
+# V22 old targets and extra low SSA cases
+# V22 old targets and perfect modeling 
+# AOD and reff plots #
+# V17 normals errors
+# V18 half reff error
+# POLDER plots with Run 21
+# V19
+
+
+modeIndFwd = [0,2]
+modeIndBck = [0]
+waveSeries = [0,3,5,0,3,0] if inst=='3mi' else [1,2,4,1,2,0]
+gvSeries = ['aod', 'aod', 'aod', 'aaod', 'aaod', 'reff']
+# waveSeries = [3,5,3,5,3,5,3,5,0] if inst=='3mi' else [2,4,2,4,2,4,3,5,0]
+# gvSeries = ['aod', 'aod', 'ssa', 'ssa', 'aodf', 'aodf', 'aaod', 'aaod', 'reff']
+# waveSeries = [3,5,3,5,3,5,3,5] if inst=='3mi' else [2,4,2,4,2,4,3,5]
+# gvSeries = ['aod', 'aod', 'ssa', 'ssa', 'aodf', 'aodf', 'aaod', 'aaod']
+
+
+# waveSeries = [0,0,0,2,4,0,2,4,0,2,4]
+# gvSeries = ['aod','aaod', 'k', 'k', 'k', 'n', 'n', 'n']
+# waveSeries = [0,2,4,0,2]
+# gvSeries = ['aaod', 'aaod', 'aaod', 'ssa', 'ssa']
+# waveSeries = [5]
+# gvSeries = ['pm25']
 
 
 # CDF error plot
-figC, axC = plt.subplots(1,1, figsize=(5,5))
+figC, axC = plt.subplots(1,1, figsize=(6,6))
 axC.grid()
 
 if pklDataPath is not None:
@@ -64,7 +104,10 @@ if pklDataPath is not None:
     if 'reff' in gvSeries:
         print('Calculcating fine-mode effective radii')
         simBase._addReffMode(0.5, True) # reframe with cut at 1 micron diameter
+simBase.rsltFwd = np.asarray(simBase.rsltFwd)
+simBase.rsltBck = np.asarray(simBase.rsltBck)
 print('--')
+
 
 if 'land_prct' not in simBase.rsltFwd[0] or surf2plot=='both':
     keepInd = range(len(simBase.rsltFwd))
@@ -79,13 +122,19 @@ costThresh = np.percentile([rb['costVal'] for rb in simBase.rsltBck[keepInd]], 9
 keepInd = np.logical_and(keepInd, [rb['costVal']<costThresh for rb in simBase.rsltBck])
 print('%d/%d fit surface type %s and convergence filter' % (keepInd.sum(), len(simBase.rsltBck), surf2plot))
 
+# apply convergence filter
+# simBase.conerganceFilter(forceχ2Calc=True) # ours looks more normal, but GRASP's produces slightly lower RMSE
+keepInd = np.logical_and(keepInd, [rb['sza'][0,0]>=szaMin for rb in simBase.rsltBck])
+print('%d/%d fit surface type %s, convergence filter and sza≥%3.0f' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, szaMin))
+
+
 GVlegTxt = []
 prctInEE = []
 for waveInd, gv in zip(waveSeries, gvSeries):
     if varVsAOD:
         fig, ax = plt.subplots(1,2, figsize=(7.7,3.5))
     else:
-        fig, ax = plt.subplots(1,1, figsize=(4.5,4))
+        fig, ax = plt.subplots(1,1, figsize=(5.1,4.5))
         ax = [ax]
     ax[0].locator_params(nbins=3)
 
@@ -94,36 +143,65 @@ for waveInd, gv in zip(waveSeries, gvSeries):
     print('Showing %s results for %s (%5.3f μm)' % (gv, waveName, wavelng))
     
     logScatPlot=False
+    EE_fun_ext = None
     EEttlTxt = '%s, %s, %s' % (inst, orb, simType)
     if gv=='aod': # AOD Total
+        logScatPlot = True
         ylabel = 'AOD (λ=%4.2fμm)' % wavelng
         true = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepInd]
         rtrv = np.asarray([rf['aod'][waveInd] for rf in simBase.rsltBck])[keepInd]
-        maxVar = 2
+        minVar = 0.01
+        maxVar = 3
+        aodMin = 0.0 # does not apply to AOD plot
+#         EE_fun = lambda t : np.maximum(0.03, 0.1*t)
+#         EEttlTxt = EEttlTxt + ', EE=max(0.03, 10%)'
+        EE_fun = lambda t : 0.03+0.1*t
+        EEttlTxt = EEttlTxt + ', EE=±(0.03+0.1*τ)'
+        GVlegTxt.append('AOD-%s' % waveName)
+    elif gv=='ssa': # SSA Total
+        logScatPlot = False
+        ylabel = 'SSA (λ=%4.2fμm)' % wavelng
+        true = np.asarray([rf['ssa'][waveInd] for rf in simBase.rsltFwd])[keepInd]
+        rtrv = np.asarray([rf['ssa'][waveInd] for rf in simBase.rsltBck])[keepInd]
+        minVar = 0.8
+        maxVar = 1
         aodMin = 0.0 # does not apply to AOD plot
         # EE_fun = lambda t : 0.02+0.05*t
         # EEttlTxt = EEttlTxt + ', EE=±0.02+0.05*τ'
-        EE_fun = lambda t : 0.03+0.1*t
-        EEttlTxt = EEttlTxt + ', EE=±0.03+0.1*τ'
-        GVlegTxt.append('AOD-%s' % waveName)
+        EE_fun = lambda t : 0.03
+        EEttlTxt = EEttlTxt + ', EE=±0.03'
+        GVlegTxt.append('SSA-%s' % waveName)
     elif gv=='aodf': # AOD Fine
+        logScatPlot = True
         ylabel = 'AOD_fine (λ=%4.2fμm)' % wavelng
         true = np.asarray([rf['aodMode'][fineIndFwd, waveInd].sum() for rf in simBase.rsltFwd])[keepInd]
         rtrv = np.asarray([rf['aodMode'][fineIndBck, waveInd].sum() for rf in simBase.rsltBck])[keepInd]
-        maxVar = None
+        minVar = 0.01
+        maxVar = 1
         aodMin = 0.0 # does not apply to AOD plot
-        EE_fun = lambda t : 0.03+0.1*t
-        EEttlTxt = EEttlTxt + ', EE=±0.03+0.1*τ'
+#         EE_fun = lambda t : 0.03+0.1*t
+#         EEttlTxt = EEttlTxt + ', EE=±(0.03+0.1*τ)'
+        EE_fun = lambda t : np.maximum(0.03, 0.1*t)
+        EEttlTxt = EEttlTxt + ', EE=max(0.03, 10%)'
         GVlegTxt.append('AODF-%s' % waveName)
     elif gv=='aaod': # AAOD
+        logScatPlot = True
+        minVar = 0.0005
+        maxVar = 0.3
+#         logScatPlot = False
+#         minVar = 0.0
+#         maxVar = 0.2
         ylabel = 'AAOD (λ=%4.2fμm)' % wavelng
         true = np.asarray([(1-rf['ssa'][waveInd])*rf['aod'][waveInd] for rf in simBase.rsltFwd])[keepInd]
         rtrv = np.asarray([(1-rb['ssa'][waveInd])*rb['aod'][waveInd] for rb in simBase.rsltBck])[keepInd]
-        maxVar = 0.11
-        # maxVar = None
-        aodMin = 0.0 
-        EE_fun = lambda t : np.maximum(0.003, t*0.5) # NEEDS updating 
-        EEttlTxt = EEttlTxt + ', EE=max(0.003, 50%)'
+
+        aodMin = 0.00
+#         EE_fun = lambda t : np.maximum(0.003, t*0.5) # NEEDS updating 
+#         EEttlTxt = EEttlTxt + ', EE=max(0.003, 50%)'
+        EE_fun = lambda t : 0.008 + t*0.5 # NEEDS updating 
+        EEttlTxt = EEttlTxt + ', EE=±(0.008 + 50%)'
+#         EE_fun = lambda t : 0.003 + t*0.5 # NEEDS updating 
+#         EEttlTxt = EEttlTxt + ', EE=0.003 + 50%'
         GVlegTxt.append('AAOD-%s' % waveName)
     elif gv=='pm25': # AAOD
         logScatPlot = True
@@ -178,29 +256,58 @@ for waveInd, gv in zip(waveSeries, gvSeries):
     # rtrv = np.asarray([aodWght(rf['sph'], rf['vol']) for rf in simBase.rsltBck])[keepInd]
     # maxVar = None
     # aodMin = 0.1 # does not apply to AOD plot
-    # k
-    # ylabel = 'AOD Wghtd. IRI (λ=%4.2fμm)' % wavelng
-    # true = np.asarray([rf['k'][waveInd] for rf in simBase.rsltFwd])[keepInd]
-    # rtrv = np.asarray([aodWght(rf['k'][:,waveInd], rf['aodMode'][:,waveInd]) for rf in simBase.rsltBck])[keepInd]
-    # maxVar = None
-    # aodMin = 0.2 # does not apply to AOD plot
-    # logScatPlot=False # This is weird with 2d hist binning
-    # n
-    # ylabel = 'AOD Wghtd. RRI (λ=%4.2fμm)' % wavelng
-    # true = np.asarray([rf['n'][waveInd] for rf in simBase.rsltFwd])[keepInd]
-    # rtrv = np.asarray([aodWght(rf['n'][:,waveInd], rf['aodMode'][:,waveInd]) for rf in simBase.rsltBck])[keepInd]
-    # maxVar = None
-    # aodMin = 0.1 # does not apply to AOD plot
+    elif gv=='brdf': # k
+        ylabel = 'BRDF [ISO]  (λ=%4.2fμm)' % wavelng
+        true = np.asarray([rf['brdf'][0,waveInd] for rf in simBase.rsltFwd])[keepInd]
+        rtrv = np.asarray([rf['brdf'][0,waveInd] for rf in simBase.rsltBck])[keepInd]
+        maxVar = None
+        aodMin = 0.2 # does not apply to AOD plot
+        logScatPlot=False # This is weird with 2d hist binning
+        EE_fun = lambda t : t*0.1
+        EEttlTxt = EEttlTxt + ', EE=10%'
+        GVlegTxt.append('BRDF[ISO]-%s' % waveName)
+    elif gv=='k': # k
+        ylabel = 'AOD Wghtd. IRI (λ=%4.2fμm)' % wavelng
+#         true = np.asarray([rf['k'][waveInd] for rf in simBase.rsltFwd])[keepInd]
+#         rtrv = np.asarray([aodWght(rf['k'][:,waveInd], rf['aodMode'][:,waveInd]) for rf in simBase.rsltBck])[keepInd]
+        true = np.asarray([aodWght(rf['k'][modeIndFwd,waveInd], rf['aodMode'][modeIndFwd,waveInd]) for rf in simBase.rsltFwd])[keepInd]
+        rtrv = np.squeeze(np.asarray([rb['k'][modeIndBck,waveInd] for rb in simBase.rsltBck])[keepInd])
+        maxVar = None
+        aodMin = 0.2 # does not apply to AOD plot
+        logScatPlot=False # This is weird with 2d hist binning
+        EE_fun = lambda t : t*0.5
+        EEttlTxt = EEttlTxt + ', EE=50%'
+        GVlegTxt.append('IRI-%s' % waveName)
+    elif gv=='n': # n
+        ylabel = 'AOD Wghtd. RRI (λ=%4.2fμm)' % wavelng
+#         true = np.asarray([rf['n'][waveInd] for rf in simBase.rsltFwd])[keepInd]
+        true = np.asarray([aodWght(rf['n'][modeIndFwd,waveInd], rf['aodMode'][modeIndFwd,waveInd]) for rf in simBase.rsltFwd])[keepInd]
+        rtrv = np.squeeze(np.asarray([rb['n'][modeIndBck,waveInd] for rb in simBase.rsltBck])[keepInd])
+        minVar = 1.35
+        maxVar = 1.65
+        aodMin = 0.0 # does not apply to AOD plot
+        EE_fun = lambda t : 0.02
+        EEttlTxt = EEttlTxt + ', EE=0.02'
+        GVlegTxt.append('RRI-%s' % waveName)
     elif gv=='reff': # REFF
         ylabel = 'Fine Mode Effective Radius'
         true = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltFwd])[keepInd]
-        rtrv = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltBck])[keepInd]-0.04
-        maxVar = 0.32
-        rtrv[rtrv>maxVar] = maxVar+0.01
-        aodMin = 0.05  # will be for fine mode given fineAOD=True below
-        EE_fun = lambda t : 0.04
-        EEttlTxt = EEttlTxt + ', EE=0.04μm'
+        rtrv = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltBck])[keepInd]
+        minVar = 0.09
+        maxVar = 0.31
+#         rtrv[rtrv>maxVar] = maxVar+0.01
+        aodMin = 0.0  # will be for fine mode given fineAOD=True below
+#         EE_fun = lambda t : 0.03
+        EE_fun_ext = lambda aod,t : np.maximum(0.03, 0.06*0.1**aod)
+        EEttlTxt = EEttlTxt + ', EE=0.03μm'
+#         EE_fun = lambda t : 0.05
+#         EE_fun_ext = lambda aod,t : np.maximum(0.05, 0.1*0.1**aod)
+        EEttlTxt = EEttlTxt + ', EE=0.05μm'
         GVlegTxt.append('rEff_fine')
+        
+        
+    else:
+        assert False, 'gv %s is not valid' % gv
     if fineAOD:
         trueAOD = np.asarray([rf['aodMode'][fineIndFwd, waveIndAOD].sum() for rf in simBase.rsltFwd])[keepInd]
     else:
@@ -212,15 +319,20 @@ for waveInd, gv in zip(waveSeries, gvSeries):
     vldI = np.logical_and(trueAOD>=aodMin, trueAOD<=aodMax)
     if maxVar is None:
         findMaxVar = True
-        minVar = np.min(true[vldI])-0.1*np.mean(true[vldI])
         maxVar = np.max(true[vldI])*1.1
     else:
         findMaxVar = False
-        minVar = 4 if logScatPlot else 0
+    if minVar is None:
+        minVar = np.min(true[vldI])-0.1*np.mean(true[vldI])
+        if minVar < 0.001 and logScatPlot: minVar=0.001
+    
     ax[0].plot([minVar,maxVar], [minVar,maxVar], 'k', linewidth=LW121)
     EE_color = [0.5,0.5,0.5]
-    errX = np.linspace(minVar,maxVar,100)
-    errX-EE_fun(errX)
+    if logScatPlot:
+        errX = np.exp(np.linspace(np.log(minVar),np.log(maxVar),200))
+    else:
+        errX = np.linspace(minVar,maxVar,200)
+#     errX-EE_fun(errX)
     ax[0].plot(errX, errX+EE_fun(errX), '--', color=EE_color, linewidth=LW121)
     ax[0].plot(errX, errX-EE_fun(errX), '--', color=EE_color, linewidth=LW121)
 #     ax[0].plot([minVar,maxVar], [minVar-EE_fun(minVar),maxVar-EE_fun(maxVar)], '--', color=EE_color, linewidth=LW121)
@@ -240,9 +352,12 @@ for waveInd, gv in zip(waveSeries, gvSeries):
 
     Rcoef = np.corrcoef(true[vldI], rtrv[vldI])[0,1]
     diffs = rtrv[vldI] - true[vldI]
-    RMSE = np.sqrt(np.mean(diffs**2))
+    RMSE = np.sqrt(np.median(diffs**2))
     bias = np.mean(diffs)
-    inEE = np.sum(np.abs(diffs) < (EE_fun(true[vldI])))/sum(vldI)*100
+    if EE_fun_ext:
+        inEE = np.sum(np.abs(diffs) < (EE_fun_ext(trueAOD[vldI],true[vldI])))/sum(vldI)*100
+    else:
+        inEE = np.sum(np.abs(diffs) < (EE_fun(true[vldI])))/sum(vldI)*100
     prctInEE.append(inEE)
     frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f\nIn EE=%%%4.1f'
     aodStr = 'AOD_fine' if fineAOD else 'AOD'
@@ -253,8 +368,14 @@ for waveInd, gv in zip(waveSeries, gvSeries):
                         textcoords='offset points', color=clrText, fontsize=FS)
 
     # Cumulative error
-    normedErr = np.abs(diffs)/EE_fun(true[vldI])
-    n, bins, patches = axC.hist(normedErr, int(np.sqrt(vldI.sum())), histtype='step', density=1, cumulative=True)
+    if EE_fun_ext:
+        normedErr = np.abs(diffs)/EE_fun_ext(trueAOD[vldI],true[vldI])
+    else:
+        normedErr = np.abs(diffs)/EE_fun(true[vldI])
+
+    normedErr[normedErr > maxNrmErr] = maxNrmErr
+    #     n, bins, patches = axC.hist(normedErr, 5*int(np.sqrt(vldI.sum())), histtype='step', density=1, cumulative=True)
+    n, bins, patches = axC.hist(normedErr, 1000, histtype='step', density=1, cumulative=True)
     patches[0].set_xy(patches[0].get_xy()[:-1])
 
     # Variable Vs AOD
@@ -285,7 +406,7 @@ for waveInd, gv in zip(waveSeries, gvSeries):
         tHnd = ax[1].annotate('N=%4d\n(All AODs)' % sum(vldI), xy=(0, 1), xytext=(90, -4.5), va='top', xycoords='axes fraction',
                     textcoords='offset points', color=clrText, fontsize=FS)
 
-    ax[0].set_title(EEttlTxt, fontsize=10)
+    ax[0].set_title(EEttlTxt, fontsize=FStitle)
     fig.tight_layout()
     
     if saveScatter:
@@ -300,10 +421,10 @@ axC.legend(GVlegTxt, loc='lower right')
 # axC.plot([1,1], [0, 0.65], '..', color=[0.5,0,0], alpha=0.4)
 # axC.plot([0,1], [0.65, 0.65], '-', color=[0.5,0,0], alpha=0.4)
 axC.plot([1], [0.65], '.', markersize=10, color=[0.5,0,0], alpha=0.4)
-axC.set_xlim(0,3)
+axC.set_xlim(0,maxNrmErr)
 axC.set_ylim(0,1)
 axC.set_yticks([0,0.25, 0.5, 0.65, 0.75, 1])
-axC.set_title(version[:-4])
+axC.set_title(version[:-4], fontsize=FStitle)
 
 fn = 'CDFPlots_AODgt%05.3f_%s.pdf' % (aodMin, version)
 figC.savefig(os.path.join(plotSaveDir, fn))
@@ -313,5 +434,5 @@ print('Percent in EE array for histogram script:')
 print(GVlegTxt)
 print(prctInEE)
 
-plt.ion()
-plt.show()
+# plt.ion()
+# plt.show()

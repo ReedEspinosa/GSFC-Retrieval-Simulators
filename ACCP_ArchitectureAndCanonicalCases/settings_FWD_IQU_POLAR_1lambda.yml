@@ -43,7 +43,7 @@ retrieval:
                 number_of_fourier_expansion_coefficients: 6
                 number_of_gaussian_quadratures_for_expansion_coefficients: 10
                 number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
-                order_of_scattering: derivatives
+                order_of_scattering: multiple_scattering
             simulating_observation:
                 number_of_fourier_expansion_coefficients: 6
                 number_of_gaussian_quadratures_for_expansion_coefficients: 10
@@ -55,24 +55,39 @@ retrieval:
         verbose: true
 
     products:
-        aerosol: {chemistry: false, lidar: true, optical_properties: true, particulate_matter: false, phase_matrix: true, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: false, type: false}
+        aerosol:
+            chemistry: false
+            lidar: true
+            optical_properties: true
+            particulate_matter: false
+            phase_matrix: false
+            refractive_index: true
+            theoretical_bimodal_extinction: false
+            theoretical_bimodal_parameters: false
+            type: false
         error_estimation:
-            aerosol: {lidar: false, optical_properties: false}
+            aerosol:
+                lidar: false
+                optical_properties: false
             parameters: false
-        forcing: {broadband_flux: false, forcing: false}
-        retrieval: {fitting: true, parameters: true, residual: true}
-        surface: true
+        forcing:
+            broadband_flux: false
+            forcing: false
+        retrieval:
+            fitting: true
+            parameters: true
+            residual: true
+        surface:
+            main_characteristics: true
 
     constraints:
         characteristic[1]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [5.00001]
+                    max: [10.00001]
                     min: [0.00000001]
                     value: [0.009357605939569125]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
             retrieved: true
             type: aerosol_concentration
         characteristic[2]:
@@ -82,9 +97,6 @@ retrieval:
                     max: [10.0, 0.95]
                     min: [0.02, 0.02]
                     value: [0.18482, 0.5709795355796814]
-                single_pixel:
-                    a_priori_estimates:
-                        lagrange_multiplier: [0, 0]
             retrieved: true
             type: size_distribution_lognormal
         characteristic[3]:
@@ -94,10 +106,6 @@ retrieval:
                     max: [1.65]
                     min: [1.33]
                     value: [1.36387]
-                multi_pixel:
-                    smoothness_constraints: {derivative_order_of_T_variability: 1, derivative_order_of_X_variability: 1, derivative_order_of_Y_variability: 1, lagrange_multiplier_of_T_variability: 0.02, lagrange_multiplier_of_X_variability: 0.1, lagrange_multiplier_of_Y_variability: 0.1}
-                single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             retrieved: true
             type: real_part_of_refractive_index_spectral_dependent
         characteristic[4]:
@@ -107,8 +115,6 @@ retrieval:
                     max: [0.5]
                     min: [1e-10]
                     value: [0.035]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
         characteristic[5]:
@@ -166,8 +172,6 @@ retrieval:
                     max:   [1.0]
                     min:   [0.000001]
                     value: [0.1]
-                single_pixel:
-                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0}
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -191,6 +195,5 @@ retrieval:
                     value: [2.0e-10]
             retrieved: true
             type: surface_land_polarized_maignan_breon
-
 settings:
     strict: true
