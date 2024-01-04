@@ -16,12 +16,12 @@ from miscFunctions import matplotlibX11, norm2absExtProf
 import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
-simRsltFile = './exampleSimulationTest#1.pkl'
+simRsltFile = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-30_polarAOSnoah_case08l_tFctrandLogNrm0.2_n82_nAng0.pkl'
 # nn = int(sys.argv[1])
 # mm = int(sys.argv[2])
 # simRsltFile = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/ss450-g5nr.leV30.GRASP.YAML*-n%dpixStrt%d.polar07*.random.20060801_0000z.pkl' % (nn,mm*28)
 trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
-trgtλPolar = 0.87 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
+trgtλPolar = 0.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
 extErrPlot = True
 χthresh = 5
 minSaved = 40
@@ -31,9 +31,16 @@ fineModesBck = [0]
 posFiles = glob(simRsltFile)
 assert len(posFiles)==1, 'glob found %d files but we expect exactly 1' % len(posFiles)
 simA = simulation(picklePath=posFiles[0])
+print(len(simA.rsltFwd))
+print(len(simA.rsltBck))
 simA.conerganceFilter(χthresh=χthresh, minSaved=minSaved, verbose=True, forceχ2Calc=False)
-# simA.rsltFwd = simA.rsltFwd[0:40:9]
-# simA.rsltBck = simA.rsltBck[0:40:9]
+print(len(simA.rsltFwd))
+print(len(simA.rsltBck))
+# !!! HACK !!!
+# simA.rsltFwd = simA.rsltFwd[0:6:2]
+# simA.rsltBck = simA.rsltBck[0:6:2]
+
+
 lIndL = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλLidar))
 lIndP = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλPolar))
 alphVal = 1/np.sqrt(len(simA.rsltBck))
@@ -73,7 +80,7 @@ NbckModes = simA.rsltBck[0]['aodMode'].shape[0]
 
 lidarRangeLow=16 # %
 lidarRangeHigh=84 # %
-for rb in simA.rsltBck:
+for ind, rb in enumerate(simA.rsltBck):
     if LIDARpresent:
         mdHnd = []; lgTxt = []
         for i in range(NbckModes): # Lidar extinction profile
@@ -99,6 +106,12 @@ for rb in simA.rsltBck:
             axL[i+1].fill_betweenx(simA.rsltBck[0]['range'][i,:]/1e3, extFitsLow, extFitsHigh, color=color2(7), edgecolor='none', alpha=0.6, zorder=15) # fits
     if POLARpresent:
         for i,mt in enumerate(measTypesP): # Polarimeter retrieval meas & fit
+            fwdind = 0 if len(simA.rsltFwd)==1 else ind
+            if 'fit_'+mt not in simA.rsltFwd[fwdind] and 'oI' in mt: # fwd calculation performed with aboslute Q and U
+                fwdData = simA.rsltFwd[fwdind]['fit_'+mt[0]][:,lIndP]/simA.rsltFwd[fwdind]['fit_I'][:,lIndP]
+            else:
+                fwdData = simA.rsltFwd[fwdind]['fit_'+mt][:,lIndP]
+            axP[i].plot(θfun(lIndP, simA.rsltFwd[fwdind]), fwdData, 'b-', alpha=0.2)
             axP[i].plot(θfun(lIndP,rb), rb['meas_'+mt][:,lIndP], color=color2(0), alpha=alphVal)
             axP[i].plot(θfun(lIndP,rb), rb['fit_'+mt][:,lIndP], color=color1(1), alpha=alphVal)
     if LIDARpresent:
@@ -116,12 +129,7 @@ for rb in simA.rsltBck:
 
     if POLARpresent:
         for i,mt in enumerate(measTypesP): # Polarimeter fwd fit
-            if 'fit_'+mt not in simA.rsltFwd[0] and 'oI' in mt: # fwd calculation performed with aboslute Q and U
-                fwdData = simA.rsltFwd[0]['fit_'+mt[0]][:,lIndP]/simA.rsltFwd[0]['fit_I'][:,lIndP]
-            else:
-                fwdData = simA.rsltFwd[0]['fit_'+mt][:,lIndP]
-            # axP[i].plot(θfun(lIndP,simA.rsltFwd[0]), fwdData, 'ko-')
-            leg = axP[i].legend(['Truth', 'Retrieved', 'Measured']) # there are many lines but the first two should be these
+            leg = axP[i].legend(['Truth', 'Measured', 'Retrieved']) # there are many lines but the first two should be these
             leg.set_draggable(True)
             axP[i].set_xlabel('viewing zenith (°)')
             axP[i].set_title(mt.replace('o','/'))
@@ -156,7 +164,7 @@ for rb in simA.rsltBck:
         axP[0].set_ylabel('Reflectance')
         ttlTxt = '%s [%5.3f μm]' % (fn, simA.rsltFwd[0]['lambda'][lIndP])
         figP.suptitle(ttlTxt)
-        figP.tight_layout(rect=[0, 0.03, 1, 0.95])
+#         figP.tight_layout(rect=[0, 0.03, 1, 0.95])
 
 plt.ion()
 plt.show()

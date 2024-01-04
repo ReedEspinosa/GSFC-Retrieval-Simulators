@@ -114,6 +114,7 @@ class simulation(object):
                                                        krnlPathGRASP=intrnlFileGRASP,
                                                        rndGuess=rndIntialGuess)
             assert len(self.rsltBck)>0, 'No inversion output could be read, halting the simulation (no data was saved).'
+            # BUG: Somehow this is not catching and len(fwd)~=len(bck) when some bck runs fail...
             if failedRuns.any():  self.rsltFwd = [rf for rf,failed in zip(self.rsltFwd, failedRuns) if failed==False] # remove runs from rsltFwd for which the inversion was not succesful
             if 'pixNumber' in self.rsltFwd[0]: self._rsltFwdInd2rsltBck()
             self._addReffMode(modeCut=0.5) # try to create mode resolved rEff with split at 0.5 μm (if it isn't already there)
@@ -340,8 +341,9 @@ class simulation(object):
                 validInd = np.argsort([rb['costVal'] for rb in self.rsltBck])[0:minSaved] # note validInd went from bool to array of ints
                 if verbose:
                     print('Preserving the %d rsltBck elements with lowest χ scores, even though they did not meet χthresh.' % minSaved)
-            if len(self.rsltFwd)==len(self.rsltBck): self.rsltFwd = self.rsltFwd[validInd]
-            self.rsltBck = self.rsltBck[validInd]
+            if len(self.rsltFwd)==len(self.rsltBck): 
+                self.rsltFwd = [rf for rf, vi in zip(self.rsltFwd, validInd) if vi] # rsltsFwd is supposed to have type=list; np is faster, but converting back to list afterwards is slow
+            self.rsltBck = [rb for rb, vi in zip(self.rsltBck, validInd) if vi] # rsltsFwd is supposed to have type=list; np is faster, but converting back to list afterwards is slow
         elif χthresh and np.sum([rb['costVal']<=χthresh for rb in self.rsltBck])<minSaved and verbose:
             print('rsltBck only has %d or fewer elements, no χthresh screening will be perofmed.' % minSaved)
 
@@ -601,7 +603,7 @@ class simulation(object):
             Vfc = self.volWghtedAvg(None, [rs], modeCut)
             Amode = rs['vol']/rs['rv']*np.exp(rs['sigma']**2/2) # convert N to rv and then ratio 1st and 4th rows of Table 1 of Grainger's "Useful Formulae for Aerosol Size Distributions"
             Afc = self.volWghtedAvg(None, [rs], modeCut, Amode)
-            return Vfc/Afc # NOTE: ostensibly this should be Vfc/Afc/3 but we ommited the factor of 3 from Amode as well
+            return Vfc/Afc # Ostensibly this should be Vfc/Afc/3 but we ommited the factor of 3 from Amode as well
         elif 'dVdlnr' in rs and 'r' in rs:
             fnCrsReff = []
             if modeCut is None: 
