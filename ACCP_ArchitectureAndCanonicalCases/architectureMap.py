@@ -87,7 +87,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             thtv = np.tile(np.atleast_1d(vza), len(msTyp))
         elif 'misr' in archName.lower():
             thtv = np.tile([-70.5,  -60.0,  -45.6 ,  -26.1 ,  0.1,  26.1,  45.6,  60.0,  70.5], len(msTyp))
-        else vza is None: # we only use modis nadir viewing angle
+        else: # vza is None: we only use modis nadir viewing angle
             thtv = np.tile([0.1], len(msTyp))
         if 'modis' in archName.lower():
             wvls = [0.41, 0.47, 0.55, 0.65, 0.87, 1.64, 2.13] # Nλ=7

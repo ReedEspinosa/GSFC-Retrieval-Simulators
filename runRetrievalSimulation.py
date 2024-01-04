@@ -27,7 +27,7 @@ if checkDiscover(): # DISCOVER
     geomFile = os.path.join(basePath, 'synced/AOS/Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4')
     PCAslctMatFilePath = None # Full path of Feng's PCA results for indexing Pete's files. >> Not needed polaraos, 3MI, polder or modis. <<
     Nangles = 660
-#    Nangles = 4
+#   Nangles = 4
     Nsims = 1 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 46 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
