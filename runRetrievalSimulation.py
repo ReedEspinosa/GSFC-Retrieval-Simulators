@@ -20,7 +20,7 @@ if checkDiscover(): # DISCOVER
 #     nAng = int(sys.argv[2])
     nAng = 0
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V1_Noah/Run-30_')
+    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V1_Noah/Run-31_')
     ymlDir = os.path.join(basePath, 'GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
@@ -50,7 +50,8 @@ bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 #bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes_DTarbsorb.yml')
 
 # instruments = ['polarAOS','polder','3mi']
-instruments = ['polarAOS', 'polarAOSclean', 'polarAOSnoah']
+# instruments = ['polarAOS', 'polarAOSclean', 'polarAOSnoah']
+instruments = ['polarAOSmod']
 conCases = ['case08'+chr(ord('a')+x) for x in range(15)]
 # conCases = ['case08l','case08k']+['case08'+chr(ord('p')+x) for x in range(6)]
 τFactor = ['randLogNrm0.2','randLogNrm0.4'] #1 - Syntax error on this line? Make sure you are running Python 3!

@@ -159,6 +159,8 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         phi = np.tile(relPhi, len(msTyp))
         if 'polaraosclean' in archName.lower():
             errStr = 'polar700'
+        if 'polaraosmod' in archName.lower():
+            errStr = 'polar12'
         elif 'polaraosnoah' in archName.lower():
             errStr = 'harp02'
         else:
@@ -253,6 +255,9 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
         elif int(mtch.group(2)) in [11]: # POLDER 
             relErr = 0.05 # DOI: 10.1109/36.763266 says 6% for blue, 4% elsewhere, but that was 1999...
             absDoLPErr = 0.030 # This is what Kirk has for 3MI in his AOS polarimeter vs 3MI slides; unsure of original source
+        elif int(mtch.group(2)) in [12]: # Matches RMSE for Noah's HARP2 model (but not angle dependnet) 
+            relErr = 0.015956
+            absDoLPErr = 0.010798
         else:
             assert False, 'No error model found for %s!' % measNm # S-Polar06 has DoLP dependent ΔDoLP
         trueSimI = rsltFwd['fit_I'][:,l]
