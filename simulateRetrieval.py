@@ -114,7 +114,7 @@ class simulation(object):
                                                        krnlPathGRASP=intrnlFileGRASP,
                                                        rndGuess=rndIntialGuess)
             assert len(self.rsltBck)>0, 'No inversion output could be read, halting the simulation (no data was saved).'
-            # BUG: Somehow this is not catching and len(fwd)~=len(bck) when some bck runs fail...
+            # BUG: Somehow this is not catching and len(fwd)~=len(bck) when some bck runs fail... maybe failedRuns.all()==False and thus in grasp-interface repo
             if failedRuns.any():  self.rsltFwd = [rf for rf,failed in zip(self.rsltFwd, failedRuns) if failed==False] # remove runs from rsltFwd for which the inversion was not succesful
             if 'pixNumber' in self.rsltFwd[0]: self._rsltFwdInd2rsltBck()
             self._addReffMode(modeCut=0.5) # try to create mode resolved rEff with split at 0.5 μm (if it isn't already there)
@@ -145,19 +145,27 @@ class simulation(object):
                 print('Issue with deleting the temp files related to GRASP run')
         return
 
+    def _confirmSpatioTempMatch(self, rb, rf, checkTime=False):
+        if 'latitude' in rf and 'latitude' in rb:
+            if not np.isclose(rf['latitude'], rb['latitude'], atol=0.01): return False
+        if 'longitude' in rf and 'longitude' in rb: 
+            if not np.isclose(rf['longitude'], rb['longitude'], atol=0.01): return False
+        if 'datetime' in rf and 'datetime' in rb and checkTime: 
+            if rf['datetime'] != rb['datetime']: return False
+        return True
+
     def _rsltFwdInd2rsltBck(self):
         assert len(self.rsltBck)==len(self.rsltFwd), 'rsltFwd (N=%d) and rsltBck (N=%d) must be same length to transfer pixNumber indices!' % (len(self.rsltFwd), len(self.rsltBck))
         warned = False
         for rb,rf in zip(self.rsltBck, self.rsltFwd):
-            latMisMatch = 'latitude' in rf and 'latitude' in rb and not np.isclose(rf['latitude'], rb['latitude'], atol=0.01)
-            lonMisMatch = 'longitude' in rf and 'longitude' in rb and not np.isclose(rf['longitude'], rb['longitude'], atol=0.01)
-            if lonMisMatch or latMisMatch:
+            goodMatch = self._confirmSpatioTempMatch(rb,rf)
+            if goodMatch:
+                rb['pixNumber'] = rf['pixNumber']
+            else:
                 if not warned: 
                     warnings.warn('rsltFwd and rsltBck LAT and/or LON did not match for at least one pixel, setting pixNumber=-1')
                 rb['pixNumber'] = -1
                 warned = True
-            else:
-                rb['pixNumber'] = rf['pixNumber']
 
     def saveSim(self, savePath, lightSave=False, verbose=False):
         if not os.path.exists(os.path.dirname(savePath)):
@@ -181,7 +189,7 @@ class simulation(object):
             if verbose: print('Saving simulation %s results to %s' %  (dsc.lower(), savePathNow))
             gRun.output2netCDF(savePathNow, rsltDict=rslts)
 
-    def loadSim(self, picklePath, standardizePSD=True, saveMerge=True, forceMerge=False, lightSave=False):
+    def loadSim(self, picklePath, standardizePSD=True, saveMerge=True, forceMerge=False, lightLoad=False):
         """
         Load simulation results from one or more pickle files
         picklePath – Full path to the file, or glob-like string that will match more than one files to be merged
@@ -209,7 +217,7 @@ class simulation(object):
             print('Building %s - Nfiles=%d' % (saveFN, len(files)))
             for file in files: # loop over all found files
                 rsltFwd, rsltBck = self._loadData(file)
-                if lightSave: self._makeRsltLight(rsltFwd, rsltBck) # do this now instead of save to reduce memory footprint
+                if lightLoad: self._makeRsltLight(rsltFwd, rsltBck) # do this now instead of save to reduce memory footprint
                 Nrepeats = 1 if len(rsltBck)==len(rsltFwd) else len(rsltBck)
                 for _ in range(Nrepeats): self.rsltFwd = self.rsltFwd + rsltFwd
                 self.rsltBck = self.rsltBck + rsltBck
@@ -226,7 +234,21 @@ class simulation(object):
                 rsltBck = rsltBck[:-1]
                 print('Using an older version of the GRASP pickle file')        
         if verbose: print('Loaded %d pixels from %s.' % (len(rsltBck), picklePath))
-        return rsltFwd, rsltBck
+        if len(rsltBck) < len(rsltFwd):
+            warnings.warn('len(rsltFwd)=%d is greater than len(rsltBck)=%d for this file! Attempting rematching...' % (len(rsltFwd),len(rsltBck)))
+            rsltFwdTrim = []
+            rsltBckTrim = []
+            cnt = 0
+            for rb in rsltBck:
+                mtchs = [self._confirmSpatioTempMatch(rb, rf, True) for rf in rsltFwd]
+                if sum(mtchs)==1:
+                    rsltFwdTrim.append(rsltFwd[np.nonzero(mtchs)[0][0]])
+                    rsltBckTrim.append(rb)
+                    cnt+=1
+            print('%d bck pixels were succesfully spatiotemporally matched to fwd pixels. All other data discarded.' % cnt)
+            return rsltFwdTrim, rsltBckTrim 
+        else:
+            return rsltFwd, rsltBck
     
     def _makeRsltLight(self, rsltFwd, rsltBck):
         for pmStr in ['angle', 'p11','p12','p22','p33','p34','p44','range','βext']:

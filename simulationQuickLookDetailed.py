@@ -55,7 +55,7 @@ crsFwdInd = 1 # index in forward data to use for coarse mode plots
 crsBckInd = 1 # index in backward data to use for coarse mode plots
 fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
 pubQuality = True # If True, we use publication quality figures
-filePathPtrn = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-02_polarAOS_case08d_tFct0.000_n1_nAng0.pkl'
+filePathPtrn = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-30_polarAOSnoah_case08*_tFctrandLogNrm*_n*_nAng0.pkl'
 # filePathPtrn = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-02_polarAOS_case08a_tFct0.000_n0_nAng0.pkl'
 
 ### Anin's CAMP2Ex Settings ###
@@ -74,8 +74,8 @@ filePathPtrn = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceabil
 
 # more tags and specifiations for the scatter plot
 surf2plot = 'both' # land, ocean or both
-aodMin = 0.02 # does not apply to first AOD plot
-aodMax = 2 # Pixels with AOD above this will be filtered from plots of intensive parameters
+aodMin = 0.1 # does not apply to first AOD plot
+aodMax = 5 # Pixels with AOD above this will be filtered from plots of intensive parameters
 fnTag = 'AllCases'
 xlabel = 'Simulated Truth'
 FS = 10 # Plot font size
@@ -114,11 +114,11 @@ vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_v
     'aod':'aod',
     'angstrom':'aod',
     'aaod':'ssa',
+    'g':'g',
     'intensity':'meas_I',
     'ssa':'ssa',
     'reff_sub_um':'rEffMode',
     'reff_abv_um':'rEffMode',
-    'blandAltman':'aod',
 }
 
 

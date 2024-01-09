@@ -16,14 +16,16 @@ from miscFunctions import matplotlibX11, norm2absExtProf
 import matplotlib.pyplot as plt
 
 # simRsltFile can have glob style wildcards
-simRsltFile = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-30_polarAOSnoah_case08l_tFctrandLogNrm0.2_n82_nAng0.pkl'
-# nn = int(sys.argv[1])
-# mm = int(sys.argv[2])
-# simRsltFile = '/Users/wrespino/Synced/Working/SIM_OSSE_Test/ss450-g5nr.leV30.GRASP.YAML*-n%dpixStrt%d.polar07*.random.20060801_0000z.pkl' % (nn,mm*28)
+# simRsltFile = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-30_polarAOSnoah_case08l_tFctrandLogNrm0.2_n82_nAng0.pkl'
+# simRsltFile = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-30_polarAOS_case08b_tFctrandLogNrm0.2_n2_nAng0.pkl'
+# simRsltFile = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-31_polarAOSmod_case08a_tFctrandLogNrm0.2_n0_nAng0.pkl'
+simRsltFile = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-30_polarAOSclean_case08b_tFctrandLogNrm0.4_n33_nAng0.pkl'
+
 trgtλLidar = 0.532 # μm, note if this lands on a wavelengths without profiles no lidar data will be plotted
 trgtλPolar = 0.550 # μm, if this lands on a wavelengths without I, Q or U no polarimeter data will be plotted
 extErrPlot = True
 χthresh = 5
+nPix = 4 # plot true/meas/fit for first nPix pixels; None to plot all data
 minSaved = 40
 fineModesBck = [0]
 
@@ -31,14 +33,10 @@ fineModesBck = [0]
 posFiles = glob(simRsltFile)
 assert len(posFiles)==1, 'glob found %d files but we expect exactly 1' % len(posFiles)
 simA = simulation(picklePath=posFiles[0])
-print(len(simA.rsltFwd))
-print(len(simA.rsltBck))
+if nPix:
+    simA.rsltFwd = simA.rsltFwd[0:nPix]
+    simA.rsltBck = simA.rsltBck[0:nPix]
 simA.conerganceFilter(χthresh=χthresh, minSaved=minSaved, verbose=True, forceχ2Calc=False)
-print(len(simA.rsltFwd))
-print(len(simA.rsltBck))
-# !!! HACK !!!
-# simA.rsltFwd = simA.rsltFwd[0:6:2]
-# simA.rsltBck = simA.rsltBck[0:6:2]
 
 
 lIndL = np.argmin(np.abs(simA.rsltFwd[0]['lambda']-trgtλLidar))
