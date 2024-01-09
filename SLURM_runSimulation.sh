@@ -1,11 +1,11 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=AOSP
+#SBATCH --job-name=NohP
 #SBATCH --nodes=1
 #SBATCH --time=00:45:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
 #SBATCH --account=s2190
-#SBATCH --array=0-29
+#SBATCH --array=0-30
 
 date
 hostname

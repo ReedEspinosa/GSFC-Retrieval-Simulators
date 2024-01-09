@@ -87,7 +87,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             thtv = np.tile(np.atleast_1d(vza), len(msTyp))
         elif 'misr' in archName.lower():
             thtv = np.tile([-70.5,  -60.0,  -45.6 ,  -26.1 ,  0.1,  26.1,  45.6,  60.0,  70.5], len(msTyp))
-        else vza is None: # we only use modis nadir viewing angle
+        else: # vza is None: we only use modis nadir viewing angle
             thtv = np.tile([0.1], len(msTyp))
         if 'modis' in archName.lower():
             wvls = [0.41, 0.47, 0.55, 0.65, 0.87, 1.64, 2.13] # Nλ=7
@@ -159,6 +159,8 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         phi = np.tile(relPhi, len(msTyp))
         if 'polaraosclean' in archName.lower():
             errStr = 'polar700'
+        if 'polaraosmod' in archName.lower():
+            errStr = 'polar12'
         elif 'polaraosnoah' in archName.lower():
             errStr = 'harp02'
         else:
@@ -253,6 +255,9 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
         elif int(mtch.group(2)) in [11]: # POLDER 
             relErr = 0.05 # DOI: 10.1109/36.763266 says 6% for blue, 4% elsewhere, but that was 1999...
             absDoLPErr = 0.030 # This is what Kirk has for 3MI in his AOS polarimeter vs 3MI slides; unsure of original source
+        elif int(mtch.group(2)) in [12]: # Matches RMSE for Noah's HARP2 model (but not angle dependnet) 
+            relErr = 0.015956
+            absDoLPErr = 0.010798
         else:
             assert False, 'No error model found for %s!' % measNm # S-Polar06 has DoLP dependent ΔDoLP
         trueSimI = rsltFwd['fit_I'][:,l]
