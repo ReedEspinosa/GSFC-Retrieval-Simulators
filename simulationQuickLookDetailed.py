@@ -17,7 +17,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-from scipy import interpolate
+from scipy.interpolate import interpn
 from scipy.stats import norm, gaussian_kde, ncx2, moyal
 from simulateRetrieval import simulation
 
@@ -54,8 +54,9 @@ fineBckInd = 0 # index in backward data to use for fine mode plots
 crsFwdInd = 1 # index in forward data to use for coarse mode plots
 crsBckInd = 1 # index in backward data to use for coarse mode plots
 fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
-pubQuality = True # If True, we use publication quality figures
-filePathPtrn = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-30_polarAOSnoah_case08*_tFctrandLogNrm*_n*_nAng0.pkl'
+pubQuality = False # If True, we use publication quality figures
+filePathPtrn = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-31_polarAOSmod_case08*_tFctrandLogNrm*_n*_nAng0.pkl'
+# filePathPtrn = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-30_polarAOSnoah_case08j_tFctrandLogNrm0.4_n79_nAng0.pkl'
 # filePathPtrn = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-02_polarAOS_case08a_tFct0.000_n0_nAng0.pkl'
 
 ### Anin's CAMP2Ex Settings ###
@@ -196,8 +197,12 @@ def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20,
         fig, ax = plt.subplots()
     if not mplscatter:
         data, x_e, y_e = np.histogram2d(x, y, bins=bins, density=True)
-        z = interpolate.interpn((0.5 * (x_e[1:] + x_e[:-1]), 0.5 * (y_e[1:] + y_e[:-1])),
-                    data, np.vstack([x, y]).T, method="splinef2d", bounds_error=False)
+        x_diff = np.mean(np.diff(x_e))/2
+        x_rs = np.r_[x_e[0]-x_diff, 0.5*(x_e[1:] + x_e[:-1]), x_e[-1]+x_diff]
+        y_diff = np.mean(np.diff(y_e))/2
+        y_rs = np.r_[y_e[0]-y_diff, 0.5*(y_e[1:] + y_e[:-1]), y_e[-1]+y_diff]
+        data_rs = np.pad(data, (1,1), constant_values=0)
+        z = interpn((x_rs, y_rs), data_rs, np.vstack([x, y]).T, method="splinef2d")
 
         # Sort the points by density, so that the densest points are plotted last
         if sort:
