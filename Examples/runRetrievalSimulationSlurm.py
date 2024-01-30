@@ -32,6 +32,7 @@ from canonicalCaseMap import setupConCaseYAML
 
 # import selectGeometryEntry function that can read realsitic sun-satellite geometry
 from ACCP_functions import selectGeometryEntry
+
 #--------------------------------------------#
 # Local functions
 #--------------------------------------------#
@@ -68,7 +69,6 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0,
                         conCase)
     
     # Full path grasp binary
-    # binGRASP = '/usr/local/bin/grasp'
     binGRASP = ymlData['default']['run']['graspBin']
         
     # Full path grasp precomputed single scattering kernels
@@ -78,7 +78,8 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0,
     ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
     print('one %s' %ymlData['default']['forward']['yaml'])
     fwdModelYAMLpath = os.path.join(ymlDir, ymlData['default']['forward']['yaml']) # foward YAML file
-    bckYAMLpath = os.path.join(ymlDir, ymlData['default']['retrieval']['yaml'] % (ymlData['default']['forward']['psdType'],\
+    bckYAMLpath = os.path.join(ymlDir, 
+                               ymlData['default']['retrieval']['yaml'] % (ymlData['default']['forward']['psdType'],\
                                                                        ymlData['default']['forward']['surfaceType'],\
                                                                        ymlData['default']['forward']['surface'])) # inversion YAML file
 
@@ -93,7 +94,8 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0,
     else:
         # KEY: if τFactor is negative, then the retrieval simulation will use the tfactor that is
         #      randomly generated and equally spaced in logspace between the lower and upper limits
-        τFactor = loguniform(0.1, 4) # lower and upper limits for AOD
+        τFactor = loguniform(ymlData['default']['forward']['aodMin'],
+                            ymlData['default']['forward']['aodMax']) # lower and upper limits for AOD
 
     #  <><><> END BASIC CONFIGURATION SETTINGS <><><>
 
@@ -109,8 +111,11 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0,
     # run the simulation, see below the definition of runSIM in simulateRetrieval.py for more input argument explanations
     simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
                 binPathGRASP=binGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, \
-                rndIntialGuess=ymlData['default']['retrieval']['randmGsOn'], dryRun=False, workingFileSave=False, \
-                verbose=True, delTempFiles=True)
+                rndIntialGuess=ymlData['default']['retrieval']['randmGsOn'],
+                dryRun=ymlData['default']['run']['dryRun'],
+                workingFileSave=False,
+                verbose=ymlData['default']['run']['verbose'], 
+                delTempFiles=ymlData['default']['run']['deleteTemp'])
 
     # print some results to the console/terminal
     if ymlData['default']['run']['verbose']:
@@ -120,7 +125,9 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0,
         pprint.pprint(simA.analyzeSim(0)[0])
 
 # definition for looping through different geometries
-def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18, dryRun=False):
+def loop_func(runMultiple, tau, instrument, SZA, psd_type,
+               phi, nFlights=18, dryRun=False, surface=None,
+               spectral=None):
     '''
     This function will run a retrieval simulations on user defined scenes and instruments
     
@@ -176,7 +183,7 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18, dry
                     print('Error message: %s' %e)
             
             print('Time to complete one loop for flight: %s'%(time.time()-flight_loop_start_time))
-            if deleteTemp:
+            if ymlData['default']['run']['deleteTemp']:
                 tempVAR+=1
                 # Delete the temp files after each aod loops
                 if 'borg' in os.uname()[1] and tempVAR==5:
@@ -186,48 +193,59 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18, dry
                     time.sleep(1)
                     tempVAR = 0
         print('Time to complete one loop for AOD: %s'%(time.time()-loop_start_time))
+
+def updateConf(cnf_, ymlData, surface, spectral):
+    '''
+    This function will update the configuration file based on the input arguments
+    
+    Parameters
+    ----------
+    Input:
+        cnf_: configuration name
+        ymlData: YAML file with the retrieval simulation configuration
+        surface: surface name
+        spectral: spectral name
+    Output:
+        ymlData: updated YAML file with the retrieval simulation configuration
+    '''
+    
+    ymlData['default']['retrieval']['yaml'] = ymlData['configurations'][cnf_]['retrieval']['yaml']
+    ymlData['default']['forward']['surfaceType'] = ymlData['configurations'][cnf_]['forward']['surfaceType']
+    ymlData['default']['forward']['spectralInfo'] = ymlData['configurations'][cnf_]['forward']['spectralInfo']
+    surface = surface.replace('All', cnf_)
+    surface = surface.replace('##', ymlData['configurations'][cnf_]['forward']['surfaceType'])
+    spectral = spectral.replace('$$', ymlData['configurations'][cnf_]['forward']['spectralInfo'])
+    loop_func(runMultiple, tau, instrument, SZA,
+            ymlData['default']['forward']['psdType'], phi,
+            nFlights=ymlData['default']['run']['nFlights'],
+            surface=surface, spectral=spectral)
+    
 #--------------------------------------------#
 # <> BEGIN BASIC CONFIGURATION SETTINGS <>
 #--------------------------------------------#
 start_time = time.time()
-# %% Run multiple times
 # Based on the input arguments modify the parameters
-if len(sys.argv) > 0:
-    # AOD range
-    tau = [float(sys.argv[1])]
-    if len(sys.argv) > 1:
-        # Instrument details
-        instrument = sys.argv[2]
-        if len(sys.argv) > 2:
-            # Solar Zenith angle
-            SZA = float(sys.argv[3])
-        else:
-            SZA=30
-    else:
-        instrument = 'polar07'
-else:
-    SZA=30
-    tau = [0.05]
-    instrument = 'polar07'
-    print('AOD not given as an argument so using the 0.05 at 550 nm')
 
+# Default values
+SZA = 30
+tau = [0.05]
+instrument = 'polar07'
 phi = 0
 useRealGeometry = False
-# For real geometry
-if len(sys.argv) > 3:
-    useRealGeometry = bool(int(sys.argv[4]))
-    # if using real geometry loop through different AOD in one run
-    if len(sys.argv) > 4:
-        tau = [float(sys.argv[5])]
-    else:
-        tau1 = np.logspace(np.log10(0.01), np.log10(4), 20)
-        tau = tau1[0:5]
-    # read the nPCA using the sys arg
+npca = [1]
+conf_ = 'BiModal'
+
+# Update values based on input arguments
+if len(sys.argv) > 1:
+    tau = [float(sys.argv[1])]
+    instrument = sys.argv[2] if len(sys.argv) > 2 else instrument
+    SZA = float(sys.argv[3]) if len(sys.argv) > 3 else SZA
+    useRealGeometry = bool(int(sys.argv[4])) if len(sys.argv) > 4 else useRealGeometry
+    tau = [float(sys.argv[5])] if len(sys.argv) > 5 else np.logspace(np.log10(0.01), np.log10(4), 20)[0:5]
     npca = [int(float(sys.argv[1]))]
-    if len(sys.argv) > 5:
-        conf_ = sys.argv[6]
-    else:
-        conf_ = 'BiModal'
+    conf_ = sys.argv[6] if len(sys.argv) > 6 else conf_
+else:
+    print('AOD not given as an argument so using the 0.05 at 550 nm')
 
 # --------------------------------------------------------------------------- #
 # Load the YAML settings files for the retrieval simulation configuration
@@ -254,101 +272,40 @@ else:
 # --------------------------------------------------------------------------- #
 # Define the retrieval simulation settings
 # --------------------------------------------------------------------------- #
-if ymlData is None:
-    print('Loading YAML file: %s resulted in an error' % yamlFile)
+
+if not ymlData:
+    print(f'Loading YAML file: {yamlFile} resulted in an error')
     sys.exit()
-else:
-    # Properties of the run
-    surface = ymlData['default']['run']['tagName'] + '_' + ymlData['default']['run']['config'] +\
-        '_' + '##'+ ymlData['default']['forward']['surface']+'_RndmGsOn-'\
-         + str(ymlData['default']['retrieval']['randmGsOn'])   # for ocean either open_ocean or dark_ocean
-    spectral = '$$'# ymlData['forward']['spectralInfo']   # flatfine_flatcoarse for spectrally flat RI, urban for fine urban, use nothing if it is spectrally dependent
-    
-    # Controlling the coarse mode, `coarseMode` is True if coarse mode is used, `fixedCoarseMode` is True if coarse mode is fixed
-    if ymlData['default']['forward']['fixedCoarseMode']:
-        if not ymlData['default']['forward']['coarseMode']:
-            spectral = spectral + '_zerocoarse'
-        spectral = spectral + '_fixedcoarse'
-    else:
-        if not ymlData['default']['forward']['coarseMode']:
-            spectral = spectral + '_zerocoarse'
-    print(surface)
-    psd_type = ymlData['default']['forward']['psdType']        # '2modes' or '16bins'
-    nFlights =  ymlData['default']['run']['nFlights']          # number of flights used for simulation (should be 18 for full camp2ex measurements)
-deleteTemp = ymlData['default']['run']['deleteTemp']           # Flag for deleting temp files regularly
-#--------------------------------------------#
-# Local functions   
-#--------------------------------------------#
 
-def updateConf(cnf_, ymlData, surface, spectral):
-    '''
-    This function will update the configuration file based on the input arguments
-    
-    Parameters
-    ----------
-    Input:
-        cnf_: configuration name
-        ymlData: YAML file with the retrieval simulation configuration
-        surface: surface name
-        spectral: spectral name
-    Output:
-        ymlData: updated YAML file with the retrieval simulation configuration
-    '''
-    ymlData['default']['retrieval']['yaml'] = ymlData['configurations'][cnf_]['retrieval']['yaml']
-    ymlData['default']['forward']['surfaceType'] = ymlData['configurations'][cnf_]['forward']['surfaceType']
-    ymlData['default']['forward']['spectralInfo'] = ymlData['configurations'][cnf_]['forward']['spectralInfo']
-    surface =surface.replace('All', cnf_)
-    surface = surface.replace('##', ymlData['configurations'][cnf_]['forward']['surfaceType'])
-    spectral = spectral.replace('$$', ymlData['configurations'][cnf_]['forward']['spectralInfo'])
-    loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
+# Properties of the run
+surface_ = f"{ymlData['default']['run']['tagName']}_{ymlData['default']['run']['config']}_##{ymlData['default']['forward']['surface']}_RndmGsOn-{ymlData['default']['retrieval']['randmGsOn']}"
+spectral_ = '$$'
 
+# Controlling the coarse mode, `coarseMode` is True if coarse mode is used, `fixedCoarseMode` is True if coarse mode is fixed
+if not ymlData['default']['forward']['coarseMode']:
+    spectral_ += '_zerocoarse'
+if ymlData['default']['forward']['fixedCoarseMode']:
+    spectral_ += '_fixedcoarse'
 
+print(surface_)
+              
 # Use real geometry and loop through different nPCA. This file is based on the geometry selected by Feng and Lans
+
 if useRealGeometry:
     print('Running retrieval simulations for real sun-satellite geometry')
     rawAngleDir = '../../../ACCDAM/onOrbitObservationGeometryACCP/angularSampling/colarco_20200520_g5nr_pdfs'
     PCAslctMatFilePath = '../../../ACCDAM/onOrbitObservationGeometryACCP/angularSampling/FengAndLans_PCA_geometry_May2020/FengAndLans_geometry_selected_by_PC.mat'
     orbit = 'SS'
-    for nPCA in npca:
+    for nPCA in npca: # This work work a single SZA and phi
         SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA, orbit=orbit)
-        # run the function over multiple sun-satellite geometries
-        if not ymlData['default']['run']['allConfig']:
-            print('zero')
-            '''
-            cnf_ = ymlData['default']['run']['config']
-            surface =surface.replace('All', cnf_)
-            surface = surface.replace('##', ymlData['configurations'][cnf_]['forward']['surfaceType'])
-            spectral = spectral.replace('$$', ymlData['configurations'][cnf_]['forward']['spectralInfo'])
-            loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
-            '''
-            updateConf(ymlData['default']['run']['config'], ymlData, surface, spectral)
-        else:
-            for cnf_ in conf_lst:
-                ymlData['default']['retrieval']['yaml'] = ymlData['configurations'][cnf_]['retrieval']['yaml']
-                ymlData['default']['forward']['surfaceType'] = ymlData['configurations'][cnf_]['forward']['surfaceType']
-                ymlData['default']['forward']['spectralInfo'] = ymlData['configurations'][cnf_]['forward']['spectralInfo']
-                surface =surface.replace('All', cnf_)
-                surface = surface.replace('##', ymlData['configurations'][cnf_]['forward']['surfaceType'])
-                spectral = spectral.replace('$$', ymlData['configurations'][cnf_]['forward']['spectralInfo'])
-                loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
-    
 else:
     print('Running retrieval simulations for principal plane with fixed SZA')
-    if not ymlData['default']['run']['allConfig']:
-        cnf_ = ymlData['default']['run']['config']
-        surface =surface.replace('All', cnf_)
-        surface = surface.replace('##', ymlData['configurations'][cnf_]['forward']['surfaceType'])
-        spectral = spectral.replace('$$', ymlData['configurations'][cnf_]['forward']['spectralInfo'])
-        loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
-    else:
-        for cnf_ in conf_lst:
-                ymlData['default']['retrieval']['yaml'] = ymlData['configurations'][cnf_]['retrieval']['yaml']
-                ymlData['default']['forward']['surfaceType'] = ymlData['configurations'][cnf_]['forward']['surfaceType']
-                ymlData['default']['forward']['spectralInfo'] = ymlData['configurations'][cnf_]['forward']['spectralInfo']
-                surface =surface.replace('All', cnf_)
-                surface = surface.replace('##', ymlData['configurations'][cnf_]['forward']['surfaceType'])
-                spectral = spectral.replace('$$', ymlData['configurations'][cnf_]['forward']['spectralInfo'])
-                loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
+
+configurations = [ymlData['default']['run']['config']] if not ymlData['default']['run']['allConfig'] else conf_lst
+for cnf_ in configurations:
+    print('<-->'*20)
+    print(f'Running the {cnf_} configuration')
+    updateConf(cnf_, ymlData, surface_, spectral_)
 
 # Total time
 total_time = (time.time() - start_time)/60
