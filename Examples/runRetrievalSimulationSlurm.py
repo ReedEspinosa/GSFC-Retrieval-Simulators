@@ -90,7 +90,9 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0,
     if τFactor > 0:
         τFactor = τFactor # scaling factor for total AOD
     else:
-        τFactor = loguniform(0.1, 2) # lower and upper limits for AOD
+        # KEY: if τFactor is negative, then the retrieval simulation will use the tfactor that is
+        #      randomly generated and equally spaced in logspace between the lower and upper limits
+        τFactor = loguniform(0.1, 4) # lower and upper limits for AOD
 
     #  <><><> END BASIC CONFIGURATION SETTINGS <><><>
 
@@ -148,7 +150,11 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18, dry
                 if ymlData['forward']['coarseMode']:
                     cmStr = 'addCoarse'
                 else:
-                    cmStr = 'noCoarse'
+                    if ymlData['forward']['fixedCoarseMode']:
+                        cmStr = 'fixedCoarse'
+                    else:
+                        cmStr = 'noCoarse'
+
                 conCase = '%s_%s_%s_%s_flight#%.2d_layer#%.2d' %(surface, cmStr,
                                                                 ymlData['forward']['psdMode'],
                                                                 spectral,j,k)
@@ -213,7 +219,7 @@ if len(sys.argv) > 3:
     if len(sys.argv) > 4:
         tau = [float(sys.argv[5])]
     else:
-        tau1 = np.logspace(np.log10(0.01), np.log10(2), 20)
+        tau1 = np.logspace(np.log10(0.01), np.log10(4), 20)
         tau = tau1[0:5]
     # read the nPCA using the sys arg
     npca = [int(float(sys.argv[1]))]
@@ -242,11 +248,19 @@ else:
          + ymlData['forward']['surface']+'_RndmGsOn-'\
          + str(ymlData['retrieval']['randmGsOn'])   # for ocean either open_ocean or dark_ocean
     spectral = ymlData['forward']['spectralInfo']   # flatfine_flatcoarse for spectrally flat RI, urban for fine urban, use nothing if it is spectrally dependent
+    
+    # Controlling the coarse mode, `coarseMode` is True if coarse mode is used, `fixedCoarseMode` is True if coarse mode is fixed
+    if ymlData['forward']['fixedCoarseMode']:
+        if not ymlData['forward']['coarseMode']:
+            spectral = spectral + '_zerocoarse'
+        spectral = spectral + '_fixedcoarse'
+    else:
+        if not ymlData['forward']['coarseMode']:
+            spectral = spectral + '_zerocoarse'
+
     psd_type = ymlData['forward']['psdType']        # '2modes' or '16bins'
-
-    nFlights =  ymlData['run']['nFlights'] # number of flights used for simulation (should be 18 for full camp2ex measurements)
-
-deleteTemp = ymlData['run']['deleteTemp'] # Flag for deleting temp files regularly
+    nFlights =  ymlData['run']['nFlights']          # number of flights used for simulation (should be 18 for full camp2ex measurements)
+deleteTemp = ymlData['run']['deleteTemp']           # Flag for deleting temp files regularly
     
 # Use real geometry and loop through different nPCA. This file is based on the geometry selected by Feng and Lans
 if useRealGeometry:

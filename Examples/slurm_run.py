@@ -22,6 +22,7 @@ if sys.argv[1] == '--help':
     print('options: \n --dry-run: to run the code without submitting the jobs \n --help: to print this message')
     print('Usage: python slurm_run.py --dry-run')
     print('Usage: python slurm_run.py 0 for running the first chunk of simulations')
+    print('Usage: python slurm_run.py 0 Triangular for running simulations with triangular bin distribution\nDefault is BiModal')
     print('The code is split into 5 chunks to run in parallel in NyX')
     print('<><><><> Printing help message <><><><>')
     sys.exit()
@@ -37,7 +38,6 @@ def mkdir_p(dir):
 job_directory = "%s" %os.getcwd()
 
 # Make top level directories
-# mkdir_p(job_directory)
 mkdir_p(job_directory+'/job')
 
 # --------------------------------------------------------------------------- #
@@ -45,10 +45,15 @@ mkdir_p(job_directory+'/job')
 # --------------------------------------------------------------------------- #
 # Configuration file YAML
 
-if len(sys.argv) > 1:
+# sys argv is used to define the PSD distribution, default is BiModal
+# example: python slurm_run.py 0 Triangular
+#          python slurm_run.py 0 BiModal
+if len(sys.argv) > 2:
     conf_ = sys.argv[2]
 else:
     conf_ = 'BiModal' # or 'Triangular'
+
+# This template is used for the finding the correct retrieval simulation configuration
 yamlFile = '../ACCP_ArchitectureAndCanonicalCases/%s-CAMP2Ex.yml' %conf_
 with open(yamlFile, 'r') as f:
     ymlData = yaml.load(f, Loader=yaml.FullLoader)
@@ -58,9 +63,10 @@ with open(yamlFile, 'r') as f:
 #--------------------------------------------#
 
 # Number of nodes
-nNode = 7
-# list of AOD/nPCA
-tau = -np.logspace(np.log10(0.01), np.log10(2.0), nNode)
+nNode = 3 # Ideally, a max of 7 is used in NyX because of the 7 ryzen nodes
+
+# list of AOD/nPCA. Even though the code is written to run multiple AODs, it is not used directly when the sign is negative
+tau = -np.logspace(np.log10(0.01), np.log10(4.0), nNode)
 # splitting into chunks to make the code efficient and run easily in DISCOVER
 try:
     arrayNum= int(sys.argv[1])
@@ -75,12 +81,14 @@ npca = npca_[arrayNum] # max is 107
 # Solar Zenith angle (used if no real sun-satellite geometry is used)
 #--------------------------------------------#
 SZA = 30
-sza_ = [0, 30, 60]# For running multiple simulations in DISCOVER
+sza_ = [0, 30, 60] # For running multiple simulations in DISCOVER
 sza = list(itertools.chain.from_iterable(itertools.repeat(x, 12) for x in sza_))
+
 # realGeometry: True if using the real geometry provided in the .mat file
 useRealGeometry = 1
+
 # Job name
-jobName = 'W%d' %arrayNum # 'A' for 2modes, 'Z' for realGeometry
+jobName = 'Y%d' %arrayNum # 'A' for 2modes, 'Z' for realGeometry
 if not useRealGeometry: jobName = jobName + str(SZA); varStr = 'aod'
 else: varStr = 'nPCA'
 
@@ -90,6 +98,8 @@ instrument = ymlData['forward']['instrument']
 #--------------------------------------------#
 # looping through the var string
 #--------------------------------------------#
+
+# looping through the AOD to create the slurm files, to distribute the jobs
 for aod in tau:
     if useRealGeometry: aod_ = aod*1000; fileName = '%04d' %(aod_)
     else: aod_ = aod*1000; fileName = '%.4d' %(aod_)
@@ -108,24 +118,25 @@ for aod in tau:
         fh.writelines("#SBATCH --job-name=%s%.4d\n" % (jobName, aod_))
         fh.writelines("#SBATCH --output=./job/%s_%.4d.out.%s\n" % (jobName, aod_, '%A'))
         fh.writelines("#SBATCH --error=./job/%s_%.4d.err.%s\n" % (jobName, aod_, '%A'))
-        fh.writelines("#SBATCH --time=04:59:59\n")
+        fh.writelines("#SBATCH --time=23:59:59\n")
         # In Discover
         if 'discover' in hostname:
             fh.writelines('#SBATCH --constraint="sky"\n')
             fh.writelines("#SBATCH --ntasks=36\n")
-            # fh.writelines("#SBATCH --array=0\n")
         # In Uranus
         elif 'uranus' in hostname:
             fh.writelines("#SBATCH --partition=LocalQ\n")
         # in NyX
         elif 'nyx' in hostname:
-            fh.writelines("#SBATCH --partition=zen4\n")
-            fh.writelines("#SBATCH --ntasks=24\n")
-            fh.writelines("#SBATCH --mem=120G\n")
-
-        # fh.writelines("#SBATCH --nodes=1\n")
-        # fh.writelines("#SBATCH --ntasks-per-node=1\n\n")
-
+            # Selecting the partition
+            if ymlData['run']['partition'] == 'zen4':
+                fh.writelines("#SBATCH --partition=zen4\n")
+                fh.writelines("#SBATCH --ntasks=22\n")
+                fh.writelines("#SBATCH --mem=100G\n")
+            else:
+                fh.writelines("#SBATCH --partition=zen3\n")
+                fh.writelines("#SBATCH --ntasks=16\n")
+                fh.writelines("#SBATCH --mem=26G\n")
         fh.writelines("date\n")
         fh.writelines("hostname\n")
         fh.writelines('echo "---Running Simulation---"\n')
@@ -183,3 +194,4 @@ for aod in tau:
         os.system("sbatch %s" %job_file)
 
 print('Jobs submitted successfully check the ./job/ folder for output/error')
+#----------------------------------end of file--------------------------------#

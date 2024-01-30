@@ -4,27 +4,73 @@ import os
 from pprint import pprint
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib as mpl
+mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'})
+mpl.rcParams.update({'ytick.right': 'True'}); mpl.rcParams.update({'xtick.top': 'True'}); 
+plt.rcParams['mathtext.fontset'] = 'cm'; plt.rcParams["figure.dpi"]=330; 
+plt.rcParams["font.family"] = "cmr10"; plt.rcParams["axes.formatter.use_mathtext"] = True
 from simulateRetrieval import simulation
 from glob import glob
+from scipy import interpolate
+#==============================================================================
+# Definitions
+#==============================================================================
 
-waveInd = 0
-waveInd2 = 3
+def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20,
+                    mplscatter=False, **kwargs):
+    """
+    Scatter plot colored by 2d histogram
+    """
+    if ax is None:
+        fig, ax = plt.subplots()
+    if not mplscatter:
+        data, x_e, y_e = np.histogram2d(x, y, bins=bins, density=True)
+        z = interpolate.interpn((0.5 * (x_e[1:] + x_e[:-1]), 0.5 * (y_e[1:] + y_e[:-1])),
+                    data, np.vstack([x, y]).T, method="splinef2d", bounds_error=False)
+        # Calculate the point density
+        # xy = np.vstack([x_e, y_e])
+        # z = gaussian_kde(xy)(xy)
+
+        # To be sure to plot all data
+        # z[np.where(np.isnan(z))] = 0.0
+
+        # Sort the points by density, so that the densest points are plotted last
+        if sort:
+            idx = z.argsort()
+            x, y, z = x[idx], y[idx], z[idx]
+
+        ax.scatter(x, y, c=z, s=5, alpha=0.1, **kwargs)
+
+        norm = mpl.colors.Normalize(vmin=np.max([0, np.min(z)]), vmax=np.max(z))
+        if fig:
+            cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm), ax=ax)
+            cbar.ax.set_ylabel('Density')
+    else:
+        # use mpl_scatter_density library    
+        if fig:
+            using_mpl_scatter_density( x, y, ax, fig)
+        else:
+            using_mpl_scatter_density( x, y, ax)
+    return ax
+# =============================================================================
+# Main
+# =============================================================================
+
+waveInd = 2
+waveInd2 = 4
 fnPtrnList = []
 #fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
 # fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-fnPtrn = 'MERGED_harp02ALL_2modes_AOD_ALL_550nmALL_addCoarse__campex_flight#ALL_layer#00.pkl'
+fnPtrn = 'Camp2ex_OLH_AOD_*_550nm_*_conf#03_*_campex_bi_*_flight#*_layer#00.pkl'
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
-inDirPath = '/Users/aputhukkudy/Working_Data/ACCDAM/2022/Campex_Simulations/'
+inDirPath = '/data/ESI/User/aputhukkudy/ACCDAM/2024/Sim/Jan/23/Full/Geometry/CoarseModeFalse/darkOcean/2modes/uvswirmap01/'
 
-# fnPtrn = 'exampleSimulationTest#1.pkl'
-# inDirPath = '/Users/wrespino/Downloads/'
-
-surf2plot = 'ocean' # land, ocean or both
-aodMin = 0.3 # does not apply to first AOD plot
+surf2plot = 'both' # land, ocean or both
+aodMin = 0.2 # does not apply to first AOD plot
 nMode = 0 # Select which layer or mode to plot
 fnTag = 'AllCases'
 xlabel = 'Simulated Truth'
-MS = 2
+MS = 5
 FS = 10
 LW121 = 1
 pointAlpha = 0.10
@@ -67,8 +113,16 @@ lp = np.array([0 for rf in simBase.rsltFwd])
 keepInd = lp>99 if surf2plot=='land' else lp<1 if surf2plot=='ocean' else lp>-1
 
 # apply convergence filter
-# simBase.conerganceFilter(forceχ2Calc=True) # ours looks more normal, but GRASP's produces slightly lower RMSE
+# apply convergence filter
+σx={'I'   :0.030, # relative
+    'QoI' :0.005, # absolute
+    'UoI' :0.005, # absolute
+    'Q'   :0.005, # absolute in terms of Q/I
+    'U'   :0.005, # absolute in terms of U/I
+    } # absolute
+simBase.conerganceFilter(forceχ2Calc=True, σ=σx) # ours looks more normal, but GRASP's produces slightly lower RMSE
 costThresh = np.percentile([rb['costVal'] for rb in simBase.rsltBck[keepInd]], 90)
+print('Cost function threshold: %5.3f' % costThresh)
 keepInd = np.logical_and(keepInd, [rb['costVal']<costThresh for rb in simBase.rsltBck])
 keepIndAll = keepInd
 
@@ -91,7 +145,8 @@ ax[0,0].set_ylim(minAOD,maxAOD)
 ax[0,0].set_xscale('log')
 ax[0,0].set_yscale('log')
 # ax[0,0].scatter(true, rtrv, '.',  c=clrVar, markersize=MS, alpha=pointAlpha)
-ax[0,0].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
+im = ax[0,0].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
+plt.colorbar(im)
 Rcoef = np.corrcoef(true, rtrv)[0,1]
 RMSE = np.sqrt(np.median((true - rtrv)**2))
 bias = np.mean((rtrv-true))
@@ -301,7 +356,8 @@ except Exception as err:
     ax[0,4].set_ylabel('Retrieved')
     ax[0,4].set_xlim(minAOD,maxAOD)
     ax[0,4].set_ylim(minAOD,maxAOD)
-    ax[0,4].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
+    im_ = ax[0,4].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha)
+    plt.colorbar(im_)
     Rcoef = np.corrcoef(true, rtrv)[0,1]
     RMSE = np.sqrt(np.median((true - rtrv)**2))
     bias = np.mean((rtrv-true))
@@ -392,6 +448,14 @@ for nMode_ in [0,4]:
              cmap = 'viridis'
     ax[1,3].scatter(true, rtrv, c=clrVar, s=MS, alpha=pointAlpha, cmap=cmap)
     tempInd += 1
+    plt.figure()
+    ax_diff = density_scatter(rtrv-true, clrVar)
+    ax_diff.set_xlabel('Retrieved - True')
+    ax_diff.set_ylabel('chi2')
+    if nMode_ == 0:
+        ax_diff.set_title('fine mode')
+    else:
+        ax_diff.set_title('coarse mode')
 Rcoef = np.corrcoef(true, rtrv)[0,1]
 RMSE = np.sqrt(np.median((true - rtrv)**2))
 bias = np.mean((rtrv-true))

@@ -9,14 +9,14 @@ retrieval:
     inversion:
         regime: single_pixel
         convergence:
-            maximum_iterations_for_stopping: 20
-            maximum_iterations_of_Levenberg-Marquardt: 20
+            maximum_iterations_for_stopping: 50
+            maximum_iterations_of_Levenberg-Marquardt: 50
             minimization_convention: logarithm
             normal_system_solver: sparse_matrix_solver
             scale_for_finite_difference: 3.0e-05 #2.0e-5
             shift_for_applying_logarithm_to_negative_values: 1.1
-            threshold_for_stopping: 1.0e-9 #0.001
-            threshold_for_stopping_Q_iterations: 1.0e-10 #1.0e-06
+            threshold_for_stopping: 1.0e-7 #0.001
+            threshold_for_stopping_Q_iterations: 1.0e-8 #1.0e-06
         measurement_fitting: {polarization: relative_polarization_components}
         noises:
             noise[1]:
@@ -131,7 +131,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 10.0
+                        lagrange_multiplier: 1000.0
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
@@ -141,7 +141,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 10.0
+                        lagrange_multiplier: 100.0
             retrieved: true
             type: real_part_of_refractive_index_spectral_dependent
         characteristic[4]:
@@ -155,7 +155,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 10.0
+                        lagrange_multiplier: 100.0
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8]
@@ -166,7 +166,7 @@ retrieval:
                 single_pixel:
                     smoothness_constraints:
                         difference_order: 1
-                        lagrange_multiplier: 10.0
+                        lagrange_multiplier: 100.0
             retrieved: true
             type: imaginary_part_of_refractive_index_spectral_dependent
         characteristic[5]:

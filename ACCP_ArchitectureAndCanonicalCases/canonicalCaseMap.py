@@ -111,7 +111,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         # A function to read the PSD from Jeff's file or ASCII and pass it to
         # this definition
 
-        # Defining PSD of four layers for a particular flight (fine mode for the case of CAMP2Ex
+        # Defining PSD of fine and coarse mode layers for a particular flight (fine mode for the case of CAMP2Ex
         kFMin = 0.001                   # minimum k value for fine mode
         kFMax = 0.05                    # maximum k value for fine mode
         kCMin = 0.0001                  # minimum k value for coarse mode
@@ -201,8 +201,9 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
 
         # parameters above this line has to be modified [AP]
         if multiMode:
-            #HACK: this is a hack to make the code work for the case of of one layer, basically forcing the concentration to be zero
+            # HACK: this is a hack to make the code work for the case of of one layer, basically forcing the concentration to be zero
             #vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,layer-1,:]*[0.1], decimals=6)*0.000001]
+            oneLayerHack = 0  # True if only one layer is used
             if 'olh' in caseStr.lower():
                 zeroAeroConc = [0.000001]
                 oneLayerHack = 1  # True if only one layer is used
@@ -231,7 +232,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                            sphFrac] # mode 1, 2,...
             vals['vrtHght'] = [[ALH[0]], [ALH[1]], [ALH[2]], [ALH[3]]]      # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
             vals['vrtHghtStd'] = [[ALHStd], [ALHStd], [ALHStd], [ALHStd]]   # mode 1, 2,... # Gaussian sigma in meters
-            nAero_ = np.repeat(nFM + (rnd.uniform(-nFMStd, nFMStd)),nwl)        # fine mode aerosols
+            nAero_ = np.repeat(nFM + (rnd.uniform(-nFMStd, nFMStd)),nwl)    # fine mode aerosols
 			
 			# redefining the spectral refractive index based on the runtype (options are either 
             if 'flatfine' in caseStr.lower():
@@ -410,7 +411,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 rndmMuFit] # The values based on the rndm variation limit in the previous model 
         # Not using this at the moment (but if we randomize the fine mode fraction 
         # we wil have to play with/adjust this)
-        V0Fit = [dVdlnrParams['V0'][flight_num, 0],
+        V0Fit =[dVdlnrParams['V0'][flight_num, 0],
                 dVdlnrParams['V0'][flight_num, 1],
                 dVdlnrParams['V0'][flight_num, 2],
                 dVdlnrParams['V0'][flight_num, 3],
@@ -427,6 +428,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         # if using only one layer in fine mode
         # ----------------------------------------------------------------------#
         #HACK: this is a hack to make the code work for the case of of one layer, basically forcing the concentration to be zero
+        oneLayerHack = 0  # True if only one layer is used
         if 'olh' in caseStr.lower():
             zeroAeroConc = [0.0001]
             oneLayerHack = 1  # True if only one layer is used
@@ -461,6 +463,10 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                                nAero,
                                nAero,
                                nAero]) # mode 1,2,...
+        vals['k'] = np.vstack([ kAero,
+                                kAero,
+                                kAero,
+                                kAero])# mode 1,2,...
         #-----------------------------------------------------------------------#
         # Coarse mode
         #-----------------------------------------------------------------------#
@@ -473,11 +479,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
             else:
                 nAero = slope4RRI(nAero_, wvls)
                 kAero = loguniform(kCMin, kCMax)*lamb_k
-            vals['n'] = np.vstack([vals['n'], nAero]) # mode 2
-            vals['k'] = np.vstack([kAero,
-                                kAero,
-                                kAero,
-                                kAero])# mode 1,2,...
+            vals['n'] = np.vstack([vals['n'], nAero]) # mode 5
             
             vals['k'] = np.vstack([vals['k'], kAero]) # mode 5
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
@@ -707,22 +709,24 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=No
         valsTmp, landPrct = conCaseDefinitions(caseStr, nowPix)
         for key in valsTmp.keys():
             if key=='vol':
-                if 'fixedcoarse' in caseStr.lower(): # HACK: this is a hack to get the coarse mode to be fixed and works for only CAMP2EX data, because index 4 is the coarse mode
-                    valsTmp[key] = np.vstack([loading*valsTmp[key][:4], valsTmp[key][4]/44])
-                else:
-                    valsTmp[key] = loading*valsTmp[key]
+                if 'fixedcoarse' in caseStr.lower(): # HACK: this is a hack to get the coarse mode to be fixed and works for only CAMP2EX data, because index 4 is the coarse mode 
+                    if 'zerocoarse' in caseStr.lower(): # HACK: this is a hack to get the coarse mode to be fixed and works for only CAMP2EX data, because index 4 is the coarse mode
+                        valsTmp[key] = np.vstack([loading*valsTmp[key][:4], valsTmp[key][4]/1000])
+                    else: valsTmp[key] = np.vstack([loading*valsTmp[key][:4], valsTmp[key][4]/44])
+                else: valsTmp[key] = loading*valsTmp[key]  
             elif key=='vrtHght' and caseHeightKM:
                 valsTmp[key][:] = caseHeightKM*1000
             if key=='triaPSD':
-                if 'fixedcoarse' in caseStr.lower(): # HACK: this is a hack to get the coarse mode to be fixed and works for only CAMP2EX data, because index 4 is the coarse mode
-                    valsTmp[key] = np.vstack([loading*valsTmp[key][:4], valsTmp[key][4]/6.6])
-                else:
-                    valsTmp[key] = loading*valsTmp[key]
+                if 'fixedcoarse' in caseStr.lower(): # HACK: this is a hack to get the coarse mode to be fixed and works for only CAMP2EX data, because index 4 is the coarse mode 
+                    if 'zerocoarse' in caseStr.lower(): # HACK: this is a hack to get the coarse mode to be fixed and works for only CAMP2EX data, because index 4 is the coarse mode
+                        valsTmp[key] = np.vstack([loading*valsTmp[key][:4], valsTmp[key][4]/250])
+                    else: valsTmp[key] = np.vstack([loading*valsTmp[key][:4], valsTmp[key][4]/13])
+                else: valsTmp[key] = loading*valsTmp[key]
             if key in aeroKeys and key in vals:
                     vals[key] = np.vstack([vals[key], valsTmp[key]])
             else: # implies we take the surface parameters from the last case
                 vals[key] = valsTmp[key]
-    nowPix.land_prct = landPrct # [out] – sets nowPix to match ConCase
+    nowPix.land_prct = landPrct # [out] – sets nowPix t/tmp/tmpl2qrj4jdo match ConCase
     if simBldProfs is not None:
         msg = 'Using sim_builder profiles requires 4 modes ordered [TOP_F, TOP_C, BOT_F, BOT_C]!'
         assert vals['vrtProf'].shape==simBldProfs.shape, msg
@@ -869,15 +873,20 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             loadings.append(0.1)
             cases.append(case.replace('case08','pollutionDesert'))
             loadings.append(0.7*caseLoadFct)
-        elif 'campex_tria' in case.lower():                             # if the size distribution is in the triangular bin
-            if 'flat' in case.lower(): 	                                # for flat optical properties (n and k)
+        #-------------------Added by Anin-------------------#
+        # Triangular case - if the size distribution is in the triangular bin
+        elif 'campex_tria' in case.lower():                                 
+            # for flat optical properties (n and k)
+            if 'flat' in case.lower(): 	                                    
                 cases.append(case.replace('campex','aerosol_campex_flat'))
-            elif 'urban':                                               # Optical properties have close resemblence to the urban aerosols
+            # Optical properties have close resemblence to the urban aerosols
+            elif 'urban':                                                   
                 cases.append(case.replace('campex','aerosol_campex_fine_urban'))
             else:
-                cases.append(case.replace('campex','aerosol_campex'))   # smoke base τ550=1.0
+                # smoke base τ550=1.0
+                cases.append(case.replace('campex','aerosol_campex'))       
             loadings.append(0.5*caseLoadFct)
-            
+        # BiModal case    
         elif 'campex_bi' in case.lower():
             if 'flat' in case.lower():
                 cases.append(case.replace('campex','fit_campex_flat'))
@@ -886,7 +895,7 @@ def splitMultipleCases(caseStrs, caseLoadFct=1):
             else:
                 cases.append(case.replace('campex','fit_campex'))
             loadings.append(0.0937*caseLoadFct)
-
+        #----------------------------------------------------#
         #Added by Greema
         elif 'tamu_variable_sphere' in case.lower():
         

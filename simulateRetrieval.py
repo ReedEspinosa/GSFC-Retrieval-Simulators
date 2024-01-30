@@ -270,7 +270,7 @@ class simulation(object):
 
         """
         if σ is None:
-            σ={'I'   :0.003, # relative
+            σ={'I'   :0.030, # relative
                'QoI' :0.0015, # absolute
                'UoI' :0.005, # absolute
                'Q'   :0.0015, # absolute in terms of Q/I

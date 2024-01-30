@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-This python script is a modified verison of the simulationQuickLook.py, with 
+This python script is a modified version of the simulationQuickLook.py, with 
 the ability to plot 2D density and histograms of errors for retrieved parameters.
-Specifically designed to accomodate the simulation retreieval study based on
+Specifically designed to accommodate the simulation retrieval study based on
 CAMP2Ex measurements
 
 Created on Wed Jul 13 14:18:11 2022
@@ -15,14 +15,13 @@ Created on Wed Jul 13 14:18:11 2022
 # -*- coding: utf-8 -*-
 
 # =============================================================================
-# Import the librarires
+# Import the libraries
 # =============================================================================
 import os
 from pprint import pprint
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'});mpl.rcParams.update({'ytick.right': 'True'});mpl.rcParams.update({'xtick.top': 'True'});plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
 from scipy import interpolate
 from scipy.stats import norm, gaussian_kde, ncx2, moyal
 from simulateRetrieval import simulation
@@ -34,6 +33,19 @@ except:
     print('mpl_scatter_density library not available')
     mpl_scatter = False
 from matplotlib.colors import LinearSegmentedColormap
+
+# Properties of the plot
+mpl.rcParams.update({
+    'xtick.direction': 'in',
+    'ytick.direction': 'in',
+    'ytick.right': 'True',
+    'xtick.top': 'True',
+    'mathtext.fontset': 'cm',
+    'figure.dpi': 330,
+    'font.family': 'cmr10',
+    'axes.unicode_minus': False
+})
+plt.style.use('tableau-colorblind10')
 # =============================================================================
 # Definition to plot the 2D histogram
 # =============================================================================
@@ -210,36 +222,34 @@ waveInd2 = 4
 
 # Define the string pattern for the file name
 fnPtrnList = []
-#fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
-# fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-fnPtrn = 'Camp2ex_AOD_*_550nm_*_campex_bi_*_flight#*_layer#00.pkl'
-# fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl'
+fnPtrn = 'Camp2ex_OLH_AOD_*_550nm_*_conf#00_*_campex_bi_*_flight#*_layer#00.pkl'
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
-inDirPath = '/data/ESI/User/aputhukkudy/ACCDAM/2023/Campex_Simulations/Sep2023/27/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'
+inDirPath = '/data/ESI/User/aputhukkudy/ACCDAM/2024/Test/Jan/30/Full/Geometry/CoarseModeFalse/openOcean/2modes/uvswirmap01/'
 
 # more tags and specifiations for the scatter plot
-surf2plot = 'both' # land, ocean or both
-aodMin = 0.2 # does not apply to first AOD plot
-aodMax = 2
-nMode = 0 # Select which layer or mode to plot
+surf2plot = 'both'          # land, ocean or both
+aodMin = 0.2                # does not apply to first AOD plot, min AOD to plot
+aodMax = 5                  # does not apply to first AOD plot, max AOD to plot 
+nMode = 0                   # Select which layer or mode to plot
 fnTag = 'AllCases'
 xlabel = 'Simulated Truth'
 MS = 2
 FS = 10
 LW121 = 1
 pointAlpha = 0.20
-clrText = '#FF6347' #[0,0.7,0.7]
-nBins = 200 # no. of bins for histogram
-nBins2 = 50 # no. of bins for 2D density plot
+clrText = '#FF6347'         #[0,0.7,0.7]
+nBins = 200                 # no. of bins for histogram
+nBins2 = 50                 # no. of bins for 2D density plot
 
 # define the fig and axes handles
 # Figure for 2D density plots
-fig, ax = plt.subplots(3,5, figsize=(15,9), subplot_kw={'projection': 'scatter_density'})
+fig, ax = plt.subplots(3,5, figsize=(15,10), subplot_kw={'projection': 'scatter_density'})
 plt.locator_params(nbins=3)
+
 # Figure for histograms
-fig_hist, ax_hist = plt.subplots(3,5, figsize=(15,9))
+fig_hist, ax_hist = plt.subplots(3,5, figsize=(15,10))
 plt.locator_params(nbins=3)
 lightSave = True # Omit PM elements and extinction profiles from MERGED files to save space
 
@@ -283,17 +293,28 @@ lp = np.array([0 for rf in simBase.rsltFwd])
 keepInd = lp>99 if surf2plot=='land' else lp<1 if surf2plot=='ocean' else lp>-1
 
 # apply convergence filter
-simBase.conerganceFilter(forceχ2Calc=True) # ours looks more normal, but GRASP's produces slightly lower RMSE
-costThresh = np.percentile([rb['costVal'] for rb in simBase.rsltBck[keepInd]], 95)
-keepInd = np.logical_and(keepInd, [rb['costVal']<costThresh for rb in simBase.rsltBck])
+# apply convergence filter
+σx={'I'   :0.030, # relative
+    'QoI' :0.005, # absolute
+    'UoI' :0.005, # absolute
+    'Q'   :0.005, # absolute in terms of Q/I
+    'U'   :0.005, # absolute in terms of U/I
+    } # absolute
+simBase.conerganceFilter(forceχ2Calc=True, σ=σx) # ours looks more normal, but GRASP's produces slightly lower RMSE
 keepIndAll = keepInd
+costThresh = np.percentile([rb['costVal'] for rb in simBase.rsltBck[keepInd]], 95)
+keepInd_ = np.logical_and(keepInd, [rb['costVal']<costThresh for rb in simBase.rsltBck])
+
+# Keep the pixels that are below max iterations
+maxIter = 50
+keepInd = np.logical_and(keepInd_, [rb['nIter']<maxIter for rb in simBase.rsltBck])
 
 # variable to color point by in all subplots
 # clrVar = np.sqrt([rb['costVal'] for rb in simBase.rsltBck[keepInd]]) # this is slow!
 clrVar = np.asarray([rb['costVal'] for rb in simBase.rsltBck[keepInd]])
 clrVarAll = clrVar
 print('%d/%d fit surface type %s and convergence filter' % (keepInd.sum(), len(simBase.rsltBck), surf2plot))
-
+print('%d/%d max iterations filter (maxIter = %d)' % (keepInd.sum(),keepInd_.sum(), maxIter))
 # =============================================================================
 # Plotting
 # =============================================================================
@@ -358,7 +379,7 @@ clrVar = np.asarray([rb['costVal'] for rb in simBase.rsltBck[keepInd]])
 
 # apply Reff min
 # simBase._addReffMode(0.008, True) # reframe so pretty much all of the PSD is in the second "coarse" mode
-simBase._addReffMode(1.0, True) # reframe with cut at 1 micron diameter
+simBase._addReffMode(0.5, True) # reframe with cut at 1 micron diameter
 #keepInd = np.logical_and(keepInd, [rf['rEffMode']>=2.0 for rf in simBase.rsltBck])
 #print('%d/%d fit surface type %s and aod≥%4.2f AND retrieved Reff>2.0μm' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, aodMin))
 #clrVar = np.sqrt([rb['rEff']/rf['rEff']-1 for rb,rf in zip(simBase.rsltBck[keepInd], simBase.rsltFwd[keepInd])])
@@ -631,7 +652,9 @@ else:
         minAOD = np.min(rtrv)*0.90
         maxAOD = np.max(rtrv)*1.10
         if nMode_ == 0:
-            true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[keepInd][:,nMode_]*4
+            true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[keepInd][:,nMode_]
+            if not 'olh' in fnPtrn.lower():
+                true = true*4
             density_scatter(true, rtrv, ax=ax[2,3])
             plotProp(ax[2,3], titleStr='Fine mode \n Vol concentration',
                      scale='linear', xlabel=xlabel, MinMax=True)
@@ -664,12 +687,14 @@ else:
 figSavePath = saveFN.replace('.pkl',('_%s_%s_%04dnm.png' % (surf2plot, fnTag, simBase.rsltFwd[0]['lambda'][waveInd]*1000)))
 print('Saving figure to: %s' % (os.path.join(inDirPath,figSavePath)))
 ttlStr = '%s (λ=%5.3fμm, %s surface, AOD≥%4.2f)' % (saveFN, simBase.rsltFwd[0]['lambda'][waveInd], surf2plot, aodMin)
-fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-# fig.tight_layout()
 fig.suptitle(ttlStr.replace('MERGED_',''))
-fig_hist.tight_layout(rect=[0, 0.03, 1, 0.95])
-# fig_hist.tight_layout()
+# fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+fig.tight_layout()
+
 fig_hist.suptitle(ttlStr.replace('MERGED_','Hist_'))
+# fig_hist.tight_layout(rect=[0, 0.03, 1, 0.95])
+fig_hist.tight_layout()
+
 fig.savefig(inDirPath + figSavePath, dpi=330)
 fig_hist.savefig(inDirPath + figSavePath.replace('MERGED_','Hist_'), dpi=330)
 print('Saving figure to: %s' % (os.path.join(inDirPath,figSavePath.replace('MERGED_','Hist_'))))

@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from matplotlib import ticker as mtick
 from simulateRetrieval import simulation # This should ensure GSFC-GRASP-Python-Interface is in the path
 import matplotlib as mpl;
-import matplotlib.pyplot as plt; mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'});mpl.rcParams.update({'ytick.right': 'True'});mpl.rcParams.update({'xtick.top': 'True'});plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
+import matplotlib.pyplot as plt; mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'});mpl.rcParams.update({'ytick.right': 'True'});mpl.rcParams.update({'xtick.top': 'True'});plt.rcParams["font.family"] = "Helvetica"; plt.rcParams["mathtext.fontset"] = "cm"
 # pklDataPath = '/Users/wrespino/Synced/Working/OSSE_Test_Run/MERGED_ss450-g5nr.leV210.GRASP.example.polarimeter07.200608ALL_ALLz.pkl' # None to skip reloading of data
 pklDataPath = '/mnt/Raid4TB/ACCDAM/2022/Campex_Simulations/Aug2022/08/fullGeometry/withCoarseMode/ocean/2modes/megaharp01/MERGED_Camp2ex_AOD_ALL_550nm_ALL_campex_flight#ALL_layer#00.pkl' # None to skip reloading of data
 # pklDataPath = '/Users/wrespino/Synced/ACCDAM_RemoteSensingObservability/AninsSimulations/Apr2022_5mode/MERGED_CAMP2ExmegaALL_2modes_AOD_ALL_550nmALL.pkl'
