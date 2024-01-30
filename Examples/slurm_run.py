@@ -54,7 +54,7 @@ else:
     conf_ = 'BiModal' # or 'Triangular'
 
 # This template is used for the finding the correct retrieval simulation configuration
-yamlFile = '../ACCP_ArchitectureAndCanonicalCases/%s-CAMP2Ex.yml' %conf_
+yamlFile = '../ACCP_ArchitectureAndCanonicalCases/camp2ex-configurations.yml'
 with open(yamlFile, 'r') as f:
     ymlData = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -63,18 +63,22 @@ with open(yamlFile, 'r') as f:
 #--------------------------------------------#
 
 # Number of nodes
-nNode = 3 # Ideally, a max of 7 is used in NyX because of the 7 ryzen nodes
+nNode = int(ymlData['default']['run']['nNodes']) # Ideally, a max of 7 is used in NyX because of the 7 ryzen nodes, this has been automated to use the number from yaml file
 
 # list of AOD/nPCA. Even though the code is written to run multiple AODs, it is not used directly when the sign is negative
 tau = -np.logspace(np.log10(0.01), np.log10(4.0), nNode)
+
 # splitting into chunks to make the code efficient and run easily in DISCOVER
 try:
     arrayNum= int(sys.argv[1])
 except:
     print('No array number is given: it should be 0,1 or 2 \n Using default value 0')
     arrayNum = 0
-
-npca_ = [range(0,22), range(22,44), range(44, 66), range(66, 88), range(88, 107)] # modified for NyX
+if 'nyx' in hostname:
+    npca_ = [range(0,22), range(22,44), range(44, 66), range(66, 88), range(88, 107)] # modified for NyX
+# Discover has 36 cores per node
+elif 'discover' in hostname:
+    npca_ = [range(0,36), range(36,72), range(72, 108)] # modified for Discover
 npca = npca_[arrayNum] # max is 107
 
 #--------------------------------------------#
@@ -93,7 +97,7 @@ if not useRealGeometry: jobName = jobName + str(SZA); varStr = 'aod'
 else: varStr = 'nPCA'
 
 # Instrment name
-instrument = ymlData['forward']['instrument']
+instrument = ymlData['default']['forward']['instrument']
 
 #--------------------------------------------#
 # looping through the var string
@@ -129,7 +133,7 @@ for aod in tau:
         # in NyX
         elif 'nyx' in hostname:
             # Selecting the partition
-            if ymlData['run']['partition'] == 'zen4':
+            if ymlData['default']['run']['partition'] == 'zen4':
                 fh.writelines("#SBATCH --partition=zen4\n")
                 fh.writelines("#SBATCH --ntasks=22\n")
                 fh.writelines("#SBATCH --mem=100G\n")

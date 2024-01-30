@@ -54,13 +54,13 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0,
     '''
     instrument = instrument # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
     # Full path to save simulation results ass a Python pickle
-    savePath = os.path.join(ymlData['run']['savePathParent'], ymlData['run']['MmmYY'], ymlData['run']['DD'],\
-        ymlData['forward']['geometry'], 'Geometry', 'CoarseMode%s' % ymlData['forward']['coarseMode'], \
-        ymlData['forward']['surfaceType']+ymlData['forward']['surface'], ymlData['forward']['psdType'], \
-        ymlData['forward']['instrument'], ymlData['run']['saveFN'])
+    savePath = os.path.join(ymlData['default']['run']['savePathParent'], ymlData['default']['run']['MmmYY'], ymlData['default']['run']['DD'],\
+        ymlData['default']['forward']['geometry'], 'Geometry', 'CoarseMode%s' % ymlData['default']['forward']['coarseMode'], \
+        ymlData['default']['forward']['surfaceType']+ymlData['default']['forward']['surface'], ymlData['default']['forward']['psdType'], \
+        ymlData['default']['forward']['instrument'], ymlData['default']['run']['saveFN'])
     
     savePath = savePath %(
-                        ymlData['run']['tagName'],
+                        ymlData['default']['run']['tagName'],
                         str(τFactor).split('.')[0],
                         str(τFactor).split('.')[1][:3],
                         int(round(SZA, 2)*100),
@@ -69,21 +69,22 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0,
     
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
-    binGRASP = ymlData['run']['graspBin']
+    binGRASP = ymlData['default']['run']['graspBin']
         
     # Full path grasp precomputed single scattering kernels
-    krnlPath = ymlData['run']['krnlPath']
+    krnlPath = ymlData['default']['run']['krnlPath']
 
     # Directory containing the foward and inversion YAML files you would like to use
     ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
-    fwdModelYAMLpath = os.path.join(ymlDir, ymlData['forward']['yaml']) # foward YAML file
-    bckYAMLpath = os.path.join(ymlDir, ymlData['retrieval']['yaml'] % (ymlData['forward']['psdType'],\
-                                                                       ymlData['forward']['surfaceType'],\
-                                                                       ymlData['forward']['surface'])) # inversion YAML file
+    print('one %s' %ymlData['default']['forward']['yaml'])
+    fwdModelYAMLpath = os.path.join(ymlDir, ymlData['default']['forward']['yaml']) # foward YAML file
+    bckYAMLpath = os.path.join(ymlDir, ymlData['default']['retrieval']['yaml'] % (ymlData['default']['forward']['psdType'],\
+                                                                       ymlData['default']['forward']['surfaceType'],\
+                                                                       ymlData['default']['forward']['surface'])) # inversion YAML file
 
     # Other non-path related settings
-    Nsims = ymlData['run']['nSims'] # the number of inversion to perform, each with its own random noise
-    maxCPU = ymlData['run']['maxCPU'] # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
+    Nsims = ymlData['default']['run']['nSims'] # the number of inversion to perform, each with its own random noise
+    maxCPU = ymlData['default']['run']['maxCPU'] # the number of processes to launch, effectivly the # of CPU cores you want to dedicate to the simulation
     conCase = conCase #'camp_test' # Canonical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
     SZA = SZA # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
     Phi = Phi # relative azimuth angle, φsolar-φsensor
@@ -108,11 +109,11 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0,
     # run the simulation, see below the definition of runSIM in simulateRetrieval.py for more input argument explanations
     simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
                 binPathGRASP=binGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, \
-                rndIntialGuess=ymlData['retrieval']['randmGsOn'], dryRun=False, workingFileSave=False, \
+                rndIntialGuess=ymlData['default']['retrieval']['randmGsOn'], dryRun=False, workingFileSave=False, \
                 verbose=True, delTempFiles=True)
 
     # print some results to the console/terminal
-    if ymlData['run']['verbose']:
+    if ymlData['default']['run']['verbose']:
         wavelengthIndex = 2
         wavelengthValue = simA.rsltFwd[0]['lambda'][wavelengthIndex]
         print('RMS deviations (retrieved-truth) at wavelength of %5.3f μm:' % wavelengthValue)
@@ -147,16 +148,16 @@ def loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=18, dry
         for j in np.r_[1:nFlights+1]:
             flight_loop_start_time = time.time()
             for k in np.r_[0]: # 0 means use information from all layers, 1 means use only information from layer 1, so on
-                if ymlData['forward']['coarseMode']:
+                if ymlData['default']['forward']['coarseMode']:
                     cmStr = 'addCoarse'
                 else:
-                    if ymlData['forward']['fixedCoarseMode']:
+                    if ymlData['default']['forward']['fixedCoarseMode']:
                         cmStr = 'fixedCoarse'
                     else:
                         cmStr = 'noCoarse'
 
                 conCase = '%s_%s_%s_%s_flight#%.2d_layer#%.2d' %(surface, cmStr,
-                                                                ymlData['forward']['psdMode'],
+                                                                psdMode,
                                                                 spectral,j,k)
                 print('<-->'*20)
                 try:
@@ -231,10 +232,25 @@ if len(sys.argv) > 3:
 # --------------------------------------------------------------------------- #
 # Load the YAML settings files for the retrieval simulation configuration
 # --------------------------------------------------------------------------- #
-yamlFile = '../ACCP_ArchitectureAndCanonicalCases/%s-CAMP2Ex.yml' %conf_
+yamlFile = '../ACCP_ArchitectureAndCanonicalCases/camp2ex-configurations.yml'
 with open(yamlFile, 'r') as f:
     ymlData = yaml.load(f, Loader=yaml.FullLoader)
-
+if conf_ == 'Triangular':
+    psdMode = 'campex_tria'
+    ymlData['default']['forward']['yaml'] = ymlData['default']['forward']['psdMode']['tria']['yaml']
+elif conf_ == 'BiModal':
+    psdMode = 'campex_bi'
+    ymlData['default']['forward']['yaml'] = ymlData['default']['forward']['psdMode']['bi']['yaml']
+# See if running for all configurations
+if ymlData['default']['run']['config'].lower() == 'all':
+    
+    ymlData['default']['run']['allConfig'] = True
+    
+    # create a list of configurations to run
+    conf_lst = list(ymlData['configurations'].keys())
+else:
+    ymlData['default']['run']['allConfig'] = False
+    
 # --------------------------------------------------------------------------- #
 # Define the retrieval simulation settings
 # --------------------------------------------------------------------------- #
@@ -243,25 +259,50 @@ if ymlData is None:
     sys.exit()
 else:
     # Properties of the run
-    surface = ymlData['run']['tagName'] + '_' + ymlData['run']['config'] +\
-        '_' + ymlData['forward']['surfaceType']+'_'\
-         + ymlData['forward']['surface']+'_RndmGsOn-'\
-         + str(ymlData['retrieval']['randmGsOn'])   # for ocean either open_ocean or dark_ocean
-    spectral = ymlData['forward']['spectralInfo']   # flatfine_flatcoarse for spectrally flat RI, urban for fine urban, use nothing if it is spectrally dependent
+    surface = ymlData['default']['run']['tagName'] + '_' + ymlData['default']['run']['config'] +\
+        '_' + '##'+ ymlData['default']['forward']['surface']+'_RndmGsOn-'\
+         + str(ymlData['default']['retrieval']['randmGsOn'])   # for ocean either open_ocean or dark_ocean
+    spectral = '$$'# ymlData['forward']['spectralInfo']   # flatfine_flatcoarse for spectrally flat RI, urban for fine urban, use nothing if it is spectrally dependent
     
     # Controlling the coarse mode, `coarseMode` is True if coarse mode is used, `fixedCoarseMode` is True if coarse mode is fixed
-    if ymlData['forward']['fixedCoarseMode']:
-        if not ymlData['forward']['coarseMode']:
+    if ymlData['default']['forward']['fixedCoarseMode']:
+        if not ymlData['default']['forward']['coarseMode']:
             spectral = spectral + '_zerocoarse'
         spectral = spectral + '_fixedcoarse'
     else:
-        if not ymlData['forward']['coarseMode']:
+        if not ymlData['default']['forward']['coarseMode']:
             spectral = spectral + '_zerocoarse'
+    print(surface)
+    psd_type = ymlData['default']['forward']['psdType']        # '2modes' or '16bins'
+    nFlights =  ymlData['default']['run']['nFlights']          # number of flights used for simulation (should be 18 for full camp2ex measurements)
+deleteTemp = ymlData['default']['run']['deleteTemp']           # Flag for deleting temp files regularly
+#--------------------------------------------#
+# Local functions   
+#--------------------------------------------#
 
-    psd_type = ymlData['forward']['psdType']        # '2modes' or '16bins'
-    nFlights =  ymlData['run']['nFlights']          # number of flights used for simulation (should be 18 for full camp2ex measurements)
-deleteTemp = ymlData['run']['deleteTemp']           # Flag for deleting temp files regularly
+def updateConf(cnf_, ymlData, surface, spectral):
+    '''
+    This function will update the configuration file based on the input arguments
     
+    Parameters
+    ----------
+    Input:
+        cnf_: configuration name
+        ymlData: YAML file with the retrieval simulation configuration
+        surface: surface name
+        spectral: spectral name
+    Output:
+        ymlData: updated YAML file with the retrieval simulation configuration
+    '''
+    ymlData['default']['retrieval']['yaml'] = ymlData['configurations'][cnf_]['retrieval']['yaml']
+    ymlData['default']['forward']['surfaceType'] = ymlData['configurations'][cnf_]['forward']['surfaceType']
+    ymlData['default']['forward']['spectralInfo'] = ymlData['configurations'][cnf_]['forward']['spectralInfo']
+    surface =surface.replace('All', cnf_)
+    surface = surface.replace('##', ymlData['configurations'][cnf_]['forward']['surfaceType'])
+    spectral = spectral.replace('$$', ymlData['configurations'][cnf_]['forward']['spectralInfo'])
+    loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
+
+
 # Use real geometry and loop through different nPCA. This file is based on the geometry selected by Feng and Lans
 if useRealGeometry:
     print('Running retrieval simulations for real sun-satellite geometry')
@@ -271,11 +312,43 @@ if useRealGeometry:
     for nPCA in npca:
         SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA, orbit=orbit)
         # run the function over multiple sun-satellite geometries
-        loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
+        if not ymlData['default']['run']['allConfig']:
+            print('zero')
+            '''
+            cnf_ = ymlData['default']['run']['config']
+            surface =surface.replace('All', cnf_)
+            surface = surface.replace('##', ymlData['configurations'][cnf_]['forward']['surfaceType'])
+            spectral = spectral.replace('$$', ymlData['configurations'][cnf_]['forward']['spectralInfo'])
+            loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
+            '''
+            updateConf(ymlData['default']['run']['config'], ymlData, surface, spectral)
+        else:
+            for cnf_ in conf_lst:
+                ymlData['default']['retrieval']['yaml'] = ymlData['configurations'][cnf_]['retrieval']['yaml']
+                ymlData['default']['forward']['surfaceType'] = ymlData['configurations'][cnf_]['forward']['surfaceType']
+                ymlData['default']['forward']['spectralInfo'] = ymlData['configurations'][cnf_]['forward']['spectralInfo']
+                surface =surface.replace('All', cnf_)
+                surface = surface.replace('##', ymlData['configurations'][cnf_]['forward']['surfaceType'])
+                spectral = spectral.replace('$$', ymlData['configurations'][cnf_]['forward']['spectralInfo'])
+                loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
     
 else:
     print('Running retrieval simulations for principal plane with fixed SZA')
-    loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
+    if not ymlData['default']['run']['allConfig']:
+        cnf_ = ymlData['default']['run']['config']
+        surface =surface.replace('All', cnf_)
+        surface = surface.replace('##', ymlData['configurations'][cnf_]['forward']['surfaceType'])
+        spectral = spectral.replace('$$', ymlData['configurations'][cnf_]['forward']['spectralInfo'])
+        loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
+    else:
+        for cnf_ in conf_lst:
+                ymlData['default']['retrieval']['yaml'] = ymlData['configurations'][cnf_]['retrieval']['yaml']
+                ymlData['default']['forward']['surfaceType'] = ymlData['configurations'][cnf_]['forward']['surfaceType']
+                ymlData['default']['forward']['spectralInfo'] = ymlData['configurations'][cnf_]['forward']['spectralInfo']
+                surface =surface.replace('All', cnf_)
+                surface = surface.replace('##', ymlData['configurations'][cnf_]['forward']['surfaceType'])
+                spectral = spectral.replace('$$', ymlData['configurations'][cnf_]['forward']['spectralInfo'])
+                loop_func(runMultiple, tau, instrument, SZA, psd_type, phi, nFlights=nFlights)
 
 # Total time
 total_time = (time.time() - start_time)/60
