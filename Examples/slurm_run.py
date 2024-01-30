@@ -118,15 +118,15 @@ for aod in tau:
     # Creating the slurm file
     #--------------------------------------------#
     with open(job_file, 'w') as fh:
-        fh.writelines("#!/usr/bin/bash\n\n")
+        fh.writelines("#!/bin/bash\n\n")
         fh.writelines("#SBATCH --job-name=%s%.4d\n" % (jobName, aod_))
         fh.writelines("#SBATCH --output=./job/%s_%.4d.out.%s\n" % (jobName, aod_, '%A'))
         fh.writelines("#SBATCH --error=./job/%s_%.4d.err.%s\n" % (jobName, aod_, '%A'))
-        fh.writelines("#SBATCH --time=23:59:59\n")
+        fh.writelines("#SBATCH --time=2-23:59:59\n")
         # In Discover
         if 'discover' in hostname:
-            fh.writelines('#SBATCH --constraint="sky"\n')
-            fh.writelines("#SBATCH --ntasks=36\n")
+            fh.writelines('#SBATCH --constraint="[sky"\n')
+            fh.writelines("#SBATCH --ntasks=40\n")
         # In Uranus
         elif 'uranus' in hostname:
             fh.writelines("#SBATCH --partition=LocalQ\n")
