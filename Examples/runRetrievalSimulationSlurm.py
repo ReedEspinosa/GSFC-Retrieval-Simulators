@@ -10,6 +10,8 @@ import numpy as np
 import time
 import tempfile
 import yaml
+import random
+import string
 
 # add GRASP_scripts, GSFC-Retrieval-Simulators and ACCP subfolder to paths (assumes GRASP_scripts and GSFC-Retrieval-Simulators are in the same parent folder)
 parentDir = os.path.dirname(os.path.dirname(os.path.realpath("__file__"))) # obtain THIS_FILE_PATH/../ in POSIX
@@ -59,9 +61,9 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0,
         ymlData['default']['forward']['geometry'], 'Geometry', 'CoarseMode%s' % ymlData['default']['forward']['coarseMode'], \
         ymlData['default']['forward']['surfaceType']+ymlData['default']['forward']['surface'], ymlData['default']['forward']['psdType'], \
         ymlData['default']['forward']['instrument'], ymlData['default']['run']['saveFN'])
-    
     savePath = savePath %(
-                        ymlData['default']['run']['tagName'],
+                        '%s_%s' %(ymlData['default']['run']['tagName'],
+                                  ymlData['default']['run']['rndStr']),
                         str(τFactor).split('.')[0],
                         str(τFactor).split('.')[1][:3],
                         int(round(SZA, 2)*100),
@@ -268,6 +270,8 @@ if ymlData['default']['run']['config'].lower() == 'all':
     conf_lst = list(ymlData['configurations'].keys())
 else:
     ymlData['default']['run']['allConfig'] = False
+
+ymlData['default']['run']['rndStr'] =  random.choice(string.ascii_uppercase) + str(random.randint(0, 9))
     
 # --------------------------------------------------------------------------- #
 # Define the retrieval simulation settings
@@ -298,6 +302,7 @@ if useRealGeometry:
     orbit = 'SS'
     for nPCA in npca: # This work work a single SZA and phi
         SZA, phi = selectGeometryEntry(rawAngleDir, PCAslctMatFilePath, nPCA, orbit=orbit)
+        print('SZA: %s, phi: %s' %(SZA, phi))
 else:
     print('Running retrieval simulations for principal plane with fixed SZA')
 
