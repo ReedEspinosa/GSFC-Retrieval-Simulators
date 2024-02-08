@@ -23,10 +23,16 @@ from pprint import pprint
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'})
-mpl.rcParams.update({'ytick.right': 'True'}); mpl.rcParams.update({'xtick.top': 'True'}); 
-plt.rcParams['mathtext.fontset'] = 'cm'; plt.rcParams["figure.dpi"]=330; 
-plt.rcParams["font.family"] = "cmr10"; plt.rcParams["axes.formatter.use_mathtext"] = True
+mpl.rcParams.update({
+    'xtick.direction': 'in',
+    'ytick.direction': 'in',
+    'ytick.right': 'True',
+    'xtick.top': 'True',
+    'mathtext.fontset': 'cm',
+    'figure.dpi': 330,
+    'font.family': 'cmr10',
+    'axes.unicode_minus': False
+})
 from scipy import interpolate
 from scipy.stats import norm, gaussian_kde, ncx2, moyal, binned_statistic
 from simulateRetrieval import simulation
@@ -40,6 +46,11 @@ ipython = get_ipython()
 if '__IPYTHON__' in globals():
     ipython.magic('load_ext autoreload')
     ipython.magic('autoreload 2')
+
+import warnings
+
+# Suppress all warnings
+warnings.filterwarnings("ignore")
 
 # =============================================================================
 # Local definitions
@@ -171,9 +182,10 @@ def scatter_density(x, y, cmap='jet', alpha=0.5, sizeM=1, cBar=False,
     plt.show()
     del im
 
-def makesweetgraph(x=None, y=None, cmap='GnBu', ylab=None, xlab=r'AOD$_{550\ nm}$',
-                   bins=10, figsize=(3,3), snsbins=50,
+def makesweetgraph(x=None, y=None, cmap='Blues', ylab=None, xlab=r'AOD$_{550\ nm}$',
+                   bins=5, figsize=(3,3), snsbins=20,
                    yScale='linear', xScale='log', alpha=0.3, cScale='linear',
+                   cMean=False, pLine=False,
                    **kwargs):
     '''
     This function creates a 2D histogram with marginal histograms
@@ -293,24 +305,21 @@ def makesweetgraph(x=None, y=None, cmap='GnBu', ylab=None, xlab=r'AOD$_{550\ nm}
         cb.set_label('density of points')
     
     # binned statistics
-    s, edges, _ = binned_statistic(x, y, statistic='mean', bins=x_)
-    std_, _, _ = binned_statistic(x, y, statistic=np.std, bins=x_)
-    n_, _, _ = binned_statistic(x, y, statistic='count', bins=x_)
-    p15, _, _= binned_statistic(x, y, statistic=lambda x: np.percentile(x, 15), bins=x_)
-    p85, _, _= binned_statistic(x, y, statistic=lambda x: np.percentile(x, 85), bins=x_) 
+    if cMean or pLine:
+        s, edges, _ = binned_statistic(x, y, statistic='mean', bins=x_)
+        std_, _, _ = binned_statistic(x, y, statistic=np.std, bins=x_)
+        n_, _, _ = binned_statistic(x, y, statistic='count', bins=x_)
+        p15, _, _= binned_statistic(x, y, statistic=lambda x: np.percentile(x, 15), bins=x_)
+        p85, _, _= binned_statistic(x, y, statistic=lambda x: np.percentile(x, 85), bins=x_) 
 
     # Bias of each bin in the x-axis
-    sns.scatterplot(y=s, x=edges[:-1]+np.diff(edges)/2, alpha=0.5, c="crimson", zorder=3, ax=ax1.ax_joint)
-    
-    # STD of each bin in the x-axis
-    # sns.lineplot(data=df, x="timepoint", y="signal", ci='sd', err_style='bars')
-    # sns.lineplot(y=s+(std_/np.sqrt(n_)), x=edges[:-1]+np.diff(edges)/2, color="crimson", zorder=3, ax=ax1.ax_joint)
-    # sns.lineplot(y=s-(std_/np.sqrt(n_)), x=edges[:-1]+np.diff(edges)/2, color="crimson", zorder=3, ax=ax1.ax_joint)
+    if cMean: sns.scatterplot(y=s, x=edges[:-1]+np.diff(edges)/2, alpha=0.5, c="crimson", zorder=3, ax=ax1.ax_joint)
     
     # percentile
     try:
-        sns.lineplot(y=p15, x=edges[:-1]+np.diff(edges)/2, color="y", zorder=2, ax=ax1.ax_joint)
-        sns.lineplot(y=p85, x=edges[:-1]+np.diff(edges)/2, color="y", zorder=2, ax=ax1.ax_joint)
+        if pLine:
+            sns.lineplot(y=p15, x=edges[:-1]+np.diff(edges)/2, color="y", zorder=2, ax=ax1.ax_joint)
+            sns.lineplot(y=p85, x=edges[:-1]+np.diff(edges)/2, color="y", zorder=2, ax=ax1.ax_joint)
     except ValueError:
         print('Error in plotting percentile lines')
 
@@ -486,27 +495,35 @@ rs_['waveInd'] = 2
 # Wavelength index for AE calculation
 rs_['waveInd2'] = 4
 
+# CAMP2Ex configuration dictionary
+confLst = [ ['00',  'dark'],
+            ['01',  'open'],
+            ['02',  'dark'],
+            ['03',  'open'],
+            ['04',  'open']]
+i = 0                               # index of the configuration to be used for the case of camp2ex [0-4]
+
 # Define the string pattern for the file name
 rs_['fnPtrnList'] = []
-rs_['conf#'] = '00'                 # Options: 00, 01, 02, 03, 04, 0000, 0100, 0200, 0300, 0400  
+rs_['conf#'] = confLst[i][0]        # Options: 00, 01, 02, 03, 04, 0000, 0100, 0200, 0300, 0400  
 rs_['psdBinType'] = 'bi'            # 'bi' or 'tria' This for camp2ex
-rs_['month'] = 'Jan'                # Camp2Ex configuration
-rs_['day'] = 30                     # Camp2Ex configuration
+rs_['month'] = 'Feb'                # Camp2Ex configuration
+rs_['day'] = '05'                   # Camp2Ex configuration
 rs_['year'] = 2024                  # Camp2Ex configuration
 rs_['dirTag'] = 'Sim'               # 'Sim' for real simulation, 'Test' for test run. Camp2Ex configuration
-rs_['oceanType'] = 'open'           # 'dark' or 'bright' ocean surface. Camp2Ex configuration
+rs_['oceanType'] = confLst[i][1]    # 'dark' or 'bright' ocean surface. Camp2Ex configuration
 rs_['instrument'] = 'uvswirmap01'   # 'uvswirmap01' or 'uvswirmap0100' Camp2Ex configuration
 
-rs_['fnPtrn'] = 'Camp2ex_OLH_AOD_*_550nm_*_conf#%s_*_campex_%s_*_flight#*_layer#00.pkl' % (rs_['conf#'], rs_['psdBinType'])
+rs_['fnPtrn'] = 'Camp2ex_OLH_TS*AOD_*_550nm_*_conf#%s_*_campex_%s_*_flight#*_layer#00.pkl' % (rs_['conf#'], rs_['psdBinType'])
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
-rs_['inDirPath'] = '/data/ESI/User/aputhukkudy/ACCDAM/%d/%s/%s/%d/Full/Geometry/CoarseModeFalse/%sOcean/2modes/%s/' % \
+rs_['inDirPath'] = '/data/ESI/User/aputhukkudy/ACCDAM/%d/%s/%s/%s/Full/Geometry/CoarseModeFalse/%sOcean/2modes/%s/' % \
                     (rs_['year'], rs_['dirTag'], rs_['month'], rs_['day'], rs_['oceanType'], rs_['instrument']) 
 
 # more tags and specifiations for the scatter plot
 rs_['surf2plot']  = 'both'      # land, ocean or both
-rs_['aodMin']     = 0.01         # does not apply to first AOD plot
+rs_['aodMin']     = 0.1         # does not apply to first AOD plot
 rs_['aodMax']     = 5
 rs_['nMode']      = 0           # Select which layer or mode to plot
 rs_['fnTag']      = 'AllCases'
@@ -572,13 +589,14 @@ rs_['keepInd'] = lp>99 if rs_['surf2plot']=='land' else lp<1 if rs_['surf2plot']
 # ours looks more normal, but GRASP's produces slightly lower RMSE
 simBase.conerganceFilter(forceχ2Calc=True, σ=σx) 
 
-rs_['costThresh']   = np.percentile(np.array([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']],99)
+rs_['costThresh']   = np.percentile(np.array([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']],10)
 rs_['costThresh']   = min(rs_['costThresh'], rs_['chiMax'])
 rs_['keepIndAll']   = rs_['keepInd']        # saving all indexes before the chi2 filter
 rs_['keepInd_']     = np.logical_and(rs_['keepInd'], [rb['costVal']<rs_['costThresh'] for rb in simBase.rsltBck])
 maxIter             = 50                # Keep the pixels that are below max iterations
 try:
     rs_['keepInd']  = np.logical_and(rs_['keepInd_'], [rb['nIter']<maxIter for rb in simBase.rsltBck])
+    print('%d/%d max iterations filter (maxIter = %d)' % (rs_['keepInd'].sum(), rs_['keepInd_'].sum(), maxIter))
 except Exception as e:
     print(e)
     print('Error in applying the max iteration filter')
@@ -587,7 +605,7 @@ except Exception as e:
 clrVar              = np.sqrt(np.array([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']]) # this is slow!
 rs_['clrVar']       = np.asarray([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']]
 rs_['clrVarAll']    = rs_['clrVar']
-print('%d/%d fit surface type %s and convergence filter' % (rs_['keepInd'].sum(), len(simBase.rsltBck), rs_['surf2plot']))
+print('%d/%d fit surface type %s and convergence filter' % (rs_['keepInd_'].sum(), len(simBase.rsltBck), rs_['surf2plot']))
 
 # =============================================================================
 # AOD Filter
@@ -596,7 +614,8 @@ print('%d/%d fit surface type %s and convergence filter' % (rs_['keepInd'].sum()
 # apply AOD min after we plot AOD
 rs_['keepInd'] = np.logical_and(rs_['keepInd'], [rf['aod'][rs_['waveInd']]>=rs_['aodMin'] for rf in simBase.rsltFwd])
 print('%d/%d fit surface type %s and aod≥%4.2f' % (rs_['keepInd'].sum(), len(simBase.rsltBck), rs_['surf2plot'], rs_['aodMin']))
-
+rs_['keepInd'] = np.logical_and(rs_['keepInd'], [rf['aod'][rs_['waveInd']]<rs_['aodMax'] for rf in simBase.rsltFwd])
+print('%d/%d fit surface type %s and aod≥%4.2f' % (rs_['keepInd'].sum(), len(simBase.rsltBck), rs_['surf2plot'], rs_['aodMax']))
 # =============================================================================
 # %% Plotting
 # =============================================================================
