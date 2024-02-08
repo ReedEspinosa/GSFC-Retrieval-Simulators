@@ -113,7 +113,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
 
         # Defining PSD of fine and coarse mode layers for a particular flight (fine mode for the case of CAMP2Ex
         kFMin = 0.001                   # minimum k value for fine mode
-        kFMax = 0.05                    # maximum k value for fine mode
+        kFMax = 0.03                    # maximum k value for fine mode
         kCMin = 0.0001                  # minimum k value for coarse mode
         kCMax = 0.0005                  # maximum k value for coarse mode
         ALH = [500, 1000, 2000, 3000]   # altitude of the fine mode layers in meters
@@ -319,7 +319,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
 
         # Defining PSD of four layers for a particular flight (fine mode for the case of CAMP2Ex
         kFMin = 0.001                   # minimum k value for fine mode
-        kFMax = 0.05                    # maximum k value for fine mode
+        kFMax = 0.03                    # maximum k value for fine mode
         kCMin = 0.0001                  # minimum k value for coarse mode
         kCMax = 0.0005                  # maximum k value for coarse mode
         ALH = [500, 1000, 2000, 3000]   # altitude of the fine mode layers in meters
