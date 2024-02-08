@@ -45,7 +45,11 @@ mpl.rcParams.update({
     'font.family': 'cmr10',
     'axes.unicode_minus': False
 })
-plt.style.use('tableau-colorblind10')
+
+import warnings
+
+# Suppress all warnings
+warnings.filterwarnings("ignore")
 # =============================================================================
 # Definition to plot the 2D histogram
 # =============================================================================
@@ -55,15 +59,21 @@ white_viridis = LinearSegmentedColormap.from_list('white_viridis', [
     (0, '#ffffff'),
     (1e-4, '#440053'),
     (0.2, '#404388'),
-    (0.35, '#2a788e'),
-    (0.4, '#21a784'),
-    (0.45, '#78d151'),
-    (1, '#fde624'),
-], N=512)
+    (0.3, '#2a788e'),
+    (0.35, '#21a784'),
+    (0.4, '#78d151'),
+    (1.0, '#fde624'),
+], N=128)
+
+# Define a list of colors that represent your custom 'Blues' colormap
+colorsBlues = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b']
+
+# Create a colormap from the list of colors
+blues_cmap = LinearSegmentedColormap.from_list('CustomBlues', colorsBlues, N=256)
 
 def using_mpl_scatter_density(x, y, ax, fig=None):
     density = ax.scatter_density(x, y,
-                                 cmap=white_viridis, dpi=60)
+                                 cmap=white_viridis, dpi=50)
     # ax.colorbar(density, label='Number of points per pixel')
     if fig:
         fig.colorbar(density, label='Frequency')
@@ -220,17 +230,26 @@ waveInd = 2
 # Wavelength index for AE calculation
 waveInd2 = 4
 
+# CAMP2Ex configuration dictionary
+confLst = [ ['00',  'darkOcean'],
+            ['01',  'openOcean'],
+            ['02',  'darkOcean'],
+            ['03',  'openOcean'],
+            ['04',  'openOcean']]
+psd_ = 'bi'     # psd type 'tria' or 'bi'
+i = 0           # index of the configuration to be used for the case of camp2ex [0-4]
+
 # Define the string pattern for the file name
 fnPtrnList = []
-fnPtrn = 'Camp2ex_OLH_AOD_*_550nm_*_conf#00_*_campex_bi_*_flight#*_layer#00.pkl'
+fnPtrn = 'Camp2ex_OLH_TS*AOD_*_550nm_*_conf#%s_*_campex_%s_*_flight#*_layer#00.pkl' %(confLst[i][0], psd_, )
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
-inDirPath = '/data/ESI/User/aputhukkudy/ACCDAM/2024/Test/Jan/30/Full/Geometry/CoarseModeFalse/openOcean/2modes/uvswirmap01/'
+inDirPath = '/data/ESI/User/aputhukkudy/ACCDAM/2024/Sim/Feb/05/Full/Geometry/CoarseModeFalse/%s/2modes/uvswirmap01/' %confLst[i][1]
 
 # more tags and specifiations for the scatter plot
 surf2plot = 'both'          # land, ocean or both
-aodMin = 0.2                # does not apply to first AOD plot, min AOD to plot
+aodMin = 0.1                # does not apply to first AOD plot, min AOD to plot
 aodMax = 5                  # does not apply to first AOD plot, max AOD to plot 
 nMode = 0                   # Select which layer or mode to plot
 fnTag = 'AllCases'
@@ -240,8 +259,8 @@ FS = 10
 LW121 = 1
 pointAlpha = 0.20
 clrText = '#FF6347'         #[0,0.7,0.7]
-nBins = 200                 # no. of bins for histogram
-nBins2 = 50                 # no. of bins for 2D density plot
+nBins = 100                 # no. of bins for histogram
+nBins2 = 100                # no. of bins for 2D density plot
 
 # define the fig and axes handles
 # Figure for 2D density plots
@@ -269,7 +288,11 @@ else:
     simBase.rsltBck = np.empty(0, dtype=dict)
     print('Building %s - Nfiles=%d' % (saveFN, len(files)))
     for file in files: # loop over all available nAng
-        simA = simulation(picklePath=file)
+        try:
+            simA = simulation(picklePath=file)
+        except:
+            print('Error in loading %s' % file)
+            continue
         if lightSave:
             for pmStr in ['angle', 'p11','p12','p22','p33','p34','p44','range','βext']:
                 [rb.pop(pmStr, None) for rb in simA.rsltBck]
@@ -313,7 +336,7 @@ keepInd = np.logical_and(keepInd_, [rb['nIter']<maxIter for rb in simBase.rsltBc
 # clrVar = np.sqrt([rb['costVal'] for rb in simBase.rsltBck[keepInd]]) # this is slow!
 clrVar = np.asarray([rb['costVal'] for rb in simBase.rsltBck[keepInd]])
 clrVarAll = clrVar
-print('%d/%d fit surface type %s and convergence filter' % (keepInd.sum(), len(simBase.rsltBck), surf2plot))
+print('%d/%d fit surface type %s and convergence filter' % (keepInd_.sum(), len(simBase.rsltBck), surf2plot))
 print('%d/%d max iterations filter (maxIter = %d)' % (keepInd.sum(),keepInd_.sum(), maxIter))
 # =============================================================================
 # Plotting
@@ -541,6 +564,9 @@ except Exception as err:
     nBins_ = np.linspace(-0.1,0.1, nBins)
     modifiedHist((rtrv-true), axs=ax_hist[1,0], titleStr='SSA',
                  fig=fig_hist, nBins=nBins_, ylabel= 'Frequency')
+    
+    plt.figure()
+    plt.hist(true, bins=100)
     
 # =============================================================================
 # # spherical fraction
