@@ -13,10 +13,10 @@ retrieval:
             maximum_iterations_of_Levenberg-Marquardt: 50
             minimization_convention: logarithm
             normal_system_solver: sparse_matrix_solver
-            scale_for_finite_difference: 3.0e-05 #2.0e-5
+            scale_for_finite_difference: 1.0e-05 #2.0e-5
             shift_for_applying_logarithm_to_negative_values: 1.1
-            threshold_for_stopping: 1.0e-7 #0.001
-            threshold_for_stopping_Q_iterations: 1.0e-8 #1.0e-06
+            threshold_for_stopping: 1.0e-5 #0.001
+            threshold_for_stopping_Q_iterations: 1.0e-6 #1.0e-06
         measurement_fitting: {polarization: relative_polarization_components}
         noises:
             noise[1]:
@@ -51,14 +51,14 @@ retrieval:
             number_of_layers: 50
             reference_plane_for_polarization: principal_plane
             simulating_derivatives:
-                number_of_fourier_expansion_coefficients: 12
-                number_of_gaussian_quadratures_for_expansion_coefficients: 15
-                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
+                number_of_fourier_expansion_coefficients: 6
+                number_of_gaussian_quadratures_for_expansion_coefficients: 10
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 12
                 order_of_scattering: derivatives
             simulating_observation:
-                number_of_fourier_expansion_coefficients: 12
-                number_of_gaussian_quadratures_for_expansion_coefficients: 15
-                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
+                number_of_fourier_expansion_coefficients: 6
+                number_of_gaussian_quadratures_for_expansion_coefficients: 10
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 12
                 order_of_scattering: multiple_scattering
 
     debug:

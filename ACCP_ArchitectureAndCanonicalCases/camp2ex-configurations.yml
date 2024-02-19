@@ -10,7 +10,7 @@ default:
   run:
     # NyX parameters
     partition: 'zen4'                                   # Partition name
-    config: 'conf#00'                                       # Configuration name it should be the same as the one in the configurations section, or 'All' to run all the configurations
+    config: 'All'                                       # Configuration name it should be the same as the one in the configurations section, or 'All' to run all the configurations
     nFlights: 18                                        # Number of flights # number of flights used for simulation (should be 18 for full camp2ex measurements)
     nSims: 5                                            # the number of inversion to perform, each with its own random noise
     maxCPU: 1                                           # Maximum number of CPUs
@@ -18,7 +18,7 @@ default:
     dryRun: False                                       # If True, the code will not run, just print the commands
     savePathParent: '../../../ACCDAM/2024/Sim/'         # Parent directory where the results will be saved
     MmmYY: 'Feb'                                        # Month and year of the simulation
-    DD: '07'                                            # Day of the simulation
+    DD: '19'                                            # Day of the simulation
     saveFN: '%s_AOD_%sp%s_550nm_SZA_%0.4d_PHI_%0.4d_%s.pkl'       # Name of the file where the results will be saved
 
     # GRASP parameters
@@ -32,7 +32,7 @@ default:
     
     # Housekeeping
     deleteTemp: True
-    tagName: 'Camp2ex_OLH_TS'
+    tagName: 'Camp2ex_OLH_AA'
 
     # Special parameters
     oneLayerHack: True
@@ -80,21 +80,21 @@ configurations:
   conf#02:
     forward:
       surfaceType: 'dark'
-      spectralInfo: 'spectralfine_spectralcoarse'
+      spectralInfo: 'urbanfine_spectralcoarse'
     retrieval:
       yaml: 'settings_BCK_POLAR_%s_Campex_spectralRI_%s%s.yml'
 
   conf#03:
     forward:
       surfaceType: 'open'
-      spectralInfo: 'spectralfine_spectralcoarse'
+      spectralInfo: 'urbanfine_spectralcoarse'
     retrieval:
       yaml: 'settings_BCK_POLAR_%s_Campex_spectralRI_%s%s.yml'
 
   conf#04:
     forward:
       surfaceType: 'open'
-      spectralInfo: 'spectralfine_spectralcoarse'
+      spectralInfo: 'urbanfine_spectralcoarse'
     retrieval:
       yaml: 'settings_BCK_POLAR_%s_Campex_flatRI_%s%s.yml'
 #-----------------------------------------------------------------------------------#
