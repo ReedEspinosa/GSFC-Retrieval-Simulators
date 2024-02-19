@@ -136,14 +136,23 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
 
         # read PSD bins
         try:
+            # load the PSD from the file
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_dVDlnr72_Clean.pkl", 'rb')
+                        "Campex_dVDlnr72.pkl", 'rb') 
             dVdlnr = pickle.load(file)
             file.close()
+
+            # load the radius bins from the file
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
                         "Campex_r72.pkl", 'rb')
             radiusBin = pickle.load(file)
             file.close()
+
+            # load the ratio of concentration of layers in the fine mode
+            file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
+                        "Campex_dVDlnr72_V0Norm.pkl", 'rb')
+            dVdlnrV0 = pickle.load(file)
+            # file.close()
                 
         except Exception as e:
             print('File loading error: check if the PSD file path is correct'
@@ -211,19 +220,26 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                     whichLayer = int(caseStr.lower()[caseStr.lower().find('wlayer')+6:])# layer number to be used
                 else:
                     whichLayer = 0 # default layer number to be used
+            else:
+                zeroAeroConc = [0.000001]
+                whichLayer = 0
             
             # Defining PSD of four layers for a particular flight (fine mode for the case of CAMP2Ex
             vals['triaPSD'] = [np.around(dVdlnr[flight_num-1,0,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,1,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,2,:]*[0.1], decimals=6),
                                np.around(dVdlnr[flight_num-1,3,:]*[0.1], decimals=6)]
-            # Run this if one layer is used
-            if oneLayerHack:
-                for i in range(len(vals['triaPSD'])):
-                    if i != whichLayer:
-                        # print(vals['triaPSD'][i])
+            
+            # change the fine mode concentration based on the flight and layer
+            for i in range(len(vals['triaPSD'])):
+                if i != whichLayer:
+                    # Run this if one layer is used
+                    if oneLayerHack:
                         vals['triaPSD'][i] = zeroAeroConc * vals['triaPSD'][i]
-                        # print('Not using the PSD from the layer#%0.2d' % i)
+                    else:
+                        vals['triaPSD'][i] = [dVdlnrV0[flight_num-1,i]] * vals['triaPSD'][i]
+                        # Using the volume concentration ratio to keep the volume concentration profile same as the measurement
+                    # print('Not using the PSD from the layer#%0.2d' % i)
             vals['triaPSD'] = np.array(vals['triaPSD'])
             sphFrac = 0.999 - round(rnd.uniform(0, 1))*0.99
             vals['sph'] = [sphFrac,
@@ -343,7 +359,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         # read PSD bins
         try:
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
-                        "Campex_dVDlnr72_fitParams_Clean.pkl", 'rb')
+                        "Campex_dVDlnr72_fitParams.pkl", 'rb')
             dVdlnrParams = pickle.load(file)
             file.close()
             file = open("../../GSFC-ESI-Scripts/Jeff-Project/"
@@ -432,18 +448,25 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         if 'olh' in caseStr.lower():
             zeroAeroConc = [0.0001]
             oneLayerHack = 1  # True if only one layer is used
-            if 'wlayer' in caseStr.lower():
+            if 'wlayer' in caseStr.lower(): # Currently not used, but can be used to select a layer
                 whichLayer = int(caseStr.lower()[caseStr.lower().find('wlayer')+6:])# layer number to be used
             else:
-                whichLayer = 0     
-        # Run this if one layer is used
-        if oneLayerHack:
-            for i in range(len(vals['vol'])):
-                if i != whichLayer:
-                    if i != 4:
-                        # print(vals['vol'][i])
+                whichLayer = 0   
+        else:
+            zeroAeroConc = [0.0001]
+            whichLayer = 0  
+            # Defining PSD of four layers for a particular flight (fine mode for the case of CAMP2Ex)
+        for i in range(len(vals['vol'])):
+            if i != whichLayer:
+                if i != 4:
+                    # print(vals['vol'][i])
+                    # Run this if one layer is used
+                    if oneLayerHack:
                         vals['vol'][i] = zeroAeroConc * vals['vol'][i]
-                        # print('Not using the PSD from the layer#%0.2d' % i)
+                    else:
+                        vals['vol'][i] = [dVdlnrParams['dVdLog10D_GRASP_SumNorm'][flight_num,i]] * vals['vol'][i]
+                        # Using the volume concentration ratio to keep the volume concentration profile same as the measurement
+                    # print('Not using the PSD from the layer#%0.2d' % i)
 
         vals['vrtHght'] = [[ALH[0]], [ALH[1]], [ALH[2]], [ALH[3]], [ALH_C]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [ALHStd, ALHStd, ALHStd, ALHStd, ALHStd]       # mode 1, 2,... # Gaussian sigma in meters
