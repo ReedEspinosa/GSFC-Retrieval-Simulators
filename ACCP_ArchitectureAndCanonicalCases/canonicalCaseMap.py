@@ -116,7 +116,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         kFMax = 0.03                    # maximum k value for fine mode
         kCMin = 0.0001                  # minimum k value for coarse mode
         kCMax = 0.0005                  # maximum k value for coarse mode
-        ALH = [500, 1000, 2000, 3000]   # altitude of the fine mode layers in meters
+        ALH = [500, 1000, 1500, 2000]   # altitude of the fine mode layers in meters
         ALH_C = 1000                    # altitude of the coarse mode layer in meters
         ALHStd = 500                    # standard deviation of the altitude of the fine mode layers in meters
         nFM = 1.5                       # refractive index of the fine mode
@@ -255,7 +255,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
                 nAero = slope4RRI(nAero_, wvls, slope=0)
                 kAero = loguniform(kFMin, kFMax)*np.repeat(1, nwl)
             elif 'urban' in caseStr.lower():
-                nAero = slope4RRI(nAero_, wvls)
+                nAero = slope4RRI(nAero_, wvls, slope=-0.01)
                 kAero = loguniform(kFMin, kFMax)*np.repeat(1, nwl)
             else:
                 nAero = slope4RRI(nAero_, wvls)
@@ -338,7 +338,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         kFMax = 0.03                    # maximum k value for fine mode
         kCMin = 0.0001                  # minimum k value for coarse mode
         kCMax = 0.0005                  # maximum k value for coarse mode
-        ALH = [500, 1000, 2000, 3000]   # altitude of the fine mode layers in meters
+        ALH = [500, 1000, 1500, 2000]   # altitude of the fine mode layers in meters
         ALH_C = 1000                    # altitude of the coarse mode layer in meters
         ALHStd = 500                    # standard deviation of the altitude of the fine mode layers in meters
         nFM = 1.5                       # refractive index of the fine mode
@@ -476,7 +476,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
             nAero = slope4RRI(nAero_, wvls, slope=0)
             kAero = loguniform(kFMin, kFMax)*np.repeat(1, nwl)
         elif 'urban' in caseStr.lower():
-            nAero = slope4RRI(nAero_, wvls)
+            nAero = slope4RRI(nAero_, wvls, slope=-0.01)
             kAero = loguniform(kFMin, kFMax)*np.repeat(1, nwl)
         else:
             nAero = slope4RRI(nAero_, wvls)
