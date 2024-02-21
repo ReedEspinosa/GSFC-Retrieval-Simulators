@@ -10,7 +10,7 @@
 read -p "Are you want to run the slurm_run.py script? (yes/no) " -n 3 -r
 
 if [ "$REPLY" != "yes" ]; then
-    echo "Exiting"
+    echo "Exiting (use --dry-run to see the commands that would be run)"
     exit 1
 fi
 
@@ -46,8 +46,8 @@ do
         echo "python slurm_run.py $x --dry-run"
         echo "python slurm_run.py $x Triangular --dry-run"
     else
-        echo "python slurm_run.py $x"
-        echo "python slurm_run.py $x Triangular"
+        python slurm_run.py $x
+        python slurm_run.py $x Triangular
     fi
 done
 
