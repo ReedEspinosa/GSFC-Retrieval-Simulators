@@ -33,20 +33,7 @@ except:
 # Initiation and User Provided Settings
 # =============================================================================
 
-### Reed's ABI Settings###
-# waveInd = 2 # Wavelength index for plotting
-# waveInd2 = 4 # Wavelength index for AE calculation
-# fineFwdInd = 0 # index in forward data to use for fine mode plots 
-# fineBckInd = 0 # index in backward data to use for fine mode plots
-# crsFwdInd = 0 # index in forward data to use for coarse mode plots
-# crsBckInd = 1 # index in backward data to use for coarse mode plots
-# fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
-# pubQuality = True # If True, we use publication quality figures
-# # filePathPtrn = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
-# filePathPtrn = '/Users/wrespino/Synced/Working/ABI_initialTests/Test_threeSites_Ocean_V02.pkl'
-
-
-### Reed's PLRA Validation Settings###
+### Reed's ABI Settings### [0.47, 0.64, 0.87, 1.6 , 2.25]
 waveInd = 2 # Wavelength index for plotting
 waveInd2 = 4 # Wavelength index for AE calculation
 fineFwdInd = 0 # index in forward data to use for fine mode plots 
@@ -55,9 +42,21 @@ crsFwdInd = 1 # index in forward data to use for coarse mode plots
 crsBckInd = 1 # index in backward data to use for coarse mode plots
 fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
 pubQuality = False # If True, we use publication quality figures
-filePathPtrn = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-31_polarAOSmod_case08*_tFctrandLogNrm*_n*_nAng0.pkl'
-# filePathPtrn = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah/Run-30_polarAOSnoah_case08j_tFctrandLogNrm0.4_n79_nAng0.pkl'
-# filePathPtrn = '/Users/wrespino/Synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V0/Run-02_polarAOS_case08a_tFct0.000_n0_nAng0.pkl'
+# filePathPtrn = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
+filePathPtrn = '/Users/wrespino/Synced/RST_CAN-GRASP/GRASP_results/V0_AERONET-sites_ABI-only/TUNING_oceanSites_maxPerSite200_Ocean_V018.pkl'
+
+
+### Reed's PLRA Validation Settings###
+# waveInd = 0 # Wavelength index for plotting
+# waveInd2 = 4 # Wavelength index for AE calculation
+# fineFwdInd = 2 # index in forward data to use for fine mode plots 
+# fineBckInd = 0 # index in backward data to use for fine mode plots
+# crsFwdInd = 3 # index in forward data to use for coarse mode plots
+# crsBckInd = 1 # index in backward data to use for coarse mode plots
+# fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
+# pubQuality = False # If True, we use publication quality figures
+# filePathPtrn = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah_2modeCasesOnly/Run-30_polarAOS_case08*_tFctrandLogNrm*_n*_nAng0.pkl'
+# filePathPtrn = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah_2modeCasesOnly/Run-30_polarAOS_case08*_tFctrandLogNrm*_n*_nAng0.pkl'
 
 ### Anin's CAMP2Ex Settings ###
 # Location/dir where the pkl files are
@@ -88,39 +87,39 @@ showOverallStats = True # print RMSE of many GVs to terminal (may be slow for la
 recalcChi = False # If True, we recalculate chi^2 using difference between fwd and bck fit variables
 
 # The variables to plot; will automatically remove variables for which rsltDict is missing
-# vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_variable_key
-#     'aod':'aod',
+vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_variable_key
+    'aod':'aod',
 #     'aod_c':'aodMode',
 #     'aod_f':'aodMode',
-#     'angstrom':'aod',
-#     'aaod':'ssa',
+    'angstrom':'aod',
+    'aaod':'ssa',
 #     'fmf':'dVdlnr',
 #     'sph_f':'sph',
 #     'sph_c':'sph',
 #     'g':'g',
-#     'n_f':'n',
-#     'n_c':'n',
-#     'k_f':'k',
-#     'k_c':'k',
+    'n_f':'n',
+    'n_c':'n',
+    'k_f':'k',
+    'k_c':'k',
+#     'intensity':'meas_I',
+    'ssa':'ssa',
+    'reff_sub_um':'rEffMode',
+    'reff_abv_um':'rEffMode',
+    'vol_c':'vol',
+    'vol_f':'vol',
+#     'blandAltman':'aod',
+}
+
+# vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_variable_key
+#     'aod':'aod',
+#     'angstrom':'aod',
+#     'aaod':'ssa',
+#     'g':'g',
 #     'intensity':'meas_I',
 #     'ssa':'ssa',
 #     'reff_sub_um':'rEffMode',
 #     'reff_abv_um':'rEffMode',
-#     'vol_c':'vol',
-#     'vol_f':'vol',
-#     'blandAltman':'aod',
 # }
-
-vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_variable_key
-    'aod':'aod',
-    'angstrom':'aod',
-    'aaod':'ssa',
-    'g':'g',
-    'intensity':'meas_I',
-    'ssa':'ssa',
-    'reff_sub_um':'rEffMode',
-    'reff_abv_um':'rEffMode',
-}
 
 
 # "Viridis-like" colormap with white background
@@ -272,13 +271,21 @@ def plotProp(true, rtrv, axs, titleStr ='', scale='linear', xlabel=False, ylabel
     if stat:
         axs.text(0.6,0.1, 'N=%d' % len(true), transform=axs.transAxes, color=clrText, fontsize=FS) 
         Rcoef = np.nan if np.isclose(true[0], true).all() else np.corrcoef(true, rtrv)[0,1]
-        RMSE = np.sqrt(np.median((true - rtrv)**2))
-        bias = np.mean((rtrv-true))
+        errDiff = rtrv-true
+        RMSE = np.sqrt(np.median(errDiff**2))
+        bias = np.mean(errDiff)
         if not moreDigits:
             frmt = 'R=%5.3f\nRMS=%5.3f\nbias=%5.3f'
         else:
             frmt = 'R=%5.3f\nRMS=%5.4f\nbias=%5.4f'
-        textstr = frmt % (Rcoef, RMSE, bias)
+        if titleStr=='AOD': 
+            frmt = frmt+'\nEE=%4.2f%%'
+            EE_fun = lambda t : 0.05+0.1*t
+            # EEttlTxt = EEttlTxt + ', EE=±(0.03+0.1*τ)'
+            inEE = np.sum(np.abs(errDiff) < EE_fun(true))/len(true)*100
+            textstr = frmt % (Rcoef, RMSE, bias, inEE)
+        else:
+            textstr = frmt % (Rcoef, RMSE, bias)    
         axs.text(0.07,0.65, textstr, transform=axs.transAxes, color=clrText, fontsize=FS)
 
 
