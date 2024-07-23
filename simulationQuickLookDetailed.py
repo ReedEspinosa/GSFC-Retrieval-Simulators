@@ -136,7 +136,14 @@ white_viridis = LinearSegmentedColormap.from_list('white_viridis', [
 forceReff = True #Force rEff claculations of fine/coarse in both fwd and back
 modeCuttOff = 0.5 # Separation between fine and coarse mode in μm of radius 
 
-
+# measurement errors for convergence filter calculation
+σx={'I'   :0.030, # relative
+    'QoI' :0.005, # absolute
+    'UoI' :0.005, # absolute
+    'Q'   :0.005, # absolute in terms of Q/I
+    'U'   :0.005, # absolute in terms of U/I
+    }
+maxIter = 50 # Keep only pixels below max iterations
 
 # =============================================================================
 # Function Definitions for Plots
@@ -451,7 +458,7 @@ else:
     keepInd = np.ones(len(simBase.rsltBck), dtype='bool')
 
 # apply convergence filter
-simBase.conerganceFilter(forceχ2Calc=recalcChi) # ours looks more normal, but GRASP's produces slightly lower RMSE
+simBase.conerganceFilter(forceχ2Calc=recalcChi, σ=σx) # ours looks more normal, but GRASP's produces slightly lower RMSE
 costThresh = np.percentile([rb['costVal'] for rb in simBase.rsltBck[keepInd]], 95)
 keepInd = np.logical_and(keepInd, [rb['costVal'] < costThresh for rb in simBase.rsltBck])
 keepIndAll = keepInd
@@ -459,9 +466,11 @@ print('%d/%d fit surface type %s and convergence filter' % (keepInd.sum(), len(s
 
 # apply AOD min after we plot AOD
 keepInd = np.logical_and(keepInd, [rf['aod'][waveInd]>=aodMin for rf in simBase.rsltFwd])
-print('%d/%d fit surface type %s and aod≥%4.2f' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, aodMin))
+print('%d/%d fit prior filtering and aod≥%4.2f' % (keepInd.sum(), len(simBase.rsltBck), aodMin))
 keepInd = np.logical_and(keepInd, [rf['aod'][waveInd]<=aodMax for rf in simBase.rsltFwd])
-print('%d/%d fit surface type %s and aod≤%4.2f' % (keepInd.sum(), len(simBase.rsltBck), surf2plot, aodMax))
+print('%d/%d fit prior filtering and aod≤%4.2f' % (keepInd.sum(), len(simBase.rsltBck), aodMax))
+keepInd = np.logical_and(keepInd_, [rb['nIter']<maxIter for rb in simBase.rsltBck])
+print('%d/%d fit prior filtering and maxIter≤%4.2f' % (keepInd.sum(), len(simBase.rsltBck), maxIter))
 
 # Calculate modal Reff above and below a micron in diameter
 if np.any(['reff' in var.lower() for var in vars2plot.keys()]): 
