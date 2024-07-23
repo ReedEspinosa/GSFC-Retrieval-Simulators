@@ -35,7 +35,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     # instrument
     instrument=instrument
     # Full path to save simulation results as a Python pickle
-    savePath = '../../../ACCDAM/2022/Campex_Simulations/Feb2023/22/'\
+    savePath = '../../../ACCDAM/2023/Campex_Simulations/Sep2023/26/'\
         'Test/withCoarseMode/%s/'\
         '%sCamp2ex_%s_AOD_%sp%s_550nm_SZA_%s_%s.pkl' %( psd_type,instrument,
                                                 psd_type,
@@ -45,7 +45,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
     
     # Full path grasp binary
     # binGRASP = '/usr/local/bin/grasp'
-    binGRASP = '../../GRASP_GSFC/build_megaharp01_AGU/bin/grasp_app'
+    binGRASP = '../../GRASP_GSFC/build_uvswirmap/bin/grasp_app'
     
     # Full path grasp precomputed single scattering kernels
     krnlPath = '../../GRASP_GSFC/src/retrieval/internal_files'
@@ -90,7 +90,7 @@ def runMultiple(τFactor=1.0, SZA = 30, Phi = 0, psd_type='2modes',
 # %% Sun-Satellite geometry information
 tau = np.logspace(np.log10(0.01), np.log10(2.0), 1)
 psd_type = '2modes' # '2modes' or '16bins'
-instrument = 'megaharp01' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+instrument = 'uvswirmap01' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 SZA = 30
 phi = 0
 useRealGeometry = True
@@ -107,7 +107,7 @@ for i in tau:
     loop_start_time = time.time()
     for j in np.r_[1:2]:
         flight_loop_start_time = time.time()
-        for k in np.r_[0]:
+        for k in np.r_[1]:
             conCase = 'addCoarse_campex_flight#%.2d_layer#%.2d' %(j,k)
             print('<-**->'*10)
             try:

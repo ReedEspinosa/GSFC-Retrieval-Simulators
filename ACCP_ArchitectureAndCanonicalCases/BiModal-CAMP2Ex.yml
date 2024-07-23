@@ -1,0 +1,47 @@
+#-----------------------------------------------------------------------------------#
+forward:
+  instrument: 'uvswirmap01'                                   # Instrument name
+  nModes: 5                                                     # Number of modes
+  surface: 'Ocean'                                              # Surface type
+  surfaceType: 'open'                                           # Surface string: for ocean either 'open_ocean' or 'dark_ocean'
+  spectralInfo: 'spectralfine_spectralcoarse' #'spectralfine_spectralcoarse' #                           # Spectral information type: 'flatfine_flatcoarse' for spectrally flat RI, urban for fine urban, use nothing if it is spectrally dependent
+  psdType: '2modes'                                             # PSD type '2modes' or '16bins'
+  geometry: 'Full'                                              # Geometry type
+  coarseMode: False                                             # Coarse mode type
+  psdMode: 'campex_bi'                                          # PSD mode type
+  yaml: 'settings_FWD_IQU_POLAR_1lambda.yml'                    # List of YAML files containing the forward setup
+  fixedCoarseMode: True                                         # If True, the coarse mode will be fixed to the value in the YAML file
+#-----------------------------------------------------------------------------------#
+retrieval:
+  yaml: 'settings_BCK_POLAR_%s_Campex_flatRI_%s%s.yml'          # List of YAML files containing the retrieval setup
+  randmGsOn: True                                               # If True, the random guess will be used as first guess
+#-----------------------------------------------------------------------------------#
+run:                                                            # Run parameters
+  partition: 'zen4'                                             # Partition name
+  config: 'conf#04'                                             # Configuration name
+  nSims: 5                                                      # the number of inversion to perform, each with its own random noise
+  maxCPU: 1                                                     # Maximum number of CPUs
+
+  nFlights: 1                                                  # Number of flights
+
+  savePathParent: '../../../ACCDAM/2024/Test/'                   # Parent directory where the results will be saved
+  MmmYY: 'Jan'                                                  # Month and year of the simulation
+  DD: '30'                                                      # Day of the simulation
+  saveFN: '%s_AOD_%sp%s_550nm_SZA_%0.4d_PHI_%0.4d_%s.pkl'       # Name of the file where the results will be saved
+
+  # GRASP parameters
+  graspBin: '../../GRASP_GSFC/build_uvswirmap_v3/bin/grasp_app' # Path to GRASP binary
+  krnlPath : '../../GRASP_GSFC/src/retrieval/internal_files'    # Full path grasp precomputed single scattering kernels
+  
+  # Special parameters
+  oneLayerHack: True                                            # If True, the forward model will be run with a single layer
+  whichLayer: 0                                                 # If oneLayerHack is True, this is the layer to use
+  zeroAeroConc: [0.000001]                                      # If True, the forward model will be run with zero aerosol concentration
+
+  # Print 
+  verbose: True                                                 # If True, print more information
+  
+  # Housekeeping
+  deleteTemp: True                                              # If True, delete temporary files
+  tagName: 'Camp2ex_OLH'                                        # Tag name for the temporary files, OLH is for one layer hack
+#-----------------------------------------------------------------------------------#

@@ -28,8 +28,8 @@ from canonicalCaseMap import setupConCaseYAML
 savePath = './job/exampleSimulationTest#1.pkl'
 
 # Full path grasp binary
-# binGRASP = '/usr/local/bin/grasp'
-binGRASP = '../../GRASP_GSFC/build_megaharp01_AGU/bin/grasp_app'
+binGRASP = '/usr/local/bin/grasp'
+
 
 # Full path grasp precomputed single scattering kernels
 krnlPath = './src/retrieval/internal_files'
@@ -71,4 +71,4 @@ print('RMS deviations (retrieved-truth) at wavelength of %5.3f μm:' % wavelengt
 pprint.pprint(simA.analyzeSim(0)[0])
 
 # save simulated truth data to a NetCDF file
-#simA.saveSim_netCDF(savePath[:-4], verbose=True)
+# simA.saveSim_netCDF(savePath[:-4], verbose=True)

@@ -38,7 +38,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
         wvls = [0.441, 0.549, 0.669, 0.873]
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
@@ -50,7 +50,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
         wvls = [0.441, 0.549, 0.669, 0.873]
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
@@ -62,7 +62,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
         wvls = [0.380, 0.410, 0.550, 0.670, 0.870, 0.940, 1.200, 1.570]
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
@@ -74,7 +74,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
         wvls = [0.380, 0.410, 0.550, 0.670, 0.870, 1.200, 1.570]
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
@@ -93,7 +93,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             wvls = [0.41, 0.47, 0.55, 0.65, 0.87, 1.64, 2.13] # Nλ=7
         else: # we only use misr wavelengths
             wvls = [0.446, 0.558, 0.672, 0.867] # Nλ=7
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0])]
         if 'polar' in archName.lower(): meas = np.r_[meas, np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
@@ -108,7 +108,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         phi = np.concatenate([np.repeat(φ, 10) for φ in azmthΑng]) # 0,10,...,90
         phi = np.tile(phi, len(msTyp))
         wvls = [0.355, 0.360, 0.380, 0.410, 0.532, 0.550, 0.670, 0.870, 1.064, 1.550, 1.650] # Nλ=8
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         errStr = 'polar07'
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
@@ -118,7 +118,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-63.88,  -48.42,  -34.19 ,  -20.4 ,  -6.78 ,  6.78,  20.4,  34.19,  48.42,  63.88], len(msTyp)) # corresponds to 450 km orbit
         wvls = [0.360, 0.380, 0.410, 0.550, 0.670, 0.870, 1.550, 1.650] # Nλ=8
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         errStr = [y for y in archName.lower().split('+') if 'polar07' in y][0]
@@ -129,7 +129,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile(np.linspace(0,70,30), len(msTyp)) # corresponds to 450 km orbit
         wvls = [0.550] # Nλ=8
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         errStr = 'polar07'
@@ -140,7 +140,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         msTyp = [41, 42, 43] # must be in ascending order
         thtv = np.tile([-60, 0.001, 60], len(msTyp))
         wvls = [0.380, 0.410, 0.550, 0.670, 0.865] #
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.repeat(relPhi, len(thtv)) # currently we assume all observations fall within a plane
         errStr = [y for y in archName.lower().split('+') if 'polar09' in y][0]
@@ -205,7 +205,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             wvls.insert(0,0.355)
         errStr = [y for y in archName.lower().split('+') if ('lidar05' in y or 'lidar06' in y)][0] # this must link to an error model in addError() below
         for wvl, msTyp in zip(wvls, msTyp): # This will be expanded for wavelength dependent measurement types/geometry
-            nbvm = Nlayers*np.ones(len(msTyp), np.int)
+            nbvm = Nlayers*np.ones(len(msTyp), int)
             thtv = np.tile(singProf, len(msTyp))
             meas = np.block([np.repeat(n*0.001, n) for n in nbvm]) # measurement value should be type/1000
             phi = np.repeat(0, len(thtv))
@@ -213,7 +213,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             nowPix.addMeas(wvl, msTyp, nbvm, 0.01, thtv, phi, meas, errModel=errModel)
     if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
         msTyp = [31, 35] # must be in ascending order
-        nbvm = Nlayers*np.ones(len(msTyp), np.int)
+        nbvm = Nlayers*np.ones(len(msTyp), int)
         thtv = np.tile(singProf, len(msTyp))
         wvls = [0.532, 1.064] # Nλ=2
         meas = np.r_[np.repeat(0.007, nbvm[0])]

@@ -1,0 +1,102 @@
+# This yaml file contains the configurations for the CAMP2EX case studies.
+# Using this YAML for systematic analysis of the case studies. Also, to avoid any mistakes in the configurations due to manual entry.
+# The configurations are used by the CAMP2EX case study scripts to run the case studies.
+
+version: 1.0
+
+#-----------------------------------------------------------------------------------#
+# The common configurations for all the case studies.
+default:
+  run:
+    # NyX parameters
+    partition: 'zen4'                                   # Partition name
+    config: 'All'                                       # Configuration name it should be the same as the one in the configurations section, or 'All' to run all the configurations
+    nFlights: 18                                        # Number of flights # number of flights used for simulation (should be 18 for full camp2ex measurements)
+    nSims: 5                                            # the number of inversion to perform, each with its own random noise
+    maxCPU: 1                                           # Maximum number of CPUs
+    nNodes: 1                                           # Number of nodes to be used, ideally 7 for NyX, with the Discover there is several options, it can be more than 7
+    dryRun: False                                       # If True, the code will not run, just print the commands
+    savePathParent: '../../../ACCDAM/2024/Sim/'         # Parent directory where the results will be saved
+    MmmYY: 'Feb'                                        # Month and year of the simulation
+    DD: '19'                                            # Day of the simulation
+    saveFN: '%s_AOD_%sp%s_550nm_SZA_%0.4d_PHI_%0.4d_%s.pkl'       # Name of the file where the results will be saved
+
+    # GRASP parameters
+    
+    graspBin: '../../GRASP_GSFC/build_megaharp01_AGU/bin/grasp_app' # NyX
+    # graspBin: '../../GRASP_GSFC/build_uvswirmap_v3/bin/grasp_app' # Discover
+    krnlPath : '../../GRASP_GSFC/src/retrieval/internal_files'    # Full path grasp precomputed single scattering kernels
+
+    # Print
+    verbose: False                                        # If True, print more information
+    
+    # Housekeeping
+    deleteTemp: True
+    tagName: 'Camp2ex_OLH_AA'
+
+    # Special parameters
+    oneLayerHack: True
+    whichLayer: 0                                                 # If oneLayerHack is True, this is the layer to use
+    zeroAeroConc: [0.000001]                                      # If True, the forward model will be run with zero aerosol concentration
+
+  # The configurations for the forward model.
+  forward:
+    instrument: 'uvswirmap01'
+    nModes: 5
+    psdType: '2modes'                                             # '2modes' or '16bins'
+    geometry: 'Full'
+    coarseMode: False
+    psdMode:
+      bi:
+        yaml: 'settings_FWD_IQU_POLAR_1lambda.yml'
+      tria:
+        yaml: 'settings_FWD_IQU_POLAR_1lambda_CustomBins.yml'
+    fixedCoarseMode: True
+    surface: 'Ocean'
+    aodMin: 0.1                                           # Minimum AOD (not accurate, just for the sake of the example) and use it as a scale factor 
+    aodMax: 10                                             # Maximum AOD (not accurate, just for the sake of the example) and use it as a scale factor 
+
+  # common configurations for the retrieval
+  retrieval:
+    randmGsOn: True  
+#-----------------------------------------------------------------------------------#
+configurations:
+
+  # The code utilizes the `$psdMode` defined in the default for the forward model.
+  conf#00:
+    forward:
+      surfaceType: 'dark'
+      spectralInfo: 'flatfine_flatcoarse'
+    retrieval:
+      yaml: 'settings_BCK_POLAR_%s_Campex_flatRI_%s%s.yml'
+
+  conf#01:
+    forward:
+      surfaceType: 'open'
+      spectralInfo: 'flatfine_flatcoarse'
+    retrieval:
+      yaml: 'settings_BCK_POLAR_%s_Campex_flatRI_%s%s.yml'
+  
+  conf#02:
+    forward:
+      surfaceType: 'dark'
+      spectralInfo: 'urbanfine_spectralcoarse'
+    retrieval:
+      yaml: 'settings_BCK_POLAR_%s_Campex_spectralRI_%s%s.yml'
+
+  conf#03:
+    forward:
+      surfaceType: 'open'
+      spectralInfo: 'urbanfine_spectralcoarse'
+    retrieval:
+      yaml: 'settings_BCK_POLAR_%s_Campex_spectralRI_%s%s.yml'
+
+  conf#04:
+    forward:
+      surfaceType: 'open'
+      spectralInfo: 'urbanfine_spectralcoarse'
+    retrieval:
+      yaml: 'settings_BCK_POLAR_%s_Campex_flatRI_%s%s.yml'
+#-----------------------------------------------------------------------------------#
+
+

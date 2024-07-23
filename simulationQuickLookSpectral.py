@@ -7,11 +7,11 @@ Specifically designed to accommodate the simulation retrieval study based on
 CAMP2Ex measurements
 
 Created on Wed Jul 13 14:18:11 2022
+Modified: 
 
-@author: anin puthukkudy
+@author: Anin Puthukkudy
 """
 
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # =============================================================================
 # Import the libraries
@@ -23,20 +23,34 @@ from pprint import pprint
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'});mpl.rcParams.update({'ytick.right': 'True'});mpl.rcParams.update({'xtick.top': 'True'});plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"; plt.rcParams["figure.dpi"]=330
+mpl.rcParams.update({
+    'xtick.direction': 'in',
+    'ytick.direction': 'in',
+    'ytick.right': 'True',
+    'xtick.top': 'True',
+    'mathtext.fontset': 'cm',
+    'figure.dpi': 330,
+    'font.family': 'cmr10',
+    'axes.unicode_minus': False
+})
 from scipy import interpolate
 from scipy.stats import norm, gaussian_kde, ncx2, moyal, binned_statistic
 from simulateRetrieval import simulation
 import seaborn as sns
 from matplotlib.colors import LogNorm
 import pickle
+
 # automatic reload option for IPython
 from IPython import get_ipython
 ipython = get_ipython()
-
 if '__IPYTHON__' in globals():
     ipython.magic('load_ext autoreload')
     ipython.magic('autoreload 2')
+
+import warnings
+
+# Suppress all warnings
+warnings.filterwarnings("ignore")
 
 # =============================================================================
 # Local definitions
@@ -45,7 +59,7 @@ if '__IPYTHON__' in globals():
 # aod weighted product
 aodWght = lambda x,τ : np.sum(x*τ)/np.sum(τ)
 
-def violinPlotEdits(parts, facecolor=False):
+def violinPlotEdits(parts, facecolor=False, verbose=False):
     '''
     Violin plot edits
     
@@ -67,11 +81,25 @@ def violinPlotEdits(parts, facecolor=False):
             pc.set_alpha(0.5)
         
     # color of mean
-    for pc in ['cmeans']:
-        vp = parts[pc]
-        vp.set_edgecolor('k')
-        vp.set_linewidth(1)
-        
+    try:
+        for pc in ['cmeans']:
+            vp = parts[pc]
+            vp.set_edgecolor('k')
+            vp.set_linewidth(1)
+    except Exception as e:
+        if verbose:
+            print(e)
+            print('Error in plotting mean')
+
+    try:
+        for pc in ['cmedians']:
+            vp = parts[pc]
+            vp.set_linewidth(1)
+    except Exception as e:
+        if verbose:
+            print(e)
+            print('Error in plotting median')
+
 def axisLabelsLimits(axs, bandStr, limits, 
                      xlabel=r'Spectral bands ($\mu$m)', ylabel='Error in AOD'):
     '''
@@ -154,9 +182,10 @@ def scatter_density(x, y, cmap='jet', alpha=0.5, sizeM=1, cBar=False,
     plt.show()
     del im
 
-def makesweetgraph(x=None, y=None, cmap='GnBu', ylab=None, xlab=r'AOD$_{550\ nm}$',
-                   bins=10, figsize=(3,3), snsbins=50,
+def makesweetgraph(x=None, y=None, cmap='Blues', ylab=None, xlab=r'AOD$_{550\ nm}$',
+                   bins=5, figsize=(3,3), snsbins=20,
                    yScale='linear', xScale='log', alpha=0.3, cScale='linear',
+                   cMean=False, pLine=False,
                    **kwargs):
     '''
     This function creates a 2D histogram with marginal histograms
@@ -219,8 +248,9 @@ def makesweetgraph(x=None, y=None, cmap='GnBu', ylab=None, xlab=r'AOD$_{550\ nm}
             else:
                 print('Invalid keyword argument:')
                 print(key)
-        
-    x_ = np.logspace(np.log10(0.01), np.log10(1),bins)
+
+    # This is where the x abd y bins are defined
+    x_ = np.logspace(np.log10(0.01), np.log10(2),bins)
     if xScale == 'linear':
         x_ = np.linspace(0, np.max(x), bins)
     
@@ -275,23 +305,23 @@ def makesweetgraph(x=None, y=None, cmap='GnBu', ylab=None, xlab=r'AOD$_{550\ nm}
         cb.set_label('density of points')
     
     # binned statistics
-    s, edges, _ = binned_statistic(x, y, statistic='mean', bins=x_)
-    std_, _, _ = binned_statistic(x, y, statistic=np.std, bins=x_)
-    n_, _, _ = binned_statistic(x, y, statistic='count', bins=x_)
-    p15, _, _= binned_statistic(x, y, statistic=lambda x: np.percentile(x, 15), bins=x_)
-    p85, _, _= binned_statistic(x, y, statistic=lambda x: np.percentile(x, 85), bins=x_) 
+    if cMean or pLine:
+        s, edges, _ = binned_statistic(x, y, statistic='mean', bins=x_)
+        std_, _, _ = binned_statistic(x, y, statistic=np.std, bins=x_)
+        n_, _, _ = binned_statistic(x, y, statistic='count', bins=x_)
+        p15, _, _= binned_statistic(x, y, statistic=lambda x: np.percentile(x, 15), bins=x_)
+        p85, _, _= binned_statistic(x, y, statistic=lambda x: np.percentile(x, 85), bins=x_) 
 
     # Bias of each bin in the x-axis
-    sns.scatterplot(y=s, x=edges[:-1]+np.diff(edges)/2, alpha=0.5, c="crimson", zorder=3, ax=ax1.ax_joint)
-    
-    # STD of each bin in the x-axis
-    # sns.lineplot(data=df, x="timepoint", y="signal", ci='sd', err_style='bars')
-    # sns.lineplot(y=s+(std_/np.sqrt(n_)), x=edges[:-1]+np.diff(edges)/2, color="crimson", zorder=3, ax=ax1.ax_joint)
-    # sns.lineplot(y=s-(std_/np.sqrt(n_)), x=edges[:-1]+np.diff(edges)/2, color="crimson", zorder=3, ax=ax1.ax_joint)
+    if cMean: sns.scatterplot(y=s, x=edges[:-1]+np.diff(edges)/2, alpha=0.5, c="crimson", zorder=3, ax=ax1.ax_joint)
     
     # percentile
-    sns.lineplot(y=p15, x=edges[:-1]+np.diff(edges)/2, color="y", zorder=2, ax=ax1.ax_joint)
-    sns.lineplot(y=p85, x=edges[:-1]+np.diff(edges)/2, color="y", zorder=2, ax=ax1.ax_joint)
+    try:
+        if pLine:
+            sns.lineplot(y=p15, x=edges[:-1]+np.diff(edges)/2, color="y", zorder=2, ax=ax1.ax_joint)
+            sns.lineplot(y=p85, x=edges[:-1]+np.diff(edges)/2, color="y", zorder=2, ax=ax1.ax_joint)
+    except ValueError:
+        print('Error in plotting percentile lines')
 
 def plotSpectralVars(statDict_, specVar, rs_,
                      simBase, 
@@ -377,16 +407,19 @@ def plotSpectralVars(statDict_, specVar, rs_,
         Rcoef = np.corrcoef(true, rtrv)[0,1]
         RMSE = np.sqrt(np.median((true - rtrv)**2))
         bias = np.mean((rtrv-true))
+        median = np.median((rtrv-true))
         sc.calc(statDict_, spclVar, true, rtrv)
         
         Lst.append((rtrv-true).T)
         
         parts = ax.violinplot((rtrv-true).T, [i+1], points= 300,
-                                showmeans=True, showmedians=False,
-                                showextrema=False, quantiles=[0.1, 0.9],
-                                bw_method='silverman')
+                                showmeans=False, showmedians=True,
+                                showextrema=False,#  quantiles=[0.1, 0.9],
+                                bw_method=0.5) # 'silverman' or 'scott' read the https://matplotlib.org/stable/gallery/statistics/violinplot.html#sphx-glr-gallery-statistics-violinplot-py for documentation
         violinPlotEdits(parts)
-        ax.text(i+1.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
+        
+        # line in the violin plot for the mean/median
+        ax.text(i+1.1,median, '%0.3f' %round(median, 3), fontsize=8)
         # ax.text(i+1.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
         
         # plot the makesweetgraph
@@ -402,6 +435,32 @@ def plotSpectralVars(statDict_, specVar, rs_,
     axisLabelsLimits(ax, rs_['bandStr'], limits=limits,
                      ylabel='Error in \n %s' %yStr) 
 
+def handle_plot_error(ax, ax_idx, y_str, x_lab):
+    print(f'Error in plotting {y_str}')
+    ax[ax_idx].cla()
+    while len(ax[ax_idx].lines) > 0:
+        ax[ax_idx].lines[0].remove()
+    ax[ax_idx].text(0.5,0.5, f'Error in plotting {y_str} vs {x_lab}', fontsize=8)
+    ax[ax_idx].axis('off')
+
+def plotStats(statsArr_, ax, title, cmap='viridis',
+              fmt=".2f", **kwargs):
+    
+    # plot the array
+    hm = sns.heatmap(statsArr_, annot=True, fmt=fmt, cmap=cmap, ax=ax, **kwargs)
+    ax.set_xticklabels(rs_['bands'])
+    ax.set_yticklabels(spectralVars)
+    
+    hm.set_xticklabels(hm.get_xticklabels(), rotation=60)
+    hm.set_yticklabels(hm.get_yticklabels(), rotation=0)
+    ax.set_title(title)
+
+def calculate_metrics(true, rtrv):
+    Rcoef = np.corrcoef(true, rtrv)[0,1]
+    RMSE = np.sqrt(np.median((true - rtrv)**2))
+    bias = np.mean((rtrv-true))
+    return Rcoef, RMSE, bias
+   
 class statsCalc():
     '''
     Calculates the statistics for the given variable
@@ -436,46 +495,75 @@ rs_['waveInd'] = 2
 # Wavelength index for AE calculation
 rs_['waveInd2'] = 4
 
+# CAMP2Ex configuration dictionary
+confLst = [ ['00',  'dark'],
+            ['01',  'open'],
+            ['02',  'dark'],
+            ['03',  'open'],
+            ['04',  'open']]
+i = 0                               # index of the configuration to be used for the case of camp2ex [0-4]
+
 # Define the string pattern for the file name
 rs_['fnPtrnList'] = []
+rs_['conf#'] = confLst[i][0]        # Options: 00, 01, 02, 03, 04, 0000, 0100, 0200, 0300, 0400  
+rs_['psdBinType'] = 'bi'            # 'bi' or 'tria' This for camp2ex
+rs_['month'] = 'Feb'                # Camp2Ex configuration
+rs_['day'] = '05'                   # Camp2Ex configuration
+rs_['year'] = 2024                  # Camp2Ex configuration
+rs_['dirTag'] = 'Sim'               # 'Sim' for real simulation, 'Test' for test run. Camp2Ex configuration
+rs_['oceanType'] = confLst[i][1]    # 'dark' or 'bright' ocean surface. Camp2Ex configuration
+rs_['instrument'] = 'uvswirmap01'   # 'uvswirmap01' or 'uvswirmap0100' Camp2Ex configuration
 
-# fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-# rs_['fnPtrn'] = 'Camp2ex_AOD_*_550nm_*_campex_tria_flight#*_layer#00.pkl'
-
-rs_['fnPtrn'] = 'Camp2ex_AOD_*_550nm_*_conf#01_dark_ocean_fwd_RndmGsOn_test_addCoarse_campex_tria_flatfine_flatcoarse_flight#*_layer#00.pkl'# fnPtrn = 'Camp2ex_AOD_*_550nm_SZA_30*_PHI_*_campex_flight#*_layer#00.pkl' #'Camp2ex_AOD_*_550nm_*_conf#01_dark_ocean_fwd_RndmGsOn_test_addCoarse_campex_tria_flatfine_flatcoarse_flight#*_layer#00.pkl' #
+rs_['fnPtrn'] = 'Camp2ex_OLH_TS*AOD_*_550nm_*_conf#%s_*_campex_%s_*_flight#*_layer#00.pkl' % (rs_['conf#'], rs_['psdBinType'])
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
 
 # Location/dir where the pkl files are
-rs_['inDirPath'] = '/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/' #'/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'#'/home/aputhukkudy/ACCDAM/2023/Campex_Simulations/Jul2023/12/fullGeometry/withCoarseMode/darkOcean/2modes/uvswirmap01/'
+rs_['inDirPath'] = '/data/ESI/User/aputhukkudy/ACCDAM/%d/%s/%s/%s/Full/Geometry/CoarseModeFalse/%sOcean/2modes/%s/' % \
+                    (rs_['year'], rs_['dirTag'], rs_['month'], rs_['day'], rs_['oceanType'], rs_['instrument']) 
 
 # more tags and specifiations for the scatter plot
-rs_['surf2plot'] = 'both' # land, ocean or both
-rs_['aodMin'] = 0.2 # does not apply to first AOD plot
-rs_['aodMax'] = 2
-rs_['nMode'] = 0 # Select which layer or mode to plot
-rs_['fnTag'] = 'AllCases'
-rs_['xlabel'] = 'Simulated Truth'
-rs_['MS'] = 2
-rs_['FS'] = 10
-rs_['LW121'] = 1
+rs_['surf2plot']  = 'both'      # land, ocean or both
+rs_['aodMin']     = 0.1         # does not apply to first AOD plot
+rs_['aodMax']     = 5
+rs_['nMode']      = 0           # Select which layer or mode to plot
+rs_['fnTag']      = 'AllCases'
+rs_['xlabel']     = 'Simulated Truth'
+rs_['MS']         = 2
+rs_['FS']         = 10
+rs_['LW121']      = 1
 rs_['pointAlpha'] = 0.20
-rs_['clrText'] = '#FF6347' #[0,0.7,0.7]
-rs_['nBins'] = 200 # no. of bins for histogram
-rs_['nBins2'] = 200 # no. of bins for 2D density plot
-rs_['lightSave'] = True # Omit PM elements and extinction profiles from MERGED files to save space
-rs_['chiMax'] = 3
+rs_['clrText']    = '#FF6347'   # [0,0.7,0.7]
+rs_['nBins']      = 200         # no. of bins for histogram
+rs_['nBins2']     = 200         # no. of bins for 2D density plot
+rs_['lightSave']  = True        # Omit PM elements and extinction profiles from MERGED files to save space
+rs_['chiMax']     = 3
+
 # Define the path of the new merged pkl file
-rs_['saveFN'] = 'MERGED_'+rs_['fnPtrn'].replace('*','ALL')
-rs_['savePATH'] = os.path.join(rs_['inDirPath'],rs_['saveFN'])
+rs_['saveFN']     = 'MERGED_'+rs_['fnPtrn'].replace('*','ALL')
+rs_['savePATH']   = os.path.join(rs_['inDirPath'],rs_['saveFN'])
+
+# Define the index for the fine and coarse mode
+# This is hard coded for now based on the CAMP2Ex simulations
+rs_['fineModeIndFWD'] = 0
+rs_['coarseModeIndFWD'] = 4
+rs_['fineModeIndBCK'] = 0
+rs_['coarseModeIndBCK'] = 1
 
 # =============================================================================
 # Load data
 # =============================================================================
 
 # Define the path of the new merged pkl file
-loadPATH = os.path.join(rs_['inDirPath'],rs_['fnPtrn'])
-simBase = simulation(picklePath=loadPATH)
+loadPATH = os.path.join(rs_['inDirPath'],rs_['saveFN'])
+try:
+    simBase = simulation(picklePath=loadPATH)
+except Exception as e:
+    print(e)
+    print('Error in loading the simulation object: check the path')
+    print(loadPATH)
+    raise SystemExit
 
+rs_['saveFN'] = rs_['saveFN'].replace('#', '-')
 
 # print general stats to console
 print('Showing results for %5.3f μm' % simBase.rsltFwd[0]['lambda'][rs_['waveInd']])
@@ -492,49 +580,81 @@ lp = np.array([0 for rf in simBase.rsltFwd])
 rs_['keepInd'] = lp>99 if rs_['surf2plot']=='land' else lp<1 if rs_['surf2plot']=='ocean' else lp>-1
 
 # apply convergence filter
-simBase.conerganceFilter(forceχ2Calc=True) # ours looks more normal, but GRASP's produces slightly lower RMSE
-rs_['costThresh'] = np.percentile(np.array([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']],90)
-rs_['costThresh'] = min(rs_['costThresh'], rs_['chiMax'])
-rs_['keepIndAll'] = rs_['keepInd'] # saving all indexes before the chi2 filter
-rs_['keepInd'] = np.logical_and(rs_['keepInd'], [rb['costVal']<rs_['costThresh'] for rb in simBase.rsltBck])
+σx={'I'   :0.030, # relative
+    'QoI' :0.005, # absolute
+    'UoI' :0.005, # absolute
+    'Q'   :0.005, # absolute in terms of Q/I
+    'U'   :0.005, # absolute in terms of U/I
+    } # absolute
+# ours looks more normal, but GRASP's produces slightly lower RMSE
+simBase.conerganceFilter(forceχ2Calc=True, σ=σx) 
 
+rs_['costThresh']   = np.percentile(np.array([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']],10)
+rs_['costThresh']   = min(rs_['costThresh'], rs_['chiMax'])
+rs_['keepIndAll']   = rs_['keepInd']        # saving all indexes before the chi2 filter
+rs_['keepInd_']     = np.logical_and(rs_['keepInd'], [rb['costVal']<rs_['costThresh'] for rb in simBase.rsltBck])
+maxIter             = 50                # Keep the pixels that are below max iterations
+try:
+    rs_['keepInd']  = np.logical_and(rs_['keepInd_'], [rb['nIter']<maxIter for rb in simBase.rsltBck])
+    print('%d/%d max iterations filter (maxIter = %d)' % (rs_['keepInd'].sum(), rs_['keepInd_'].sum(), maxIter))
+except Exception as e:
+    print(e)
+    print('Error in applying the max iteration filter')
+    print('Keeping all pixels')
+    rs_['keepInd'] = rs_['keepInd_']
+clrVar              = np.sqrt(np.array([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']]) # this is slow!
+rs_['clrVar']       = np.asarray([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']]
+rs_['clrVarAll']    = rs_['clrVar']
+print('%d/%d fit surface type %s and convergence filter' % (rs_['keepInd_'].sum(), len(simBase.rsltBck), rs_['surf2plot']))
 
-# variable to color point by in all subplots
-clrVar = np.sqrt(np.array([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']]) # this is slow!
-rs_['clrVar'] = np.asarray([rb['costVal'] for rb in simBase.rsltBck])[rs_['keepInd']]
-rs_['clrVarAll'] = rs_['clrVar']
-# print('%d/%d fit surface type %s and convergence filter' % (rs_['keepInd'].sum(), len(simBase.rsltBck), rs_['surf2plot']))
+# =============================================================================
+# AOD Filter
+# =============================================================================
 
+# apply AOD min after we plot AOD
+rs_['keepInd'] = np.logical_and(rs_['keepInd'], [rf['aod'][rs_['waveInd']]>=rs_['aodMin'] for rf in simBase.rsltFwd])
+print('%d/%d fit surface type %s and aod≥%4.2f' % (rs_['keepInd'].sum(), len(simBase.rsltBck), rs_['surf2plot'], rs_['aodMin']))
+rs_['keepInd'] = np.logical_and(rs_['keepInd'], [rf['aod'][rs_['waveInd']]<rs_['aodMax'] for rf in simBase.rsltFwd])
+print('%d/%d fit surface type %s and aod≥%4.2f' % (rs_['keepInd'].sum(), len(simBase.rsltBck), rs_['surf2plot'], rs_['aodMax']))
 # =============================================================================
 # %% Plotting
 # =============================================================================
 
 # define a dict to store the statisctics and 
 statsDict_ = {}
-
-# define the fig and axes handles
-# Figure for spectral error plots
-fig, ax = plt.subplots(3,1, figsize=(6,4))
+varDict = {}
 
 # wavelengths
 rs_['bands'] = simBase.rsltFwd[0]['lambda']
 rs_['bandStr'] = ['']+[str(i) for i in rs_['bands']]
 
-# loop through bands to calculate the error and bias in individual variables
-aodLst = []
+# store the true AOD and AOD CM
 rs_['trueAOD'] = np.asarray([rf['aod'][rs_['waveInd']] for rf in simBase.rsltFwd])[rs_['keepInd']]
-rs_['trueAODCoarse'] = np.asarray([rf['aodMode'][rs_['waveInd'],1] for rf in simBase.rsltFwd])[rs_['keepInd']]
-plotSpectralVars(statsDict_, 'aod', rs_, simBase, ax[0], aodLst, yStr='AOD')
+rs_['trueAODCoarse'] = np.asarray([rf['aodMode'][rs_['coarseModeIndFWD'], 
+                                    rs_['waveInd'] ] for rf in simBase.rsltFwd])[rs_['keepInd']]
 
-aodCMLst = []
-plotSpectralVars(statsDict_, 'aodMode', rs_, simBase, ax[1], aodCMLst,
-                 diffMode=True,
-                 modeIdx=1, yStr='AOD CM', spclVar='aodCM')
+# define the fig and axes handles
+# Figure for spectral error plots
+fig, ax = plt.subplots(3,1, figsize=(6,4))
 
-aaodLst = []
-plotSpectralVars(statsDict_, 'ssa', rs_, simBase, ax[2],
-                 aaodLst, yStr='AAOD',
-                 aodWgt=True, limits=[-0.025,0.025], spclVar='aaod')
+# Define various spectral variables and the parameters for plotting
+# parameters = [(param, y_str, diff_mode, mode_idx, spcl_var, limits, x_var_lst, x_lab)]
+parameters = [
+    ('aod', 'AOD', None, None, 'aod', [-0.1,0.1], None, None),
+    ('aodMode', 'AOD CM', True, 1, 'aodCM', [-0.025,0.025], None, None),
+    ('ssa', 'AAOD', None, None, 'aaod', [-0.05,0.05], None, r'AOD$_{550\ nm}$')
+    
+]
+
+# loop throu parameters to plot the spectral variables
+for i, (param, y_str, diff_mode, mode_idx, spcl_var, limits, x_var_lst, x_lab) in enumerate(parameters):
+    varDict[spcl_var] = []
+    aodWgt_ = True if param == 'ssa' else False
+    plotSpectralVars(statsDict_, param, rs_, simBase,
+                    ax[i], varDict[spcl_var], diffMode=diff_mode,
+                    modeIdx=mode_idx, yStr=y_str,
+                    limits=limits, spclVar=spcl_var,
+                    xVarLst=x_var_lst, xlab=x_lab, aodWgt=aodWgt_)
 
 # =============================================================================
 # %%Plotting n,k
@@ -545,284 +665,195 @@ plotSpectralVars(statsDict_, 'ssa', rs_, simBase, ax[2],
 fig2, ax2 = plt.subplots(4,1, figsize=(6,6))
 
 # loop through bands to calculate the error and bias in individual variables
-ssaLst = []
-plotSpectralVars(statsDict_, 'ssa', rs_, simBase,
-                 ax2[0], ssaLst, yStr='SSA',
-                 )
-
-ssaCMLst = []
-plotSpectralVars(statsDict_, 'ssaMode', rs_, simBase,
-                 ax2[1], ssaCMLst, diffMode=True,
-                 modeIdx=1, yStr='SSA CM', spclVar='ssaCM')
-kFMLst = []
-plotSpectralVars(statsDict_, 'k', rs_, simBase,
-                 ax2[2], kFMLst, diffMode=True,
-                 modeIdx=0, yStr='k FM', limits=[-0.01,0.01], spclVar='kFM')
-kCMLst = []
-plotSpectralVars(statsDict_, 'k', rs_, simBase,
-                 ax2[3], kCMLst, diffMode=True,
-                 modeIdx=1, yStr='k CM', limits=[-0.002,0.002], spclVar='kCM')
+# parameters = [(param, y_str, diff_mode, mode_idx, spcl_var, limits, x_var_lst, x_lab)]
+parameters = [
+    ('ssa', 'SSA', False, None, 'ssa', None, None, None),
+    ('ssaMode', 'SSA CM', True, 1, 'ssaCM', None, None, None),
+    ('k', 'k FM', True, 0, 'kFM', [-0.01,0.01], None, None),
+    ('k', 'k CM', True, 1, 'kCM', [-0.002,0.002], None, None)
+]
+for i, (param, y_str, diff_mode, mode_idx, spcl_var, limits, x_var_lst, x_lab) in enumerate(parameters):
+    varDict[spcl_var] = []
+    plotSpectralVars(statsDict_, param, rs_, simBase,
+                    ax2[i], varDict[spcl_var], diffMode=diff_mode,
+                    modeIdx=mode_idx, yStr=y_str,
+                    limits=limits, spclVar=spcl_var,
+                    xVarLst=x_var_lst, xlab=x_lab)
 
 # %%
 # define the fig and axes handles
 # Figure for spectral error plots
-fig3, ax3 = plt.subplots(4,1, figsize=(6,4))
+fig3, ax3 = plt.subplots(4,1, figsize=(6,5))
 
-nFMLst = []
-plotSpectralVars(statsDict_, 'n', rs_, simBase,
-                 ax3[3], nFMLst, diffMode=True,
-                 modeIdx=0, yStr='n FM', limits=[-0.1,0.1], spclVar='nFM')
+# parameters = [(param, y_str, diff_mode, mode_idx, spcl_var, limits, x_var_lst, x_lab)]
+parameters = [
+    (3, 'n', 'n FM', True, 0, 'nFM', [-0.1,0.1], None, None),
+    (2, 'n', 'n CM', True, 1, 'nCM', [-0.1,0.1], rs_['trueAODCoarse'], r'AOD$_{550\ nm, coarse}$'),
+    (1, 'n', 'n CM', True, 1, 'nCM', [-0.1,0.1], None, None),
+    (0, 'ssaMode', 'SSA FM', True, 0, 'ssaFM', None, None, None)
+]
 
-nCMLst = []
-plotSpectralVars(statsDict_, 'n', rs_, simBase,
-                 ax3[1], nCMLst, diffMode=True,
-                 modeIdx=1, yStr='n CM', limits=[-0.1,0.1], spclVar='nCM')
-
-nCMLstC = []
-plotSpectralVars(statsDict_, 'n', rs_, simBase,
-                 ax3[2], nCMLstC, diffMode=True,
-                 modeIdx=1, yStr='n CM', limits=[-0.1,0.1], spclVar='nCM',
-                 xVarLst=rs_['trueAODCoarse'], xlab=r'AOD$_{550\ nm, coarse}$')
-
-ssaFMLst = []
-plotSpectralVars(statsDict_, 'ssaMode', rs_, simBase,
-                 ax3[0], ssaFMLst, diffMode=True,
-                 modeIdx=0, yStr='SSA FM', spclVar='ssaFM')
-
+for i, (ax_idx, param, y_str, diff_mode, mode_idx, spcl_var, limits, x_var_lst, x_lab) in enumerate(parameters):
+    # save the results to a dictionary
+    varDict[spcl_var] = []
+    try:
+        plotSpectralVars(statsDict_, param, rs_, simBase,
+                        ax3[ax_idx], varDict[spcl_var], diffMode=diff_mode,
+                        modeIdx=mode_idx, yStr=y_str,
+                        limits=limits, spclVar=spcl_var,
+                        xVarLst=x_var_lst, xlab=x_lab)
+    except Exception as e:
+        print(e)
+        handle_plot_error(ax3, ax_idx, y_str, x_lab)
 #%% Spectrally independent
 
 fig4, ax4 = plt.subplots(1,1, figsize=(3,2))
 
-volConcFineLst = []
-volConcCoarseLst = []
 tempInd = 0
 for nMode_ in [0,4]:
     rtrv = np.asarray([rf['vol'] for rf in simBase.rsltBck])[rs_['keepInd']][:,tempInd]
     if nMode_ == 0:
         spclVar = 'volFine'
         sc = statsCalc(statsDict_, spclVar)
-        true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[rs_['keepInd']][:,nMode_]*4
-        Rcoef = np.corrcoef(true, rtrv)[0,1]
-        RMSE = np.sqrt(np.median((true - rtrv)**2))
-        bias = np.mean((rtrv-true))
-        
-        volConcFineLst.append((rtrv-true).T)
-        parts = ax4.violinplot((rtrv-true).T, [1], points= 300,
-                                showmeans=True, showmedians=False,
-                                showextrema=False,
-                                bw_method='silverman')
-        violinPlotEdits(parts)
-        ax4.text(1.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
-        # ax4.text(1.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
-        sc.calc(statsDict_, spclVar, true, rtrv)
-        # plot the makesweetgraph
-        makesweetgraph(rs_['trueAOD'], (rtrv-true), ylab='Error in %s' %spclVar, xlab=r'AOD$_{550\ nm}$')
+        if 'olh' in rs_['fnPtrn'].lower():
+            true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[rs_['keepInd']][:,nMode_]
+        else:
+            true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[rs_['keepInd']][:,nMode_]*4
     else:
         spclVar = 'volCoarse'
         sc = statsCalc(statsDict_, spclVar)
         true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[rs_['keepInd']][:,nMode_]
-        Rcoef = np.corrcoef(true, rtrv)[0,1]
-        RMSE = np.sqrt(np.median((true - rtrv)**2))
-        bias = np.mean((rtrv-true))
-        
-        volConcCoarseLst.append((rtrv-true).T)
-        parts = ax4.violinplot((rtrv-true).T, [2], points= 300,
-                                showmeans=True, showmedians=False,
-                                showextrema=False,
-                                bw_method='silverman')
-        violinPlotEdits(parts)
-        ax4.text(2.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
-        # ax4.text(2.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
-        sc.calc(statsDict_, spclVar, true, rtrv)
-        # plot the makesweetgraph
-        makesweetgraph(rs_['trueAOD'], (rtrv-true), ylab='Error in %s' %spclVar, xlab=r'AOD$_{550\ nm}$')
+    
+    Rcoef, RMSE, bias = calculate_metrics(true, rtrv)
+
+    varDict[spclVar] = []
+    varDict[spclVar].append((rtrv-true).T)
+
+    parts = ax4.violinplot((rtrv-true).T, [tempInd+1], points= 300,
+                            showmeans=True, showmedians=False,
+                            showextrema=False,
+                            bw_method='silverman')
+    violinPlotEdits(parts)
+    ax4.text(tempInd+1.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
+    # ax4.text(2.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
+    sc.calc(statsDict_, spclVar, true, rtrv)
+    # plot the makesweetgraph
+    makesweetgraph(rs_['trueAOD'], (rtrv-true), ylab='Error in %s' %spclVar, xlab=r'AOD$_{550\ nm}$')
     tempInd += 1
-axisLabelsLimits(ax4, ['', 'Fine mode\n vol. conc.', '', 'Coarse mode\n vol. conc.'], limits=[-0.1, 0.1],
+axisLabelsLimits(ax4, ['', 'Fine mode\n vol. conc.', '', 'Coarse mode\n vol. conc.'], limits=[-0.2, 0.2],
                  ylabel=r'Absolute error', xlabel='')
 
 #%% Effective raidius
 fig5, ax5 = plt.subplots(1,2, figsize=(3,2))
+for i in [0,1]:
+    # Fine mode rEff
+    true = np.asarray([rf['rEffMode'][i] for rf in simBase.rsltFwd])[rs_['keepInd']]
+    rtrv = np.asarray([rf['rEffMode'][i] for rf in simBase.rsltBck])[rs_['keepInd']]
 
-subMicronEffRadLst = []
-aboveMicronEffRadLst = []
+    Rcoef, RMSE, bias = calculate_metrics(true, rtrv)
+    spclVar = 'rEffFine' if i == 0 else 'rEffCoarse'
+    varDict[spclVar] = []
+    varDict[spclVar].append((rtrv-true).T)
+    
+    parts = ax5[i].violinplot((rtrv-true).T, [1], points= 300,
+                            showmeans=True, showmedians=False,
+                            showextrema=False,
+                            bw_method='silverman')
+    violinPlotEdits(parts)
+    ax5[i].text(1.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
+    # ax5[i].text(1.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
 
-# Fine mode rEff
-true = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltFwd])[rs_['keepInd']]
-rtrv = np.asarray([rf['rEffMode'][0] for rf in simBase.rsltBck])[rs_['keepInd']]
-
-Rcoef = np.corrcoef(true, rtrv)[0,1]
-RMSE = np.sqrt(np.median((true - rtrv)**2))
-bias = np.mean((rtrv-true))
-
-subMicronEffRadLst.append((rtrv-true).T)
-parts = ax5[0].violinplot((rtrv-true).T, [1], points= 300,
-                        showmeans=True, showmedians=False,
-                        showextrema=False,
-                        bw_method='silverman')
-violinPlotEdits(parts)
-ax5[0].text(1.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
-# ax5[0].text(1.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
-
-spclVar = 'rEffFine'
-sc = statsCalc(statsDict_, spclVar)
-sc.calc(statsDict_, spclVar, true, rtrv) 
-# plot the makesweetgraph
-makesweetgraph(rs_['trueAOD'], (rtrv-true), ylab='Error in %s' %spclVar, xlab=r'AOD$_{550\ nm}$')
-# Coarse mode rEff
-true = np.asarray([rf['rEffMode'][1] for rf in simBase.rsltFwd])[rs_['keepInd']]
-rtrv = np.asarray([rf['rEffMode'][1] for rf in simBase.rsltBck])[rs_['keepInd']]
-
-Rcoef = np.corrcoef(true, rtrv)[0,1]
-RMSE = np.sqrt(np.median((true - rtrv)**2))
-bias = np.mean((rtrv-true))
-
-aboveMicronEffRadLst.append((rtrv-true).T)
-parts = ax5[1].violinplot((rtrv-true).T, [1], points= 300,
-                        showmeans=True, showmedians=False,
-                        showextrema=False,
-                        bw_method='silverman')
-violinPlotEdits(parts)
-ax5[1].text(1.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
-# ax5[1].text(1.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
-
-spclVar = 'rEffCoarse'
-sc = statsCalc(statsDict_, spclVar)
-sc.calc(statsDict_, spclVar, true, rtrv)
-# plot the makesweetgraph
-makesweetgraph(rs_['trueAOD'], (rtrv-true), ylab='Error in %s' %spclVar, xlab=r'AOD$_{550\ nm}$')
-
-axisLabelsLimits(ax5[0], ['', '', r'Submicron r$_{eff}$', ], limits=[-0.1, 0.1],
-                 ylabel=r'Absolute error ($\mu$m)', xlabel='')
-axisLabelsLimits(ax5[1], ['', '', r'above micron r$_{eff}$'], limits=[-2, 2],
-                 ylabel='', xlabel='')
+    
+    sc = statsCalc(statsDict_, spclVar)
+    sc.calc(statsDict_, spclVar, true, rtrv) 
+    # plot the makesweetgraph
+    makesweetgraph(rs_['trueAOD'], (rtrv-true), ylab='Error in %s' %spclVar, xlab=r'AOD$_{550\ nm}$')
+    limitsAndLabel = [[[-0.1, 0.1], r'Submicron r$_{eff}$', r'Absolute error ($\mu$m)'], 
+                        [[-3, 3], r'Above micron r$_{eff}$', '']]
+    axisLabelsLimits(ax5[i], ['', '', limitsAndLabel[i][1]], limits=limitsAndLabel[i][0],
+                    ylabel=limitsAndLabel[i][2], xlabel='')
 
 #%% Spectrally independent SF
 fig6, ax6 = plt.subplots(1,1, figsize=(3,2))
 
-fineSFLst = []
-coarseSFLst = []
-
-true = np.asarray([rf['sph'] for rf in simBase.rsltFwd])[rs_['keepInd']]
-rtrv = np.asarray([aodWght(rf['sph'], rf['vol']) for rf in simBase.rsltBck])[rs_['keepInd']]
-# Modifying the true value based on the NDIM
-# if 5 modes present, for the case of ACCDAM-CAMP2EX four modes have one refractive index
-# and the coarse mode 'sea salt' have different value. So based on the dimension of the var
-# We can distinguish each run type and generalize the code
-if true.ndim >1:
-    true = np.asarray([rf['sph']for rf in simBase.rsltFwd])[rs_['keepInd']][:,rs_['nMode']]
-    rtrv = np.asarray([rf['sph']for rf in simBase.rsltBck])[rs_['keepInd']][:,0]
+for i in [0,1]:
+    # Fine mode SF
+    if i == 0:
+        true = np.asarray([rf['sph'] for rf in simBase.rsltFwd])[rs_['keepInd']]
+    elif i == 1:
+        true = np.asarray([rf['sph'] for rf in simBase.rsltFwd])[rs_['keepInd']][:,4]
     
-Rcoef = np.corrcoef(true, rtrv)[0,1]
-RMSE = np.sqrt(np.median((true - rtrv)**2))
-bias = np.mean((rtrv-true))
-
-fineSFLst.append((rtrv-true).T)
-parts = ax6.violinplot((rtrv-true).T, [1], points= 300,
-                        showmeans=True, showmedians=False,
-                        showextrema=False,
-                        bw_method='silverman')
-violinPlotEdits(parts)
-ax6.text(1.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
-# ax6.text(1.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
-
-spclVar = 'sphFine'
-sc = statsCalc(statsDict_, spclVar)
-sc.calc(statsDict_, spclVar, true, rtrv) 
-# plot the makesweetgraph
-makesweetgraph(rs_['trueAOD'], (rtrv-true), ylab='Error in %s' %spclVar, xlab=r'AOD$_{550\ nm}$')
-# coarse mode SF
-true = np.asarray([rf['sph']for rf in simBase.rsltFwd])[rs_['keepInd']][:,4]
-rtrv = np.asarray([rf['sph']for rf in simBase.rsltBck])[rs_['keepInd']][:,1]
-
-Rcoef = np.corrcoef(true, rtrv)[0,1]
-RMSE = np.sqrt(np.median((true - rtrv)**2))
-bias = np.mean((rtrv-true))
-
-coarseSFLst.append((rtrv-true).T)
-parts = ax6.violinplot((rtrv-true).T, [2], points= 300,
-                        showmeans=True, showmedians=False,
-                        showextrema=False,
-                        bw_method='silverman')
-violinPlotEdits(parts)
-ax6.text(2.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
-# ax6.text(2.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
-
-spclVar = 'sphCoarse'
-sc = statsCalc(statsDict_, spclVar)
-sc.calc(statsDict_, spclVar, true, rtrv) 
-# plot the makesweetgraph
-makesweetgraph(rs_['trueAOD'], (rtrv-true), ylab='Error in %s' %spclVar, xlab=r'AOD$_{550\ nm}$')
+    rtrv = np.asarray([aodWght(rf['sph'], rf['vol']) for rf in simBase.rsltBck])[rs_['keepInd']]
+    # Modifying the true value based on the NDIM
+    # if 5 modes present, for the case of ACCDAM-CAMP2EX four modes have one refractive index
+    # and the coarse mode 'sea salt' have different value. So based on the dimension of the var
+    # We can distinguish each run type and generalize the code
+    if true.ndim > 1:
+        true = np.asarray([rf['sph'] for rf in simBase.rsltFwd])[rs_['keepInd']][:, rs_['nMode']]
+        rtrv = np.asarray([rf['sph'] for rf in simBase.rsltBck])[rs_['keepInd']][:, i]
+    elif i == 1:
+        true = np.asarray([rf['sph'] for rf in simBase.rsltFwd])[rs_['keepInd']][:, 4]
+        rtrv = np.asarray([rf['sph'] for rf in simBase.rsltBck])[rs_['keepInd']][:, i]
+    Rcoef, RMSE, bias = calculate_metrics(true, rtrv)
+    spclVar = 'sphFine' if i == 0 else 'sphCoarse'
+    varDict[spclVar] = []
+    varDict[spclVar].append((rtrv - true).T)
+    parts = ax6.violinplot((rtrv - true).T, [i+1], points=300, showmeans=False, showmedians=True,
+                        showextrema=False, bw_method='silverman')
+    violinPlotEdits(parts)
+    ax6.text(i+1.1, bias, '%0.4f' % round(bias, 4), fontsize=8)
+    sc = statsCalc(statsDict_, spclVar)
+    sc.calc(statsDict_, spclVar, true, rtrv)
+    makesweetgraph(rs_['trueAOD'], (rtrv - true), ylab='Error in %s' % spclVar, xlab=r'AOD$_{550\ nm}$')
 axisLabelsLimits(ax6, ['', 'Fine mode\n SF', '', 'Coarse mode\n SF.'], limits=[-50, 50],
-                 ylabel=r'Absolute error (%)', xlabel='')
+                ylabel=r'Absolute error (%)', xlabel='')
 
 #%% AOD weighted vol. conc.
 fig7, ax7 = plt.subplots(1,1, figsize=(3,3))
 
-volConcFineAODLst = []
-volConcCoarseAODLst = []
 tempInd = 0
 for nMode_ in [0,4]:
     rtrv = np.asarray([rf['vol'] for rf in simBase.rsltBck])[rs_['keepInd']][:,tempInd]
     if nMode_ == 0:
         true = np.asarray([aodWght(rf['vol'], rf['aodMode'][:,rs_['waveInd']]) for rf in simBase.rsltFwd])[rs_['keepInd']]
         # true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[rs_['keepInd']][:,nMode_]*4
-        Rcoef = np.corrcoef(true, rtrv)[0,1]
-        RMSE = np.sqrt(np.median((true - rtrv)**2))
-        bias = np.mean((rtrv-true))
-        
-        volConcFineLst.append((rtrv-true).T)
-        parts = ax7.violinplot((rtrv-true).T, [1], points= 300,
-                                showmeans=True, showmedians=False,
-                                showextrema=False,
-                                bw_method='silverman')
-        violinPlotEdits(parts)
-        ax7.text(1.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
-        # ax7.text(1.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
+        if not 'olh' in rs_['fnPtrn'].lower():
+            rtrv = rtrv*4
         spclVar = 'volFineAOD'
-        sc = statsCalc(statsDict_, spclVar)
-        sc.calc(statsDict_, spclVar, true, rtrv)
-        # plot the makesweetgraph
-        makesweetgraph(rs_['trueAOD'], (rtrv-true), ylab='Error in %s' %spclVar, xlab=r'AOD$_{550\ nm}$')
     else:
         true = np.asarray([rf['vol'] for rf in simBase.rsltFwd])[rs_['keepInd']][:,nMode_]
-        Rcoef = np.corrcoef(true, rtrv)[0,1]
-        RMSE = np.sqrt(np.median((true - rtrv)**2))
-        bias = np.mean((rtrv-true))
-        
-        volConcCoarseLst.append((rtrv-true).T)
-        parts = ax7.violinplot((rtrv-true).T, [2], points= 300,
-                                showmeans=True, showmedians=False,
-                                showextrema=False,
-                                bw_method='silverman')
-        violinPlotEdits(parts)
-        ax7.text(1+1.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
-        # ax7.text(2.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
-        
         spclVar = 'volCoarseAOD'
-        sc = statsCalc(statsDict_, spclVar)
-        sc.calc(statsDict_, spclVar, true, rtrv)
-        # plot the makesweetgraph
-        makesweetgraph(rs_['trueAOD'], (rtrv-true), ylab='Error in %s' %spclVar, xlab=r'AOD$_{550\ nm}$')
-        
+    Rcoef, RMSE, bias = calculate_metrics(true, rtrv)
+    varDict[spclVar] = []
+    varDict[spclVar].append((rtrv-true).T)
+    parts = ax7.violinplot((rtrv-true).T, [tempInd+1], points= 300,
+                            showmeans=True, showmedians=False,
+                            showextrema=False,
+                            bw_method='silverman')
+    violinPlotEdits(parts)
+    ax7.text(tempInd+1.1,bias, '%0.4f' %round(bias, 4), fontsize=8)
+    # ax7.text(1.1,RMSE, '%0.4f' %round(RMSE, 4), fontsize=8, color='r')
+    
+    sc = statsCalc(statsDict_, spclVar)
+    sc.calc(statsDict_, spclVar, true, rtrv)
+    # plot the makesweetgraph
+    makesweetgraph(rs_['trueAOD'], (rtrv-true), ylab='Error in %s' %spclVar, xlab=r'AOD$_{550\ nm}$')    
     tempInd += 1
 axisLabelsLimits(ax7, ['', 'Fine mode\n vol. conc.', '', 'Coarse mode\n vol. conc.'], limits=[-0.1, 0.1],
                  ylabel=r'Absolute error', xlabel='')
 
 #%% Surface
 fig8, ax8 = plt.subplots(1,1, figsize=(6,3))
-
-wtrSrfLst = []
 spclVar = 'wtrSurf'
+varDict[spclVar] = []
 sc = statsCalc(statsDict_, spclVar)
 for i, bnds in enumerate(rs_['bands']):
     true = np.asarray([rf['wtrSurf'][0,i] for rf in simBase.rsltFwd])[rs_['keepInd']]
     rtrv = np.asarray([rf['wtrSurf'][0,i] for rf in simBase.rsltBck])[rs_['keepInd']]
     
-    Rcoef = np.corrcoef(true, rtrv)[0,1]
-    RMSE = np.sqrt(np.median((true - rtrv)**2))
-    bias = np.mean((rtrv-true))
+    Rcoef, RMSE, bias = calculate_metrics(true, rtrv)
     
-    wtrSrfLst.append((rtrv-true).T)
+    varDict[spclVar].append((rtrv-true).T)
     parts = ax8.violinplot((rtrv-true).T, [i+1], points= 300,
                             showmeans=True, showmedians=False,
                             showextrema=False,
@@ -856,9 +887,11 @@ plt.xlabel('FMF')
 plt.ylabel('Frequency')
 
 # plot the difference in FMF as a function of AOD
-makesweetgraph(rs_['trueAOD'], (cmf_rtrv-cmf), ylab='Error in FMF', xlab=r'AOD$_{550\ nm}$')
-makesweetgraph(rs_['trueAODCoarse'], (cmf_rtrv-cmf), ylab='Error in FMF', xlab=r'AOD$_{550\ nm, Coarse}$')
-
+makesweetgraph(rs_['trueAOD'], (cmf_rtrv-cmf), ylab='Error in FMF', xlab='AOD$_{550\ nm}$')
+try:
+    makesweetgraph(rs_['trueAODCoarse'], (cmf_rtrv-cmf), ylab='Error in FMF', xlab='AOD$_{550\ nm, Coarse}$')
+except Exception as e:
+    print(e)
 # =============================================================================
 # %% Save the figure
 # =============================================================================
@@ -867,19 +900,13 @@ print('Saving figure to: %s' % (os.path.join(rs_['inDirPath'],figSavePath)))
 ttlStr = '%s (λ=%5.3fμm, %s surface, AOD≥%4.2f)' % (rs_['saveFN'],
                                                     simBase.rsltFwd[0]['lambda'][rs_['waveInd']],
                                                     rs_['surf2plot'], rs_['aodMin'])
+figures = [fig, fig2, fig3, fig4, fig5, fig6, fig7, fig8, fig10]
+save_paths = ['', 'k_', 'n_', 'vol_', 'rEff_', 'SF_', 'aodWeightVol_', 'L_', 'FMF_']
 
-fig.suptitle(ttlStr.replace('MERGED_',''))
-
-fig2.suptitle(ttlStr.replace('MERGED_',''))
-fig.savefig(rs_['inDirPath'] + figSavePath, dpi=330)
-fig2.savefig(rs_['inDirPath'] + figSavePath.replace('MERGED_','k_'), dpi=330)
-fig3.savefig(rs_['inDirPath'] + figSavePath.replace('MERGED_','n_'), dpi=330)
-fig4.savefig(rs_['inDirPath'] + figSavePath.replace('MERGED_','vol_'), dpi=330)
-fig5.savefig(rs_['inDirPath'] + figSavePath.replace('MERGED_','rEff_'), dpi=330)
-fig6.savefig(rs_['inDirPath'] + figSavePath.replace('MERGED_','SF_'), dpi=330)
-fig7.savefig(rs_['inDirPath'] + figSavePath.replace('MERGED_','aodWeightVol_'), dpi=330)
-fig8.savefig(rs_['inDirPath'] + figSavePath.replace('MERGED_','L_'), dpi=330)
-fig10.savefig(rs_['inDirPath'] + figSavePath.replace('MERGED_','FMF_'), dpi=330)
+for figure, save_path in zip(figures, save_paths):
+    if save_path == '':
+        figure.suptitle(ttlStr.replace('MERGED_', ''))
+    figure.savefig(rs_['inDirPath'] + figSavePath.replace('MERGED_', save_path), dpi=330)
 print('Saving figure to: %s' % (os.path.join(rs_['inDirPath'],figSavePath.replace('MERGED_','Hist_'))))
 # plt.show()
 # %% Save the stats
@@ -896,8 +923,8 @@ except Exception as e:
 # close the file
 f.close()
     
-# %%
-import seaborn as sns
+# %% Load the stats from the file and plot them in a heatmap
+
 # fig11, ax11 = plt.subplots(3,2, figsize=(15,8))
 
 # define the 3D array
@@ -911,21 +938,15 @@ statsArr = np.zeros((nVar, nWav, nStats))
 # fill the array
 for i, var in enumerate(spectralVars):
     for j, stat in enumerate(statsDict_[var]):
-        statsArr[i,:,j] = statsDict_[var][stat]
+        try:
+            statsArr[i,:,j] = statsDict_[var][stat]
+        except Exception as e:
+            print(e)
+            print('Error in %s' %var)
+            print('Error in %s' %stat)
+            print('Error in %s' %statsDict_[var][stat])
+            print('Error in %s' %statsDict_[var])
         
-def plotStats(statsArr_, ax, title, cmap='viridis',
-              fmt=".2f", **kwargs):
-    
-    # plot the array
-    hm = sns.heatmap(statsArr_, annot=True, fmt=fmt, cmap=cmap, ax=ax, **kwargs)
-    ax.set_xticklabels(rs_['bands'])
-    ax.set_yticklabels(spectralVars)
-    
-    hm.set_xticklabels(hm.get_xticklabels(), rotation=60)
-    hm.set_yticklabels(hm.get_yticklabels(), rotation=0)
-    ax.set_title(title)
-    
-            
 # plot the array
 # hm = sns.heatmap(statsArr[:,:,0], annot=True, fmt=".2f", cmap='viridis', ax=ax11.flatten()[0])
 # ax11[0,0].set_xticklabels(bands)
@@ -933,22 +954,26 @@ def plotStats(statsArr_, ax, title, cmap='viridis',
 
 # hm.set_xticklabels(hm.get_xticklabels(), rotation=60)
 # hm.set_yticklabels(hm.get_yticklabels(), rotation=0)
-#%%
+
+# %% Plotting the stats for the spectral dependent variables 
 fig_ = {}
 ax_ = {} 
 for j, stat in enumerate(statsDict_[spectralVars[0]]):
-    fig_['j'], ax_['j'] = plt.subplots(1, 1, figsize=(6,4))
+    fig_[j], ax_[j] = plt.subplots(1, 1, figsize=(6,4))
     if 'bias' in stat:
-        plotStats(statsArr[:,:,j], ax_['j'], stat, cmap='RdBu_r',
-                  fmt=".4f", vmin=-0.1, vmax=0.1)
+        plotStats(statsArr[:,:,j], ax_[j], stat, cmap='RdBu_r',
+                  fmt=".3f", vmin=-0.1, vmax=0.1)
     elif 'RMSE' in stat:
-        plotStats(statsArr[:,:,j], ax_['j'], stat, cmap='magma',
-                  fmt=".4f", vmin=0, vmax=0.05)
+        plotStats(statsArr[:,:,j], ax_[j], stat, cmap='magma',
+                  fmt=".3f", vmin=0, vmax=0.05)
+    elif 'R' in stat:
+        plotStats(statsArr[:,:,j], ax_[j], stat, cmap='YlGn',
+                  fmt=".3f", vmin=0, vmax=1)
     elif '90th' in stat:
-        plotStats(statsArr[:,:,j], ax_['j'], stat, fmt=".3f", cmap='YlGn_r')
-    else:
-        plotStats(statsArr[:,:,j], ax_['j'], stat, fmt=".3f", cmap='YlGn')
-# %%
+        plotStats(statsArr[:,:,j], ax_[j], stat, fmt=".3f", cmap='YlGn_r')
+    elif '10th' in stat:
+        plotStats(statsArr[:,:,j], ax_[j], stat, fmt=".3f", cmap='YlGn')
+# %% Plotting the stats for the spectral independent variables
 
 fig12, ax12 = plt.subplots(1,1, figsize=(6,3))
 
@@ -965,8 +990,130 @@ for i, var in enumerate(spectralVars2):
         statsArr2[i,j] = statsDict_[var][stat][0]
         
 # plot the array
-hm2 = sns.heatmap(statsArr2[:,:], annot=True, fmt=".5f", vmin= -1, vmax=1, cmap='RdYlGn', ax=ax12)
+hm2 = sns.heatmap(statsArr2[:,:], annot=True, fmt=".3f", vmin= -1, vmax=1, cmap='RdYlGn', ax=ax12)
 ax12.set_xticklabels(statKeys)
 ax12.set_yticklabels(spectralVars2)
 hm2.set_yticklabels(hm2.get_yticklabels(), rotation=0)
 hm2.set_xticklabels(hm2.get_xticklabels(), rotation=60)
+
+# %% Plotting the cross correlation matrix
+fig13, ax13 = plt.subplots(1,1, figsize=(7,7))
+
+# aod based mask FIXME: this is wrong
+# rs_['aodMaskInd'] = [x >= rs_['aodMin'] for x in varDict['aod'][rs_['waveInd']]]
+
+rs_['aodMaskInd'] = np.ones(len(varDict['aod'][rs_['waveInd']]), dtype=bool)
+
+# define the 2D array
+spectralVars3 = ['volFine', 'volCoarse', 'rEffFine', 'rEffCoarse', 'sphFine', 'sphCoarse', 'volFineAOD', 'volCoarseAOD']
+nVar3  = len(spectralVars3)
+statsArr3 = np.zeros((nVar3, nVar3))
+
+# fill the array
+for i, var in enumerate(spectralVars3):
+    for j, var2 in enumerate(spectralVars3):
+        statsArr3[i,j] = calculate_metrics(varDict[var][0][rs_['aodMaskInd']],
+                                            varDict[var2][0][rs_['aodMaskInd']])[0]
+
+# plot the array
+# Create a mask for the upper triangle
+mask = np.triu(np.ones_like(statsArr3, dtype=bool), k=1)
+hm3 = sns.heatmap(statsArr3[:,:], mask=mask, annot=True, fmt=".3f", vmin= -1, vmax=1, cmap='RdBu_r', ax=ax13)
+ax13.set_xticklabels(spectralVars3)
+ax13.set_yticklabels(spectralVars3)
+hm3.set_yticklabels(hm3.get_yticklabels(), rotation=0)
+hm3.set_xticklabels(hm3.get_xticklabels(), rotation=60)
+
+# %% Plotting the cross correlation matrix
+fig14, ax14 = plt.subplots(1,1, figsize=(9,6))
+
+# define the 2D array
+spectralVars4 = ['aod', 'aodCM', 'aaod', 'ssa',  'ssaFM', 'ssaCM', 'nFM', 'nCM', 'kFM', 'kCM', 'wtrSurf']
+nVar4  = len(spectralVars4)
+statsArr4 = np.zeros((nVar4, nVar4))
+
+# fill the array
+for i, var in enumerate(spectralVars4):
+    for j, var2 in enumerate(spectralVars4):
+    
+        try:
+            statsArr4[i,j] = calculate_metrics(varDict[var][rs_['waveInd']][rs_['aodMaskInd']],
+                                                varDict[var2][rs_['waveInd']][rs_['aodMaskInd']])[0]
+        except Exception as e:
+            print(e)
+            print('Error in %s' %var)
+            print('Error in %s' %var2)
+            raise SyntaxError('Error in calculating the cross correlation matrix')
+            
+
+
+# plot the array
+mask = np.triu(np.ones_like(statsArr4, dtype=bool), k=1)
+hm4 = sns.heatmap(statsArr4[:,:], mask=mask, annot=True, fmt=".3f", vmin= -1, vmax=1, cmap='RdBu_r', ax=ax14)
+ax14.set_xticklabels(spectralVars4)
+ax14.set_yticklabels(spectralVars4)
+hm4.set_yticklabels(hm4.get_yticklabels(), rotation=0)
+hm4.set_xticklabels(hm4.get_xticklabels(), rotation=60)
+
+# %% Plotting the cross correlation matrix with all the variables
+fig15, ax15 = plt.subplots(1,1, figsize=(12,8))
+
+# define the 2D array
+spectralVars5 = ['aod', 'aodCM', 'aaod', 'ssa', 'ssaFM', 'ssaCM', 'nFM', 'nCM', 'kFM', 'kCM', 'wtrSurf',
+                'volFine', 'volCoarse', 'rEffFine', 'rEffCoarse', 'sphFine', 'sphCoarse', 'volFineAOD', 'volCoarseAOD']
+nVar5  = len(spectralVars5)
+statsArr5 = np.zeros((nVar5, nVar5))
+
+# fill the array
+for i, var in enumerate(spectralVars5):
+    for j, var2 in enumerate(spectralVars5):
+        try:
+            if var in ['aod', 'aodCM', 'aaod', 'ssa', 'ssaCM', 'kFM', 'kCM', 'nFM', 'nCM', 'ssaFM', 'wtrSurf']:
+                if var2 in ['aod', 'aodCM', 'aaod', 'ssa', 'ssaCM', 'kFM', 'kCM', 'nFM', 'nCM', 'ssaFM', 'wtrSurf']:
+                    statsArr5[i,j] = calculate_metrics(varDict[var][rs_['waveInd']][rs_['aodMaskInd']],
+                                                        varDict[var2][rs_['waveInd']][rs_['aodMaskInd']])[0]
+                else:
+                    statsArr5[i,j] = calculate_metrics(varDict[var][rs_['waveInd']][rs_['aodMaskInd']],
+                                                        varDict[var2][0][rs_['aodMaskInd']])[0]
+            else:
+                if var2 in ['volFine', 'volCoarse', 'rEffFine', 'rEffCoarse', 'sphFine', 'sphCoarse', 'volFineAOD', 'volCoarseAOD']:
+                    statsArr5[i,j] = calculate_metrics(varDict[var][0][rs_['aodMaskInd']],
+                                                        varDict[var2][0][rs_['aodMaskInd']])[0]
+                else:
+                    statsArr5[i,j] = calculate_metrics(varDict[var][0][rs_['aodMaskInd']],
+                                                        varDict[var2][rs_['waveInd']][rs_['aodMaskInd']])[0]
+        except Exception as e:
+            print(e)
+            print('Error in %s' %var)
+            print('Error in %s' %var2)
+
+# plot the array
+mask = np.triu(np.ones_like(statsArr5, dtype=bool), k=1)
+hm5 = sns.heatmap(statsArr5[:,:], mask=mask, annot=True, fmt=".3f", vmin= -1, vmax=1, cmap='RdBu_r', ax=ax15)
+ax15.set_xticklabels(spectralVars5)
+ax15.set_yticklabels(spectralVars5)
+hm5.set_yticklabels(hm5.get_yticklabels(), rotation=0)
+hm5.set_xticklabels(hm5.get_xticklabels(), rotation=60)
+ax15.set_title(r'Cross correlation matrix for all the variables (Spectral band=%0.3f $\mu$m)' %rs_['bands'][rs_['waveInd']])
+
+# %% save the figure fig_[:], fig12, fig13, fig14, fig15
+
+figSavePath = rs_['saveFN'].replace('.pkl',('_%s_%s_stats.png' % (rs_['surf2plot'], rs_['fnTag'])))
+print('Saving figure to: %s' % (os.path.join(rs_['inDirPath'],figSavePath)))
+
+figures = [ fig_, fig12, fig13, fig14, fig15]
+save_paths = ['stats_', 'stats2_', 'Corr1_', 'Corr2_', 'CorrAll_']
+
+for figure, save_path in zip(figures, save_paths):
+    if figure == fig_:
+        print(fig_)
+        for i in range(0,5):
+            save_path = save_path + str(i)
+            figure[i].savefig(rs_['inDirPath'] + figSavePath.replace('MERGED_', save_path), dpi=330)
+            print('Saving figure to: %s' % (rs_['inDirPath'] + figSavePath.replace('MERGED_', save_path)))
+    else:
+        figure.savefig(rs_['inDirPath'] + figSavePath.replace('MERGED_', save_path), dpi=330)
+    print('Saving figure to: %s' % (rs_['inDirPath'] + figSavePath.replace('MERGED_', save_path)))
+
+
+# %%
