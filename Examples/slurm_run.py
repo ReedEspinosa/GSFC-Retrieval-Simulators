@@ -123,7 +123,7 @@ for aod in tau:
         fh.writelines("#SBATCH --job-name=%s%.4d\n" % (jobName, aod_))
         fh.writelines("#SBATCH --output=./job/%s_%.4d.out.%s\n" % (jobName, aod_, '%A'))
         fh.writelines("#SBATCH --error=./job/%s_%.4d.err.%s\n" % (jobName, aod_, '%A'))
-        fh.writelines("#SBATCH --time=0:09:59\n")
+        fh.writelines("#SBATCH --time=08:59:59\n")
         # In Discover
         if 'discover' in hostname:
             fh.writelines('#SBATCH --constraint="[sky]"\n')		# This is for the intel nodes

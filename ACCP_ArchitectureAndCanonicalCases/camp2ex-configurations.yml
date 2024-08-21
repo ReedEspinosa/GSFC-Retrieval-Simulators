@@ -11,7 +11,7 @@ default:
     # NyX parameters
     partition: 'zen4'                                   # Partition name
     config: 'All'                                       # Configuration name it should be the same as the one in the configurations section, or 'All' to run all the configurations
-    nFlights: 1                                         # Number of flights # number of flights used for simulation (should be 18 for full camp2ex measurements)
+    nFlights: 18                                         # Number of flights # number of flights used for simulation (should be 18 for full camp2ex measurements)
     nSims: 5                                            # the number of inversion to perform, each with its own random noise
     maxCPU: 1                                           # Maximum number of CPUs
     nNodes: 1                                           # Number of nodes to be used, ideally 7 for NyX, with the Discover there is several options, it can be more than 7
@@ -28,7 +28,7 @@ default:
     krnlPath : '/discover/nobackup/aputhukk/git/grasp/src/retrieval/internal_files'    # Full path grasp precomputed single scattering kernels
 
     # Print
-    verbose: False                                        # If True, print more information
+    verbose: False                          wwnn              # If True, print more information
     
     # Housekeeping
     deleteTemp: True
