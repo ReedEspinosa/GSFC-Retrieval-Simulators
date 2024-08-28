@@ -27,26 +27,24 @@ from canonicalCaseMap import setupConCaseYAML
 # Full path to save simulation results as a Python pickle
 savePath = './job/exampleSimulationTest#1.pkl'
 
-# Full path grasp binary
-binGRASP = '/usr/local/bin/grasp'
-
-
-# Full path grasp precomputed single scattering kernels
-krnlPath = './src/retrieval/internal_files'
+# Full path to the base GRASP repository folder
+path2repoGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open'
+binGRASP = os.path.join(path2repoGRASP, 'build/bin/grasp') # Path grasp binary
+krnlPath = os.path.join(path2repoGRASP,'src/retrieval/internal_files') # Path grasp precomputed single scattering kernels
 
 # Directory containing the foward and inversion YAML files you would like to use
 ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
-fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda_CustomBins.yml') # foward YAML file
-bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes_Campex_flatRI_darkOcean.yml') # inversion YAML file
+fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml') # foward YAML file
+bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml') # inversion YAML file
 
 # Other non-path related settings
 Nsims = 3 # the number of inversions to perform, each with its own random noise
 maxCPU = 1 # the number of processes to lssaunch, effectivly the # of CPU cores you want to dedicate to the simulation
-conCase = 'dark_ocean_coarse_campex_tria_flatfine_flatcoarse_flight#01_layer#00' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+conCase = 'case06a' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
 SZA = 30 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
 Phi = 0 # relative azimuth angle, φsolar-φsensor
 τFactor = 1 # scaling factor for total AOD
-instrument = 'uvswirmap01' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+instrument = 'polar07' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
 # %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
 
@@ -55,7 +53,6 @@ nowPix = returnPixel(instrument, sza=SZA, relPhi=Phi, nowPix=None)
 
 # generate a YAML file with the forward model "truth" state variable values for this simulated scene
 cstmFwdYAML = setupConCaseYAML(conCase, nowPix, fwdModelYAMLpath, caseLoadFctr=τFactor)
-
 # Define a new instance of the simulation class for the instrument defined by nowPix (an instance of the pixel class)
 simA = rs.simulation(nowPix)
 

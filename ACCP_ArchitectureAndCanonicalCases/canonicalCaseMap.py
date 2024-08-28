@@ -759,7 +759,7 @@ def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=No
                     vals[key] = np.vstack([vals[key], valsTmp[key]])
             else: # implies we take the surface parameters from the last case
                 vals[key] = valsTmp[key]
-    nowPix.land_prct = landPrct # [out] – sets nowPix t/tmp/tmpl2qrj4jdo match ConCase
+    nowPix.land_prct = landPrct
     if simBldProfs is not None:
         msg = 'Using sim_builder profiles requires 4 modes ordered [TOP_F, TOP_C, BOT_F, BOT_C]!'
         assert vals['vrtProf'].shape==simBldProfs.shape, msg
