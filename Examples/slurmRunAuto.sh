@@ -32,9 +32,11 @@ if hostname | grep -q 'nyx'; then
 elif hostname | grep -q 'discover'; then
     echo "Running on discover"
     # Set the number of runs
-    runs=2
+    #runs=2				# For intel nodes in discover, kind of old as of 2024 and will be deprecated
+    runs=0
 else
     echo "Running on unknown machine"
+    echo "Modify the code to run in another system by adding or modifying the portion of the script that uses 'hostname'"
     exit 2
 fi
 
