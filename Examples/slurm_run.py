@@ -78,8 +78,8 @@ if 'nyx' in hostname:
     npca_ = [range(0,22), range(22,44), range(44, 66), range(66, 88), range(88, 107)] # modified for NyX
 # Discover has 36 cores per node
 elif 'discover' in hostname:
-    npca_ = [range(0,36), range(36,72), range(72, 108)] # modified for Discover
-# 	npca_ = [range(0, 108)] # modified for Discover
+    #npca_ = [range(0,36), range(36,72), range(72, 107)] # modified for Discover [Intel nodes]
+    npca_ = [range(0, 107)] # modified for Discover [AMD Milan nodes]
 npca = npca_[arrayNum] # max is 107
 
 #--------------------------------------------#
@@ -123,11 +123,12 @@ for aod in tau:
         fh.writelines("#SBATCH --job-name=%s%.4d\n" % (jobName, aod_))
         fh.writelines("#SBATCH --output=./job/%s_%.4d.out.%s\n" % (jobName, aod_, '%A'))
         fh.writelines("#SBATCH --error=./job/%s_%.4d.err.%s\n" % (jobName, aod_, '%A'))
-        fh.writelines("#SBATCH --time=3:59:59\n")
+        fh.writelines("#SBATCH --time=08:59:59\n")
         # In Discover
         if 'discover' in hostname:
-            fh.writelines('#SBATCH --constraint="[sky]"\n')
-            fh.writelines("#SBATCH --ntasks=36\n")
+            fh.writelines('#SBATCH --constraint="[sky]"\n')		# This is for the intel nodes
+            fh.writelines('#SBATCH --constraint="[mil]"\n')
+            fh.writelines("#SBATCH --ntasks=120\n")
         # In Uranus
         elif 'uranus' in hostname:
             fh.writelines("#SBATCH --partition=LocalQ\n")

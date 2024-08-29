@@ -11,24 +11,24 @@ default:
     # NyX parameters
     partition: 'zen4'                                   # Partition name
     config: 'All'                                       # Configuration name it should be the same as the one in the configurations section, or 'All' to run all the configurations
-    nFlights: 18                                        # Number of flights # number of flights used for simulation (should be 18 for full camp2ex measurements)
+    nFlights: 18                                         # Number of flights # number of flights used for simulation (should be 18 for full camp2ex measurements)
     nSims: 5                                            # the number of inversion to perform, each with its own random noise
     maxCPU: 1                                           # Maximum number of CPUs
     nNodes: 1                                           # Number of nodes to be used, ideally 7 for NyX, with the Discover there is several options, it can be more than 7
     dryRun: False                                       # If True, the code will not run, just print the commands
     savePathParent: '../../../ACCDAM/2024/Sim/'         # Parent directory where the results will be saved
-    MmmYY: 'Feb'                                        # Month and year of the simulation
-    DD: '19'                                            # Day of the simulation
+    MmmYY: 'Aug'                                        # Month and year of the simulation
+    DD: '20'                                            # Day of the simulation
     saveFN: '%s_AOD_%sp%s_550nm_SZA_%0.4d_PHI_%0.4d_%s.pkl'       # Name of the file where the results will be saved
 
     # GRASP parameters
     
-    graspBin: '../../GRASP_GSFC/build_megaharp01_AGU/bin/grasp_app' # NyX
-    # graspBin: '../../GRASP_GSFC/build_uvswirmap_v3/bin/grasp_app' # Discover
-    krnlPath : '../../GRASP_GSFC/src/retrieval/internal_files'    # Full path grasp precomputed single scattering kernels
+    #graspBin: '../../GRASP_GSFC/build_megaharp01_AGU/bin/grasp_app' # NyX
+    graspBin: '../../grasp/build_megaharp01/bin/grasp_app' # Discover
+    krnlPath : '/discover/nobackup/aputhukk/git/grasp/src/retrieval/internal_files'    # Full path grasp precomputed single scattering kernels
 
     # Print
-    verbose: False                                        # If True, print more information
+    verbose: False                          wwnn              # If True, print more information
     
     # Housekeeping
     deleteTemp: True
@@ -48,7 +48,7 @@ default:
     coarseMode: False
     psdMode:
       bi:
-        yaml: 'settings_FWD_IQU_POLAR_1lambda.yml'
+        yaml: 'settings_FWD_IQU_POLAR_1lambda_V1.1.5.yml'
       tria:
         yaml: 'settings_FWD_IQU_POLAR_1lambda_CustomBins.yml'
     fixedCoarseMode: True
