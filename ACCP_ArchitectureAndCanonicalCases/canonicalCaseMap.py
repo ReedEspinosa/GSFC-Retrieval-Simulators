@@ -23,7 +23,9 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
     vals = dict()
     wvls = np.unique([mv['wl'] for mv in nowPix.measVals])
     nwl = len(wvls)
-    """ variable type appended options: 'fine'/'coarse', 'nonsph' and 'lofted' """
+    
+    # variable type cases
+    # variable type appended options: 'fine'/'coarse', 'nonsph' and 'lofted' """
     if 'variable' in caseStr.lower(): # dimensions are [mode, λ or (rv,sigma)];
         σ = 0.35+rnd.random()*0.3
         if 'fine' in caseStr.lower():
@@ -41,12 +43,16 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.36+rnd.random(2)*0.15)[None,:] # mode 1 # linear w/ λ
         vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.015)[None,:] # mode 1 # linear w/ λ
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    
+    # Yingxi's smoke model cases
     elif 'huambo' in caseStr.lower():
         vals = yingxiProposalSmokeModels('Huambo', wvls)
         landPrct = 0 if 'ocean' in caseStr.lower() else 100
     elif 'nasaames' in caseStr.lower():
         vals = yingxiProposalSmokeModels('NASA_Ames', wvls)
         landPrct = 0 if 'ocean' in caseStr.lower() else 100
+    
+    # New AOS cases
     elif 'clean' in caseStr.lower():
         σ = [0.4, 0.68] # mode 1, 2,...
         rv = [0.1, 0.84]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
@@ -76,6 +82,162 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['k'] = np.repeat(0.01, nwl) # mode 1
         vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    elif 'marine' in caseStr.lower():
+        σ = [0.45, 0.70] # mode 1, 2,...
+        rv = [0.18, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+#         rv = [0.12, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.0477583], [0.7941207]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
+        vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.415, nwl) # mode 1
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.002, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    elif 'plltdmrn' in caseStr.lower(): # Polluted Marine
+        σ = [0.36, 0.70] # mode 1, 2,...
+        rv = [0.11, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.13965681],[0.31480467]]) # gives AOD=9.89*[0.0287, 0.0713]==1.0 total
+        vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.45, nwl) # mode 1
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.001, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    elif 'pollution' in caseStr.lower():
+        σ = [0.36, 0.64] # mode 1, 2,...
+        rv = [0.11, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.1787314], [0.0465671]]) # gives AOD=10*[0.091801,0.0082001]=1.0
+        vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.45, nwl) # mode 1
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.5, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.001, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(0.01, nwl)]) # mode 2 # NOTE: we cut this in half from XLSX
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    elif 'dust' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
+        σ = [0.5, 0.75] # mode 1, 2,...
+        rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
+        if 'onlysph' in caseStr.lower():
+            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        else:
+            vals['sph'] = [[0.99999], [0.00001]] # mode fine sphere, coarse spheroid
+            vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # spheroids require scaling to maintain AOD
+        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.46, nwl) # mode 1
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
+        vals['k'] = np.repeat(1e-8, nwl) # mode 1
+        mode2λ = [0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
+        mode2k = [0.0025, 0.0025, 0.0024, 0.0021, 0.0019, 0.0011, 0.0010, 0.0010]
+        mode2Intrp = np.interp(wvls, mode2λ, mode2k)
+        vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
+    
+    # Greema's TAMU cases
+    elif 'd_tamu' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
+        if defineRandom is not None: random_r = defineRandom # array of random numbers at least 4 element for this case        
+        rv = [0.8+random_r[0]*3.2,0.8+random_r[1]*3.2] #coarse mode
+        vals['vol'] = np.array([[1.5+random_r[2]*1.5]])/3 
+        σ = [0.5, 0.75] # mode 1, 2,...
+        rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
+        if 'nonsph' in caseStr.lower():
+            vals['sph'] = [[0.00001], [0.00001]] # mode fine sphere, coarse spheroid
+            vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # spheroids require scaling to maintain AOD
+        else:
+            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.46, nwl) # mode 1
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
+        vals['k'] = np.repeat(1e-8, nwl) # mode 1
+        mode2λ = [0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
+        mode2k = [0.0025, 0.0025, 0.0024, 0.0021, 0.0019, 0.0011, 0.0010, 0.0010]
+        mode2Intrp = np.interp(wvls, mode2λ, mode2k)
+        vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0    
+    elif 'var_tamu' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
+        if defineRandom is not None: random_r  = defineRandom # array of random numbers       
+        σ = 0.35+random_r[0]*0.3
+        if 'fine' in caseStr.lower():
+            rv = 0.145+random_r[1]*0.105
+            vals['vol'] = np.array([[0.5+random_r[2]*0.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
+        elif 'coarse' in caseStr.lower():
+            rv = 0.8+random_r[4]*3.2
+            vals['vol'] = np.array([[1.5+random_r[3]*1.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
+        else:
+            assert False, 'variable aerosol case must be appended with either fine or coarse'
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999]] # mode 1, 2,...
+        vals['vrtHght'] = [[3010]] if 'lofted' in caseStr.lower() else  [[1010]]  # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500]] # Gaussian sigma in meters
+        vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.36+np.array([random_r[5],random_r[6]])*0.15)[None,:] # mode 1 # linear w/ λ
+        vals['k'] =  np.repeat(0.0001+np.array(random_r[7])*0.015, len(wvls))# mode 1 # linear w/ λ
+        # vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+np.array([random_r[7],random_r[8]])*0.015)[None,:] # mode 1 # linear w/ λ
+        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0    
+    
+    # Old AOS Cases
+    # case01 is blank in V22 of the canoncial case spreadsheet...
+    elif 'case02' in caseStr.lower(): # VERSION 22 (except vol & 2.1μm RI)
+        σ = [0.4, 0.4] # mode 1, 2,...
+        rv = [0.07, 0.25]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.07921839], [0.03682901]]) # gives AOD = [0.3046, 0.1954]
+        if 'case02b' in caseStr.lower() or 'case02c' in caseStr.lower():
+            vals['vol'] = vals['vol']/2.0
+        vals['vrtHght'] = [[3500],  [3500]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[750],  [750]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.45, nwl) # mode 1
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
+        vals['k'] = np.repeat(1e-8, nwl) if 'case02c' in caseStr.lower() else np.repeat(0.035, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
+        landPrct = 0
+    elif caseStr.lower()=='case03': # VERSION 22 (2.1μm RRI)
+        σ = [0.6, 0.6] # mode 1, 2,...
+        rv = [0.1, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vol'] = np.array([[0.01387783], [0.01277042]]) # gives AOD = [0.0732, 0.026801]
+        vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.4, nwl) # mode 1
+        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
+        vals['k'] = np.repeat(0.002, nwl) # mode 1
+        vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
+        landPrct = 0
+    # case 04 is over land
+    # case 05 has a water cloud in the scene
+    elif 'case07' in caseStr.lower() or 'case08' in caseStr.lower(): # VERSION 22 (except spectral dep. of imag. in case 8)
+        σ = [0.5, 0.7] # mode 1, 2,...
+        rv = [0.1, 0.55]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
+        vals['k'] = np.repeat(0.002, nwl) # mode 1
+        if 'case07' in caseStr.lower():
+            vals['vol'] = np.array([[0.00580439], [0.00916563]]) # gives AOD = [0.0309, 0.0091]
+            vals['n'] = np.repeat(1.415, nwl) # mode 1
+            vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
+            vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
+        else:
+            vals['vol'] = np.array([[0.01191013], [0.0159524]]) # gives AOD = [0.064499, 0.0155  ]
+            vals['n'] = np.repeat(1.42, nwl) # mode 1
+            vals['n'] = np.vstack([vals['n'], np.repeat(1.52, nwl)]) # mode 2
+            vals['k'] = np.vstack([vals['k'], np.repeat(0.002, nwl)]) # mode 2
+        landPrct = 0 if 'case07' in caseStr.lower() else 100
     
     # Added by Anin to account for the aerosol models, PSD for the CAMP2Ex based simulation study
     elif 'coarse_mode_campex' in caseStr.lower(): # 
@@ -508,163 +670,6 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
             
             vals['k'] = np.vstack([vals['k'], kAero]) # mode 5
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
-    elif 'marine' in caseStr.lower():
-        σ = [0.45, 0.70] # mode 1, 2,...
-        rv = [0.18, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-#         rv = [0.12, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.0477583], [0.7941207]]) # gives AOD=10*[0.0287, 0.0713]=1.0 total
-        vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.415, nwl) # mode 1
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
-        vals['k'] = np.repeat(0.002, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
-        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
-    elif 'plltdmrn' in caseStr.lower(): # Polluted Marine
-        σ = [0.36, 0.70] # mode 1, 2,...
-        rv = [0.11, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.13965681],[0.31480467]]) # gives AOD=9.89*[0.0287, 0.0713]==1.0 total
-        vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.45, nwl) # mode 1
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
-        vals['k'] = np.repeat(0.001, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
-        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
-    elif 'pollution' in caseStr.lower():
-        σ = [0.36, 0.64] # mode 1, 2,...
-        rv = [0.11, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.1787314], [0.0465671]]) # gives AOD=10*[0.091801,0.0082001]=1.0
-        vals['vrtHght'] = [[1010],  [1010]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.45, nwl) # mode 1
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.5, nwl)]) # mode 2
-        vals['k'] = np.repeat(0.001, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(0.01, nwl)]) # mode 2 # NOTE: we cut this in half from XLSX
-        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
-    elif 'dust' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
-        σ = [0.5, 0.75] # mode 1, 2,...
-        rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
-        if 'onlysph' in caseStr.lower():
-            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        else:
-            vals['sph'] = [[0.99999], [0.00001]] # mode fine sphere, coarse spheroid
-            vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # spheroids require scaling to maintain AOD
-        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.46, nwl) # mode 1
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
-        vals['k'] = np.repeat(1e-8, nwl) # mode 1
-        mode2λ = [0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
-        mode2k = [0.0025, 0.0025, 0.0024, 0.0021, 0.0019, 0.0011, 0.0010, 0.0010]
-        mode2Intrp = np.interp(wvls, mode2λ, mode2k)
-        vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
-        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
-    # case01 is blank in V22 of the canoncial case spreadsheet...
-    elif 'd_tamu' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
-        if defineRandom is not None: random_r = defineRandom # array of random numbers at least 4 element for this case
-        
-        rv = [0.8+random_r[0]*3.2,0.8+random_r[1]*3.2] #coarse mode
-        vals['vol'] = np.array([[1.5+random_r[2]*1.5]])/3 
-        σ = [0.5, 0.75] # mode 1, 2,...
-        rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
-        if 'nonsph' in caseStr.lower():
-            vals['sph'] = [[0.00001], [0.00001]] # mode fine sphere, coarse spheroid
-            vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # spheroids require scaling to maintain AOD
-        else:
-            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.46, nwl) # mode 1
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
-        vals['k'] = np.repeat(1e-8, nwl) # mode 1
-        mode2λ = [0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
-        mode2k = [0.0025, 0.0025, 0.0024, 0.0021, 0.0019, 0.0011, 0.0010, 0.0010]
-        mode2Intrp = np.interp(wvls, mode2λ, mode2k)
-        vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
-        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
-    # case01 is blank in V22 of the canoncial case spreadsheet...
-    
-    elif 'var_tamu' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
-        if defineRandom is not None: random_r  = defineRandom # array of random numbers
-        
-        σ = 0.35+random_r[0]*0.3
-        if 'fine' in caseStr.lower():
-            rv = 0.145+random_r[1]*0.105
-            vals['vol'] = np.array([[0.5+random_r[2]*0.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
-        elif 'coarse' in caseStr.lower():
-            rv = 0.8+random_r[4]*3.2
-            vals['vol'] = np.array([[1.5+random_r[3]*1.5]])/3 # (currently gives AOD≈1 but changes w/ intensive props.)
-        else:
-            assert False, 'variable aerosol case must be appended with either fine or coarse'
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.0001]] if 'nonsph' in caseStr.lower() else [[0.99999]] # mode 1, 2,...
-        vals['vrtHght'] = [[3010]] if 'lofted' in caseStr.lower() else  [[1010]]  # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[500]] # Gaussian sigma in meters
-        vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.36+np.array([random_r[5],random_r[6]])*0.15)[None,:] # mode 1 # linear w/ λ
-        vals['k'] =  np.repeat(0.0001+np.array(random_r[7])*0.015, len(wvls))# mode 1 # linear w/ λ
-        # vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+np.array([random_r[7],random_r[8]])*0.015)[None,:] # mode 1 # linear w/ λ
-        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0    
-    # case01 is blank in V22 of the canoncial case spreadsheet...
-    elif 'case02' in caseStr.lower(): # VERSION 22 (except vol & 2.1μm RI)
-        σ = [0.4, 0.4] # mode 1, 2,...
-        rv = [0.07, 0.25]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.07921839], [0.03682901]]) # gives AOD = [0.3046, 0.1954]
-        if 'case02b' in caseStr.lower() or 'case02c' in caseStr.lower():
-            vals['vol'] = vals['vol']/2.0
-        vals['vrtHght'] = [[3500],  [3500]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[750],  [750]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.45, nwl) # mode 1
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
-        vals['k'] = np.repeat(1e-8, nwl) if 'case02c' in caseStr.lower() else np.repeat(0.035, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
-        landPrct = 0
-    elif caseStr.lower()=='case03': # VERSION 22 (2.1μm RRI)
-        σ = [0.6, 0.6] # mode 1, 2,...
-        rv = [0.1, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.01387783], [0.01277042]]) # gives AOD = [0.0732, 0.026801]
-        vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.4, nwl) # mode 1
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
-        vals['k'] = np.repeat(0.002, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
-        landPrct = 0
-    # case 04 is over land
-    # case 05 has a water cloud in the scene
-    elif 'case07' in caseStr.lower() or 'case08' in caseStr.lower(): # VERSION 22 (except spectral dep. of imag. in case 8)
-        σ = [0.5, 0.7] # mode 1, 2,...
-        rv = [0.1, 0.55]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['k'] = np.repeat(0.002, nwl) # mode 1
-        if 'case07' in caseStr.lower():
-            vals['vol'] = np.array([[0.00580439], [0.00916563]]) # gives AOD = [0.0309, 0.0091]
-            vals['n'] = np.repeat(1.415, nwl) # mode 1
-            vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
-            vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
-        else:
-            vals['vol'] = np.array([[0.01191013], [0.0159524]]) # gives AOD = [0.064499, 0.0155  ]
-            vals['n'] = np.repeat(1.42, nwl) # mode 1
-            vals['n'] = np.vstack([vals['n'], np.repeat(1.52, nwl)]) # mode 2
-            vals['k'] = np.vstack([vals['k'], np.repeat(0.002, nwl)]) # mode 2
-        landPrct = 0 if 'case07' in caseStr.lower() else 100
     else:
         assert False, 'No match for caseStr: '+caseStr+'!'
     # MONOMDE [keep only the large of the two (or more) modes]
