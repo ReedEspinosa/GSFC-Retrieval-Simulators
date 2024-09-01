@@ -44,6 +44,19 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.015)[None,:] # mode 1 # linear w/ λ
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     
+    # cloud-like cases for Dan's RST proposal
+    elif 'lwcloud' in caseStr.lower():
+        σ = [0.5] # mode 1,...
+        rv = [20.0]
+        vals['lgrnm'] = np.vstack([rv, σ]).T
+        vals['sph'] = [[0.99999]] # mode 1
+        vals['vol'] = np.array([[200.0]])
+        vals['vrtHght'] = [[2010]] # mode 1,... # Gaussian mean in meters
+        vals['vrtHghtStd'] = [[500]] # mode 1,,... # Gaussian sigma in meters
+        vals['n'] = np.repeat(1.33, nwl)[None,:] # mode 1
+        vals['k'] = np.repeat(1e-8, nwl)[None,:] # mode 1
+        landPrct = 0 # ocean
+        
     # Yingxi's smoke model cases
     elif 'huambo' in caseStr.lower():
         vals = yingxiProposalSmokeModels('Huambo', wvls)
@@ -57,10 +70,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         σ = [0.4, 0.68] # mode 1, 2,...
         rv = [0.1, 0.84]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
-        if 'nonsph' in caseStr.lower():
-            vals['sph'] = [[0.00001], [0.00001]] # mode 1, 2,...
-        else:
-            vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
+        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = np.array([[0.00000001], [0.00000001]])
         vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
