@@ -46,11 +46,13 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
     
     # cloud-like cases for Dan's RST proposal
     elif 'lwcloud' in caseStr.lower():
-        σ = [0.5] # mode 1,...
-        rv = [20.0]
+        σMtch = re.match('.*-σ([0-9.]+)', caseStr.lower())
+        σ = [(float(σMtch.group(1)) if σMtch else 0.5)]
+        rvMtch = re.match('.*-rv([0-9]+)', caseStr.lower())
+        rv = [(float(rvMtch.group(1)) if rvMtch else 20.0)]
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999]] # mode 1
-        vals['vol'] = np.array([[200.0]])
+        vals['vol'] = np.array([[10.0]])*rv # roughly corresponds to COD=18
         vals['vrtHght'] = [[2010]] # mode 1,... # Gaussian mean in meters
         vals['vrtHghtStd'] = [[500]] # mode 1,,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.33, nwl)[None,:] # mode 1
@@ -85,6 +87,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         vals['vol'] = np.array([[0.1094946], [0.03520468]]) # gives AOD=4*[0.2165, 0.033499]=1.0
+        if 'opticthin' in caseStr.lower(): vals['vol'] = vals['vol']/3
         vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters #HACK: should be 3k
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.54, nwl) # mode 1

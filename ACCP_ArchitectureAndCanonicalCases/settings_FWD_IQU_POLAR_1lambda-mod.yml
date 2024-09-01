@@ -33,12 +33,11 @@ retrieval:
             number_of_elements: 4
             radius:
                 mode[1]: {max: 66.0, min: 1.00}
-#                 mode[1]: {max: 5.0, min:  0.01}
-#                 mode[2]: {max: 15.0, min: 0.05}
-#                 mode[3]: {max: 66.0, min: 1.00}
+                mode[2]: {max: 5.0, min:  0.01}
+                mode[3]: {max: 15.0, min: 0.05}
         radiative_transfer:
-            absolute_error_rt_calculations: 1.0e-06
-            aerosol_profile_vertical_type: gaussian
+            absolute_error_rt_calculations: 1.0e-06 # 1e-3 -> 1e-6 => ΔDoLP≈0.007, ΔI≈0.011
+            aerosol_profile_vertical_type: gaussian 
             molecular_profile_vertical_type: exponential
             number_of_layers: 50
             reference_plane_for_polarization: principal_plane
@@ -49,9 +48,9 @@ retrieval:
                 order_of_scattering: multiple_scattering
 #                 order_of_scattering: single_scattering
             simulating_observation: # Halving all of them is Fig 1 -> Big diff
-                number_of_fourier_expansion_coefficients: 12 # 20 -> 0.00001 diff (Fig 2)
-                number_of_gaussian_quadratures_for_expansion_coefficients: 20 # 40 -> ΔDoLP=0.05, ΔI=0.026 (Fig 3) << This is where too focus!
-                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 24 # 40 -> 0.00001 diff (Fig 4)
+                number_of_fourier_expansion_coefficients: 12 # 20 -> 0.00001 diff
+                number_of_gaussian_quadratures_for_expansion_coefficients: 81 # 20 -> 40 =-> ΔDoLP=0.05, ΔI=0.026 << This is where too focus!
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 24 # 40 -> 0.00001 diff
                 order_of_scattering: multiple_scattering
 #                 order_of_scattering: single_scattering
     debug:
@@ -89,7 +88,7 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [200.00001]
+                    max: [260.00001]
                     min: [0.00000001]
                     value: [0.009357605939569125]
             retrieved: true
