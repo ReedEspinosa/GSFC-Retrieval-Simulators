@@ -106,21 +106,36 @@ def writeConcaseVars(rslt):
     for l in np.r_[355, 532, 1064]/1000:
         lInd = np.isclose(rslt['lambda'], l, atol=1e-2).nonzero()[0][0]
         for m in range(2):
-            valVect.append(rslt['LidarRatioMode'][m,lInd])
+            if 'LidarRatioMode' in rslt:
+                valVect.append(rslt['LidarRatioMode'][m,lInd])
+            else:
+                valVect.append(-9999)
         valVect.append(rslt['LidarRatio'][lInd])
     # 532nm δf, δc, δt
     lInd = np.isclose(rslt['lambda'], 532/1000, atol=1e-2).nonzero()[0][0]
     for m in range(2):
-        valVect.append(rslt['LidarDepolMode'][m,lInd])
-    valVect.append(rslt['LidarDepol'][lInd])
+        if 'LidarDepolMode' in rslt:
+            valVect.append(rslt['LidarDepolMode'][m,lInd])
+        else:
+            valVect.append(-9999)
+    if 'LidarDepol' in rslt:
+        valVect.append(rslt['LidarDepol'][m,lInd])
+    else:
+        valVect.append(-9999)
     # 550nm SSAf, SSAc, SSAt, ASYf, ASYc, ASYt
     lInd = np.isclose(rslt['lambda'], 550/1000, atol=1e-2).nonzero()[0][0]
     for m in range(2):
         valVect.append(rslt['ssaMode'][m,lInd])
     valVect.append(rslt['ssa'][lInd])
     for m in range(2):
-        valVect.append(rslt['gMode'][m,lInd])
-    valVect.append(rslt['g'][lInd])
+        if 'gMode' in rslt:
+            valVect.append(rslt['gMode'][m,lInd])
+        else:
+            valVect.append(-9999)
+    if 'g' in rslt:
+        valVect.append(rslt['g'][m,lInd])
+    else:
+        valVect.append(-9999)
     print(', '.join([str(x) for x in valVect]))
 
 def selectGeometryEntryModis(geomFile, ind):

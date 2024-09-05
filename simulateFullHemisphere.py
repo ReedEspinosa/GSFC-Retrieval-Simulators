@@ -16,25 +16,25 @@ from ACCP_functions import writeConcaseVars
 import runGRASP as rg
 
 caseStrs = ['plltdmrn'] # seperate pixels for each of these scenes (CSV will only be written for first case)
-# caseStrs = ['DustNonsph'] # seperate pixels for each of these scenes (CSV will only be written for first case)
-tauFactor = 1
-hemiNetCDF = None
-singleScatCSV = None
-# caseStrs = ['cleanDesert', 'cleanVegetation'] # seperate pixels for each of these scenes
-# hemiNetCDF = '/Users/wrespino/Synced/Remote_Sensing_Projects/A-CCP/Polar07_reflectanceTOA_cleanAtmosphere_landSurface_V2.nc4'
-# singleScatCSV = None
-baseYAML = '/Users/wrespino/Synced/Local_Code_MacBook/GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_3lambda_POL.yml'
 archName = 'polarHemi'
-binPathGRASP = '/usr/local/bin/grasp'
-intrnlFileGRASP = None
+tauFactor = 1
 seaLevel = True # True -> ROD (corresponding to masl = 0 m) & rayleigh depol. saved to nc4 file
+
+singleScatCSV = None
+hemiNetCDF = '/Users/wrespino/Downloads/Polar07_reflectanceTOA_cleanAtmosphere_landSurface_V2.nc4'
+baseYAML = '/Users/wrespino/Synced/Local_Code_MacBook/GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/settings_FWD_IQU_POLAR_1lambda.yml'
+
+path2repoGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open'
+binPathGRASP = os.path.join(path2repoGRASP, 'build/bin/grasp') # Path grasp binary
+intrnlFileGRASP = os.path.join(path2repoGRASP,'src/retrieval/internal_files') # Path grasp precomputed single scattering kernels
+
 
 nowPix = returnPixel(archName)
 rslts = []
 for caseStr in caseStrs:
     fwdYAMLPath = setupConCaseYAML(caseStr, nowPix, baseYAML, caseLoadFctr=tauFactor)
     gObjFwd = rg.graspRun(fwdYAMLPath)
-    gObjFwd.addPix(nowPix)
+    gObjFwd.addPix(nowPix) # TODO: Couldn't we stick everything into a graspDB at this point?
     gObjFwd.runGRASP(binPathGRASP=binPathGRASP, krnlPathGRASP=intrnlFileGRASP)
     rslts.append(np.take(gObjFwd.readOutput(),0)) # we need take because readOutput returns list, even if just one element
 if hemiNetCDF:
