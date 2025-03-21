@@ -189,7 +189,7 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [8.0]
+                    max: [10.1]
                     min: [1.0e-10]
                     value: [2.0e-10]
             retrieved: true
