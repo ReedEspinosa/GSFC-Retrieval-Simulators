@@ -40,11 +40,11 @@ bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml') # inversion 
 # Other non-path related settings
 Nsims = 3 # the number of inversions to perform, each with its own random noise
 maxCPU = 1 # the number of processes to lssaunch, effectivly the # of CPU cores you want to dedicate to the simulation
-conCase = 'case06a' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
-SZA = 30 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
-Phi = 0 # relative azimuth angle, φsolar-φsensor
-τFactor = 1 # scaling factor for total AOD
-instrument = 'polar07' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+conCase = 'dustVariableDesert' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+SZA = 40 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
+Phi = 5 # relative azimuth angle, φsolar-φsensor
+τFactor = 0.5 # scaling factor for total AOD
+instrument = 'polaraosmodDoLP005' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
 # %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
 

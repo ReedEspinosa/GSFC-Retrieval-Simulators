@@ -159,8 +159,9 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         phi = np.tile(relPhi, len(msTyp))
         if 'polaraosclean' in archName.lower():
             errStr = 'polar700'
-        if 'polaraosmod' in archName.lower():
-            errStr = 'polar12'
+        if 'polaraosmod' in archName.lower(): # polar12 OR custom σDoLP*1000 (e.g., 'polaraosmodDoLP005' -> σDoLP=0.005)
+            mtch = re.match('polaraosmoddolp([0-9]+)', archName.lower())
+            errStr = 'polar%d' % int(mtch.group(1))+1000 if mtch else 'polar12'
         elif 'polaraosnoah' in archName.lower():
             errStr = 'harp02'
         else:
@@ -258,6 +259,9 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
         elif int(mtch.group(2)) in [12]: # Matches RMSE for Noah's HARP2 model (but not angle dependnet) 
             relErr = 0.015956
             absDoLPErr = 0.010798
+        elif int(mtch.group(2)) >= 1000: # 1000 would have been added to DoLP*1000 for custom error case
+            relErr = 0.03
+            absDoLPErr = (int(mtch.group(2)) - 1000) / 1000
         else:
             assert False, 'No error model found for %s!' % measNm # S-Polar06 has DoLP dependent ΔDoLP
         trueSimI = rsltFwd['fit_I'][:,l]
