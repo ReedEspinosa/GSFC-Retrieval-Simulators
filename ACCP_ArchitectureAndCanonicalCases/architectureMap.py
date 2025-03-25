@@ -148,11 +148,13 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
     if 'polaraos' in archName.lower():
-        assert np.ndim(vza)==1, 'VZA must be explicitly provided for polarAOS as a 1D list or array!'
         assert np.ndim(relPhi)==1, 'relPhi must be explicitly provided for polarAOS as a 1D list or array!'
         assert len(vza)==len(relPhi), 'vza and relPhi should have the same length!'
         msTyp = [41, 42, 43] # must be in ascending order
-        thtv = np.tile(vza, len(msTyp)) # corresponds to 450 km orbit
+        if vza:
+          thtv = np.tile(vza, len(msTyp)) # corresponds to 450 km orbit
+        else:
+          thtv = np.tile([-63.88,  -48.42,  -34.19 ,  -20.4 ,  -6.78 ,  6.78,  20.4,  34.19,  48.42,  63.88], len(msTyp)) # corresponds to 450 km orbit
         wvls = [0.38, 0.41, 0.55, 0.67, 0.87, 1.24, 1.59] # Nλ=7
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
@@ -168,6 +170,19 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             errStr = 'polar07'
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
+    if 'rsp' in archName.lower(): # Designed to match RSP in ORACLES dust cases
+        assert np.ndim(relPhi)==1, 'relPhi must be explicitly provided for polarAOS as a 1D list or array!'
+        assert len(vza)==len(relPhi), 'vza and relPhi should have the same length!'
+        msTyp = [41, 42, 43] # must be in ascending order
+        thtv = np.tile(np.linspace(-47.85, 39.77, 55), len(msTyp)) # every other angle based on email from Greema to Reed on 2025/03/24
+        wvls = [0.410, 0.470, 0.555, 0.670, 0.865] # nλ=5
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
+        phi = np.tile(relPhi, len(msTyp))
+        errStr = 'polaraosmodDoLP002' # σΙ=3%, δDoLP=0.002 (https://airbornescience.nasa.gov/instrument/Research_Scanning_Polarimeter)
+        for wvl in wvls: # this will be expanded for wavelength dependent measurement types/geometry
+            errModel = functools.partial(addError, errStr) # this must link to an error model in adderror() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
     if 'polder' in archName.lower():
         assert np.ndim(vza)==1, 'VZA must be explicitly provided for polarAOS as a 1D list or array!'
@@ -197,6 +212,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         for wvl in wvls: # this will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in adderror() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
+    
     #   Lidar Instruments (msTyp: Battn-> 31, depol -> 35, VExt->36, VBS->39)
     if 'lidar05' in archName.lower() or 'lidar06' in archName.lower():
         msTyp = [[35, 36, 39],[31, 35]] # must be in ascending order
