@@ -25,7 +25,7 @@ from canonicalCaseMap import setupConCaseYAML
 # <><><> BEGIN BASIC CONFIGURATION SETTINGS <><><>
 
 # Full path to save simulation results as a Python pickle
-savePath = './job/exampleSimulationTest#1.pkl'
+savePath = './job/exampleSimulationTest1.pkl'
 
 # Full path to the base GRASP repository folder
 path2repoGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open'
