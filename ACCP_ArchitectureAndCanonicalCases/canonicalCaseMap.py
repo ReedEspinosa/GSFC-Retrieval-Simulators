@@ -687,11 +687,11 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
       varScl = 0.2 # 1σ=20% variation around base state; skips sph, vrtHghtStd, and vol; k is 20% in log space
       limMin = {
         'lgrnm': [0.03, 0.1], 'vrtHght': 800, 'n': 1.37, 'k': 1e-9,
-        'brdf': [0.0001, 0.02, 0.0001], 'bpdf': 0.01, 'cxMnk': [1.0e-7, 0.9981, 0.00151]
+        'brdf': [0.00001, 0.011, 0.00001], 'bpdf': 0.01, 'cxMnk': [1.0e-7, 0.901, 0.00151]
         }
       limMax = {
-        'lgrnm': [9.9, 0.94], 'vrtHght': 4900, 'n': 1.67, 'k': 0.1,
-        'brdf': [0.99, 0.99, 0.29], 'bpdf': 10.0, 'cxMnk': [0.04, 0.999999, 0.09]
+        'lgrnm': [9.9, 0.94], 'vrtHght': 4900, 'n': 1.669, 'k': 0.1,
+        'brdf': [0.999, 0.999, 0.299], 'bpdf': 10.0, 'cxMnk': [0.04, 0.999999, 0.099]
         }
       # Add random variation to all values
       nModes = len(vals['vol'])

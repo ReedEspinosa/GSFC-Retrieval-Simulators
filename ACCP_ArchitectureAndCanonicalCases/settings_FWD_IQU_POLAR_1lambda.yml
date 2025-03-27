@@ -86,7 +86,7 @@ retrieval:
                     index_of_wavelength_involved: [0]
                     max: [10.00001]
                     min: [0.00000001]
-                    value: [0.009357605939569125]
+                    value: [0.1]
             retrieved: true
             type: aerosol_concentration
         characteristic[2]:
@@ -95,14 +95,14 @@ retrieval:
                     index_of_wavelength_involved: [0, 0]
                     max: [10.0, 0.95]
                     min: [0.02, 0.02]
-                    value: [0.18482, 0.5709795355796814]
+                    value: [1.0, 0.5]
             retrieved: true
             type: size_distribution_lognormal
         characteristic[3]:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [1]
-                    max: [1.65]
+                    max: [1.6699]
                     min: [1.33]
                     value: [1.36387]
             retrieved: true
@@ -128,7 +128,7 @@ retrieval:
             mode[2]:
                 initial_guess:                       #1      #2      #3
                     value:                          [0.999]
-                    min:                             [0.998]
+                    min:                             [0.9]
                     max:                            [1.0000]
                     index_of_wavelength_involved:   [1]
             mode[3]:

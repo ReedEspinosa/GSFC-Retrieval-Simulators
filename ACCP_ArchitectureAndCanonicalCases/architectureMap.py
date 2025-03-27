@@ -156,13 +156,13 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         phiNow = phiConverter(vzaIn=vza, vzaOut=vzaNow, phiIn=relPhi, phiOutNdim=1)
         phi = np.tile(phiNow, len(msTyp))
         wvls = [0.38, 0.41, 0.55, 0.67, 0.87, 1.24, 1.59] # Nλ=7
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
         if 'polaraosclean' in archName.lower():
             errStr = 'polar700'
         if 'polaraosmod' in archName.lower(): # polar12 OR custom σDoLP*1000 (e.g., 'polaraosmodDoLP005' -> σDoLP=0.005)
             mtch = re.match('polaraosmoddolp([0-9]+)', archName.lower())
-            errStr = 'polar%d' % int(mtch.group(1))+1000 if mtch else 'polar12'
+            errStr = 'polar%d' % (int(mtch.group(1)) + 1000) if mtch else 'polar12'
         elif 'polaraosnoah' in archName.lower():
             errStr = 'harp02'
         else:
@@ -177,7 +177,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         phiNow = phiConverter(vzaIn=vza, vzaOut=vzaNow, phiIn=relPhi, phiOutNdim=1)
         phi = np.tile(phiNow, len(msTyp))
         wvls = [0.410, 0.470, 0.555, 0.670, 0.865] # nλ=5
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         errStr = 'polaraosmodDoLP002' # σΙ=3%, δDoLP=0.002 (https://airbornescience.nasa.gov/instrument/Research_Scanning_Polarimeter)
         for wvl in wvls: # this will be expanded for wavelength dependent measurement types/geometry
@@ -190,7 +190,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         phiNow = phiConverter(vzaIn=vza, vzaOut=vzaNow, phiIn=relPhi, phiOutNdim=1)
         phi = np.tile(phiNow, len(msTyp))
         wvls = [0.44, 0.49, 0.55, 0.67, 0.86, 1.02] # nλ=6
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.tile(relPhi, len(msTyp))
         errStr = 'polar11'
@@ -204,7 +204,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         phiNow = phiConverter(vzaIn=vza, vzaOut=vzaNow, phiIn=relPhi, phiOutNdim=1)
         phi = np.tile(phiNow, len(msTyp))
         wvls = [0.410, 0.443, 0.49, 0.555, 0.67, 0.865, 1.02, 1.65, 2.13] # nλ=6
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), np.int)
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
         phi = np.tile(relPhi, len(msTyp))
         errStr = 'polar11'
