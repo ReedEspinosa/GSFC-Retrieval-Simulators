@@ -28,19 +28,20 @@ from canonicalCaseMap import setupConCaseYAML
 savePath = './job/exampleSimulationTest1.pkl'
 
 # Full path to the base GRASP repository folder
-path2repoGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open'
+path2repoGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_internal'
 binGRASP = os.path.join(path2repoGRASP, 'build/bin/grasp') # Path grasp binary
 krnlPath = os.path.join(path2repoGRASP,'src/retrieval/internal_files') # Path grasp precomputed single scattering kernels
 
 # Directory containing the foward and inversion YAML files you would like to use
 ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
-fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml') # foward YAML file
+fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda_dev-rtm-v120-new-inter.yml')
 bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml') # inversion YAML file
 
 # Other non-path related settings
 Nsims = 3 # the number of inversions to perform, each with its own random noise
 maxCPU = 1 # the number of processes to lssaunch, effectivly the # of CPU cores you want to dedicate to the simulation
-conCase = 'dustVariableDesert' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+# conCase = 'marineVariable+dustVariableOcean' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+conCase = 'dustVariableOcean' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
 SZA = 40 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
 Phi = 5 # relative azimuth angle, φsolar-φsensor
 τFactor = 0.5 # scaling factor for total AOD
