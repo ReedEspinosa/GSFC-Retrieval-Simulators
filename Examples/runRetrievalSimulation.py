@@ -35,7 +35,7 @@ krnlPath = os.path.join(path2repoGRASP,'src/retrieval/internal_files') # Path gr
 # Directory containing the foward and inversion YAML files you would like to use
 ymlDir = os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases")
 fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda_dev-rtm-v120-new-inter.yml')
-bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml') # inversion YAML file
+bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_3modes_dev-rtm-v120-new-inter.yml') # inversion YAML file
 
 # Other non-path related settings
 Nsims = 3 # the number of inversions to perform, each with its own random noise
@@ -60,7 +60,7 @@ simA = rs.simulation(nowPix)
 # run the simulation, see below the definition of runSIM in simulateRetrieval.py for more input argument explanations
 simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
             binPathGRASP=binGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, \
-            rndIntialGuess=True, dryRun=False, workingFileSave=True, verbose=True)
+            rndIntialGuess=False, dryRun=False, workingFileSave=True, verbose=True)
 
 # print some results to the console/terminal
 wavelengthIndex = 2
