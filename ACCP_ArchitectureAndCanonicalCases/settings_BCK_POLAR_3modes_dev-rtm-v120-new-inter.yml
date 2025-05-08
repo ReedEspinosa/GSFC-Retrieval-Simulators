@@ -1,5 +1,3 @@
-# THIS USES NO POLARIZATION COX MUNK!!! (good for OSSE, but not much else)
-
 settings:
     strict: true
 input: {driver: sdata, file: inversionBACK.sdat}

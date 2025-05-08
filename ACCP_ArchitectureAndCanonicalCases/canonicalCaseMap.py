@@ -144,7 +144,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         else:
             vals['sph'] = [[0.99999], [0.00001]] # mode fine sphere, coarse spheroid
             vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # spheroids require scaling to maintain AOD
-        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHght'] = [[3010],  [2510]] # mode 1, 2,... # Gaussian mean in meters (coarse mode slightly lower to simulate settling) 
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.46, nwl) # mode 1
         vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
@@ -720,22 +720,23 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         for i in range(3): # loop over 3 surface parameters
           vals[key][i, vals[key][i] > limMax[key][i]] = limMax[key][i]
           vals[key][i, vals[key][i] < limMin[key][i]] = limMin[key][i]
-  
     
     # LIDAR PROFILE SHAPE
     lidarMeasLogical = np.isclose(34.5, [mv['meas_type'][0] for mv in nowPix.measVals], atol=5) # measurement types 30-39 reserved for lidar; if first meas_type is LIDAR, they all should be
     if lidarMeasLogical.any():
         lidarInd = lidarMeasLogical.nonzero()[0][0]
         hValTrgt = np.array(nowPix.measVals[lidarInd]['thetav'][0:nowPix.measVals[lidarInd]['nbvm'][0]]) # HINT: this assumes all LIDAR measurement types have the same vertical range values
-        vals['vrtProf'] = np.empty([len(vals['vrtHght']), len(hValTrgt)])
-        for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
-            bot = max(mid[0]-2*rng[0],0)
-            top = mid[0]+2*rng[0]
-            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.000001
-            if vals['vrtProf'][i,1]>1: vals['vrtProf'][i,0]=0.01 # keep very small amount in top bin if upper layer
-            if vals['vrtProf'][i,-2]>1: vals['vrtProf'][i,-1]=1.0 # fill bottom bin if lowwer layer
+        vals['vrtProf'] = [] # Initialize list to store profiles for each mode
+        for m in range(Nmodes):
+            # Calculate Gaussian profile shape at target heights (hValTrgt)
+            exponent = -0.5 * ((hValTrgt - vals['vrtHght'][m]) / vals['vrtHghtStd'][m])**2
+            profile_mode_m = np.exp(exponent)
+            profile_mode_m_normalized = profile_mode_m / np.max(profile_mode_m) # Normalize the calculated profile so its maximum value in the array is 1.0
+            # Append the normalized profile (converted to list for YAML compatibility)
+            vals['vrtProf'].append(profile_mode_m_normalized.tolist())
         del vals['vrtHght']
         del vals['vrtHghtStd']
+        
     return vals, landPrct
 
 
