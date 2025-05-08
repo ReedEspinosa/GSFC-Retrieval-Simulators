@@ -179,7 +179,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         wvls = [0.410, 0.470, 0.555, 0.670, 0.865] # nλ=5
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
-        errStr = 'polaraosmodDoLP002' # σΙ=3%, δDoLP=0.002 (https://airbornescience.nasa.gov/instrument/Research_Scanning_Polarimeter)
+        errStr = 'polar1002' # σΙ=3%, δDoLP=0.002 (https://airbornescience.nasa.gov/instrument/Research_Scanning_Polarimeter)
         for wvl in wvls: # this will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in adderror() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)

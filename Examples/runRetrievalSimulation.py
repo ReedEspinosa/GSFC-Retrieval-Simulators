@@ -45,7 +45,8 @@ conCase = 'dustVariableOcean' # conanical case scene to run, case06a-k should wo
 SZA = 40 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
 Phi = 5 # relative azimuth angle, φsolar-φsensor
 τFactor = 0.5 # scaling factor for total AOD
-instrument = 'polaraosmodDoLP005' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+# instrument = 'polaraosmodDoLP005' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+instrument = 'rsp' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
 # %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
 
@@ -66,7 +67,7 @@ simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
 wavelengthIndex = 2
 wavelengthValue = simA.rsltFwd[0]['lambda'][wavelengthIndex]
 print('RMS deviations (retrieved-truth) at wavelength of %5.3f μm:' % wavelengthValue)
-pprint.pprint(simA.analyzeSim(0)[0])
+pprint.pprint(simA.analyzeSim(wavelengthIndex)[0])
 
 # save simulated truth data to a NetCDF file
 # simA.saveSim_netCDF(savePath[:-4], verbose=True)
