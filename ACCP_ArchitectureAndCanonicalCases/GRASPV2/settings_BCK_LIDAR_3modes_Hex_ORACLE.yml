@@ -1,0 +1,206 @@
+input: {driver: sdata, file: inversionBACK.sdat}
+output:
+    segment: {function: classic, stream: bench_inversionRslts.txt}
+retrieval:
+    constraints:
+        characteristic[1]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                    max: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+                    min: [1e-18, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12]
+                    value: [4.257807172686912e-09, 1.6546919633584213e-05, 0.00013308742313058482, 0.0002126933085373539, 0.0002034050550987527, 0.0002267505119599583, 0.00019821797727211828, 0.0001852776555496439, 0.00018091779143455724, 0.00011395252711888643, 0.0001095010219998327, 0.00015864854019460655, 0.00018139204237092708, 9.154444612807917e-05, 4.31633627927456e-09, 0.00026289262745439934, 0.00023451101243368602, 0.00028835780569998247, 0.000269917386806484, 0.0002081574129359471, 0.00017946603858211358, 0.00023814947327636032, 0.0003559065116203258, 0.0003066107111462916, 0.000431633627927456, 0.000431633627927456, 0.000431633627927456, 0.000431633627927456, 0.000431633627927456]
+                single_pixel:
+                    a_priori_estimates:
+                        lagrange_multiplier: [1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2]
+                    smoothness_constraints: {difference_order: 3, lagrange_multiplier: 1e-2}
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                    max: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+                    min: [1e-18, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12]
+                    value: [2.138738470632801e-12, 1.9556217480349454e-05, 4.9537362650033135e-05, 6.6020205875795e-05, 7.18717358833761e-05, 6.991576297485933e-05, 6.506788032715146e-05, 6.518009949601728e-05, 0.00010258347252550252, 0.0001534096557300743, 0.00022978324092232124, 0.0003350637802284995, 0.00034525697112010474, 0.0004240641478449379, 0.0008948127977110833, 0.0010623890746205963, 0.0007762854485590767, 0.0003868254322901636, 0.00028290422999911985, 0.00022010609472561033, 0.00017940748640610547, 0.0001658571404357575, 0.00016021181003214306, 0.00011926597934270156, 3.414202636876761e-05, 9.869881430732027e-05, 8.056284166035047e-05, 9.809981568916116e-05, 8.567431535544062e-05]
+                single_pixel:
+                    a_priori_estimates:
+                        lagrange_multiplier: [1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2]
+                    smoothness_constraints: {difference_order: 3, lagrange_multiplier: 1e-2}
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                    max: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+                    min: [1e-18, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12]
+                    value: [2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 2.851983876013326e-09, 0.0015613874138292664, 0.0018181466263110138, 0.002452903145351189, 0.0018903774806421905]
+                single_pixel:
+                    a_priori_estimates:
+                        lagrange_multiplier: [1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2]
+                    smoothness_constraints: {difference_order: 3, lagrange_multiplier: 1e-2}
+            retrieved: true
+            type: vertical_profile_normalized
+        characteristic[2]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [0.5]
+                    min: [1.0e-08]
+                    value: [0.01]
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [3]
+                    min: [1.0e-08]
+                    value: [0.8]
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [1]
+                    min: [1.0e-08]
+                    value: [0.05]
+            retrieved: true
+            type: aerosol_concentration
+        characteristic[3]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0]
+                    max: [5, 0.8]
+                    min: [0.08, 0.35]
+                    value: [0.13, 0.4]
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0]
+                    max: [15, 0.8]
+                    min: [0.8, 0.2]
+                    value: [4, 0.45]
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0]
+                    max: [10, 0.6]
+                    min: [0.8, 0.24]
+                    value: [2, 0.5]
+            retrieved: true
+            type: size_distribution_lognormal
+        characteristic[4]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    max: [1.67, 1.67, 1.67]
+                    min: [1.375, 1.375, 1.375]
+                    value: [1.55, 1.45, 1.45]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0.01}
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    max: [1.67, 1.67, 1.67]
+                    min: [1.4, 1.4, 1.4]
+                    value: [1.5, 1.5, 1.5]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0.01}
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    max: [1.45, 1.45, 1.55]
+                    min: [1.375, 1.375, 1.375]
+                    value: [1.375, 1.375, 1.375]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0.01}
+            retrieved: true
+            type: real_part_of_refractive_index_spectral_dependent
+        characteristic[5]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    max: [0.01, 0.01, 0.006]
+                    min: [0.000101, 0.000101, 0.000101]
+                    value: [0.00015, 0.0002, 0.0002]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.01}
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    max: [0.01, 0.01, 0.006]
+                    min: [0.0003, 0.0002, 0.002]
+                    value: [0.004, 0.004, 0.003]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.01}
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    max: [0.002, 0.002, 0.002]
+                    min: [0.000101, 0.000101, 0.000101]
+                    value: [0.00025, 0.00025, 0.00025]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0.01}
+            retrieved: true
+            type: imaginary_part_of_refractive_index_spectral_dependent
+        characteristic[6]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [1]
+                    min: [0.9]
+                    value: [0.99995]
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [1]
+                    min: [1.0e-07]
+                    value: [1.0e-05]
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [1]
+                    min: [0.8]
+                    value: [0.999999]
+            retrieved: true
+            type: sphere_fraction
+    debug: {additional_information: false, verbose: true}
+    forward_model:
+        atmospheric_vertical_profile: {aerosol_profile_vertical_type: gaussian, molecular_profile_vertical_type: standard_atmosphere, vertical_discrete_type: all_level}
+        phase_matrix:
+            kernels_folder: KERNELS_HEX/
+            number_of_elements: 4
+            radius:
+                mode[1]: {max: 10.0, min: 0.025}
+                mode[2]: {max: 16.0, min: 0.05}
+                mode[3]: {max: 16.0, min: 0.05}
+            size_binning_method_for_triangle_bins: logarithm
+        radiative_transfer:
+            absolute_error_rt_calculations: 1.0e-06
+            number_of_layers: 50
+            simulating_derivatives: {number_of_fourier_expansion_coefficients: 6, number_of_gaussian_quadratures_for_expansion_coefficients: 10, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: multiple_scattering}
+            simulating_observation: {number_of_fourier_expansion_coefficients: 6, number_of_gaussian_quadratures_for_expansion_coefficients: 10, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: multiple_scattering}
+    general: {path_to_internal_files: /data/home/gregmi/GRASP_V2/grasp-dev-rtm-v120-new-inter/src/retrieval/internal_files}
+    inversion:
+        convergence: {maximum_iterations_for_stopping: 40, maximum_iterations_of_Levenberg-Marquardt: 40, minimization_convention: logarithm, scale_for_finite_difference: 7.0e-05, shift_for_applying_logarithm_to_negative_values: 1.1, threshold_for_stopping: 1.0e-09, threshold_for_stopping_Q_iterations: 1.0e-09}
+        noises:
+            noise[1]:
+                error_type: absolute
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    type: DP
+                standard_deviation: 1
+                standard_deviation_synthetic: 0.0
+            noise[2]:
+                error_type: absolute
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    type: VEXT
+                standard_deviation: 1e-05
+                standard_deviation_synthetic: 0.0
+            noise[3]:
+                error_type: absolute
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    type: VBS
+                standard_deviation: 3e-7
+                standard_deviation_synthetic: 0.0
+        regime: single_pixel
+    products:
+        aerosol: {chemistry: false, lidar: true, optical_properties: true, phase_matrix: false, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: false}
+        error_estimation:
+            aerosol: {lidar: false, optical_properties: false}
+            parameters: false
+        forcing: {broadband_flux: false, forcing: false}
+        retrieval: {fitting: true, parameters: true, residual: true}
+        surface: {isotropic_bihemispherical_reflectance: false, main_characteristics: true}
+settings: {strict: true}

@@ -1,0 +1,121 @@
+input: {driver: sdata, file: bench.sdat}
+output:
+    segment: {function: classic, stream: bench_FWD_IQU_rslts.txt}
+retrieval:
+    general: {path_to_internal_files: /Users/momoi/grasp/2025Greema/hexahedral/}
+    mode: forward
+    inversion:
+        regime: single_pixel
+        convergence: {maximum_iterations_for_stopping: 20, maximum_iterations_of_Levenberg-Marquardt: 20, minimization_convention: logarithm, scale_for_finite_difference: 0.001, shift_for_applying_logarithm_to_negative_values: 1.1, threshold_for_stopping: 0.001, threshold_for_stopping_Q_iterations: 1.0e-05}
+        measurement_fitting: {polarization: absolute_polarization_components}
+        noises:
+            
+            noise[1]:
+                error_type: absolute
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8]
+                    type: DP
+                standard_deviation: 1
+                standard_deviation_synthetic: 0.0
+            noise[2]:
+                error_type: absolute
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8]
+                    type: VEXT
+                standard_deviation: 1e-05
+                standard_deviation_synthetic: 0.0
+            noise[3]:
+                error_type: absolute
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8]
+                    type: VBS
+                standard_deviation: 3e-7
+                standard_deviation_synthetic: 0.0
+    forward_model:
+        phase_matrix:
+            kernels_folder: KERNELS_BASE
+            size_binning_method_for_triangle_bins: logarithm
+            number_of_elements: 4
+            radius:
+                mode[1]: {max: 15.0, min: 0.05}
+        atmospheric_vertical_profile:
+            aerosol_profile_vertical_type: gaussian
+            molecular_profile_vertical_type: exponential
+            vertical_discrete_type: all_level
+        radiative_transfer:
+            absolute_error_rt_calculations: 1.0e-06
+            number_of_layers: 30
+            reference_plane_for_polarization: principal_plane
+            simulating_derivatives: {number_of_fourier_expansion_coefficients: 6, number_of_gaussian_quadratures_for_expansion_coefficients: 10, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: multiple_scattering}
+            simulating_observation: {number_of_fourier_expansion_coefficients: 6, number_of_gaussian_quadratures_for_expansion_coefficients: 10, number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20, order_of_scattering: multiple_scattering}
+    debug: {additional_information: false, verbose: true}
+    products:
+        aerosol: {chemistry: false, lidar: true, optical_properties: true, phase_matrix: true, refractive_index: true, theoretical_bimodal_extinction: false, theoretical_bimodal_parameters: false}
+        error_estimation:
+            aerosol: {lidar: false, optical_properties: false}
+            parameters: false
+        forcing: {broadband_flux: false, forcing: false}
+        retrieval: {fitting: true, parameters: true, residual: true}
+        surface: {main_characteristics: true, isotropic_bihemispherical_reflectance: false}
+    constraints:
+        characteristic[1]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max: [3]
+                    min: [1.0e-06]
+                    value: [0.62747]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 0, lagrange_multiplier: 0.0}
+            type: aerosol_concentration
+            retrieved: true
+        characteristic[2]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 1]
+                    max: [8, 0.7]
+                    min: [0.08, 0.4]
+                    value: [0.3, 0.56847]
+            type: size_distribution_lognormal
+            retrieved: true
+        characteristic[3]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3]
+                    max: [1.65, 1.65, 1.65]
+                    min: [1.35, 1.35, 1.35]
+                    value: [1.53, 1.59037, 1.52475]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 3}
+            type: real_part_of_refractive_index_spectral_dependent
+            retrieved: true
+        characteristic[4]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 2, 3, 4, 5, 6, 7, 8]
+                    max: [0.008, 0.007, 0.005, 0.004, 0.003, 0.003, 0.005, 0.006]
+                    min: [0.004, 0.0025031, 0.002485, 0.0010668, 0.001, 0.001, 0.001, 0.001]
+                    value: [0.005, 0.004, 0.0035031, 0.003, 0.002485, 0.0010668, 0.0020999, 0.0010999]
+                single_pixel:
+                    smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.06}
+            retrieved: true
+            type: imaginary_part_of_refractive_index_spectral_dependent
+        characteristic[5]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max: [1]
+                    min: [1.0e-10]
+                    value: [1.0e-7]
+            type: sphere_fraction
+            retrieved: true
+       
+        characteristic[6]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+                    max: [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
+                    min: [1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30, 1.0e-30]
+                    value: [9.01559855e-10, 2.2605392e-09, 7.15798229e-09, 2.02328905e-08, 5.02177374e-08, 6.21721171e-07, 1.82263819e-06, 4.88043397e-06, 1.1960772e-05, 2.68667579e-05, 5.53655976e-05, 0.000104735528, 0.000182768727, 0.000292834462, 0.000427188447, 0.000568864057, 0.000692646878, 0.000771919695, 0.000787792715, 0.000736313324, 0.000630039587, 0.000493132874, 0.000352559221, 0.000229724087, 0.000136864076, 7.52858474e-05, 3.80177179e-05, 1.76152003e-05, 7.4826077e-06, 5.59933526e-08]
+            retrieved: true
+            type: vertical_profile_normalized
