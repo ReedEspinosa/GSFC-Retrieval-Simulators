@@ -1,0 +1,338 @@
+# Created by Gemini 2.5 Pro
+# UPDATED to newer RTM v1.2.0+ like format AND modified to 3 modes aligned with settings_BCK_POLAR_3modes_dev-rtm-v120-new-inter.yml
+settings:
+  strict: true
+input:
+  driver: sdata
+  file: inversionBACK.sdat
+output:
+  segment:
+    function: classic
+    stream: bench_inversionRslts.txt
+retrieval:
+  mode: inversion
+  general:
+    path_to_internal_files: /usr/local/share/grasp/kernels/
+  inversion:
+    regime: single_pixel
+    measurement_fitting:
+      polarization: relative_polarization_components
+    convergence:
+      maximum_iterations_for_stopping: 40 # Retained from original lidar file
+      maximum_iterations_of_Levenberg-Marquardt: 40 # Retained from original lidar file
+      minimization_convention: logarithm
+      normal_system_solver: sparse_matrix_solver # Retained from original lidar file
+      scale_for_finite_difference: 7.0e-05 # Retained from original lidar file
+      shift_for_applying_logarithm_to_negative_values: 1.1
+      threshold_for_stopping: 1.0e-9
+      threshold_for_stopping_Q_iterations: 1.0e-09
+    noises: # Kept lidar noise settings from original lidar file
+      noise[1]:
+        error_type: relative
+        measurement_type[1]:
+          index_of_wavelength_involved: [1] # Should adapt based on actual wavelengths used
+          type: I
+        standard_deviation: 0.03
+        standard_deviation_synthetic: 0.0
+      noise[2]:
+        error_type: absolute
+        measurement_type[1]:
+          index_of_wavelength_involved: [1] # Should adapt based on actual wavelengths used
+          type: Q
+        measurement_type[2]:
+          index_of_wavelength_involved: [1] # Should adapt based on actual wavelengths used
+          type: U
+        standard_deviation: 0.005
+        standard_deviation_synthetic: 0.0
+      noise[3]:
+        error_type: relative
+        measurement_type[1]:
+          index_of_wavelength_involved: [1] # Should adapt based on actual wavelengths used (LIDAR specific)
+          type: LS
+        standard_deviation: 0.2
+        standard_deviation_synthetic: 0.0
+      noise[4]:
+        error_type: absolute
+        measurement_type[1]:
+          index_of_wavelength_involved: [1] # Should adapt based on actual wavelengths used (LIDAR specific)
+          type: VEXT
+        standard_deviation: 5.0e-05
+        standard_deviation_synthetic: 0.0
+      noise[5]:
+        error_type: relative
+        measurement_type[1]:
+          index_of_wavelength_involved: [1] # Should adapt based on actual wavelengths used (LIDAR specific)
+          type: VBS
+        standard_deviation: 0.1
+        standard_deviation_synthetic: 0.0
+  forward_model:
+    atmospheric_vertical_profile:
+      aerosol_profile_vertical_type: gaussian
+    particles:
+      phase_matrix:
+        kernels_folder: KERNELS_BASE/
+        number_of_elements: 4
+        radius:
+          mode[1]: {max: 11.0, min: 0.05} # Value from reference polar3modes file
+          mode[2]: {max: 11.0, min: 0.05} # Value from reference polar3modes file
+          mode[3]: {max: 11.0, min: 0.05} # Added mode 3, value from reference polar3modes file
+        size_binning_method_for_triangle_bins: logarithm
+    radiative_transfer:
+      absolute_error_rt_calculations: 1.0e-06
+      molecular_profile_vertical_type: exponential
+      number_of_layers: 50
+      reference_plane_for_polarization: principal_plane
+      simulating_derivatives:
+        number_of_fourier_expansion_coefficients: 6
+        number_of_gaussian_quadratures_for_expansion_coefficients: 10
+        number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
+        order_of_scattering: multiple_scattering
+      simulating_observation:
+        number_of_fourier_expansion_coefficients: 6
+        number_of_gaussian_quadratures_for_expansion_coefficients: 10
+        number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
+        order_of_scattering: multiple_scattering
+  products:
+    particles:
+      chemistry: false
+      lidar: true
+      optical_properties: true
+      particulate_matter: false
+      phase_matrix: false # Kept setting from original lidar file
+      refractive_index: true
+      theoretical_bimodal_extinction: false # Kept setting from original lidar file (though now trimodal?)
+      theoretical_bimodal_parameters: true # Kept setting from original lidar file (though now trimodal?)
+      type: false
+    error_estimation:
+      particles:
+        lidar: false
+        optical_properties: false
+      parameters: false
+    forcing:
+      broadband_flux: false
+      forcing: false
+    retrieval:
+      fitting: true
+      parameters: true
+      residual: true
+    surface:
+      main_characteristics: true
+  debug:
+    additional_information: false
+    verbose: true
+  constraints:
+    # Characteristic[1] (vertical_profile_normalized) is specific to this lidar file,
+    # not present in reference polar3modes. Adding mode 3 by copying mode 2.
+    characteristic[1]:
+      mode[1]:
+        initial_guess:
+          index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+          max: [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
+          min: [1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09]
+          value: [0.634669718378219, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669718378219]
+        single_pixel:
+          smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.3}
+      mode[2]:
+        initial_guess:
+          index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+          max: [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
+          min: [1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09]
+          value: [0.634669718378219, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669718378219]
+        single_pixel:
+          smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.3}
+      mode[3]: # Added mode 3 by copying mode 2 from this file
+        initial_guess:
+          index_of_wavelength_involved: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+          max: [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
+          min: [1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09, 1.0e-09]
+          value: [0.634669718378219, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669901, 0.634669718378219]
+        single_pixel:
+          smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.3}
+      retrieved: true
+      type: vertical_profile_normalized
+    # Characteristics 2-5 (aerosol conc, size dist, RRI, IRI) are aligned with reference file
+    characteristic[2]: # aerosol_concentration
+      mode[1]: # fine mode
+        initial_guess:
+          index_of_wavelength_involved: [0]
+          max: [0.75]
+          min: [1.0e-08] # Reference uses 1e-8 here
+          value: [0.003]
+      mode[2]: # sea salt -> changed from coarse mode in original lidar file
+        initial_guess:
+          index_of_wavelength_involved: [0]
+          max: [1.0]
+          min: [1.0e-08] # Reference uses 1e-8 here
+          value: [0.01]
+      mode[3]: # dust -> new mode from reference
+        initial_guess:
+          index_of_wavelength_involved: [0]
+          max: [2.0]
+          min: [1.0e-08] # Reference uses 1e-8 here
+          value: [0.005]
+      retrieved: true
+      type: aerosol_concentration
+    characteristic[3]: # size_distribution_lognormal
+      mode[1]: # fine mode
+        initial_guess:
+          index_of_wavelength_involved: [0, 0]
+          max: [0.24, 0.6] # Aligned with reference
+          min: [0.12, 0.35] # Aligned with reference
+          value: [0.13, 0.4] # Aligned with reference
+      mode[2]: # sea salt -> changed from coarse mode in original lidar file
+        initial_guess:
+          index_of_wavelength_involved: [0, 0]
+          max: [7.5, 0.85] # Aligned with reference
+          min: [1.2, 0.4] # Aligned with reference
+          value: [3.5, 0.5] # Aligned with reference
+      mode[3]: # dust -> new mode from reference
+        initial_guess:
+          index_of_wavelength_involved: [0, 0]
+          max: [7.8, 0.6] # Aligned with reference
+          min: [1.0, 0.4] # Aligned with reference
+          value: [3.0, 0.5] # Aligned with reference
+      retrieved: true
+      type: size_distribution_lognormal
+    characteristic[4]: # real_part_of_refractive_index_spectral_dependent
+      mode[1]: # fine mode
+        initial_guess:
+          index_of_wavelength_involved: [1] # Assuming index 1 refers to same wl set length
+          max: [1.53]
+          min: [1.33]
+          value: [1.34]
+        single_pixel:
+          smoothness_constraints: {difference_order: 1, lagrange_multiplier: 4.0}
+      mode[2]: # sea salt -> changed from coarse mode in original lidar file
+        initial_guess:
+          index_of_wavelength_involved: [1] # Assuming index 1 refers to same wl set length
+          max: [1.44]
+          min: [1.33]
+          value: [1.35]
+        single_pixel:
+          smoothness_constraints: {difference_order: 1, lagrange_multiplier: 2.0}
+      mode[3]: # dust -> new mode from reference
+        initial_guess:
+          index_of_wavelength_involved: [1] # Assuming index 1 refers to same wl set length
+          max: [1.55]
+          min: [1.50]
+          value: [1.52]
+        single_pixel:
+          smoothness_constraints: {difference_order: 1, lagrange_multiplier: 2.0}
+      retrieved: true
+      type: real_part_of_refractive_index_spectral_dependent
+    characteristic[5]: # imaginary_part_of_refractive_index_spectral_dependent
+      mode[1]: # fine mode
+        initial_guess:
+          index_of_wavelength_involved: [1] # Assuming index 1 refers to same wl set length & number of values
+          max: [0.025, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025] # Aligned, assuming 8 wavelengths match
+          min: [1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05, 1.0e-05] # Aligned
+          value: [0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002] # Aligned
+        single_pixel:
+          smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.06}
+      mode[2]: # sea salt -> changed from coarse mode in original lidar file
+        initial_guess:
+          index_of_wavelength_involved: [1] # Assuming index 1 refers to same wl set length & number of values
+          max: [5.0e-04, 5.0e-04, 5.0e-04, 5.0e-04, 5.0e-04, 5.0e-04, 5.0e-04, 5.0e-04] # Aligned
+          min: [1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06, 1.0e-06] # Aligned
+          value: [2.0e-04, 2.0e-04, 2.0e-04, 2.0e-04, 2.0e-04, 2.0e-04, 2.0e-04, 2.0e-04] # Aligned
+        single_pixel:
+          smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.1}
+      mode[3]: # dust -> new mode from reference
+        initial_guess:
+          index_of_wavelength_involved: [1] # Assuming index 1 refers to same wl set length & number of values
+          max: [0.008, 0.007, 0.005, 0.004, 0.003, 0.003, 0.005, 0.006] # Aligned
+          min: [0.005, 0.004, 0.003, 0.002, 0.001, 0.001, 0.003, 0.004] # Aligned
+          value: [0.007, 0.006, 0.004, 0.003, 0.002, 0.002, 0.004, 0.005] # Aligned
+        single_pixel:
+          smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.02}
+      retrieved: true
+      type: imaginary_part_of_refractive_index_spectral_dependent
+    # Characteristic[6] (surface_water_cox_munk_iso) aligned with reference file (characteristic[5] in ref file)
+    characteristic[6]:
+      type: surface_water_cox_munk_iso
+      retrieved: true
+      mode[1]:
+        initial_guess:
+          value: [2.0e-09] # Aligned
+          min: [1.0e-09] # Aligned
+          max: [3.0e-09] # Aligned
+          index_of_wavelength_involved: [1] # Aligned (Check if wl index mapping needed)
+        single_pixel:
+          smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0.0} # Aligned
+      mode[2]:
+        initial_guess:
+          value: [0.999999] # Aligned
+          min: [0.999998] # Aligned
+          max: [1.0] # Aligned
+          index_of_wavelength_involved: [0] # Aligned
+      mode[3]:
+        initial_guess:
+          value: [0.015] # Aligned
+          min: [0.00406] # Aligned
+          max: [0.040] # Aligned (Ref file used 0.040, original lidar used 0.27)
+          index_of_wavelength_involved: [0] # Aligned
+    # Characteristic[7] (surface_land_brdf_ross_li) aligned with reference file (characteristic[7] in ref file)
+    characteristic[7]:
+      mode[1]: # k0 (isotropic)
+        initial_guess:
+          index_of_wavelength_involved: [1] # Assuming index 1 maps correctly & number of values
+          max: [0.15, 0.15, 0.18, 0.35, 0.5, 0.6, 0.7, 0.7] # Aligned, assuming 8 wavelengths match
+          min: [2.0e-04, 2.0e-04, 2.0e-04, 2.0e-04, 2.0e-04, 0.05, 0.025, 0.02] # Aligned
+          value: [0.05, 0.05, 0.08, 0.15, 0.2, 0.3, 0.35, 0.35] # Aligned
+        single_pixel:
+          smoothness_constraints: {difference_order: 2, lagrange_multiplier: 0.0} # Aligned
+      mode[2]: # kvol (volumetric)
+        initial_guess:
+          index_of_wavelength_involved: [0] # Aligned
+          max: [1.25] # Aligned
+          min: [1.0e-05] # Aligned
+          value: [0.5] # Aligned
+        single_pixel:
+          smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0.0} # Aligned
+      mode[3]: # kgeo (geometric)
+        initial_guess:
+          index_of_wavelength_involved: [0] # Aligned
+          max: [0.4] # Aligned
+          min: [1.0e-05] # Aligned
+          value: [0.15] # Aligned
+        single_pixel:
+          smoothness_constraints: {difference_order: 1, lagrange_multiplier: 0.0} # Aligned
+      retrieved: true
+      type: surface_land_brdf_ross_li
+    # Characteristic[8] (sphere_fraction) aligned with reference file (characteristic[8] in ref file)
+    characteristic[8]:
+      mode[1]: # fine mode
+        initial_guess:
+          index_of_wavelength_involved: [0]
+          max: [0.9999999]
+          min: [0.999] # Aligned
+          value: [0.9999998]
+      mode[2]: # sea salt -> changed from coarse mode in original lidar file
+        initial_guess:
+          index_of_wavelength_involved: [0]
+          max: [0.9999999]
+          min: [0.999] # Aligned
+          value: [0.9999998]
+      mode[3]: # dust -> new mode from reference
+        initial_guess:
+          index_of_wavelength_involved: [0]
+          max: [0.8] # Aligned
+          min: [1.0e-07] # Aligned
+          value: [0.6] # Aligned
+      retrieved: true
+      type: sphere_fraction
+    # Characteristic[9] (surface_land_polarized_maignan_breon) was not retrieved in original lidar file
+    # Keeping it not retrieved, but copying definition from reference file for completeness if needed later.
+    characteristic[9]:
+      mode[1]:
+        initial_guess:
+          index_of_wavelength_involved: [1] # Assuming index 1 maps correctly
+          max: [3.0e-06] # From reference
+          min: [1.0e-06] # From reference
+          value: [2.0e-06] # From reference
+        single_pixel:
+          smoothness_constraints: {difference_order: 1, lagrange_multiplier: 3.0} # From reference
+      retrieved: false # Kept original setting
+      type: surface_land_polarized_maignan_breon
+    # Characteristic[10] is vertical_profile_parameter_height, present only in reference file. Not adding it here.
+    # Characteristic[11] is vertical_profile_parameter_standard_deviation, present only in reference file. Not adding it here.

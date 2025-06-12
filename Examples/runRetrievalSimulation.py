@@ -25,7 +25,7 @@ from canonicalCaseMap import setupConCaseYAML
 # <><><> BEGIN BASIC CONFIGURATION SETTINGS <><><>
 
 # Full path to save simulation results as a Python pickle
-savePath = './job/exampleSimulationTest#1.pkl'
+savePath = './job/exampleSimulationTest1.pkl'
 
 # Full path to the base GRASP repository folder
 path2repoGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open'
@@ -40,11 +40,13 @@ bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml') # inversion 
 # Other non-path related settings
 Nsims = 3 # the number of inversions to perform, each with its own random noise
 maxCPU = 1 # the number of processes to lssaunch, effectivly the # of CPU cores you want to dedicate to the simulation
-conCase = 'case06a' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
-SZA = 30 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
-Phi = 0 # relative azimuth angle, φsolar-φsensor
-τFactor = 1 # scaling factor for total AOD
-instrument = 'polar07' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+# conCase = 'marineVariable+dustVariableOcean' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+conCase = 'dustVariableOcean' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
+SZA = 40 # solar zenith (Note GRASP doesn't seem to be wild about θs=0; θs=0.1 is fine though)
+Phi = 5 # relative azimuth angle, φsolar-φsensor
+τFactor = 0.5 # scaling factor for total AOD
+# instrument = 'polaraosmodDoLP005' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
+instrument = 'rsp' # polar0700 has (almost) no noise, polar07 has ΔI=3%, ΔDoLP=0.5%; see returnPixel function for more options
 
 # %% <><><> END BASIC CONFIGURATION SETTINGS <><><>
 
@@ -59,13 +61,13 @@ simA = rs.simulation(nowPix)
 # run the simulation, see below the definition of runSIM in simulateRetrieval.py for more input argument explanations
 simA.runSim(cstmFwdYAML, bckYAMLpath, Nsims, maxCPU=maxCPU, savePath=savePath, \
             binPathGRASP=binGRASP, intrnlFileGRASP=krnlPath, releaseYAML=True, lightSave=True, \
-            rndIntialGuess=True, dryRun=False, workingFileSave=True, verbose=True)
+            rndIntialGuess=False, dryRun=False, workingFileSave=True, verbose=True)
 
 # print some results to the console/terminal
 wavelengthIndex = 2
 wavelengthValue = simA.rsltFwd[0]['lambda'][wavelengthIndex]
 print('RMS deviations (retrieved-truth) at wavelength of %5.3f μm:' % wavelengthValue)
-pprint.pprint(simA.analyzeSim(0)[0])
+pprint.pprint(simA.analyzeSim(wavelengthIndex)[0])
 
 # save simulated truth data to a NetCDF file
 # simA.saveSim_netCDF(savePath[:-4], verbose=True)

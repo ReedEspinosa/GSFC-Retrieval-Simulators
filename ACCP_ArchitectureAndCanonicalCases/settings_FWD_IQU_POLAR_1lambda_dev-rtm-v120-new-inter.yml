@@ -6,7 +6,14 @@ retrieval:
     mode: forward
     inversion:
         regime: single_pixel
-        convergence: {maximum_iterations_for_stopping: 20, maximum_iterations_of_Levenberg-Marquardt: 20, minimization_convention: logarithm, normal_system_solver: sparse_matrix_solver, scale_for_finite_difference: 1.0e-03, shift_for_applying_logarithm_to_negative_values: 1.1, threshold_for_stopping: 0.001, threshold_for_stopping_Q_iterations: 1.0e-05}
+        convergence:
+            minimization_convention: logarithm
+            threshold_for_stopping: 0.001
+            maximum_iterations_for_stopping: 20
+            maximum_iterations_of_Levenberg-Marquardt: 20
+            threshold_for_stopping_Q_iterations:  1.0e-12 # this was 1.0e-5 but shouldn't impact fwd anyway 
+            scale_for_finite_difference:          1.0e-3 
+            shift_for_applying_logarithm_to_negative_values: 1.1
         measurement_fitting: {polarization: absolute_polarization_components}
         noises:
             noise[1]:
@@ -27,16 +34,18 @@ retrieval:
                 standard_deviation: 0.005
                 standard_deviation_synthetic: 0.0
     forward_model:
-        phase_matrix:
-            kernels_folder: KERNELS_BASE/
-            size_binning_method_for_triangle_bins: logarithm
-            number_of_elements: 4
-            radius:
-                mode[1]: {max: 15.0, min: 0.005}
+        atmospheric_vertical_profile:
+            aerosol_profile_vertical_type: gaussian
+            vertical_discrete_type: all_level
+        particles:
+            phase_matrix:
+                kernels_folder: "KERNELS_BASE/"
+                size_binning_method_for_triangle_bins: logarithm
+                number_of_elements: 4
+                radius:
+                    mode[1]: {max: 15.0, min: 0.005}
         radiative_transfer:
             absolute_error_rt_calculations: 1.0e-06
-            aerosol_profile_vertical_type: gaussian
-            molecular_profile_vertical_type: exponential
             number_of_layers: 50
             reference_plane_for_polarization: principal_plane
             simulating_derivatives:
@@ -54,18 +63,16 @@ retrieval:
         verbose: true
 
     products:
-        aerosol:
+        particles:
             chemistry: false
             lidar: true
             optical_properties: true
-            particulate_matter: false
             phase_matrix: false
             refractive_index: true
             theoretical_bimodal_extinction: false
             theoretical_bimodal_parameters: false
-            type: false
         error_estimation:
-            aerosol:
+            particles:
                 lidar: false
                 optical_properties: false
             parameters: false

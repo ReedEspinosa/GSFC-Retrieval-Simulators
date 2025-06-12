@@ -24,9 +24,9 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
     wvls = np.unique([mv['wl'] for mv in nowPix.measVals])
     nwl = len(wvls)
     
-    # variable type cases
+    # Generalvariable type cases (simply 'variable' prior to March 25')
     # variable type appended options: 'fine'/'coarse', 'nonsph' and 'lofted' """
-    if 'variable' in caseStr.lower(): # dimensions are [mode, λ or (rv,sigma)];
+    if 'generalvariable' in caseStr.lower(): # dimensions are [mode, λ or (rv,sigma)];
         σ = 0.35+rnd.random()*0.3
         if 'fine' in caseStr.lower():
             rv = 0.145+rnd.random()*0.105
@@ -42,9 +42,8 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['vrtHghtStd'] = [[500]] # Gaussian sigma in meters
         vals['n'] = np.interp(wvls, [wvls[0],wvls[-1]],   1.36+rnd.random(2)*0.15)[None,:] # mode 1 # linear w/ λ
         vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+rnd.random(2)*0.015)[None,:] # mode 1 # linear w/ λ
-        landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
-    
-    # cloud-like cases for Dan's RST proposal
+        
+    # Cloud-like cases for Dan's RST proposal
     elif 'lwcloud' in caseStr.lower():
         σMtch = re.match('.*-σ([0-9.]+)', caseStr.lower())
         σ = [(float(σMtch.group(1)) if σMtch else 0.5)]
@@ -145,7 +144,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         else:
             vals['sph'] = [[0.99999], [0.00001]] # mode fine sphere, coarse spheroid
             vals['vol'][1,0] = vals['vol'][1,0]*0.8864307902113797 # spheroids require scaling to maintain AOD
-        vals['vrtHght'] = [[3010],  [3010]] # mode 1, 2,... # Gaussian mean in meters
+        vals['vrtHght'] = [[3010],  [2510]] # mode 1, 2,... # Gaussian mean in meters (coarse mode slightly lower to simulate settling) 
         vals['vrtHghtStd'] = [[500],  [500]] # mode 1, 2,... # Gaussian sigma in meters
         vals['n'] = np.repeat(1.46, nwl) # mode 1
         vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
@@ -199,58 +198,6 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['k'] =  np.repeat(0.0001+np.array(random_r[7])*0.015, len(wvls))# mode 1 # linear w/ λ
         # vals['k'] = np.interp(wvls, [wvls[0],wvls[-1]], 0.0001+np.array([random_r[7],random_r[8]])*0.015)[None,:] # mode 1 # linear w/ λ
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0    
-    
-    # Old AOS Cases
-    # case01 is blank in V22 of the canoncial case spreadsheet...
-    elif 'case02' in caseStr.lower(): # VERSION 22 (except vol & 2.1μm RI)
-        σ = [0.4, 0.4] # mode 1, 2,...
-        rv = [0.07, 0.25]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.07921839], [0.03682901]]) # gives AOD = [0.3046, 0.1954]
-        if 'case02b' in caseStr.lower() or 'case02c' in caseStr.lower():
-            vals['vol'] = vals['vol']/2.0
-        vals['vrtHght'] = [[3500],  [3500]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[750],  [750]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.45, nwl) # mode 1
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
-        vals['k'] = np.repeat(1e-8, nwl) if 'case02c' in caseStr.lower() else np.repeat(0.035, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
-        landPrct = 0
-    elif caseStr.lower()=='case03': # VERSION 22 (2.1μm RRI)
-        σ = [0.6, 0.6] # mode 1, 2,...
-        rv = [0.1, 0.4]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vol'] = np.array([[0.01387783], [0.01277042]]) # gives AOD = [0.0732, 0.026801]
-        vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['n'] = np.repeat(1.4, nwl) # mode 1
-        vals['n'] = np.vstack([vals['n'], np.repeat(1.35, nwl)]) # mode 2
-        vals['k'] = np.repeat(0.002, nwl) # mode 1
-        vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
-        landPrct = 0
-    # case 04 is over land
-    # case 05 has a water cloud in the scene
-    elif 'case07' in caseStr.lower() or 'case08' in caseStr.lower(): # VERSION 22 (except spectral dep. of imag. in case 8)
-        σ = [0.5, 0.7] # mode 1, 2,...
-        rv = [0.1, 0.55]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
-        vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
-        vals['vrtHght'] = [[750],  [750]] # mode 1, 2,... # Gaussian mean in meters
-        vals['vrtHghtStd'] = [[250],  [250]] # mode 1, 2,... # Gaussian sigma in meters
-        vals['k'] = np.repeat(0.002, nwl) # mode 1
-        if 'case07' in caseStr.lower():
-            vals['vol'] = np.array([[0.00580439], [0.00916563]]) # gives AOD = [0.0309, 0.0091]
-            vals['n'] = np.repeat(1.415, nwl) # mode 1
-            vals['n'] = np.vstack([vals['n'], np.repeat(1.363, nwl)]) # mode 2
-            vals['k'] = np.vstack([vals['k'], np.repeat(1e-8, nwl)]) # mode 2
-        else:
-            vals['vol'] = np.array([[0.01191013], [0.0159524]]) # gives AOD = [0.064499, 0.0155  ]
-            vals['n'] = np.repeat(1.42, nwl) # mode 1
-            vals['n'] = np.vstack([vals['n'], np.repeat(1.52, nwl)]) # mode 2
-            vals['k'] = np.vstack([vals['k'], np.repeat(0.002, nwl)]) # mode 2
-        landPrct = 0 if 'case07' in caseStr.lower() else 100
     
     # Added by Anin to account for the aerosol models, PSD for the CAMP2Ex based simulation study
     elif 'coarse_mode_campex' in caseStr.lower(): # 
@@ -425,7 +372,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
             vals['vrtHghtStd'] = [[ALHStd], [ALHStd], [ALHStd], [ALHStd]]   # mode 1, 2,... # Gaussian sigma in meters
             nAero_ = np.repeat(nFM + (rnd.uniform(-nFMStd, nFMStd)),nwl)    # fine mode aerosols
 			
-			# redefining the spectral refractive index based on the runtype (options are either 
+			      # redefining the spectral refractive index based on the runtype (options are either 
             if 'flatfine' in caseStr.lower():
                 nAero = slope4RRI(nAero_, wvls, slope=0)
                 kAero = loguniform(kFMin, kFMax)*np.repeat(1, nwl)
@@ -685,73 +632,121 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     else:
         assert False, 'No match for caseStr: '+caseStr+'!'
+        
     # MONOMDE [keep only the large of the two (or more) modes]
     if 'monomode' in caseStr.lower():
         bigMode = np.argmax(vals['vol'])
         for key in ['vol','n','k','sph','lgrnm','vrtHght','vrtHghtStd']:
             vals[key] = np.atleast_2d(np.array(vals[key])[bigMode,:])
+     
     # OCEAN MODEL
     if landPrct<100:
-        λ=[0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
-        if 'chl' in caseStr.lower():
-            #R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.00000002, 0.00000002, 0.00000002] # SIT-A canonical values, TODO: need to double check these units
-            R=[0.02, 0.02, 0.02, 0.02,  0.01, 0.0005, 0.00000002, 0.00000002] # Figure 8, Chowdhary et al, APPLIED OPTICS Vol. 45, No. 22 (2006), also need to check units...
-        elif 'open_ocean' in caseStr.lower():
-            R=[0.012, 0.014, 0.010, 0.00249109,	0.00169515, 0.00000002, 0.00000002, 0.00000002]
-        else: 
-            R=[0.00000002, 0.00000002, 0.00000002, 0.00000002,	0.00000002, 0.00000002, 0.00000002, 0.00000002]
-        lambR = np.interp(wvls, λ, R)
-        FresFrac = 0.999999*np.ones(nwl)
-        cxMnk = (7*0.00512+0.003)/2*np.ones(nwl) # 7 m/s
-        vals['cxMnk'] = np.vstack([lambR, FresFrac, cxMnk])
-    # LAND SURFACE BRDF [Polar07_reflectanceTOA_cleanAtmosphere_landSurface_V7.xlsx]
-    if landPrct>0: # we havn't programed these yet
-        λ=[0.415, 0.470, 0.555, 0.659, 0.865, 1.24, 1.64, 2.13] # this should be ordered (interp behavoir is unexpected otherwise)
-        if 'desert' in caseStr.lower(): # mean of July 1st 2019 Sahara MIAIC MODIS RTLS (MCD19A3.A2019177.h18v06.006.2019186034811.hdf)
-            iso = [0.0859, 0.1453, 0.2394, 0.3838, 0.4619, 0.5762, 0.6283, 0.6126]
-            vol = [0.4157, 0.4157, 0.4157, 0.4157, 0.4157, 0.4157, 0.4157, 0.4157] # MAIAC_vol/MAIAC_iso
-            geo = [0.0262, 0.0262, 0.0262, 0.0262, 0.0262, 0.0262, 0.0262, 0.0262] # MAIAC_geo/MAIAC_iso
-        elif 'vegetation' in caseStr.lower(): # mean of July 1st 2019 SEUS MIAIC MODIS RTLS (MCD19A3.A2019177.h11v05.006.2019186033524.hdf)
-            iso = [0.0237, 0.0368, 0.0745, 0.0560, 0.4225, 0.4104, 0.2457, 0.1128]
-            vol = [0.6073, 0.6073, 0.6073, 0.6073, 0.6073, 0.6073, 0.6073, 0.6073] # MAIAC_vol/MAIAC_iso
-            geo = [0.1411, 0.1411, 0.1411, 0.1411, 0.1411, 0.1411, 0.1411, 0.1411] # MAIAC_geo/MAIAC_iso
-        else:
-            assert False, 'Land surface type not recognized!'
-        lambISO = np.interp(wvls, λ, iso)
-        lambVOL = np.interp(wvls, λ, vol)
-        lambGEO = np.interp(wvls, λ, geo)
-        vals['brdf'] = np.vstack([lambISO, lambVOL, lambGEO])
-    # LAND BPDF
+      λ=[0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100] # nearest neighbor extrapolation
+      if 'chl' in caseStr.lower():
+        #R=[0.0046195003, 0.0050949964, 0.0060459884, 0.0024910956,	0.0016951599, 0.00000002, 0.00000002, 0.00000002] # SIT-A canonical values, TODO: need to double check these units
+        R=[0.02, 0.02, 0.02, 0.02,  0.01, 0.0005, 0.00000002, 0.00000002] # Figure 8, Chowdhary et al, APPLIED OPTICS Vol. 45, No. 22 (2006), also need to check units...
+      elif 'open_ocean' in caseStr.lower():
+        R=[0.012, 0.014, 0.010, 0.00249109,	0.00169515, 0.00000002, 0.00000002, 0.00000002]
+      else: 
+        R=[0.00000002, 0.00000002, 0.00000002, 0.00000002,	0.00000002, 0.00000002, 0.00000002, 0.00000002]
+      lambR = np.interp(wvls, λ, R)
+      FresFrac = 0.999999*np.ones(nwl)
+      cxMnk = (7*0.00512+0.003)/2*np.ones(nwl) # 7 m/s
+      vals['cxMnk'] = np.vstack([lambR, FresFrac, cxMnk])
+
+    msg = 'A land surface type is not compatible with %s!'
+    assert not (landPrct==100 and 'chl' in caseStr.lower()), msg % 'chl'
+    assert not (landPrct==100 and 'open_ocean' in caseStr.lower()), msg % 'open_ocean'
+    
     if landPrct>0:
-        if 'desert' in caseStr.lower(): # OSSE original sept. 1st test case over Sahara, BPDFCoef=7.3, NDVI=0.1
-            vals['bpdf'] = 6.6564*np.ones([1,nwl]) # exp(-VLIDORT_NDVI)*VLIDORT_C)
-        elif 'vegetation' in caseStr.lower(): # OSSE original sept. 1st test case over SEUS, BPDFCoef=6.9, NDVI=0.9
-            vals['bpdf'] = 2.6145*np.ones([1,nwl]) # exp(-VLIDORT_NDVI)*VLIDORT_C)
-        else:
-            assert False, 'Land surface type not recognized!'
+      # LAND SURFACE BRDF [Polar07_reflectanceTOA_cleanAtmosphere_landSurface_V7.xlsx]
+      λ=[0.415, 0.470, 0.555, 0.659, 0.865, 1.24, 1.64, 2.13] # this should be ordered (interp behavoir is unexpected otherwise); nearest neighbor extrapolation
+      if 'desert' in caseStr.lower(): # mean of July 1st 2019 Sahara MIAIC MODIS RTLS (MCD19A3.A2019177.h18v06.006.2019186034811.hdf)
+        iso = [0.0859, 0.1453, 0.2394, 0.3838, 0.4619, 0.5762, 0.6283, 0.6126]
+        vol = [0.4157, 0.4157, 0.4157, 0.4157, 0.4157, 0.4157, 0.4157, 0.4157] # MAIAC_vol/MAIAC_iso
+        geo = [0.0262, 0.0262, 0.0262, 0.0262, 0.0262, 0.0262, 0.0262, 0.0262] # MAIAC_geo/MAIAC_iso
+      elif 'vegetation' in caseStr.lower(): # mean of July 1st 2019 SEUS MIAIC MODIS RTLS (MCD19A3.A2019177.h11v05.006.2019186033524.hdf)
+        iso = [0.0237, 0.0368, 0.0745, 0.0560, 0.4225, 0.4104, 0.2457, 0.1128]
+        vol = [0.6073, 0.6073, 0.6073, 0.6073, 0.6073, 0.6073, 0.6073, 0.6073] # MAIAC_vol/MAIAC_iso
+        geo = [0.1411, 0.1411, 0.1411, 0.1411, 0.1411, 0.1411, 0.1411, 0.1411] # MAIAC_geo/MAIAC_iso
+      else:
+        assert False, 'Land surface type not recognized!'
+      lambISO = np.interp(wvls, λ, iso)
+      lambVOL = np.interp(wvls, λ, vol)
+      lambGEO = np.interp(wvls, λ, geo)
+      vals['brdf'] = np.vstack([lambISO, lambVOL, lambGEO])
+      # LAND BPDF
+      if 'desert' in caseStr.lower(): # OSSE original sept. 1st test case over Sahara, BPDFCoef=7.3, NDVI=0.1
+        vals['bpdf'] = 6.6564*np.ones([1,nwl]) # exp(-VLIDORT_NDVI)*VLIDORT_C)
+      elif 'vegetation' in caseStr.lower(): # OSSE original sept. 1st test case over SEUS, BPDFCoef=6.9, NDVI=0.9
+        vals['bpdf'] = 2.6145*np.ones([1,nwl]) # exp(-VLIDORT_NDVI)*VLIDORT_C)
+      else:
+        assert False, 'Land surface type not recognized!'
+    
+    if 'variable' in caseStr.lower(): # dimensions are [mode, λ or (rv,sigma)]; TODO: Remove random component of variable above and it should just work
+      varScl = 0.2 # 1σ=20% variation around base state; skips sph, vrtHghtStd, and vol; k is 20% in log space
+      limMin = {
+        'lgrnm': [0.03, 0.1], 'vrtHght': 800, 'n': 1.37, 'k': 1e-9,
+        'brdf': [0.00001, 0.011, 0.00001], 'bpdf': 0.01, 'cxMnk': [1.0e-7, 0.901, 0.00151]
+        }
+      limMax = {
+        'lgrnm': [9.9, 0.94], 'vrtHght': 4900, 'n': 1.669, 'k': 0.1,
+        'brdf': [0.999, 0.999, 0.299], 'bpdf': 10.0, 'cxMnk': [0.04, 0.999999, 0.099]
+        }
+      # Add random variation to all values
+      nModes = len(vals['vol'])
+      vals['lgrnm'] = vals['lgrnm']*rnd.normal(1, varScl, (nModes,2)) # vary rv and sigma at all modes by [varSCl]%
+      vals['vrtHght'] = vals['vrtHght']*rnd.normal(1, varScl, (nModes,1)) # vary height of all modes by [varSCl]%
+      vals['n'] = vals['n'] + rnd.normal(0, varScl*0.1, (nModes,1)) # apply [varSCl]% spectrally flat variation to RRI
+      vals['k'] = vals['k']*rnd.normal(1, varScl, (nModes,1)) # apply [varSCl]% spectrally flat variation to IRI
+      if 'brdf' in vals: vals['brdf'] = vals['brdf']*rnd.normal(1, varScl, (3,1)) # apply [varSCl]% spectrally flat variation to BRDF
+      if 'bpdf' in vals: vals['bpdf'] = vals['bpdf']*rnd.normal(1, varScl/2) # apply 1/2*[varSCl]% spectrally flat variation to BPDF (full variation seemed unrealistic)
+      if 'cxMnk' in vals: 
+        vals['cxMnk'][0,:] = vals['cxMnk'][0,:]*rnd.normal(1, varScl) # apply [varSCl]% spectrally flat variation to WLR (we skip Fresnel fraction)
+        vals['cxMnk'][2,:] = (vals['cxMnk'][2,:]-0.0015)*rnd.normal(1, varScl)+0.0015 # apply [varSCl]% spectrally flat variation to windspeed
+      # Bound aerosol properties to within min/max
+      for m in range(nModes):
+        for i in range(2): # loop over len([rv, σ])=2
+          if vals['lgrnm'][m,i]>limMax['lgrnm'][i]: vals['lgrnm'][m,i]=limMax['lgrnm'][i]
+          if vals['lgrnm'][m,i]<limMin['lgrnm'][i]: vals['lgrnm'][m,i]=limMin['lgrnm'][i]
+        for key in ['vrtHght', 'n', 'k']:
+          vals[key][m, vals[key][m] > limMax[key]] = limMax[key]
+          vals[key][m, vals[key][m] < limMin[key]] = limMin[key]
+      # Bound surface properties to within min/max      
+      if 'bpdf' in vals:
+        vals['bpdf'][vals['bpdf'] > limMax['bpdf']] = limMax['bpdf']
+        vals['bpdf'][vals['bpdf'] < limMin['bpdf']] = limMin['bpdf']
+      for key in [k for k in ['brdf', 'cxMnk'] if k in vals.keys()]:
+        for i in range(3): # loop over 3 surface parameters
+          vals[key][i, vals[key][i] > limMax[key][i]] = limMax[key][i]
+          vals[key][i, vals[key][i] < limMin[key][i]] = limMin[key][i]
+    
     # LIDAR PROFILE SHAPE
     lidarMeasLogical = np.isclose(34.5, [mv['meas_type'][0] for mv in nowPix.measVals], atol=5) # measurement types 30-39 reserved for lidar; if first meas_type is LIDAR, they all should be
     if lidarMeasLogical.any():
         lidarInd = lidarMeasLogical.nonzero()[0][0]
         hValTrgt = np.array(nowPix.measVals[lidarInd]['thetav'][0:nowPix.measVals[lidarInd]['nbvm'][0]]) # HINT: this assumes all LIDAR measurement types have the same vertical range values
-        vals['vrtProf'] = np.empty([len(vals['vrtHght']), len(hValTrgt)])
-        for i, (mid, rng) in enumerate(zip(vals['vrtHght'], vals['vrtHghtStd'])):
-            bot = max(mid[0]-2*rng[0],0)
-            top = mid[0]+2*rng[0]
-            vals['vrtProf'][i,:] = np.logical_and(np.array(hValTrgt) > bot, np.array(hValTrgt) <= top)*1+0.000001
-            if vals['vrtProf'][i,1]>1: vals['vrtProf'][i,0]=0.01 # keep very small amount in top bin if upper layer
-            if vals['vrtProf'][i,-2]>1: vals['vrtProf'][i,-1]=1.0 # fill bottom bin if lowwer layer
+        vals['vrtProf'] = [] # Initialize list to store profiles for each mode
+        for m in range(Nmodes):
+            # Calculate Gaussian profile shape at target heights (hValTrgt)
+            exponent = -0.5 * ((hValTrgt - vals['vrtHght'][m]) / vals['vrtHghtStd'][m])**2
+            profile_mode_m = np.exp(exponent)
+            profile_mode_m_normalized = profile_mode_m / np.max(profile_mode_m) # Normalize the calculated profile so its maximum value in the array is 1.0
+            # Append the normalized profile (converted to list for YAML compatibility)
+            vals['vrtProf'].append(profile_mode_m_normalized.tolist())
         del vals['vrtHght']
         del vals['vrtHghtStd']
+        
     return vals, landPrct
 
+
 def setupConCaseYAML(caseStrs, nowPix, baseYAML, caseLoadFctr=1, caseHeightKM=None, simBldProfs=None, defineRandom = None): # equal volume weighted marine at 1km & smoke at 4km -> caseStrs='marine+smoke', caseLoadFctr=[1,1], caseHeightKM=[1,4]
-    """ nowPix needed to: 1) set land percentage of nowPix and 2) get number of wavelengths """
+    """ nowPix needed to: 1) set land percentage of nowPix, 2) get number of wavelengths, and 3) define lidar profiles """
     aeroKeys = ['traiPSD','lgrnm','sph','vol','vrtHght','vrtHghtStd','vrtProf','n','k', 'landPrct']
     vals = dict()
     if type(caseLoadFctr)==str and 'randLogNrm' in caseLoadFctr: # e.g., 'randLogNrm0.2' for aod_median=0.2
         sigma = np.log(2) # hardcode σg=2 for lognormal 
-        medianAOD = float(re.match('[A-z]+([0-9\.]+)', caseLoadFctr).group(1))
+        medianAOD = float(re.match(r'[A-z]+([0-9\.]+)', caseLoadFctr).group(1))
         loading = [l for _,l in  splitMultipleCases(caseStrs)]
         normFact = medianAOD/sum(loading) # cases already have loading, we scale by this to get medianAOD
         caseLoadFctr = np.random.lognormal(np.log(normFact), sigma)

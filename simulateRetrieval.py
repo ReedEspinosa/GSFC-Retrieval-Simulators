@@ -377,12 +377,17 @@ class simulation(object):
             validInd = np.array([rb['costVal']<=χthresh for rb in self.rsltBck])
             if verbose: print('%d/%d met χthresh' % (validInd.sum(), len(self.rsltBck)))
             if validInd.sum() < minSaved:
-                validInd = np.argsort([rb['costVal'] for rb in self.rsltBck])[0:minSaved] # note validInd went from bool to array of ints
+                indices_kept_by_minSaved = np.argsort([rb['costVal'] for rb in self.rsltBck])[0:minSaved] # indices_kept_by_minSaved becomes integer indices
                 if verbose:
-                    print('Preserving the %d rsltBck elements with lowest χ scores, even though they did not meet χthresh.' % minSaved)
+                    actual_kept_count = min(len(indices_kept_by_minSaved), len(self.rsltBck))
+                    msg = 'Selected the %d rsltBck elements with lowest χ scores even though they did not meet χthresh. (up to minSaved of %d or total available).'
+                    print(msg % (actual_kept_count, minSaved)) 
+                validInd = np.zeros(len(self.rsltBck), dtype=bool) # Convert these selected indices back to a boolean mask of the original rsltBck length
+                valid_indices_for_mask = [idx for idx in indices_kept_by_minSaved if idx < len(self.rsltBck)] # Ensure indices are within bounds before assignment, though argsort of original length should be fine
+                validInd[valid_indices_for_mask] = True # validInd is now a boolean mask again
             if len(self.rsltFwd)==len(self.rsltBck): 
                 self.rsltFwd = [rf for rf, vi in zip(self.rsltFwd, validInd) if vi] # rsltsFwd is supposed to have type=list; np is faster, but converting back to list afterwards is slow
-            self.rsltBck = [rb for rb, vi in zip(self.rsltBck, validInd) if vi] # rsltsFwd is supposed to have type=list; np is faster, but converting back to list afterwards is slow
+            self.rsltBck = [rb for rb, vi in zip(self.rsltBck, validInd) if vi] # rsltsBck is supposed to have type=list; np is faster, but converting back to list afterwards is slow
         elif χthresh and np.sum([rb['costVal']<=χthresh for rb in self.rsltBck])<minSaved and verbose:
             print('rsltBck only has %d or fewer elements, no χthresh screening will be perofmed.' % minSaved)
 
