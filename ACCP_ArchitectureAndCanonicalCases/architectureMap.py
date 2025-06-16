@@ -59,18 +59,6 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             errStr = 'polar0700' if 'harp2000' in archName.lower() else 'polar10'
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
-    # MegaHARP Configuration from Vanderlei March 2022
-    if 'megaharp01' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
-        msTyp = [41, 42, 43] # must be in ascending order
-        thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # BUG: the current values are at spacecraft not ground
-        wvls = [0.380, 0.410, 0.550, 0.670, 0.870, 0.940, 1.200, 1.570]
-        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
-        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
-        phi = np.repeat(phiConverter(phiIn=relPhi, phiOutNdim=0), len(thtv)) # currently we assume all observations fall within a plane
-        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
-            errStr = 'polar0700' if 'megaharp0100' in archName.lower() else 'polar07'
-            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
-            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)  
     # UVSWIR-MAP Configuration added in July,2023
     if 'uvswirmap01' in archName.lower(): # CURRENTLY ONLY USING JUST 10 ANGLES IN RED
         msTyp = [41, 42, 43] # must be in ascending order
@@ -149,25 +137,74 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
-    if 'polaraos' in archName.lower():
+    if 'megaharp1' in archName.lower():
         msTyp = [41, 42, 43] # must be in ascending order
-        vzaNow = vza if vza else [-63.88, -48.42, -34.19, -20.4, -6.78, 6.78, 20.4, 34.19, 48.42, 63.88] # corresponds to 450 km orbit
+        vzaNow = [-63.88, -48.42, -34.19, -20.4, -6.78, 6.78, 20.4, 34.19, 48.42, 63.88] if vza is None else vza # corresponds to 450 km orbit
         thtv = np.tile(vzaNow, len(msTyp))
         phiNow = phiConverter(vzaIn=vza, vzaOut=vzaNow, phiIn=relPhi, phiOutNdim=1)
         phi = np.tile(phiNow, len(msTyp))
-        wvls = [0.38, 0.41, 0.55, 0.67, 0.87, 1.24, 1.59] # Nλ=7
+        wvls = [0.38, 0.41, 0.55, 0.67, 0.80, 0.87] # Nλ=6
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
-        if 'polaraosclean' in archName.lower():
+        if 'megaharp1clean' in archName.lower():
             errStr = 'polar700'
-        if 'polaraosmod' in archName.lower(): # polar12 OR custom σDoLP*1000 (e.g., 'polaraosmodDoLP005' -> σDoLP=0.005)
-            mtch = re.match('polaraosmoddolp([0-9]+)', archName.lower())
+        elif 'megaharp1mod' in archName.lower(): # polar12 OR custom σDoLP*1000 (e.g., 'polaraosmodDoLP005' -> σDoLP=0.005)
+            mtch = re.match('megaharp1moddolp([0-9]+)', archName.lower())
             errStr = 'polar%d' % (int(mtch.group(1)) + 1000) if mtch else 'polar12'
-        elif 'polaraosnoah' in archName.lower():
+        elif 'megaharp1noah' in archName.lower():
             errStr = 'harp02'
         else:
             errStr = 'polar07'
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
+            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
+    if 'megaharp4' in archName.lower():
+        msTyp = [41, 42, 43] # must be in ascending order
+        vzaNow = [-63.88, -48.42, -34.19, -20.4, -6.78, 6.78, 20.4, 34.19, 48.42, 63.88] if vza is None else vza # corresponds to 450 km orbit
+        thtv = np.tile(vzaNow, len(msTyp))
+        phiNow = phiConverter(vzaIn=vza, vzaOut=vzaNow, phiIn=relPhi, phiOutNdim=1)
+        phi = np.tile(phiNow, len(msTyp))
+        wvls = [0.38, 0.41, 0.55, 0.67, 0.80, 0.87, 1.24, 1.59] # Nλ=8
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        if 'megaharp4clean' in archName.lower():
+            errStr = 'polar700'
+        elif 'megaharp4mod' in archName.lower(): # polar12 OR custom σDoLP*1000 (e.g., 'polaraosmodDoLP005' -> σDoLP=0.005)
+            mtch = re.match('megaharp4moddolp([0-9]+)', archName.lower())
+            errStr = 'polar%d' % (int(mtch.group(1)) + 1000) if mtch else 'polar12'
+        elif 'megaharp4noah' in archName.lower():
+            errStr = 'harp02'
+        else:
+            errStr = 'polar07'
+        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
+            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
+    if 'option2' in archName.lower():
+        vzaNow = [-63.88, -48.42, -34.19, -20.4, -6.78, 6.78, 20.4, 34.19, 48.42, 63.88] if vza is None else vza # corresponds to 450 km orbit
+        phiNow = phiConverter(vzaIn=vza, vzaOut=vzaNow, phiIn=relPhi, phiOutNdim=1)
+        if 'option2clean' in archName.lower():
+            errStr = 'polar700'
+        elif 'option2mod' in archName.lower(): # polar12 OR custom σDoLP*1000 (e.g., 'polaraosmodDoLP005' -> σDoLP=0.005)
+            mtch = re.match('megaharp4moddolp([0-9]+)', archName.lower())
+            errStr = 'polar%d' % (int(mtch.group(1)) + 1000) if mtch else 'polar12'
+        else:
+            errStr = 'polar07'
+        # polarized UV-VNIR channels
+        msTyp = [41, 42, 43] # must be in ascending order
+        thtv = np.tile(vzaNow, len(msTyp))
+        phi = np.tile(phiNow, len(msTyp))
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])] 
+        for wvl in [0.38, 0.41, 0.55, 0.67, 0.80, 0.87]: # This will be expanded for wavelength dependent measurement types/geometry
+            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
+        # intensity-only SWIR channels
+        msTyp = [41] # must be in ascending order
+        thtv = np.tile(vzaNow, len(msTyp))
+        phi = np.tile(phiNow, len(msTyp))
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
+        meas = np.r_[np.repeat(0.1, nbvm[0])] 
+        for wvl in [1.24, 1.59]: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
     if 'rsp' in archName.lower(): # Designed to match RSP in ORACLES dust cases
@@ -185,7 +222,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
     if 'polder' in archName.lower():
         msTyp = [41, 42, 43] # must be in ascending order
-        vzaNow = vza if vza else np.linspace(-60, 60, 14) # not based on any real reference...
+        vzaNow = np.linspace(-60, 60, 14) if vza is None else vza # not based on any real reference...
         thtv = np.tile(vzaNow, len(msTyp))
         phiNow = phiConverter(vzaIn=vza, vzaOut=vzaNow, phiIn=relPhi, phiOutNdim=1)
         phi = np.tile(phiNow, len(msTyp))
@@ -199,7 +236,7 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
     if '3mi' in archName.lower():
         msTyp = [41, 42, 43] # must be in ascending order
-        vzaNow = vza if vza else np.linspace(-60, 60, 14) # not based on any real reference...
+        vzaNow = np.linspace(-60, 60, 14) if vza is None else vza # not based on any real reference...
         thtv = np.tile(vzaNow, len(msTyp))
         phiNow = phiConverter(vzaIn=vza, vzaOut=vzaNow, phiIn=relPhi, phiOutNdim=1)
         phi = np.tile(phiNow, len(msTyp))

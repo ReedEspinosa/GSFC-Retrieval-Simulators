@@ -135,10 +135,11 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['k'] = np.vstack([vals['k'], np.repeat(0.01, nwl)]) # mode 2 # NOTE: we cut this in half from XLSX
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'dust' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
-        σ = [0.5, 0.75] # mode 1, 2,...
+        σ = [0.5, 0.6] # mode 1, 2,... true canonical case is [0.5, 0.75]
         rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
-        vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
+        # vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
+        vals['vol'] = np.array([[0.043280387705], [2.5334367684]]) # gives AOD=4*[0.13279/2, 0.11721*2]=1.0
         if 'onlysph' in caseStr.lower():
             vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
         else:
@@ -150,7 +151,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['n'] = np.vstack([vals['n'], np.repeat(1.51, nwl)]) # mode 2
         vals['k'] = np.repeat(1e-8, nwl) # mode 1
         mode2λ = [0.355, 0.380, 0.440, 0.532, 0.550, 0.870, 1.064, 2.100]
-        mode2k = [0.0025, 0.0025, 0.0024, 0.0021, 0.0019, 0.0011, 0.0010, 0.0010]
+        mode2k = [0.003, 0.0025, 0.0024, 0.0021, 0.0019, 0.0011, 0.0010, 0.0010]
         mode2Intrp = np.interp(wvls, mode2λ, mode2k)
         vals['k'] = np.vstack([vals['k'], mode2Intrp]) # mode 2 # THIS HAS A SPECTRAL DEPENDENCE IN THE SPREADSHEET
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
