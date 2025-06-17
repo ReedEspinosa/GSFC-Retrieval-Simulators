@@ -20,14 +20,14 @@ if checkDiscover(): # DISCOVER
     # nAng = int(sys.argv[2])
     nAng = 0
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V0')
+    saveStart = os.path.join(basePath, 'synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V1/V1')
     ymlDir = os.path.join(basePath, 'GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
     geomFile = os.path.join(basePath, 'synced/AOS/Beta_Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4')
     PCAslctMatFilePath = None # Full path of Feng's PCA results for indexing Pete's files. >> Not needed polaraos, 3MI, polder or modis. <<
-    # Nangles = 660
-    Nangles = 4
+    Nangles = 660
+    # Nangles = 46
     Nsims = 1 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 46 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
@@ -57,7 +57,7 @@ conCases = ['marineVariable+dustVariableOcean','pollutionVariable+dustVariableLa
 τFactor = ['randLogNrm0.2'] #1 - Syntax error on this line? Make sure you are running Python 3!
 rndIntialGuess = True # initial guess falls in middle 25% of min/max range
 maxSZA = 70
-verbose = False
+verbose = True
 # more specific simulation options in runSim call below... 
 
 # <><><><>END INPUTS<><><><>
