@@ -33,30 +33,25 @@ except:
 # Initiation and User Provided Settings
 # =============================================================================
 
-### Reed's ABI Settings### [0.47, 0.64, 0.87, 1.6 , 2.25]
-waveInd = 2 # Wavelength index for plotting
-waveInd2 = 4 # Wavelength index for AE calculation
-fineFwdInd = 0 # index in forward data to use for fine mode plots 
+### Reed's Polarimeter Simulation Settings### [0.38, 0.41, 0.55, 0.67, 0.8 , 0.87, 1.24, 1.59]
+waveInd = 3 # Wavelength index for plotting
+waveInd2 = 5 # Wavelength index for AE calculation
+fineFwdInd = 2 # index in forward data to use for fine mode plots 
 fineBckInd = 0 # index in backward data to use for fine mode plots
-crsFwdInd = 1 # index in forward data to use for coarse mode plots
+crsFwdInd = 3 # index in forward data to use for coarse mode plots
 crsBckInd = 1 # index in backward data to use for coarse mode plots
 fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
 pubQuality = False # If True, we use publication quality figures
 # filePathPtrn = '/Users/wrespino/Synced/AOS/A-CCP/Assessment_8K_Sept2020/SIM17_SITA_SeptAssessment_AllResults/DRS_V01_Lidar050+polar07_case08a1_tFct1.00_orbSS_multiAngles_n30_nAngALL.pkl'
-filePathPtrn = '/Users/wrespino/Synced/RST_CAN-GRASP/GRASP_results/V0_AERONET-sites_ABI-only/TUNING_oceanSites_maxPerSite200_Ocean_V018.pkl'
+# filePathPtrn = '/Users/wrespino/Synced/RST_CAN-GRASP/GRASP_results/V0_AERONET-sites_ABI-only/TUNING_oceanSites_maxPerSite200_Ocean_V018.pkl'
 
+# filePathPtrn = '/Users/wrespino/Synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V1/V1megaharp1_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl'
+# filePathPtrn = '/Users/wrespino/Synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V1/V1megaharp1_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl'
+# filePathPtrn = '/Users/wrespino/Synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V1/V1megaharp4_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl'
+# filePathPtrn = '/Users/wrespino/Synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V1/V1megaharp4_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl'
+filePathPtrn = '/Users/wrespino/Synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V1/V1option2_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl'
+# filePathPtrn = '/Users/wrespino/Synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V1/V1option2_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl'
 
-### Reed's PLRA Validation Settings###
-# waveInd = 0 # Wavelength index for plotting
-# waveInd2 = 4 # Wavelength index for AE calculation
-# fineFwdInd = 2 # index in forward data to use for fine mode plots 
-# fineBckInd = 0 # index in backward data to use for fine mode plots
-# crsFwdInd = 3 # index in forward data to use for coarse mode plots
-# crsBckInd = 1 # index in backward data to use for coarse mode plots
-# fineFwdScale = 1 # should be unity when fwd/back modes pair one-to-one
-# pubQuality = False # If True, we use publication quality figures
-# filePathPtrn = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah_2modeCasesOnly/Run-30_polarAOS_case08*_tFctrandLogNrm*_n*_nAng0.pkl'
-# filePathPtrn = '/Users/wrespino/Synced/Working/NoahsAngleDependentError_Simulations/V1_Noah_2modeCasesOnly/Run-30_polarAOS_case08*_tFctrandLogNrm*_n*_nAng0.pkl'
 
 ### Anin's CAMP2Ex Settings ###
 # Location/dir where the pkl files are
@@ -74,7 +69,7 @@ filePathPtrn = '/Users/wrespino/Synced/RST_CAN-GRASP/GRASP_results/V0_AERONET-si
 
 # more tags and specifiations for the scatter plot
 surf2plot = 'both' # land, ocean or both
-aodMin = 0.1 # does not apply to first AOD plot
+aodMin = 0.2 # does not apply to first AOD plot
 aodMax = 5 # Pixels with AOD above this will be filtered from plots of intensive parameters
 fnTag = 'AllCases'
 xlabel = 'Simulated Truth'
@@ -85,41 +80,43 @@ nBins = 200 # no. of bins for histogram of differences plots
 nBins2 = 50 # no. of bins for 2D density plot
 showOverallStats = True # print RMSE of many GVs to terminal (may be slow for large Npixels)
 recalcChi = False # If True, we recalculate chi^2 using difference between fwd and bck fit variables
+plt.rcParams['figure.dpi'] = 72 # Set the default DPI for all figures (150 is good for publication)
+
 
 # The variables to plot; will automatically remove variables for which rsltDict is missing
-vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_variable_key
-    'aod':'aod',
-#     'aod_c':'aodMode',
-#     'aod_f':'aodMode',
-    'angstrom':'aod',
-    'aaod':'ssa',
-#     'fmf':'dVdlnr',
-#     'sph_f':'sph',
-#     'sph_c':'sph',
-#     'g':'g',
-    'n_f':'n',
-    'n_c':'n',
-    'k_f':'k',
-    'k_c':'k',
-#     'intensity':'meas_I',
-    'ssa':'ssa',
-    'reff_sub_um':'rEffMode',
-    'reff_abv_um':'rEffMode',
-    'vol_c':'vol',
-    'vol_f':'vol',
-#     'blandAltman':'aod',
-}
-
 # vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_variable_key
 #     'aod':'aod',
+# #     'aod_c':'aodMode',
+# #     'aod_f':'aodMode',
 #     'angstrom':'aod',
 #     'aaod':'ssa',
-#     'g':'g',
-#     'intensity':'meas_I',
+# #     'fmf':'dVdlnr',
+# #     'sph_f':'sph',
+# #     'sph_c':'sph',
+# #     'g':'g',
+#     'n_f':'n',
+#     'n_c':'n',
+#     'k_f':'k',
+#     'k_c':'k',
+# #     'intensity':'meas_I',
 #     'ssa':'ssa',
 #     'reff_sub_um':'rEffMode',
 #     'reff_abv_um':'rEffMode',
+#     'vol_c':'vol',
+#     'vol_f':'vol',
+# #     'blandAltman':'aod',
 # }
+
+vars2plot = { # Format is variable_name_in_this_script:main_relevant_rsltsDict_variable_key
+    'aod':'aod',
+    'angstrom':'aod',
+    'aaod':'ssa',
+    # 'g':'g',
+    # 'intensity':'meas_I',
+    'ssa':'ssa',
+    'reff_sub_um':'rEffMode',
+    'reff_abv_um':'rEffMode',
+}
 
 
 # "Viridis-like" colormap with white background
@@ -415,6 +412,8 @@ if pubQuality:
     mpl.rcParams.update({'xtick.direction': 'in'}); mpl.rcParams.update({'ytick.direction': 'in'})
     mpl.rcParams.update({'ytick.right': 'True'}); mpl.rcParams.update({'xtick.top': 'True'})
     plt.rcParams["font.family"] = "Latin Modern Math"; plt.rcParams["mathtext.fontset"] = "cm"
+else:
+    plt.rcParams["font.family"] = "serif"; plt.rcParams["mathtext.fontset"] = "cm"
 
 # Figure for 2D density plots
 fig, ax = plt.subplots(nRows, nCols, figsize=(15,9))
@@ -469,12 +468,13 @@ keepInd = np.logical_and(keepInd, [rf['aod'][waveInd]>=aodMin for rf in simBase.
 print('%d/%d fit prior filtering and aod≥%4.2f' % (keepInd.sum(), len(simBase.rsltBck), aodMin))
 keepInd = np.logical_and(keepInd, [rf['aod'][waveInd]<=aodMax for rf in simBase.rsltFwd])
 print('%d/%d fit prior filtering and aod≤%4.2f' % (keepInd.sum(), len(simBase.rsltBck), aodMax))
-keepInd = np.logical_and(keepInd_, [rb['nIter']<maxIter for rb in simBase.rsltBck])
+keepInd = np.logical_and(keepInd, [rb['nIter']<maxIter for rb in simBase.rsltBck])
 print('%d/%d fit prior filtering and maxIter≤%4.2f' % (keepInd.sum(), len(simBase.rsltBck), maxIter))
 
 # Calculate modal Reff above and below a micron in diameter
 if np.any(['reff' in var.lower() for var in vars2plot.keys()]): 
     simBase._addReffMode(modeCuttOff, Force=forceReff) # reframe with cut at 0.5 micron radius
+
 
 # Purge variables for which we do not have sufficient data in Fwd/Bck rsltsDicts
 for key in list(vars2plot):
@@ -555,7 +555,7 @@ for var,axInd in zip(vars2plot.keys(), axesInd[0:len(vars2plot)]):
     elif var=='reff_sub_um':     # # rEff (sub micron)
         true = np.asarray([rslt['rEffMode'][0] for rslt in simBase.rsltFwd])[keepInd]
         rtrv = np.asarray([rslt['rEffMode'][0] for rslt in simBase.rsltBck])[keepInd]
-        genPlots(true, rtrv, axScat, axHist, r'Submicron r$_{eff}$', xlabel, ylabel)
+        genPlots(true, rtrv, axScat, axHist, r'Submicron r$_{eff}$', xlabel, ylabel, MinMax=[0,1])
     elif var=='reff_abv_um':     # # rEff (super micron)
         true = np.asarray([rslt['rEffMode'][1] for rslt in simBase.rsltFwd])[keepInd]
         rtrv = np.asarray([rslt['rEffMode'][1] for rslt in simBase.rsltBck])[keepInd]

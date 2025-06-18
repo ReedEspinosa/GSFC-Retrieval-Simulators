@@ -494,8 +494,9 @@ class simulation(object):
         assert 'aodMode' not in fwdKys or fineModesFwd is None or self.rsltFwd[0]['aodMode'].shape[0] > max(fineModesFwd), 'fineModesFwd'+msg+'rsltFwd[aodMode]'
         assert 'aodMode' not in bckKys or fineModesBck is None or self.rsltBck[0]['aodMode'].shape[0] > max(fineModesBck), 'fineModesBck'+msg+'rsltBck[aodMode]'
         # define functions for calculating RMS and bias
-        # rmsFun = lambda t,r: np.mean(r-t, axis=0) # formula for RMS output (true->t, retrieved->r)
-        rmsFun = lambda t,r: np.sqrt(np.nanmedian((t-r)**2, axis=0)) # formula for RMS output (true->t, retrieved->r) – needs to handle nans! (hghtWghtedAvg returns nan when PBL<lowest_GRASP_bin)
+        # rmsFun = lambda t,r: np.sqrt(np.nanmean((t-r)**2, axis=0)) # formula for RMS output (true->t, retrieved->r) – needs to handle nans!
+        # BELOW IS MATHEMATICALLY IDENTICAL – rmsFun = lambda t,r: np.sqrt(np.nanmedian((t-r)**2, axis=0)) # formula for RMS output (true->t, retrieved->r) – needs to handle nans! (hghtWghtedAvg returns nan when PBL<lowest_GRASP_bin)
+        rmsFun = lambda t,r: np.nanmedian(np.abs(t-r), axis=0) # formula for RMS output (true->t, retrieved->r) – needs to handle nans! (hghtWghtedAvg returns nan when PBL<lowest_GRASP_bin)
         biasFun = lambda t,r: r-t if r.ndim > 1 else np.atleast_2d(r-t).T # formula for bias output – needs to handle nans! (hghtWghtedAvg returns nan when PBL<lowest_GRASP_bin)
         # variables we expect to see
         varsSpctrl = ['aod', 'aodMode', 'n', 'k', 'ssa', 'ssaMode', 'g','LidarRatio', 'LidarRatioMode']

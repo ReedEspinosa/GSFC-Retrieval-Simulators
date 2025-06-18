@@ -31,7 +31,7 @@ if checkDiscover(): # DISCOVER
     Nsims = 1 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 46 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
-    n = 0
+    n = 2
     nAng = 2 # Index of first angle to use (Sabrina's files have 132 x 5 = 660 angles)
     saveStart = '/Users/wrespino/Desktop/TEST_V01_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/'
