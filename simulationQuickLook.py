@@ -61,9 +61,10 @@ waveInd2 = 4
 fnPtrnList = []
 #fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_*z.pkl'
 # fnPtrn = 'megaharp01_CAMP2Ex_2modes_AOD_*_550nm_addCoarse__campex_flight#*_layer#00.pkl'
-fnPtrn = 'Camp2ex_OLH_AOD_*_550nm_*_conf#03_*_campex_bi_*_flight#*_layer#00.pkl'
+# fnPtrn = 'Camp2ex_OLH_AOD_*_550nm_*_conf#03_*_campex_bi_*_flight#*_layer#00.pkl'
 # fnPtrn = 'ss450-g5nr.leV210.GRASP.example.polarimeter07.200608*_1000z.pkl'
-inDirPath = '/data/ESI/User/aputhukkudy/ACCDAM/2024/Sim/Jan/23/Full/Geometry/CoarseModeFalse/darkOcean/2modes/uvswirmap01/'
+fnPtrn = 'V1megaharp4_pollutionVariable+dustVariableLand_tFctrandLogNrm0.2_n1_nAng0.pkl'
+inDirPath = '/Users/wrespino/Synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V1'
 
 surf2plot = 'both' # land, ocean or both
 aodMin = 0.2 # does not apply to first AOD plot
@@ -75,7 +76,7 @@ FS = 10
 LW121 = 1
 pointAlpha = 0.10
 clrText = [0.5,0,0.0]
-fig, ax = plt.subplots(2,5, figsize=(15,6))
+fig, ax = plt.subplots(2,5, figsize=(6,2.5))
 plt.locator_params(nbins=3)
 lightSave = True # Omit PM elements and extinction profiles from MERGED files to save space
 
