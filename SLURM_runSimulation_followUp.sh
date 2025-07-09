@@ -1,10 +1,10 @@
 #!/usr/local/bin/bash
-#SBATCH --job-name=aosV1
+#SBATCH --job-name=aosVr21
 #SBATCH --nodes=1 
 #SBATCH --time=0:59:00
 #SBATCH -o log/output.%A-%a
 #SBATCH -e log/error.%A-%a
-#SBATCH --array=0-11
+#SBATCH --array=0-2
 
 date
 hostname
