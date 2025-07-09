@@ -61,15 +61,22 @@ def calculate_pm25(rslt_dict, layer_height_m=1000, density_g_cm3=1.0):
 # --- Configuration ---
 waveInd = 3  # Wavelength index to analyze (e.g., 2 for 550 nm)
 aodThresh = 0.0  # Set to 0 to disable AOD filtering
-basePath = '/Users/wrespino/Synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V1/'
+basePath = '/Users/wrespino/Synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V2/'
+# filePatterns = [
+#     'V1megaharp1_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
+#     'V1megaharp1_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl',
+#     'V1option2_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
+#     'V1option2_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl',
+#     'V1megaharp4_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
+#     'V1megaharp4_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl'
+# ]
 filePatterns = [
-    'V1megaharp1_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
-    'V1megaharp1_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl',
-    'V1option2_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
-    'V1option2_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl',
-    'V1megaharp4_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
-    'V1megaharp4_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl'
+    'V2megaharp1_pollutionVariable+smokeVariableLand_tFctrandLogNrm5.0_n*_nAng0.pkl',
+    'V2option2_pollutionVariable+smokeVariableLand_tFctrandLogNrm5.0_n*_nAng0.pkl',
+    'V2megaharp4_pollutionVariable+smokeVariableLand_tFctrandLogNrm5.0_n*_nAng0.pkl'
 ]
+
+
 instrument_pairs = ['megaharp1', 'option2', 'megaharp4']
 colors = ['blue', 'red']  # Ocean, Land
 plt.rcParams['figure.dpi'] = 150
@@ -86,10 +93,28 @@ recalcChi = True # recalculate chi2 for convergence filter
 # --- Data Loading and Analysis (Pass 1) ---
 print("Loading and analyzing simulation data...")
 processed_data = []
+case_types = []  # Track if each pattern is 'land' or 'ocean'
+instrument_case_map = []  # Track (instrument, case_type) for each pattern
 for pattern in filePatterns:
+    # Determine case type from pattern
+    if 'Land' in pattern or 'land' in pattern:
+        case_type = 'land'
+    elif 'Ocean' in pattern or 'ocean' in pattern:
+        case_type = 'ocean'
+    else:
+        case_type = 'unknown'
+    case_types.append(case_type)
+    # Determine instrument from pattern
+    instrument = None
+    for inst in instrument_pairs:
+        if inst in pattern:
+            instrument = inst
+            break
+    instrument_case_map.append((instrument, case_type))
+
     full_path_pattern = os.path.join(basePath, pattern)
     sim = simulation(picklePath=full_path_pattern)
-    sim.conerganceFilter(χthresh=1.5, forceχ2Calc=recalcChi, σ=σx, verbose=True) # ours looks more normal, but GRASP's produces slightly lower RMSE
+    sim.conerganceFilter(χthresh=1.5, forceχ2Calc=recalcChi, σ=σx, verbose=True)
     # sim._addReffMode(modeCut=0.5, Force=True)
 
     if not sim.rsltFwd:
@@ -116,13 +141,13 @@ for pattern in filePatterns:
     retrieved_pm25 = np.array([calculate_pm25(rs) for rs in sim.rsltBck])
     mad_pm25 = np.nanmedian(np.abs(true_pm25 - retrieved_pm25))
     
-
     # Analyze other variables
     analysis_results = sim.analyzeSim(waveInd)[0]
     analysis_results['PM2.5'] = mad_pm25
     processed_data.append(analysis_results)
 
 # --- Data Structuring (Pass 2) ---
+# Build nested results: results[var][instrument][case_type] = value
 results = {}
 all_keys = set()
 for data in processed_data:
@@ -135,23 +160,22 @@ if 'rEffMode' in all_keys:
     all_keys.add('rEffMode (coarse)')
 
 for key in sorted(list(all_keys)):
-    results[key] = []
+    results[key] = {inst: {} for inst in instrument_pairs}
 
-for data in processed_data:
+for idx, data in enumerate(processed_data):
+    instrument, case_type = instrument_case_map[idx]
     for key in results:
-        if data is None:
-            results[key].append(np.nan)
+        if data is None or instrument is None or case_type == 'unknown':
             continue
-        
         if key == 'rEffMode (fine)':
             val = data.get('rEffMode', [np.nan, np.nan])[0]
-            results[key].append(val)
+            results[key][instrument][case_type] = val
         elif key == 'rEffMode (coarse)':
             val = data.get('rEffMode', [np.nan, np.nan])[1]
-            results[key].append(val)
+            results[key][instrument][case_type] = val
         else:
             val = data.get(key, np.nan)
-            results[key].append(np.mean(val) if not key=='PM2.5' else val)
+            results[key][instrument][case_type] = np.mean(val) if key != 'PM2.5' else val
 
 if not results:
     print("Error: No data was successfully processed. Halting.")
@@ -164,29 +188,54 @@ print("Generating and saving figures...")
 simBase = simulation(picklePath=os.path.join(basePath, filePatterns[0]))
 bckLambda = simBase.rsltBck[0]['lambda'][waveInd]
 
-for var, values in results.items():
+for var, inst_dict in results.items():
     fig, ax = plt.subplots(figsize=(6, 5)) # Make plot narrower
-    
     n_pairs = len(instrument_pairs)
     bar_width = 0.35
     index = np.arange(n_pairs)
     
+    # Gather available data for each instrument
+    ocean_vals = []
+    land_vals = []
+    bar_positions_ocean = []
+    bar_positions_land = []
+    for i, inst in enumerate(instrument_pairs):
+        has_ocean = 'ocean' in inst_dict[inst] and not np.isnan(inst_dict[inst].get('ocean', np.nan))
+        has_land = 'land' in inst_dict[inst] and not np.isnan(inst_dict[inst].get('land', np.nan))
+        if var == 'PM2.5':
+            # Only plot land bars for PM2.5
+            if has_land:
+                land_vals.append(inst_dict[inst]['land'])
+                bar_positions_land.append(index[i])
+        else:
+            if has_ocean:
+                ocean_vals.append(inst_dict[inst]['ocean'])
+                bar_positions_ocean.append(index[i] - (bar_width/2 if has_land else 0))
+            if has_land:
+                land_vals.append(inst_dict[inst]['land'])
+                bar_positions_land.append(index[i] + (bar_width/2 if has_ocean else 0))
+    
+    # Plot bars only for available data
     if var == 'PM2.5':
-        # Only plot land bars for PM2.5
-        land_rmses = [values[i+1] for i in range(0, len(values), 2)]
-        ax.bar(index, land_rmses, bar_width, label='Land', color=colors[1])
+        if land_vals:
+            ax.bar(bar_positions_land, land_vals, bar_width, label='Land', color=colors[1])
         ax.set_xticks(index)
         ax.set_xticklabels(instrument_pairs)
-        # Remove the legend for PM2.5
-        # ax.legend().remove()
+        # No legend for PM2.5
     else:
-        ocean_rmses = [values[i] for i in range(0, len(values), 2)]
-        land_rmses = [values[i+1] for i in range(0, len(values), 2)]
-        ax.bar(index - bar_width/2, ocean_rmses, bar_width, label='Ocean', color=colors[0])
-        ax.bar(index + bar_width/2, land_rmses, bar_width, label='Land', color=colors[1])
+        if ocean_vals:
+            ax.bar(bar_positions_ocean, ocean_vals, bar_width, label='Ocean', color=colors[0])
+        if land_vals:
+            ax.bar(bar_positions_land, land_vals, bar_width, label='Land', color=colors[1])
         ax.set_xticks(index)
         ax.set_xticklabels(instrument_pairs)
-        ax.legend()
+        # Only show legend if both present
+        if ocean_vals and land_vals:
+            ax.legend()
+        elif ocean_vals:
+            ax.legend(['Ocean'])
+        elif land_vals:
+            ax.legend(['Land'])
     
     ax.set_xlabel('Instrument')
     if 'rEff' in var:
