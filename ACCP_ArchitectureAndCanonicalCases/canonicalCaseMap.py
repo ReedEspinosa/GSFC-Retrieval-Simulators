@@ -95,8 +95,8 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['k'] = np.vstack([vals['k'], np.repeat(0.0001, nwl)]) # mode 2
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'marine' in caseStr.lower():
-        σ = [0.45, 0.70] # mode 1, 2,...
-        rv = [0.18, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
+        σ = [0.45, 0.50] # mode 1, 2,...
+        rv = [0.10, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
 #         rv = [0.12, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
@@ -109,7 +109,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['k'] = np.vstack([vals['k'], np.repeat(1e-5, nwl)]) # mode 2
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'plltdmrn' in caseStr.lower(): # Polluted Marine
-        σ = [0.36, 0.70] # mode 1, 2,...
+        σ = [0.36, 0.50] # mode 1, 2,...
         rv = [0.11, 0.6]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         vals['sph'] = [[0.99999], [0.99999]] # mode 1, 2,...
@@ -135,7 +135,7 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         vals['k'] = np.vstack([vals['k'], np.repeat(0.01, nwl)]) # mode 2 # NOTE: we cut this in half from XLSX
         landPrct = 100 if np.any([x in caseStr.lower() for x in ['vegetation', 'desert']]) else 0
     elif 'dust' in caseStr.lower(): # - Updated to match canonical case spreadsheet V25 -
-        σ = [0.5, 0.6] # mode 1, 2,... true canonical case is [0.5, 0.75]
+        σ = [0.5, 0.56] # mode 1, 2,... true canonical case is [0.5, 0.75]
         rv = [0.1, 1.10]*np.exp(3*np.power(σ,2)) # mode 1, 2,... (rv = rn*e^3σ)
         vals['lgrnm'] = np.vstack([rv, σ]).T
         # vals['vol'] = np.array([[0.08656077541], [1.2667183842]]) # gives AOD=4*[0.13279, 0.11721]=1.0
