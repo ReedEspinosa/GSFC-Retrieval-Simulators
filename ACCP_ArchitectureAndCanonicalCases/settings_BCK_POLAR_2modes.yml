@@ -98,9 +98,9 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [1.0] # τfactor should not exceed unity
+                    max: [7.0] # τfactor should not exceed unity
                     min: [0.00000001]
-                    value: [0.001]
+                    value: [0.501]
             mode[2]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
