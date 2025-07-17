@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from simulateRetrieval import simulation
 import os
 import glob
+from scipy.stats import gaussian_kde
 
 def calculate_pm25(rslt_dict, layer_height_m=1000, density_g_cm3=1.0):
     """
@@ -59,21 +60,29 @@ def calculate_pm25(rslt_dict, layer_height_m=1000, density_g_cm3=1.0):
     return pm25_ug_m3
 
 # --- Configuration ---
-waveInd = 3  # Wavelength index to analyze (e.g., 2 for 550 nm)
+waveInd = 0  # Wavelength index to analyze (e.g., 2 for 550 nm)
 aodThresh = 0.0  # Set to 0 to disable AOD filtering
-basePath = '/Users/wrespino/Synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V2/'
+basePath = '/Users/wrespino/Synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V3/'
 # filePatterns = [
-#     'V1megaharp1_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
-#     'V1megaharp1_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl',
-#     'V1option2_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
-#     'V1option2_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl',
-#     'V1megaharp4_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
-#     'V1megaharp4_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl'
+#     'V2megaharp1_pollutionVariable+smokeVariableLand_tFctrandLogNrm5.0_n*_nAng0.pkl',
+#     'V2option2_pollutionVariable+smokeVariableLand_tFctrandLogNrm5.0_n*_nAng0.pkl',
+#     'V2megaharp4_pollutionVariable+smokeVariableLand_tFctrandLogNrm5.0_n*_nAng0.pkl'
+# ]
+# filePatterns = [
+#     'V3megaharp1_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
+#     'V3megaharp1_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl',
+#     'V3option2_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
+#     'V3option2_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl',
+#     'V3megaharp4_marineVariable+dustVariableOcean_tFctrandLogNrm0.*_n*_nAng0.pkl',
+#     'V3megaharp4_pollutionVariable+dustVariableLand_tFctrandLogNrm0.*_n*_nAng0.pkl'
 # ]
 filePatterns = [
-    'V2megaharp1_pollutionVariable+smokeVariableLand_tFctrandLogNrm5.0_n*_nAng0.pkl',
-    'V2option2_pollutionVariable+smokeVariableLand_tFctrandLogNrm5.0_n*_nAng0.pkl',
-    'V2megaharp4_pollutionVariable+smokeVariableLand_tFctrandLogNrm5.0_n*_nAng0.pkl'
+    'V3Amegaharp1_marineVariable+smokeVariableOcean_tFctrandLogNrm*.*_n*_nAng0.pkl',
+    'V3Amegaharp1_pollutionVariable+smokeVariableLand_tFctrandLogNrm*.*_n*_nAng0.pkl',
+    'V3Aoption2_marineVariable+smokeVariableOcean_tFctrandLogNrm*.*_n*_nAng0.pkl',
+    'V3Aoption2_pollutionVariable+smokeVariableLand_tFctrandLogNrm*.*_n*_nAng0.pkl',
+    'V3Amegaharp4_marineVariable+smokeVariableOcean_tFctrandLogNrm*.*_n*_nAng0.pkl',
+    'V3Amegaharp4_pollutionVariable+smokeVariableLand_tFctrandLogNrm*.*_n*_nAng0.pkl'
 ]
 
 
@@ -123,12 +132,29 @@ for pattern in filePatterns:
         continue
 
     # Filter pixels by AOD threshold
+    initial_pixel_count = len(sim.rsltFwd)
     if aodThresh > 0:
-        initial_pixel_count = len(sim.rsltFwd)
         inds2keep = [i for i, rslt in enumerate(sim.rsltFwd) if rslt['aod'][waveInd] >= aodThresh]
-        sim.rsltFwd = [sim.rsltFwd[i] for i in inds2keep]
-        sim.rsltBck = [sim.rsltBck[i] for i in inds2keep]
-        print(f"  Filtered {initial_pixel_count - len(sim.rsltFwd)} pixels from {pattern.split('_')[0]} (AOD < {aodThresh}). Kept {len(sim.rsltFwd)}.")
+    else:
+        inds2keep = list(range(len(sim.rsltFwd)))
+    
+    # Filter out very high AOD values (>10)
+    high_aod_count = 0
+    final_inds = []
+    for i in inds2keep:
+        if sim.rsltFwd[i]['aod'][waveInd] < 10.0:
+            final_inds.append(i)
+        else:
+            high_aod_count += 1
+    
+    if high_aod_count > 0:
+        print(f"  WARNING: Removed {high_aod_count} pixels with AOD >= 10 from {pattern.split('_')[0]}")
+    
+    sim.rsltFwd = [sim.rsltFwd[i] for i in final_inds]
+    sim.rsltBck = [sim.rsltBck[i] for i in final_inds]
+    
+    if aodThresh > 0 and len(final_inds) < initial_pixel_count:
+        print(f"  Filtered {initial_pixel_count - len(final_inds)} pixels from {pattern.split('_')[0]} (AOD < {aodThresh} or AOD >= 10). Kept {len(sim.rsltFwd)}.")
 
     if not sim.rsltFwd:
         print(f"Warning: No pixels left for {pattern} after AOD filtering.")
@@ -251,10 +277,333 @@ for var, inst_dict in results.items():
     fig.tight_layout()
     
     aod_str = f"_aod{aodThresh}" if aodThresh > 0 else ""
-    save_filename = f'./RMSE_{var.replace(" ", "_")}_comparison_wv{waveInd}{aod_str}.png'
+    # Determine output directory based on file patterns
+    case_version = "V3A" if "V3A" in filePatterns[0] else "V3"
+    output_dir = f"./{case_version}_results/"
+    save_filename = f'{output_dir}RMSE_{var.replace(" ", "_")}_comparison_wv{waveInd}{aod_str}.png'
     plt.savefig(save_filename)
     print(f"Saved figure: {save_filename}")
     plt.close(fig)
+
+# --- AOD Scatter Plots ---
+print("Generating AOD scatter plots...")
+
+# Load data again to get individual pixel values for scatter plots
+scatter_data = {}  # scatter_data[instrument][case_type] = {'fwd_aod': [], 'diff_aod': []}
+
+for idx, pattern in enumerate(filePatterns):
+    instrument, case_type = instrument_case_map[idx]
+    
+    if instrument not in scatter_data:
+        scatter_data[instrument] = {}
+    if case_type not in scatter_data[instrument]:
+        scatter_data[instrument][case_type] = {'fwd_aod': [], 'diff_aod': []}
+    
+    full_path_pattern = os.path.join(basePath, pattern)
+    sim = simulation(picklePath=full_path_pattern)
+    sim.conerganceFilter(χthresh=1.5, forceχ2Calc=recalcChi, σ=σx, verbose=False)
+    
+    if not sim.rsltFwd:
+        continue
+    
+    # Filter pixels by AOD threshold (same as before)
+    initial_pixel_count = len(sim.rsltFwd)
+    if aodThresh > 0:
+        inds2keep = [i for i, rslt in enumerate(sim.rsltFwd) if rslt['aod'][waveInd] >= aodThresh]
+    else:
+        inds2keep = list(range(len(sim.rsltFwd)))
+    
+    # Filter out very high AOD values (>10)
+    high_aod_count = 0
+    final_inds = []
+    for i in inds2keep:
+        if sim.rsltFwd[i]['aod'][waveInd] < 10.0:
+            final_inds.append(i)
+        else:
+            high_aod_count += 1
+    
+    sim.rsltFwd = [sim.rsltFwd[i] for i in final_inds]
+    sim.rsltBck = [sim.rsltBck[i] for i in final_inds]
+    
+    if not sim.rsltFwd:
+        continue
+    
+    # Extract AOD values for each pixel
+    for i, (fwd_rslt, bck_rslt) in enumerate(zip(sim.rsltFwd, sim.rsltBck)):
+        fwd_aod = fwd_rslt['aod'][waveInd]
+        bck_aod = bck_rslt['aod'][waveInd]
+        diff_aod = bck_aod - fwd_aod
+        
+        scatter_data[instrument][case_type]['fwd_aod'].append(fwd_aod)
+        scatter_data[instrument][case_type]['diff_aod'].append(diff_aod)
+
+# Create scatter plots (3 instruments x 2 surface types = 6 plots)
+fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+
+# Find global limits for consistent axis scaling
+max_fwd_aod = 0
+all_fwd_aod = []
+for inst in instrument_pairs:
+    for case in ['ocean', 'land']:
+        if (inst in scatter_data and 
+            case in scatter_data[inst] and 
+            len(scatter_data[inst][case]['fwd_aod']) > 0):
+            fwd_vals = np.array(scatter_data[inst][case]['fwd_aod'])
+            all_fwd_aod.extend(fwd_vals)
+            max_fwd_aod = max(max_fwd_aod, np.max(fwd_vals))
+
+# Set global axis limits
+x_max = max_fwd_aod * 1.1
+y_lim = max_fwd_aod * 0.25  # ±25% of highest AOD
+
+for col, instrument in enumerate(instrument_pairs):
+    for row, case_type in enumerate(['ocean', 'land']):
+        ax = axes[row, col]
+        
+        # Check if data exists for this combination
+        if (instrument in scatter_data and 
+            case_type in scatter_data[instrument] and 
+            len(scatter_data[instrument][case_type]['fwd_aod']) > 0):
+            
+            fwd_aod = np.array(scatter_data[instrument][case_type]['fwd_aod'])
+            diff_aod = np.array(scatter_data[instrument][case_type]['diff_aod'])
+            
+            # Calculate point density for coloring
+            if len(fwd_aod) > 1:
+                try:
+                    # Create a 2D density estimate
+                    xy = np.vstack([fwd_aod, diff_aod])
+                    kde = gaussian_kde(xy)
+                    density = kde(xy)
+                except:
+                    # Fallback if KDE fails
+                    density = np.ones(len(fwd_aod))
+            else:
+                density = np.ones(len(fwd_aod))
+            
+            # Create scatter plot with density-based coloring
+            scatter = ax.scatter(fwd_aod, diff_aod, c=density, s=10, alpha=0.7, 
+                               cmap='viridis', edgecolors='none')
+            
+            # Add 1-sigma error envelope (0.03 + 10% of true AOD)
+            x_range = np.linspace(0, x_max, 100)
+            error_envelope_upper = 0.03 + 0.1 * x_range
+            error_envelope_lower = -(0.03 + 0.1 * x_range)
+            
+            ax.fill_between(x_range, error_envelope_lower, error_envelope_upper, 
+                           color='lightgray', alpha=0.3, label='±1σ envelope')
+            
+            # Add zero line
+            ax.axhline(y=0, color='black', linestyle='--', alpha=0.7, linewidth=1)
+            
+            # Calculate statistics
+            n_points = len(fwd_aod)
+            
+            # Calculate percentage within error envelope
+            envelope_upper_at_points = 0.03 + 0.1 * fwd_aod
+            envelope_lower_at_points = -(0.03 + 0.1 * fwd_aod)
+            within_envelope = np.logical_and(diff_aod >= envelope_lower_at_points, 
+                                           diff_aod <= envelope_upper_at_points)
+            pct_within_envelope = np.sum(within_envelope) / len(diff_aod) * 100
+            
+            # Display statistics
+            ax.text(0.05, 0.95, f'N: {n_points}\nWithin ±1σ: {pct_within_envelope:.1f}%', 
+                   transform=ax.transAxes, verticalalignment='top',
+                   bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+        
+        else:
+            # No data available
+            ax.text(0.5, 0.5, 'No data', transform=ax.transAxes, 
+                   ha='center', va='center', fontsize=14)
+        
+        # Set consistent axis limits for all subplots
+        ax.set_xlim(0, x_max)
+        ax.set_ylim(-y_lim, y_lim)
+        
+        # Set labels and titles
+        if row == 1:  # Bottom row
+            ax.set_xlabel('True AOD (Forward)')
+        if col == 0:  # Left column
+            ax.set_ylabel('AOD Difference (Retrieved - True)')
+        
+        # Title
+        surface_name = case_type.capitalize()
+        ax.set_title(f'{instrument} - {surface_name}')
+        
+        # Grid
+        ax.grid(True, alpha=0.3)
+
+# Add main title
+fig.suptitle(f'AOD Retrieval Performance at {bckLambda:.3f} μm', fontsize=16, y=0.98)
+
+# Adjust layout
+plt.tight_layout()
+plt.subplots_adjust(top=0.93)
+
+# Save figure
+aod_str = f"_aod{aodThresh}" if aodThresh > 0 else ""
+case_version = "V3A" if "V3A" in filePatterns[0] else "V3"
+output_dir = f"./{case_version}_results/"
+scatter_filename = f'{output_dir}AOD_scatter_comparison_wv{waveInd}{aod_str}.png'
+plt.savefig(scatter_filename, dpi=150, bbox_inches='tight')
+print(f"Saved figure: {scatter_filename}")
+plt.close(fig)
+
+# --- rEff Scatter Plots ---
+print("Generating rEff scatter plots...")
+
+# Load data again to get individual pixel values for rEff scatter plots
+reff_scatter_data = {}  # reff_scatter_data[instrument][case_type] = {'fwd_aod': [], 'diff_reff': []}
+
+for idx, pattern in enumerate(filePatterns):
+    instrument, case_type = instrument_case_map[idx]
+    
+    if instrument not in reff_scatter_data:
+        reff_scatter_data[instrument] = {}
+    if case_type not in reff_scatter_data[instrument]:
+        reff_scatter_data[instrument][case_type] = {'fwd_aod': [], 'diff_reff': []}
+    
+    full_path_pattern = os.path.join(basePath, pattern)
+    sim = simulation(picklePath=full_path_pattern)
+    sim.conerganceFilter(χthresh=1.5, forceχ2Calc=recalcChi, σ=σx, verbose=False)
+    
+    if not sim.rsltFwd:
+        continue
+    
+    # Filter pixels by AOD threshold (same as before)
+    initial_pixel_count = len(sim.rsltFwd)
+    if aodThresh > 0:
+        inds2keep = [i for i, rslt in enumerate(sim.rsltFwd) if rslt['aod'][waveInd] >= aodThresh]
+    else:
+        inds2keep = list(range(len(sim.rsltFwd)))
+    
+    # Filter out very high AOD values (>10)
+    high_aod_count = 0
+    final_inds = []
+    for i in inds2keep:
+        if sim.rsltFwd[i]['aod'][waveInd] < 10.0:
+            final_inds.append(i)
+        else:
+            high_aod_count += 1
+    
+    sim.rsltFwd = [sim.rsltFwd[i] for i in final_inds]
+    sim.rsltBck = [sim.rsltBck[i] for i in final_inds]
+    
+    if not sim.rsltFwd:
+        continue
+    
+    # Extract AOD and rEff values for each pixel
+    for i, (fwd_rslt, bck_rslt) in enumerate(zip(sim.rsltFwd, sim.rsltBck)):
+        fwd_aod = fwd_rslt['aod'][waveInd]
+        fwd_reff = fwd_rslt['rEff']  # rEff is a scalar, not wavelength-dependent
+        bck_reff = bck_rslt['rEff']  # rEff is a scalar, not wavelength-dependent
+        diff_reff = bck_reff - fwd_reff
+        
+        reff_scatter_data[instrument][case_type]['fwd_aod'].append(fwd_aod)
+        reff_scatter_data[instrument][case_type]['diff_reff'].append(diff_reff)
+
+# Create rEff scatter plots (3 instruments x 2 surface types = 6 plots)
+fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+
+# Find global limits for consistent axis scaling
+max_fwd_aod_reff = 0
+all_diff_reff = []
+for inst in instrument_pairs:
+    for case in ['ocean', 'land']:
+        if (inst in reff_scatter_data and 
+            case in reff_scatter_data[inst] and 
+            len(reff_scatter_data[inst][case]['fwd_aod']) > 0):
+            fwd_vals = np.array(reff_scatter_data[inst][case]['fwd_aod'])
+            diff_vals = np.array(reff_scatter_data[inst][case]['diff_reff'])
+            all_diff_reff.extend(diff_vals)
+            max_fwd_aod_reff = max(max_fwd_aod_reff, np.max(fwd_vals))
+
+# Set global axis limits
+x_max_reff = max_fwd_aod_reff * 1.1
+if len(all_diff_reff) > 0:
+    y_max_reff = max(abs(np.min(all_diff_reff)), abs(np.max(all_diff_reff))) * 1.1
+else:
+    y_max_reff = 1.0
+
+for col, instrument in enumerate(instrument_pairs):
+    for row, case_type in enumerate(['ocean', 'land']):
+        ax = axes[row, col]
+        
+        # Check if data exists for this combination
+        if (instrument in reff_scatter_data and 
+            case_type in reff_scatter_data[instrument] and 
+            len(reff_scatter_data[instrument][case_type]['fwd_aod']) > 0):
+            
+            fwd_aod = np.array(reff_scatter_data[instrument][case_type]['fwd_aod'])
+            diff_reff = np.array(reff_scatter_data[instrument][case_type]['diff_reff'])
+            
+            # Calculate point density for coloring
+            if len(fwd_aod) > 1:
+                try:
+                    # Create a 2D density estimate
+                    xy = np.vstack([fwd_aod, diff_reff])
+                    kde = gaussian_kde(xy)
+                    density = kde(xy)
+                except:
+                    # Fallback if KDE fails
+                    density = np.ones(len(fwd_aod))
+            else:
+                density = np.ones(len(fwd_aod))
+            
+            # Create scatter plot with density-based coloring
+            scatter = ax.scatter(fwd_aod, diff_reff, c=density, s=10, alpha=0.7, 
+                               cmap='viridis', edgecolors='none')
+            
+            # Add zero line
+            ax.axhline(y=0, color='black', linestyle='--', alpha=0.7, linewidth=1)
+            
+            # Calculate statistics
+            n_points = len(fwd_aod)
+            rmse = np.sqrt(np.mean(diff_reff**2))
+            bias = np.mean(diff_reff)
+            
+            # Display statistics
+            ax.text(0.05, 0.95, f'N: {n_points}\nRMSE: {rmse:.4f}\nBias: {bias:.4f}', 
+                   transform=ax.transAxes, verticalalignment='top',
+                   bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+        
+        else:
+            # No data available
+            ax.text(0.5, 0.5, 'No data', transform=ax.transAxes, 
+                   ha='center', va='center', fontsize=14)
+        
+        # Set consistent axis limits for all subplots
+        ax.set_xlim(0, x_max_reff)
+        ax.set_ylim(-y_max_reff, y_max_reff)
+        
+        # Set labels and titles
+        if row == 1:  # Bottom row
+            ax.set_xlabel('True AOD (Forward)')
+        if col == 0:  # Left column
+            ax.set_ylabel('rEff Difference (Retrieved - True) [μm]')
+        
+        # Title
+        surface_name = case_type.capitalize()
+        ax.set_title(f'{instrument} - {surface_name}')
+        
+        # Grid
+        ax.grid(True, alpha=0.3)
+
+# Add main title
+fig.suptitle(f'rEff Retrieval Performance at {bckLambda:.3f} μm', fontsize=16, y=0.98)
+
+# Adjust layout
+plt.tight_layout()
+plt.subplots_adjust(top=0.93)
+
+# Save figure
+aod_str = f"_aod{aodThresh}" if aodThresh > 0 else ""
+case_version = "V3A" if "V3A" in filePatterns[0] else "V3"
+output_dir = f"./{case_version}_results/"
+reff_scatter_filename = f'{output_dir}rEff_scatter_comparison_wv{waveInd}{aod_str}.png'
+plt.savefig(reff_scatter_filename, dpi=150, bbox_inches='tight')
+print(f"Saved figure: {reff_scatter_filename}")
+plt.close(fig)
 
 print("\nComparison script finished.")
 
