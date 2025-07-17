@@ -89,7 +89,7 @@ class simulation(object):
                                               rndGuess=False)[0]
             assert len(self.rsltFwd)==len(fwdData), 'Forward calucation was not fully successfull, halting the simulation.'
             if len(np.unique([rf['datetime'] for rf in self.rsltFwd])) != len(fwdData):
-                warnings.warn('Datetime(s) were not unique. Incrementing pixel times... (Original datetimes not preserved!)')
+                if verbose: warnings.warn('Datetime(s) were not unique. Incrementing pixel times... (Original datetimes not preserved!)')
                 for i, rf in enumerate(self.rsltFwd): 
                     self.rsltFwd[i]['datetime'] = rf['datetime'] + dt.timedelta(seconds=i)
         elif type(fwdData[0]) == dict: # likely OSSE from netCDF
@@ -484,6 +484,7 @@ class simulation(object):
                 fineModesFwd - [array-like] the indices of the fine modes in the foward calculation, set to None to use OSSE ..._Fine variables instead
                 fineModesBck -  [array-like] the indices of the fine modes in the retrieval """
         # check on input and available variables
+        assert isinstance(wvlnthInd, int), 'wvlnthInd must be an integer index (not a list or array).'
         assert (self.rsltBck is not None) and (self.rsltFwd is not None), 'You must call loadSim() or runSim(...,dryRun=False) before you can calculate statistics!'
         if type(self.rsltFwd) is dict: self.rsltFwd = [self.rsltFwd]
         assert type(self.rsltFwd) is list or type(self.rsltFwd) is np.ndarray, 'rsltFwd must be a list! Note that it was stored as a dict in older versions of the code.'
@@ -493,8 +494,9 @@ class simulation(object):
         assert 'aodMode' not in fwdKys or fineModesFwd is None or self.rsltFwd[0]['aodMode'].shape[0] > max(fineModesFwd), 'fineModesFwd'+msg+'rsltFwd[aodMode]'
         assert 'aodMode' not in bckKys or fineModesBck is None or self.rsltBck[0]['aodMode'].shape[0] > max(fineModesBck), 'fineModesBck'+msg+'rsltBck[aodMode]'
         # define functions for calculating RMS and bias
-        # rmsFun = lambda t,r: np.mean(r-t, axis=0) # formula for RMS output (true->t, retrieved->r)
-        rmsFun = lambda t,r: np.sqrt(np.nanmedian((t-r)**2, axis=0)) # formula for RMS output (true->t, retrieved->r) – needs to handle nans! (hghtWghtedAvg returns nan when PBL<lowest_GRASP_bin)
+        # rmsFun = lambda t,r: np.sqrt(np.nanmean((t-r)**2, axis=0)) # formula for RMS output (true->t, retrieved->r) – needs to handle nans!
+        # BELOW IS MATHEMATICALLY IDENTICAL – rmsFun = lambda t,r: np.sqrt(np.nanmedian((t-r)**2, axis=0)) # formula for RMS output (true->t, retrieved->r) – needs to handle nans! (hghtWghtedAvg returns nan when PBL<lowest_GRASP_bin)
+        rmsFun = lambda t,r: np.nanmedian(np.abs(t-r), axis=0) # formula for RMS output (true->t, retrieved->r) – needs to handle nans! (hghtWghtedAvg returns nan when PBL<lowest_GRASP_bin)
         biasFun = lambda t,r: r-t if r.ndim > 1 else np.atleast_2d(r-t).T # formula for bias output – needs to handle nans! (hghtWghtedAvg returns nan when PBL<lowest_GRASP_bin)
         # variables we expect to see
         varsSpctrl = ['aod', 'aodMode', 'n', 'k', 'ssa', 'ssaMode', 'g','LidarRatio', 'LidarRatioMode']

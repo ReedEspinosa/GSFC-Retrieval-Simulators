@@ -17,22 +17,21 @@ from ACCP_functions import selectGeometryEntry, selectGeometryEntryModis, select
 assert sys.version_info.major==3, 'This script requires Python 3'
 if checkDiscover(): # DISCOVER
     n = int(sys.argv[1]) # (0,1,2,...,N-1)
-#     nAng = int(sys.argv[2])
+    # nAng = int(sys.argv[2])
     nAng = 0
     basePath = os.environ['NOBACKUP']
-    saveStart = os.path.join(basePath, 'synced/AOS/Phase-A/PLRA_RequirementsAndTraceability/GSFC_ValidationSimulationsData/V1_Noah/Run-31_')
+    saveStart = os.path.join(basePath, 'synced/AOS/Pre-Phase-A/Polarimeter_Simulations/V3/V3A')
     ymlDir = os.path.join(basePath, 'GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/')
     dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp')
     krnlPath = os.path.join(basePath, 'local/share/grasp/kernels')
-    geomFile = os.path.join(basePath, 'synced/AOS/Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4')
+    geomFile = os.path.join(basePath, 'synced/AOS/Beta_Phase-A/Orbital-Viewing-Geometry-Simulations/AOS_Solstice_nc4_Files_no_view_angles/AOS_1330_LTAN_442km_alt/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4')
     PCAslctMatFilePath = None # Full path of Feng's PCA results for indexing Pete's files. >> Not needed polaraos, 3MI, polder or modis. <<
     Nangles = 660
-#   Nangles = 4
     Nsims = 1 # number of runs (if initial guess is not random this just varies the random noise)
     maxCPU = 46 # number of cores to divide above Nsims over... we might need to do some restructuring here
 else: # MacBook Air
-    n = 0
-    nAng = 2 # Sabrina's files have 132 x 5 = 660 angles
+    n = 2
+    nAng = 2 # Index of first angle to use (Sabrina's files have 132 x 5 = 660 angles)
     saveStart = '/Users/wrespino/Desktop/TEST_V01_' # end will be appended
     ymlDir = '/Users/wrespino/Synced/Local_Code_MacBook/GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/'
     dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp'
@@ -51,12 +50,13 @@ bckYAMLpathPOL = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml')
 
 # instruments = ['polarAOS','polder','3mi']
 # instruments = ['polarAOS', 'polarAOSclean', 'polarAOSnoah']
-instruments = ['polarAOSmod']
-conCases = ['case08'+chr(ord('a')+x) for x in range(15)]
-# conCases = ['case08l','case08k']+['case08'+chr(ord('p')+x) for x in range(6)]
-τFactor = ['randLogNrm0.2','randLogNrm0.4'] #1 - Syntax error on this line? Make sure you are running Python 3!
+instruments = ['megaharp4','megaharp1','option2']
+# conCases = ['marineVariable+dustVariableOcean','pollutionVariable+dustVariableLand']
+# τFactor = ['randLogNrm0.2','randLogNrm0.25','randLogNrm0.3'] #1 - Syntax error on this line? Make sure you are running Python 3!
+conCases = ['marineVariable+smokeVariableOcean','pollutionVariable+smokeVariableLand']
+τFactor = ['randLogNrm5.2','randLogNrm7.25','randLogNrm9.3'] #1 - Syntax error on this line? Make sure you are running Python 3!
 rndIntialGuess = True # initial guess falls in middle 25% of min/max range
-maxSZA = 75
+maxSZA = 70
 verbose = True
 # more specific simulation options in runSim call below... 
 
@@ -74,7 +74,7 @@ print('-- Processing ' + os.path.basename(savePath) + ' --')
 # setup forward and back YAML objects and now pixel
 nowPix = []
 for i in range(nAng, nAng+Nangles):
-    if 'polaraos' in paramTple[0].lower() or 'polder' in paramTple[0].lower() or '3mi' in paramTple[0].lower():
+    if 'polaraos' in paramTple[0].lower() or 'polder' in paramTple[0].lower() or '3mi' in paramTple[0].lower() or 'megaharp' in paramTple[0].lower() or 'option2' in paramTple[0].lower():
         sza, phi, vza = selectGeomSabrina(geomFile, i)
     elif 'modis' in paramTple[0].lower():
         sza, phi, vza = selectGeometryEntryModis(geomFile, i)
