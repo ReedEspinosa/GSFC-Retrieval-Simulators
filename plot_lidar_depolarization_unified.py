@@ -288,6 +288,8 @@ def main():
                        help='Altitude in km (default: 2.2)')
     parser.add_argument('--wavelengths', nargs='+', type=float, default=[0.355, 0.532, 1.064],
                        help='Wavelengths in μm (default: 0.355 0.532 1.064)')
+    parser.add_argument('--plot-method', choices=['contourf', 'pcolormesh'], default='pcolormesh',
+                       help='Plotting method: contourf (smooth contours) or pcolormesh (discrete cells, reduces aliasing)')
     
     args = parser.parse_args()
     
@@ -296,6 +298,7 @@ def main():
     aerosol_ext = args.aerosol_ext
     altitude_km = args.altitude
     wavelengths = args.wavelengths
+    plot_method = args.plot_method
     
     # Size distribution parameters
     ln_sigma = 0.6  # ln(σ_g) where σ_g is geometric standard deviation
@@ -322,10 +325,17 @@ def main():
         print(f"\nInterpolating to reference mr values: {reference_mr}")
         data = interpolate_to_reference_mr(data, reference_mr, ratio_index)
     
-    # Particle size range (effective radius in μm)
-    r_eff_min = 0.300  # 300 nm
-    r_eff_max = 6.000  # 6000 nm
-    r_eff_values = np.linspace(r_eff_min, r_eff_max, 20)
+    # Particle size range (effective radius in μm) - log spacing for better physics representation
+    r_eff_min = 0.100  # 100 nm
+    r_eff_max = 5.000  # 5000 nm
+    r_eff_values = np.logspace(np.log10(r_eff_min), np.log10(r_eff_max), 20)
+    
+    # Convert to volume median radius for display consistency with other plots
+    # For lognormal distribution: r_v = r_eff * exp(-1.0 * ln²(σ_g))
+    ln_sigma = 0.6  # Given constraint
+    r_v_conversion_factor = np.exp(-1.0 * ln_sigma**2)  # = exp(-0.36) ≈ 0.6977
+    r_v_min = r_eff_min * r_v_conversion_factor  # Volume median radius range
+    r_v_max = r_eff_max * r_v_conversion_factor
     
     # Mi filtering criteria
     mi_max = 0.01
@@ -357,8 +367,9 @@ def main():
         print(f"\nPolydisperse lognormal distributions:")
         print(f"  ln(σ) = {ln_sigma}")
         print(f"  σ_g = {np.exp(ln_sigma):.3f}")
-        print(f"  Effective radius range: {r_eff_min*1000:.0f} - {r_eff_max*1000:.0f} nm")
-        print(f"  Mi range: |mi| <= {mi_max}")
+        print(f"  Volume median radius range: {r_v_min*1000:.0f} - {r_v_max*1000:.0f} nm (log spacing)")
+        print(f"  Effective radius range: {r_eff_min*1000:.0f} - {r_eff_max*1000:.0f} nm (internal calculation)")
+        print(f"  Mi range: 1e-4 <= |mi| <= {mi_max} (log spacing)")
         print(f"  Mi points after filtering: {np.sum(mi_mask)}")
         
         # Calculate depolarization values for all combinations first to get global range
@@ -388,6 +399,16 @@ def main():
             
         print(f"Global depolarization range: {global_min:.4f} to {global_max:.4f}")
         
+        # Determine contour line spacing based on data range
+        data_range = global_max - global_min
+        if data_range > 0.4:
+            contour_spacing = 0.1
+        elif data_range > 0.1:
+            contour_spacing = 0.05
+        else:
+            contour_spacing = 0.02
+        print(f"Using contour line spacing: {contour_spacing:.3f}")
+        
         # Create figure with subplots (2x4 for 8 mr values)
         fig, axes = plt.subplots(2, 4, figsize=(16, 8))
         axes = axes.ravel()
@@ -399,7 +420,7 @@ def main():
             ax = axes[mr_idx]
             
             # Initialize arrays for contour data
-            X_reff = []
+            X_rv = []  # Volume median radius data
             Y_mi = []
             Z_depol = []
             
@@ -413,55 +434,75 @@ def main():
                         r_eff, mr_idx, mi_idx, data, target_wavelength,
                         aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index)
                     
-                    # Store for plotting
-                    X_reff.append(r_eff * 1000)  # Convert to nm
+                    # Store for plotting (convert effective radius to volume median radius)
+                    r_v = r_eff * r_v_conversion_factor  # Convert to volume median radius
+                    X_rv.append(r_v * 1000)  # Convert to nm
                     Y_mi.append(abs(mi_val))  # Use absolute value
                     Z_depol.append(total_depol)
             
             # Create regular grid for contour plotting
-            if len(X_reff) > 0:
-                # Create meshgrid with higher resolution for smoother plots
-                reff_grid = np.linspace(r_eff_min*1000, r_eff_max*1000, 80)
+            if len(X_rv) > 0:
+                # Create high-resolution meshgrid with log spacing to reduce aliasing effects
+                rv_grid = np.logspace(np.log10(r_v_min*1000), np.log10(r_v_max*1000), 200)  # Increased resolution
                 
-                # Create mi grid with denser sampling in low mi region
-                mi_low = np.linspace(1e-4, 1e-3, 20)  # Dense sampling for very low mi
-                mi_high = np.linspace(1e-3, mi_max, 35)  # Regular sampling for higher mi  
-                mi_grid = np.concatenate([mi_low, mi_high[1:]])  # Remove duplicate at 1e-3
+                # Create mi grid with log spacing for better physics representation
+                mi_min = 1e-4  # Minimum mi value for plotting
+                mi_grid = np.logspace(np.log10(mi_min), np.log10(mi_max), 150)  # Increased resolution
                 
-                X_grid, Y_grid = np.meshgrid(reff_grid, mi_grid)
+                X_grid, Y_grid = np.meshgrid(rv_grid, mi_grid)
                 
                 # Interpolate data onto grid preserving variation
                 from scipy.interpolate import griddata
                 
                 # Use cubic interpolation first, then fill gaps with linear
-                Z_grid = griddata((X_reff, Y_mi), Z_depol, (X_grid, Y_grid), method='cubic')
+                Z_grid = griddata((X_rv, Y_mi), Z_depol, (X_grid, Y_grid), method='cubic')
                 
                 # Fill NaN values with linear interpolation 
                 nan_mask = np.isnan(Z_grid)
                 if np.any(nan_mask):
-                    Z_grid_linear = griddata((X_reff, Y_mi), Z_depol, (X_grid, Y_grid), method='linear')
+                    Z_grid_linear = griddata((X_rv, Y_mi), Z_depol, (X_grid, Y_grid), method='linear')
                     Z_grid[nan_mask] = Z_grid_linear[nan_mask]
                     
                     # Final fallback to nearest neighbor for any remaining NaNs
                     nan_mask = np.isnan(Z_grid)
                     if np.any(nan_mask):
-                        Z_grid_nearest = griddata((X_reff, Y_mi), Z_depol, (X_grid, Y_grid), method='nearest')
+                        Z_grid_nearest = griddata((X_rv, Y_mi), Z_depol, (X_grid, Y_grid), method='nearest')
                         Z_grid[nan_mask] = Z_grid_nearest[nan_mask]
                 
-                # Create smooth contour plot with optimal color levels for discrimination
+                # Create plot using specified method for optimal quality
                 # Use global min/max for consistent scaling across all subplots
-                levels = np.linspace(global_min, global_max, 50)  # 50 levels for good smoothness with visible discrimination
-                contour = ax.contourf(X_grid, Y_grid, Z_grid, levels=levels, cmap='viridis', extend='both', antialiased=True)
+                if plot_method == 'contourf':
+                    # Traditional contour plot with smooth interpolation
+                    color_levels = np.linspace(global_min, global_max, 255)  # 255 levels for continuous color bar
+                    contour_filled = ax.contourf(X_grid, Y_grid, Z_grid, levels=color_levels, cmap='viridis', extend='both', antialiased=True)
+                else:  # pcolormesh
+                    # Discrete cell-based plot to reduce aliasing in sharp gradient regions
+                    contour_filled = ax.pcolormesh(X_grid, Y_grid, Z_grid, cmap='viridis', 
+                                                 vmin=global_min, vmax=global_max, shading='auto', antialiased=True)
                 
-                # Format plot
-                ax.set_xlabel('Effective Radius (nm)')
+                # Add contour lines for contourf plots (pcolormesh uses discrete cells as natural boundaries)
+                if plot_method == 'contourf':
+                    contour_min = np.ceil(global_min / contour_spacing) * contour_spacing
+                    contour_max = np.floor(global_max / contour_spacing) * contour_spacing
+                    contour_line_levels = np.arange(contour_min, contour_max + contour_spacing, contour_spacing)
+                    
+                    if len(contour_line_levels) > 0 and len(contour_line_levels) <= 20:  # Limit number of lines
+                        contour_lines = ax.contour(X_grid, Y_grid, Z_grid, levels=contour_line_levels, 
+                                                 colors='white', alpha=0.6, linewidths=0.5, antialiased=True)
+                
+                # Format plot with log x-axis and log y-axis
+                ax.set_xlabel('Volume Median Radius (nm)')
                 ax.set_ylabel('Imaginary RI (|mi|)')
                 ax.set_title(f'mr = {mr_val:.3f}')
-                ax.grid(True, alpha=0.3)
+                ax.set_xscale('log')
+                ax.set_yscale('log')
+                ax.set_xlim(r_v_min*1000, r_v_max*1000)
+                ax.set_ylim(1e-4, mi_max)
+                ax.grid(True, alpha=0.3, which='both')  # Show both major and minor grid lines for both axes
                 
                 # Add colorbar to last subplot in each row
                 if mr_idx == 3 or mr_idx == 7:
-                    cbar = plt.colorbar(contour, ax=ax)
+                    cbar = plt.colorbar(contour_filled, ax=ax)
                     cbar.set_label('Total Depolarization Ratio')
                     # Set colorbar limits to global range for consistency with more ticks for smoother appearance
                     cbar.set_ticks(np.linspace(global_min, global_max, 8))
@@ -469,14 +510,18 @@ def main():
             else:
                 ax.text(0.5, 0.5, 'No valid data\nfor this mr value', 
                        transform=ax.transAxes, ha='center', va='center')
-                ax.set_xlabel('Effective Radius (nm)')
+                ax.set_xlabel('Volume Median Radius (nm)')
                 ax.set_ylabel('Imaginary RI (|mi|)')
                 ax.set_title(f'mr = {mr_val:.3f}')
-                ax.grid(True, alpha=0.3)
+                ax.set_xscale('log')
+                ax.set_yscale('log')
+                ax.set_xlim(r_v_min*1000, r_v_max*1000)
+                ax.set_ylim(1e-4, mi_max)
+                ax.grid(True, alpha=0.3, which='both')
         
         # Overall figure formatting
         plt.suptitle(f'Total Lidar Depolarization Ratio at {target_wavelength*1000:.0f} nm\n'
-                    f'Polydisperse {particle_type} aerosols (ln(σ) = {ln_sigma})\n'
+                    f'Polydisperse {particle_type} aerosols (ln(σ) = {ln_sigma}) - Log-Log Scale\n'
                     f'Aerosol extinction: {aerosol_ext} Mm$^{{-1}}$, Altitude: {altitude_km} km', fontsize=14)
         
         plt.tight_layout()
