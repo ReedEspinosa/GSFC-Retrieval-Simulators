@@ -75,6 +75,9 @@ def read_netcdf_data(file_path):
         data['x'] = nc.variables['x'][:]    # Size parameter (2π*r/λ)
         data['angle'] = nc.variables['angle'][:]  # Scattering angles
         data['scama'] = nc.variables['scama'][:]  # Scattering matrix elements
+        data['qext'] = nc.variables['qext'][:]    # Extinction efficiency (same shape as qsca)
+        # Add qsca reading
+        data['qsca'] = nc.variables['qsca'][:]    # Scattering efficiency (same shape as x)
         
         # Convert masked arrays to regular arrays if needed
         for key in data:
@@ -196,67 +199,91 @@ def lognormal_volume_distribution(r, r_g, sigma_g):
 def calculate_polydisperse_depolarization(r_eff, mr_idx, mi_idx, data, target_wavelength, 
                                         aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index):
     """
-    Calculate volume-averaged depolarization for lognormal size distribution
+    Calculate bulk depolarization for lognormal size distribution using cross-section weighting.
+    Scales aerosol contribution so that total extinction matches user-supplied aerosol_ext (Mm^-1).
+    P11 and P22 are scattering properties and are scaled by scattering, not extinction.
     
     Parameters:
     - r_eff: effective radius (μm)
     - mr_idx, mi_idx: indices for refractive index
     - data: netCDF data dictionary
     - target_wavelength: wavelength (μm)
-    - aerosol_ext, rayleigh_ext, rayleigh_depol: extinction and depolarization parameters
+    - aerosol_ext: user-supplied aerosol extinction (Mm^-1)
+    - rayleigh_ext: Rayleigh extinction coefficient (Mm^-1) - must match units of aerosol_ext
+    - rayleigh_depol: Rayleigh depolarization ratio
     - ratio_index: 0 for hexahedral, 1 for spheroidal
     
     Returns:
-    - total_depol: volume-averaged total depolarization ratio
+    - total_depol: bulk depolarization ratio (cross-section weighted, scaled)
     """
-    # Lognormal distribution parameters
     ln_sigma = 0.547  # Given constraint
-    sigma_g = np.exp(ln_sigma)  # Geometric standard deviation
-    
-    # Convert effective radius to geometric mean radius
-    # r_eff = r_g * exp(2.5 * ln²(σ_g))
+    sigma_g = np.exp(ln_sigma)  # Geometric std dev
     r_g = r_eff / np.exp(2.5 * ln_sigma**2)
-    
-    # Set up radius grid for integration (25 points for speed)
-    r_min = r_g / (sigma_g**3)  # 3 standard deviations below
-    r_max = r_g * (sigma_g**3)  # 3 standard deviations above
+    r_min = r_g / (sigma_g**3)
+    r_max = r_g * (sigma_g**3)
     r_grid = np.logspace(np.log10(r_min), np.log10(r_max), 25)
-    
-    # Calculate volume distribution
     dV_dlnr = lognormal_volume_distribution(r_grid, r_g, sigma_g)
-    
-    # Convert radii to size parameters
     x_grid = 2 * np.pi * r_grid / target_wavelength
-    
-    # Extract scattering matrix data at 180° (backscatter)
     x_data = data['x']
-    angle_180_idx = -1  # Last angle should be 180°
-    p11_180 = data['scama'][ratio_index, mr_idx, mi_idx, :, 0, angle_180_idx]  # P11 at 180°
-    p22_180 = data['scama'][ratio_index, mr_idx, mi_idx, :, 1, angle_180_idx]  # P22 at 180°
-    
-    # Vectorized interpolation using scipy for speed
+    angle_180_idx = -1  # Last angle is 180°
+    p11_180 = data['scama'][ratio_index, mr_idx, mi_idx, :, 0, angle_180_idx].squeeze()
+    p22_180 = data['scama'][ratio_index, mr_idx, mi_idx, :, 1, angle_180_idx].squeeze()
+    if data['qsca'].ndim == 4:
+        qsca_data = data['qsca'][ratio_index, mr_idx, mi_idx, :].squeeze()
+        qext_data = data['qext'][ratio_index, mr_idx, mi_idx, :].squeeze()
+    elif data['qsca'].ndim == 3:
+        qsca_data = data['qsca'][mr_idx, mi_idx, :].squeeze()
+        qext_data = data['qext'][mr_idx, mi_idx, :].squeeze()
+    else:
+        raise ValueError(f"Unexpected qsca/qext ndim: {data['qsca'].ndim}")
     from scipy.interpolate import interp1d
-    
-    # Create interpolation functions
     p11_interp = interp1d(x_data, p11_180, bounds_error=False, fill_value='extrapolate')
     p22_interp = interp1d(x_data, p22_180, bounds_error=False, fill_value='extrapolate')
-    
-    # Calculate P11 and P22 for all size parameters at once
+    qsca_interp = interp1d(x_data, qsca_data, bounds_error=False, fill_value='extrapolate')
+    qext_interp = interp1d(x_data, qext_data, bounds_error=False, fill_value='extrapolate')
     p11_grid = p11_interp(x_grid)
     p22_grid = p22_interp(x_grid)
-    
-    # Vectorized aerosol depolarization calculation
-    aerosol_depol_grid = (p11_grid - p22_grid) / (p11_grid + p22_grid)
-    
-    # Calculate total depolarization for each size (vectorized)
-    total_ext = aerosol_ext + rayleigh_ext
-    total_depol_grid = ((aerosol_depol_grid * aerosol_ext + rayleigh_depol * rayleigh_ext) / total_ext)
-    
-    # Volume-weighted average
+    qsca_grid = qsca_interp(x_grid)
+    qext_grid = qext_interp(x_grid)
+    # Scattering and extinction cross section: Csca = qsca * pi * r^2, Cext = qext * pi * r^2
+    csca_grid = qsca_grid * np.pi * r_grid**2
+    cext_grid = qext_grid * np.pi * r_grid**2
+    v_grid = (4/3) * np.pi * r_grid**3
+    # Number-weighted distribution: dN/dlnr = dV/dlnr / v(r)
+    number_weight = dV_dlnr / v_grid
+    # Weight for cross-section integration: number of particles * cross section
+    weight = csca_grid * number_weight
     ln_r_grid = np.log(r_grid)
-    polydisperse_depol = np.trapz(total_depol_grid * dV_dlnr, ln_r_grid)
-    
-    return polydisperse_depol
+    # Integrate cross-section-weighted P11 and P22 for aerosol (scattering only)
+    sum_p11_aero = np.trapz(p11_grid * weight, ln_r_grid)
+    sum_p22_aero = np.trapz(p22_grid * weight, ln_r_grid)
+    # Integrate extinction cross section for scaling
+    weight_ext = cext_grid * number_weight
+    total_aerosol_cext = np.trapz(weight_ext, ln_r_grid)  # [μm^2]
+    # Scale by extinction: scale = aerosol_ext / total_aerosol_cext
+    # Units: (Mm^-1) / (μm^2) - but since we're using relative contributions,
+    # the units cancel in the final depolarization ratio
+    if total_aerosol_cext > 0:
+        scale = aerosol_ext / total_aerosol_cext
+    else:
+        scale = 0.0
+    sum_p11_aero *= scale # WRE - At this point, this is scaled to match the user-supplied aerosol_ext with units of Sr^-1*Mm^-1
+    sum_p22_aero *= scale # WRE - At this point, this is scaled to match the user-supplied aerosol_ext with units of Sr^-1*Mm^-1
+    # Rayleigh: get cross section, P11, P22 at 180°
+    rayleigh_csca = rayleigh_ext  # Use extinction as cross section for relative weighting
+    rayleigh_p11 = 1.0
+    rayleigh_p22 = 1.0 - 2 * rayleigh_depol / (1 + rayleigh_depol)
+    # Add Rayleigh to sums
+    sum_p11 = sum_p11_aero + rayleigh_p11 * rayleigh_csca
+    sum_p22 = sum_p22_aero + rayleigh_p22 * rayleigh_csca
+    # Bulk depolarization ratio
+    total_depol = (sum_p11 - sum_p22) / (sum_p11 + sum_p22)
+    if np.isscalar(total_depol):
+        return float(total_depol)
+    elif hasattr(total_depol, 'shape') and total_depol.shape == ():
+        return float(total_depol)
+    else:
+        raise ValueError(f"total_depol is not scalar, shape={getattr(total_depol, 'shape', None)}, value={total_depol}")
 
 def get_reference_mr_values():
     """Get reference mr values from hexahedral data for consistent comparison"""
