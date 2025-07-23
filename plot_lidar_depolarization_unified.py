@@ -23,7 +23,7 @@ import argparse
 plt.rcParams['figure.dpi'] = 100
 plt.rcParams['savefig.dpi'] = 400
 plt.rcParams['image.interpolation'] = 'bicubic'
-plt.rcParams['image.cmap'] = 'viridis'
+plt.rcParams['image.cmap'] = 'plasma'
 
 # Add GSFC-GRASP-Python-Interface to path for accessing utilities
 sys.path.append(os.path.join("..", "GSFC-GRASP-Python-Interface"))
@@ -210,7 +210,7 @@ def calculate_polydisperse_depolarization(r_eff, mr_idx, mi_idx, data, target_wa
     - total_depol: volume-averaged total depolarization ratio
     """
     # Lognormal distribution parameters
-    ln_sigma = 0.6  # Given constraint
+    ln_sigma = 0.547  # Given constraint
     sigma_g = np.exp(ln_sigma)  # Geometric standard deviation
     
     # Convert effective radius to geometric mean radius
@@ -279,9 +279,8 @@ def get_reference_mr_values():
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Plot lidar depolarization ratios for aerosols')
-    parser.add_argument('file_path', help='Path to netCDF file containing aerosol optical properties')
-    parser.add_argument('--particle-type', choices=['hexahedral', 'spheroidal'], 
-                       help='Force particle type (auto-detected if not specified)')
+    parser.add_argument('hexahedral_file', help='Path to hexahedral netCDF file')
+    parser.add_argument('spheroidal_file', help='Path to spheroidal netCDF file')
     parser.add_argument('--aerosol-ext', type=float, default=640, 
                        help='Aerosol extinction coefficient (Mm^-1, default: 640)')
     parser.add_argument('--altitude', type=float, default=2.2, 
@@ -294,46 +293,43 @@ def main():
     args = parser.parse_args()
     
     # Configuration from arguments
-    file_path = args.file_path
+    hexahedral_file = args.hexahedral_file
+    spheroidal_file = args.spheroidal_file
     aerosol_ext = args.aerosol_ext
     altitude_km = args.altitude
     wavelengths = args.wavelengths
     plot_method = args.plot_method
     
     # Size distribution parameters
-    ln_sigma = 0.6  # ln(σ_g) where σ_g is geometric standard deviation
+    ln_sigma = 0.547  # ln(σ_g) where σ_g is geometric standard deviation
     
-    # Read the data
-    data = read_netcdf_data(file_path)
+    # Specific mr values for comparison
+    target_mr_values = np.array([1.37, 1.47, 1.57, 1.67])
     
-    # Auto-detect or use specified particle type
-    if args.particle_type:
-        particle_type = args.particle_type
-        ratio_index = 1 if particle_type == 'spheroidal' else 0
-        needs_interpolation = particle_type == 'spheroidal'
-        print(f"\nUsing specified particle type: {particle_type}")
-    else:
-        particle_type, ratio_index, needs_interpolation = detect_particle_type(file_path, data['scama'].shape)
-        print(f"\nAuto-detected particle type: {particle_type}")
+    # Read both datasets
+    print("Reading hexahedral data...")
+    hex_data = read_netcdf_data(hexahedral_file)
+    print("\nReading spheroidal data...")
+    sph_data = read_netcdf_data(spheroidal_file)
     
-    print(f"Using ratio index: {ratio_index}")
-    print(f"Interpolation needed: {needs_interpolation}")
+    # Handle spheroidal data interpolation to target mr values
+    print(f"\nInterpolating spheroidal data to target mr values: {target_mr_values}")
+    sph_data = interpolate_to_reference_mr(sph_data, target_mr_values, ratio_index=1)
     
-    # Handle spheroidal data interpolation
-    if needs_interpolation:
-        reference_mr = get_reference_mr_values()
-        print(f"\nInterpolating to reference mr values: {reference_mr}")
-        data = interpolate_to_reference_mr(data, reference_mr, ratio_index)
+    # Interpolate hexahedral data to same mr values for consistency
+    print(f"Interpolating hexahedral data to target mr values: {target_mr_values}")
+    hex_data = interpolate_to_reference_mr(hex_data, target_mr_values, ratio_index=0)
     
     # Particle size range (effective radius in μm) - log spacing for better physics representation
-    r_eff_min = 0.100  # 100 nm
-    r_eff_max = 5.000  # 5000 nm
+    # Adjusted to give volume median radius range 99-8000 nm (so 100 nm tick shows)
+    r_eff_min = 0.1337  # 133.7 nm effective → 99 nm volume median
+    r_eff_max = 10.8    # 10,800 nm effective → 8000 nm volume median
     r_eff_values = np.logspace(np.log10(r_eff_min), np.log10(r_eff_max), 20)
     
     # Convert to volume median radius for display consistency with other plots
     # For lognormal distribution: r_v = r_eff * exp(-1.0 * ln²(σ_g))
-    ln_sigma = 0.6  # Given constraint
-    r_v_conversion_factor = np.exp(-1.0 * ln_sigma**2)  # = exp(-0.36) ≈ 0.6977
+    ln_sigma = 0.547  # Given constraint
+    r_v_conversion_factor = np.exp(-1.0 * ln_sigma**2)  # = exp(-0.299) ≈ 0.7410
     r_v_min = r_eff_min * r_v_conversion_factor  # Volume median radius range
     r_v_max = r_eff_max * r_v_conversion_factor
     
@@ -361,8 +357,9 @@ def main():
         print(f"  Aerosol contribution: {aerosol_contribution:.1f}%")
         print(f"  Rayleigh contribution: {rayleigh_contribution:.1f}%")
         
-        # Filter mi values
-        mi_mask = np.abs(data['mi']) <= mi_max
+        # Filter mi values for both datasets
+        hex_mi_mask = np.abs(hex_data['mi']) <= mi_max
+        sph_mi_mask = np.abs(sph_data['mi']) <= mi_max
         
         print(f"\nPolydisperse lognormal distributions:")
         print(f"  ln(σ) = {ln_sigma}")
@@ -370,36 +367,44 @@ def main():
         print(f"  Volume median radius range: {r_v_min*1000:.0f} - {r_v_max*1000:.0f} nm (log spacing)")
         print(f"  Effective radius range: {r_eff_min*1000:.0f} - {r_eff_max*1000:.0f} nm (internal calculation)")
         print(f"  Mi range: 1e-4 <= |mi| <= {mi_max} (log spacing)")
-        print(f"  Mi points after filtering: {np.sum(mi_mask)}")
+        print(f"  Hexahedral mi points after filtering: {np.sum(hex_mi_mask)}")
+        print(f"  Spheroidal mi points after filtering: {np.sum(sph_mi_mask)}")
         
-        # Calculate depolarization values for all combinations first to get global range
-        print("Calculating polydisperse depolarization values...")
+        # Calculate depolarization values for both datasets to get global range
+        print("Calculating polydisperse depolarization values for both particle types...")
         all_depol_values = []
         
-        for mr_idx in range(len(data['mr'])):
-            for mi_idx in np.where(mi_mask)[0]:
+        # Calculate for hexahedral particles
+        for mr_idx in range(len(target_mr_values)):
+            for mi_idx in np.where(hex_mi_mask)[0]:
                 for r_eff in r_eff_values:
                     total_depol = calculate_polydisperse_depolarization(
-                        r_eff, mr_idx, mi_idx, data, target_wavelength,
-                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index)
+                        r_eff, mr_idx, mi_idx, hex_data, target_wavelength,
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=0)
                     all_depol_values.append(total_depol)
         
-        # Get global min/max for consistent scaling
-        global_min = np.min(all_depol_values)
+        # Calculate for spheroidal particles  
+        for mr_idx in range(len(target_mr_values)):
+            for mi_idx in np.where(sph_mi_mask)[0]:
+                for r_eff in r_eff_values:
+                    total_depol = calculate_polydisperse_depolarization(
+                        r_eff, mr_idx, mi_idx, sph_data, target_wavelength,
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=1)
+                    all_depol_values.append(total_depol)
+        
+        # Get global min/max for consistent scaling across both particle types
+        # Force minimum to 0 for consistent colorbar scaling
+        global_min = 0.0
         global_max = np.max(all_depol_values)
         
         # Handle case where range is very small
         if global_max - global_min < 1e-6:
             print(f"Warning: Very small depolarization range detected")
-            # Add small artificial range for plotting
-            center = (global_min + global_max) / 2
-            half_range = max(1e-4, abs(center) * 0.1)  # 10% of center value or minimum 1e-4
-            global_min = center - half_range
-            global_max = center + half_range
+            global_max = max(1e-4, global_min + 1e-4)
             
-        print(f"Global depolarization range: {global_min:.4f} to {global_max:.4f}")
+        print(f"Global depolarization range (both particle types): {global_min:.4f} to {global_max:.4f}")
         
-        # Determine contour line spacing based on data range
+        # Determine contour line spacing
         data_range = global_max - global_min
         if data_range > 0.4:
             contour_spacing = 0.1
@@ -409,30 +414,30 @@ def main():
             contour_spacing = 0.02
         print(f"Using contour line spacing: {contour_spacing:.3f}")
         
-        # Create figure with subplots (2x4 for 8 mr values)
-        fig, axes = plt.subplots(2, 4, figsize=(16, 8))
-        axes = axes.ravel()
+        # Create unified figure with 2x4 subplots: spheroids on top, hexahedra on bottom
+        # Use constrained layout to prevent colorbar width issues
+        fig, axes = plt.subplots(2, 4, figsize=(18, 10), constrained_layout=True)
         
-        print(f"Creating {len(data['mr'])} subplots for mr values")
+        print(f"Creating unified 8-panel plot: 4 spheroidal (top) + 4 hexahedral (bottom)")
         
-        # Plot for each mr value
-        for mr_idx, mr_val in enumerate(data['mr']):
-            ax = axes[mr_idx]
+        # Plot spheroidal particles in top row
+        for mr_idx, mr_val in enumerate(target_mr_values):
+            ax = axes[0, mr_idx]  # Top row
             
             # Initialize arrays for contour data
             X_rv = []  # Volume median radius data
             Y_mi = []
             Z_depol = []
             
-            # Loop through filtered mi and effective radius values
-            for mi_idx in np.where(mi_mask)[0]:
-                mi_val = data['mi'][mi_idx]
+            # Loop through filtered mi and effective radius values for spheroidal particles
+            for mi_idx in np.where(sph_mi_mask)[0]:
+                mi_val = sph_data['mi'][mi_idx]
                 
                 for r_eff in r_eff_values:
                     # Calculate polydisperse depolarization
                     total_depol = calculate_polydisperse_depolarization(
-                        r_eff, mr_idx, mi_idx, data, target_wavelength,
-                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index)
+                        r_eff, mr_idx, mi_idx, sph_data, target_wavelength,
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=1)
                     
                     # Store for plotting (convert effective radius to volume median radius)
                     r_v = r_eff * r_v_conversion_factor  # Convert to volume median radius
@@ -474,60 +479,145 @@ def main():
                 if plot_method == 'contourf':
                     # Traditional contour plot with smooth interpolation
                     color_levels = np.linspace(global_min, global_max, 255)  # 255 levels for continuous color bar
-                    contour_filled = ax.contourf(X_grid, Y_grid, Z_grid, levels=color_levels, cmap='viridis', extend='both', antialiased=True)
+                    contour_filled = ax.contourf(X_grid, Y_grid, Z_grid, levels=color_levels, cmap='plasma', extend='both', antialiased=True)
                 else:  # pcolormesh
                     # Discrete cell-based plot to reduce aliasing in sharp gradient regions
-                    contour_filled = ax.pcolormesh(X_grid, Y_grid, Z_grid, cmap='viridis', 
+                    contour_filled = ax.pcolormesh(X_grid, Y_grid, Z_grid, cmap='plasma', 
                                                  vmin=global_min, vmax=global_max, shading='auto', antialiased=True)
                 
-                # Add contour lines for contourf plots (pcolormesh uses discrete cells as natural boundaries)
-                if plot_method == 'contourf':
-                    contour_min = np.ceil(global_min / contour_spacing) * contour_spacing
-                    contour_max = np.floor(global_max / contour_spacing) * contour_spacing
-                    contour_line_levels = np.arange(contour_min, contour_max + contour_spacing, contour_spacing)
-                    
-                    if len(contour_line_levels) > 0 and len(contour_line_levels) <= 20:  # Limit number of lines
-                        contour_lines = ax.contour(X_grid, Y_grid, Z_grid, levels=contour_line_levels, 
-                                                 colors='white', alpha=0.6, linewidths=0.5, antialiased=True)
+                # Clean pcolormesh plots without contour lines for better visual clarity
                 
                 # Format plot with log x-axis and log y-axis
-                ax.set_xlabel('Volume Median Radius (nm)')
-                ax.set_ylabel('Imaginary RI (|mi|)')
-                ax.set_title(f'mr = {mr_val:.3f}')
+                # Only show x-axis label on bottom row, y-axis label on leftmost column
+                if mr_idx == 0:  # Leftmost column
+                    ax.set_ylabel('Imaginary RI (|k|)')
+                ax.set_title(f'Spheroidal mr = {mr_val:.2f}')
                 ax.set_xscale('log')
                 ax.set_yscale('log')
                 ax.set_xlim(r_v_min*1000, r_v_max*1000)
                 ax.set_ylim(1e-4, mi_max)
                 ax.grid(True, alpha=0.3, which='both')  # Show both major and minor grid lines for both axes
                 
-                # Add colorbar to last subplot in each row
-                if mr_idx == 3 or mr_idx == 7:
-                    cbar = plt.colorbar(contour_filled, ax=ax)
-                    cbar.set_label('Total Depolarization Ratio')
-                    # Set colorbar limits to global range for consistency with more ticks for smoother appearance
-                    cbar.set_ticks(np.linspace(global_min, global_max, 8))
-                    cbar.set_ticklabels([f'{val:.3f}' for val in np.linspace(global_min, global_max, 8)])
             else:
                 ax.text(0.5, 0.5, 'No valid data\nfor this mr value', 
                        transform=ax.transAxes, ha='center', va='center')
-                ax.set_xlabel('Volume Median Radius (nm)')
-                ax.set_ylabel('Imaginary RI (|mi|)')
-                ax.set_title(f'mr = {mr_val:.3f}')
+                # Only show y-axis label on leftmost column
+                if mr_idx == 0:  # Leftmost column
+                    ax.set_ylabel('Imaginary RI (|k|)')
+                ax.set_title(f'Spheroidal mr = {mr_val:.2f}')
                 ax.set_xscale('log')
                 ax.set_yscale('log')
                 ax.set_xlim(r_v_min*1000, r_v_max*1000)
                 ax.set_ylim(1e-4, mi_max)
                 ax.grid(True, alpha=0.3, which='both')
+            
+
+        
+        # Plot hexahedral particles in bottom row
+        for mr_idx, mr_val in enumerate(target_mr_values):
+            ax = axes[1, mr_idx]  # Bottom row
+            
+            # Initialize arrays for contour data
+            X_rv = []  # Volume median radius data
+            Y_mi = []
+            Z_depol = []
+            
+            # Loop through filtered mi and effective radius values for hexahedral particles
+            for mi_idx in np.where(hex_mi_mask)[0]:
+                mi_val = hex_data['mi'][mi_idx]
+                
+                for r_eff in r_eff_values:
+                    # Calculate polydisperse depolarization
+                    total_depol = calculate_polydisperse_depolarization(
+                        r_eff, mr_idx, mi_idx, hex_data, target_wavelength,
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=0)
+                    
+                    # Store for plotting (convert effective radius to volume median radius)
+                    r_v = r_eff * r_v_conversion_factor  # Convert to volume median radius
+                    X_rv.append(r_v * 1000)  # Convert to nm
+                    Y_mi.append(abs(mi_val))  # Use absolute value
+                    Z_depol.append(total_depol)
+            
+            # Create regular grid for contour plotting
+            if len(X_rv) > 0:
+                # Create high-resolution meshgrid with log spacing to reduce aliasing effects
+                rv_grid = np.logspace(np.log10(r_v_min*1000), np.log10(r_v_max*1000), 200)  # Increased resolution
+                
+                # Create mi grid with log spacing for better physics representation
+                mi_min = 1e-4  # Minimum mi value for plotting
+                mi_grid = np.logspace(np.log10(mi_min), np.log10(mi_max), 150)  # Increased resolution
+                
+                X_grid, Y_grid = np.meshgrid(rv_grid, mi_grid)
+                
+                # Interpolate data onto grid preserving variation
+                # Use cubic interpolation first, then fill gaps with linear
+                Z_grid = griddata((X_rv, Y_mi), Z_depol, (X_grid, Y_grid), method='cubic')
+                
+                # Fill NaN values with linear interpolation 
+                nan_mask = np.isnan(Z_grid)
+                if np.any(nan_mask):
+                    Z_grid_linear = griddata((X_rv, Y_mi), Z_depol, (X_grid, Y_grid), method='linear')
+                    Z_grid[nan_mask] = Z_grid_linear[nan_mask]
+                    
+                    # Final fallback to nearest neighbor for any remaining NaNs
+                    nan_mask = np.isnan(Z_grid)
+                    if np.any(nan_mask):
+                        Z_grid_nearest = griddata((X_rv, Y_mi), Z_depol, (X_grid, Y_grid), method='nearest')
+                        Z_grid[nan_mask] = Z_grid_nearest[nan_mask]
+                
+                # Create plot using specified method for optimal quality
+                # Use global min/max for consistent scaling across all subplots
+                if plot_method == 'contourf':
+                    # Traditional contour plot with smooth interpolation
+                    color_levels = np.linspace(global_min, global_max, 255)  # 255 levels for continuous color bar
+                    contour_filled = ax.contourf(X_grid, Y_grid, Z_grid, levels=color_levels, cmap='plasma', extend='both', antialiased=True)
+                else:  # pcolormesh
+                    # Discrete cell-based plot to reduce aliasing in sharp gradient regions
+                    contour_filled = ax.pcolormesh(X_grid, Y_grid, Z_grid, cmap='plasma', 
+                                                 vmin=global_min, vmax=global_max, shading='auto', antialiased=True)
+                
+                # Clean pcolormesh plots without contour lines for better visual clarity
+                
+                # Format plot with log x-axis and log y-axis
+                # Only show x-axis label on bottom row, y-axis label on leftmost column
+                ax.set_xlabel('Volume Median Radius (nm)')  # Bottom row gets x-axis labels
+                if mr_idx == 0:  # Leftmost column
+                    ax.set_ylabel('Imaginary RI (|k|)')
+                ax.set_title(f'Hexahedral mr = {mr_val:.2f}')
+                ax.set_xscale('log')
+                ax.set_yscale('log')
+                ax.set_xlim(r_v_min*1000, r_v_max*1000)
+                ax.set_ylim(1e-4, mi_max)
+                ax.grid(True, alpha=0.3, which='both')  # Show both major and minor grid lines for both axes
+                
+            else:
+                ax.text(0.5, 0.5, 'No valid data\nfor this mr value', 
+                       transform=ax.transAxes, ha='center', va='center')
+                # Only show x-axis label on bottom row, y-axis label on leftmost column
+                ax.set_xlabel('Volume Median Radius (nm)')  # Bottom row gets x-axis labels
+                if mr_idx == 0:  # Leftmost column
+                    ax.set_ylabel('Imaginary RI (|k|)')
+                ax.set_title(f'Hexahedral mr = {mr_val:.2f}')
+                ax.set_xscale('log')
+                ax.set_yscale('log')
+                ax.set_xlim(r_v_min*1000, r_v_max*1000)
+                ax.set_ylim(1e-4, mi_max)
+                ax.grid(True, alpha=0.3, which='both')
+                
+        # Add shared colorbar on the right side
+        # Create colorbar that spans both rows
+        cbar = plt.colorbar(contour_filled, ax=axes, shrink=0.8, aspect=30)
+        cbar.set_label('Total Depolarization Ratio', fontsize=14)
+        cbar.set_ticks(np.linspace(global_min, global_max, 6))
+        cbar.set_ticklabels([f'{val:.3f}' for val in np.linspace(global_min, global_max, 6)])
         
         # Overall figure formatting
         plt.suptitle(f'Total Lidar Depolarization Ratio at {target_wavelength*1000:.0f} nm\n'
-                    f'Polydisperse {particle_type} aerosols (ln(σ) = {ln_sigma}) - Log-Log Scale\n'
-                    f'Aerosol extinction: {aerosol_ext} Mm$^{{-1}}$, Altitude: {altitude_km} km', fontsize=14)
-        
-        plt.tight_layout()
+                    f'Spheroidal (top) vs Hexahedral (bottom) - ln(σ) = {ln_sigma}\n'
+                    f'Aerosol extinction: {aerosol_ext} Mm$^{{-1}}$, Altitude: {altitude_km} km, mi ≤ {mi_max}', fontsize=14)
         
         # Save the figure with higher DPI for smoother appearance
-        output_file = f'lidar_depolarization_{particle_type}_polydisperse_{target_wavelength*1000:.0f}nm.png'
+        output_file = f'lidar_depolarization_unified_comparison_{target_wavelength*1000:.0f}nm.png'
         plt.savefig(output_file, dpi=400, bbox_inches='tight')
         print(f"\nFigure saved as: {output_file}")
         
