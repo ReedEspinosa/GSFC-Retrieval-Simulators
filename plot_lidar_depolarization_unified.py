@@ -20,7 +20,7 @@ import sys
 import argparse
 
 # Define lognormal width parameter globally
-ln_sigma = 0.008  # Given constraint on PSD width (σ_g = 2.225)
+ln_sigma = 0.8  # Given constraint on PSD width (σ_g = 2.225)
 sigma_g = np.exp(ln_sigma)  # Geometric std dev
 
 # Set matplotlib parameters for higher quality rendering
@@ -121,8 +121,8 @@ def calculate_rayleigh_properties(altitude_km, wavelength_um):
     rayleigh_ext = (rayleigh_ext_sea_level_532nm * pressure_ratio * 
                    (0.532 / wavelength_um)**4)
     
-    # Rayleigh depolarization ratio (wavelength independent)
-    rayleigh_depol = 0.0295
+    # Rayleigh depolarization ratio (wavelength independent) used by Greema in GRASP (Cabannes line only)
+    rayleigh_depol = 0.0037
     
     return rayleigh_ext, rayleigh_depol
 
@@ -214,7 +214,7 @@ def calculate_polydisperse_depolarization(r_eff, mr_idx, mi_idx, data, target_wa
     - target_wavelength: wavelength (μm)
     - aerosol_ext: user-supplied aerosol extinction (Mm^-1)
     - rayleigh_ext: Rayleigh extinction coefficient (Mm^-1) - must match units of aerosol_ext
-    - rayleigh_depol: Rayleigh depolarization ratio
+    - rayleigh_depol: Rayleigh depolarization ratio for Lidar
     - ratio_index: 0 for hexahedral, 1 for spheroidal
     
     Returns:
@@ -239,6 +239,7 @@ def calculate_polydisperse_depolarization(r_eff, mr_idx, mi_idx, data, target_wa
         qext_data = data['qext'][mr_idx, mi_idx, :].squeeze()
     else:
         raise ValueError(f"Unexpected qsca/qext ndim: {data['qsca'].ndim}")
+    
     from scipy.interpolate import interp1d
     p11_interp = interp1d(x_data, p11_180, bounds_error=False, fill_value='extrapolate')
     p22_interp = interp1d(x_data, p22_180, bounds_error=False, fill_value='extrapolate')
@@ -272,16 +273,15 @@ def calculate_polydisperse_depolarization(r_eff, mr_idx, mi_idx, data, target_wa
         scale = 0.0
     sum_p11_aero *= scale # WRE - At this point, this is scaled to match the user-supplied aerosol_ext with units of Sr^-1*Mm^-1
     sum_p22_aero *= scale # WRE - At this point, this is scaled to match the user-supplied aerosol_ext with units of Sr^-1*Mm^-1
-    # Rayleigh: get cross section, P11, P22 at 180°
-    rayleigh_csca = rayleigh_ext  # Use extinction as cross section for relative weighting
-    rayleigh_p11 = 3*(1+rayleigh_depol)/(2+rayleigh_depol)
-    rayleigh_p22 = 3/(2+rayleigh_depol)
-    #rayleigh_p22 = 1.0 - 2 * rayleigh_depol / (1 + rayleigh_depol)
-    # Add Rayleigh to sums
-    sum_p11 = sum_p11_aero + rayleigh_p11 * rayleigh_csca
-    sum_p22 = sum_p22_aero + rayleigh_p22 * rayleigh_csca
-    # Bulk depolarization ratio
-    total_depol = (sum_p11 - sum_p22) / (sum_p11 + sum_p22)
+    delta_a = (sum_p11_aero - sum_p22_aero) / (sum_p11_aero + sum_p22_aero)
+
+    # Rayleigh: Get backscattering coefficient at 180° and set molecular depolarization from Greema
+    rayleigh_p11 = 0.75*rayleigh_ext # Use extinction as cross section for relative weighting
+    delta_m = rayleigh_depol  # Molecular depolarization at used by Greema in GRASP (Cabannes line only)
+    
+    # Bulk depolarization ratio (Based on Burton et al. 2015, Eq. 2 and 3)
+    R = (sum_p11_aero + rayleigh_p11)/rayleigh_p11
+    total_depol =(delta_a * R * (delta_m + 1) - delta_a + delta_m) / (R * (delta_m + 1) - delta_m + delta_a)
     if np.isscalar(total_depol):
         return float(total_depol)
     elif hasattr(total_depol, 'shape') and total_depol.shape == ():
