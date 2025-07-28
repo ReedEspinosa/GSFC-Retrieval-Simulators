@@ -19,6 +19,10 @@ import os
 import sys
 import argparse
 
+# Define lognormal width parameter globally
+ln_sigma = 0.008  # Given constraint on PSD width (σ_g = 2.225)
+sigma_g = np.exp(ln_sigma)  # Geometric std dev
+
 # Set matplotlib parameters for higher quality rendering
 plt.rcParams['figure.dpi'] = 100
 plt.rcParams['savefig.dpi'] = 400
@@ -216,8 +220,7 @@ def calculate_polydisperse_depolarization(r_eff, mr_idx, mi_idx, data, target_wa
     Returns:
     - total_depol: bulk depolarization ratio (cross-section weighted, scaled)
     """
-    ln_sigma = 0.547  # Given constraint
-    sigma_g = np.exp(ln_sigma)  # Geometric std dev
+    # Use global ln_sigma and sigma_g
     r_g = r_eff / np.exp(2.5 * ln_sigma**2)
     r_min = r_g / (sigma_g**3)
     r_max = r_g * (sigma_g**3)
@@ -252,7 +255,7 @@ def calculate_polydisperse_depolarization(r_eff, mr_idx, mi_idx, data, target_wa
     # Number-weighted distribution: dN/dlnr = dV/dlnr / v(r)
     number_weight = dV_dlnr / v_grid
     # Weight for cross-section integration: number of particles * cross section
-    weight = csca_grid * number_weight
+    weight = csca_grid * number_weight # AU but weighted correctly
     ln_r_grid = np.log(r_grid)
     # Integrate cross-section-weighted P11 and P22 for aerosol (scattering only)
     sum_p11_aero = np.trapz(p11_grid * weight, ln_r_grid)
@@ -264,15 +267,16 @@ def calculate_polydisperse_depolarization(r_eff, mr_idx, mi_idx, data, target_wa
     # Units: (Mm^-1) / (μm^2) - but since we're using relative contributions,
     # the units cancel in the final depolarization ratio
     if total_aerosol_cext > 0:
-        scale = aerosol_ext / total_aerosol_cext
+        scale = aerosol_ext / total_aerosol_cext # Does this work? We want bulk SSA*Ext_Target...
     else:
         scale = 0.0
     sum_p11_aero *= scale # WRE - At this point, this is scaled to match the user-supplied aerosol_ext with units of Sr^-1*Mm^-1
     sum_p22_aero *= scale # WRE - At this point, this is scaled to match the user-supplied aerosol_ext with units of Sr^-1*Mm^-1
     # Rayleigh: get cross section, P11, P22 at 180°
     rayleigh_csca = rayleigh_ext  # Use extinction as cross section for relative weighting
-    rayleigh_p11 = 1.0
-    rayleigh_p22 = 1.0 - 2 * rayleigh_depol / (1 + rayleigh_depol)
+    rayleigh_p11 = 3*(1+rayleigh_depol)/(2+rayleigh_depol)
+    rayleigh_p22 = 3/(2+rayleigh_depol)
+    #rayleigh_p22 = 1.0 - 2 * rayleigh_depol / (1 + rayleigh_depol)
     # Add Rayleigh to sums
     sum_p11 = sum_p11_aero + rayleigh_p11 * rayleigh_csca
     sum_p22 = sum_p22_aero + rayleigh_p22 * rayleigh_csca
@@ -316,6 +320,8 @@ def main():
                        help='Wavelengths in μm (default: 0.355 0.532 1.064)')
     parser.add_argument('--plot-method', choices=['contourf', 'pcolormesh'], default='pcolormesh',
                        help='Plotting method: contourf (smooth contours) or pcolormesh (discrete cells, reduces aliasing)')
+    parser.add_argument('--contour-level', type=float, default=0.1,
+                       help='Depolarization ratio value for thick black contour (default: 0.1)')
     
     args = parser.parse_args()
     
@@ -326,9 +332,7 @@ def main():
     altitude_km = args.altitude
     wavelengths = args.wavelengths
     plot_method = args.plot_method
-    
-    # Size distribution parameters
-    ln_sigma = 0.547  # ln(σ_g) where σ_g is geometric standard deviation
+    contour_level = args.contour_level
     
     # Specific mr values for comparison
     target_mr_values = np.array([1.37, 1.47, 1.57, 1.67])
@@ -354,8 +358,6 @@ def main():
     r_eff_values = np.logspace(np.log10(r_eff_min), np.log10(r_eff_max), 20)
     
     # Convert to volume median radius for display consistency with other plots
-    # For lognormal distribution: r_v = r_eff * exp(-1.0 * ln²(σ_g))
-    ln_sigma = 0.547  # Given constraint
     r_v_conversion_factor = np.exp(-1.0 * ln_sigma**2)  # = exp(-0.299) ≈ 0.7410
     r_v_min = r_eff_min * r_v_conversion_factor  # Volume median radius range
     r_v_max = r_eff_max * r_v_conversion_factor
@@ -390,7 +392,7 @@ def main():
         
         print(f"\nPolydisperse lognormal distributions:")
         print(f"  ln(σ) = {ln_sigma}")
-        print(f"  σ_g = {np.exp(ln_sigma):.3f}")
+        print(f"  σ_g = {sigma_g:.3f}")
         print(f"  Volume median radius range: {r_v_min*1000:.0f} - {r_v_max*1000:.0f} nm (log spacing)")
         print(f"  Effective radius range: {r_eff_min*1000:.0f} - {r_eff_max*1000:.0f} nm (internal calculation)")
         print(f"  Mi range: 1e-4 <= |mi| <= {mi_max} (log spacing)")
@@ -504,13 +506,37 @@ def main():
                 # Create plot using specified method for optimal quality
                 # Use global min/max for consistent scaling across all subplots
                 if plot_method == 'contourf':
-                    # Traditional contour plot with smooth interpolation
                     color_levels = np.linspace(global_min, global_max, 255)  # 255 levels for continuous color bar
                     contour_filled = ax.contourf(X_grid, Y_grid, Z_grid, levels=color_levels, cmap='plasma', extend='both', antialiased=True)
+                    # Add thick black and thin gray contours at user-specified levels if within data range
+                    zmin, zmax = np.nanmin(Z_grid), np.nanmax(Z_grid)
+                    main_level = contour_level
+                    lower_level = contour_level - 0.02 # HSRL2 Depolarization Ratio 2σ error
+                    upper_level = contour_level + 0.02 # HSRL2 Depolarization Ratio 2σ error
+                    # Black contour
+                    if zmin <= main_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[main_level], colors='k', linewidths=2.0)
+                    # Gray contours
+                    if zmin <= lower_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[lower_level], colors='gray', linewidths=1.2)
+                    if zmin <= upper_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[upper_level], colors='gray', linewidths=1.2)
                 else:  # pcolormesh
-                    # Discrete cell-based plot to reduce aliasing in sharp gradient regions
                     contour_filled = ax.pcolormesh(X_grid, Y_grid, Z_grid, cmap='plasma', 
                                                  vmin=global_min, vmax=global_max, shading='auto', antialiased=True)
+                    # Add thick black and thin gray contours at user-specified levels if within data range
+                    zmin, zmax = np.nanmin(Z_grid), np.nanmax(Z_grid)
+                    main_level = contour_level
+                    lower_level = contour_level - 0.02 # HSRL2 Depolarization Ratio 2σ error
+                    upper_level = contour_level + 0.02 # HSRL2 Depolarization Ratio 2σ error
+                    # Black contour
+                    if zmin <= main_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[main_level], colors='k', linewidths=2.0)
+                    # Gray contours
+                    if zmin <= lower_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[lower_level], colors='gray', linewidths=1.2)
+                    if zmin <= upper_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[upper_level], colors='gray', linewidths=1.2)
                 
                 # Clean pcolormesh plots without contour lines for better visual clarity
                 
@@ -598,10 +624,36 @@ def main():
                     # Traditional contour plot with smooth interpolation
                     color_levels = np.linspace(global_min, global_max, 255)  # 255 levels for continuous color bar
                     contour_filled = ax.contourf(X_grid, Y_grid, Z_grid, levels=color_levels, cmap='plasma', extend='both', antialiased=True)
+                    # Add thick black and thin gray contours at user-specified levels if within data range
+                    zmin, zmax = np.nanmin(Z_grid), np.nanmax(Z_grid)
+                    main_level = contour_level
+                    lower_level = contour_level - 0.02
+                    upper_level = contour_level + 0.02
+                    # Black contour
+                    if zmin <= main_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[main_level], colors='k', linewidths=2.0)
+                    # Gray contours
+                    if zmin <= lower_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[lower_level], colors='gray', linewidths=1.2)
+                    if zmin <= upper_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[upper_level], colors='gray', linewidths=1.2)
                 else:  # pcolormesh
                     # Discrete cell-based plot to reduce aliasing in sharp gradient regions
                     contour_filled = ax.pcolormesh(X_grid, Y_grid, Z_grid, cmap='plasma', 
                                                  vmin=global_min, vmax=global_max, shading='auto', antialiased=True)
+                    # Add thick black and thin gray contours at user-specified levels if within data range
+                    zmin, zmax = np.nanmin(Z_grid), np.nanmax(Z_grid)
+                    main_level = contour_level
+                    lower_level = contour_level - 0.02
+                    upper_level = contour_level + 0.02
+                    # Black contour
+                    if zmin <= main_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[main_level], colors='k', linewidths=2.0)
+                    # Gray contours
+                    if zmin <= lower_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[lower_level], colors='gray', linewidths=1.2)
+                    if zmin <= upper_level <= zmax:
+                        ax.contour(X_grid, Y_grid, Z_grid, levels=[upper_level], colors='gray', linewidths=1.2)
                 
                 # Clean pcolormesh plots without contour lines for better visual clarity
                 
