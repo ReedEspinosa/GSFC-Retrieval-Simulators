@@ -173,34 +173,34 @@ def interpolate_to_reference_mr(data, reference_mr, ratio_index):
     print(f"Interpolation complete. New scama shape: {new_scama.shape}")
     return interpolated_data
 
-def lognormal_volume_distribution(r, r_g, sigma_g):
+def lognormal_volume_distribution(r, r_v, sigma_g):
     """
     Calculate lognormal volume size distribution
     
     Parameters:
     - r: radius array (μm)
-    - r_g: geometric mean radius (μm) 
+    - r_v: volume median radius (μm) 
     - sigma_g: geometric standard deviation
     
     Returns:
     - dV/dlnr: volume distribution (normalized to integrate to 1)
     """
     ln_r = np.log(r)
-    ln_rg = np.log(r_g)
+    ln_rv = np.log(r_v)
     ln_sigma = np.log(sigma_g)
     
     # Volume distribution: dV/dlnr ∝ r³ * n(r)
-    # For lognormal: n(r) ∝ (1/r) * exp(-(ln(r) - ln(r_g))²/(2*ln²(σ_g)))
-    # So: dV/dlnr ∝ r² * exp(-(ln(r) - ln(r_g))²/(2*ln²(σ_g)))
+    # For lognormal: n(r) ∝ (1/r) * exp(-(ln(r) - ln(r_v))²/(2*ln²(σ_g)))
+    # So: dV/dlnr ∝ r³ * exp(-(ln(r) - ln(r_v))²/(2*ln²(σ_g)))
     
-    dV_dlnr = r**2 * np.exp(-(ln_r - ln_rg)**2 / (2 * ln_sigma**2))
+    dV_dlnr = r**3 * np.exp(-(ln_r - ln_rv)**2 / (2 * ln_sigma**2))
     
     # Normalize so integral over ln(r) equals 1
     dV_dlnr = dV_dlnr / np.trapz(dV_dlnr, ln_r)
     
     return dV_dlnr
 
-def calculate_polydisperse_depolarization(r_eff, mr_idx, mi_idx, data, target_wavelength, 
+def calculate_polydisperse_depolarization(r_v, mr_idx, mi_idx, data, target_wavelength, 
                                         aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index):
     """
     Calculate bulk depolarization for lognormal size distribution using cross-section weighting.
@@ -208,7 +208,7 @@ def calculate_polydisperse_depolarization(r_eff, mr_idx, mi_idx, data, target_wa
     P11 and P22 are scattering properties and are scaled by scattering, not extinction.
     
     Parameters:
-    - r_eff: effective radius (μm)
+    - r_v: volume median radius (μm)
     - mr_idx, mi_idx: indices for refractive index
     - data: netCDF data dictionary
     - target_wavelength: wavelength (μm)
@@ -221,11 +221,11 @@ def calculate_polydisperse_depolarization(r_eff, mr_idx, mi_idx, data, target_wa
     - total_depol: bulk depolarization ratio (cross-section weighted, scaled)
     """
     # Use global ln_sigma and sigma_g
-    r_g = r_eff / np.exp(2.5 * ln_sigma**2)
-    r_min = r_g / (sigma_g**3)
-    r_max = r_g * (sigma_g**3)
+    # r_v is already the volume median radius, no conversion needed
+    r_min = r_v / (sigma_g**3)
+    r_max = r_v * (sigma_g**3)
     r_grid = np.logspace(np.log10(r_min), np.log10(r_max), 25)
-    dV_dlnr = lognormal_volume_distribution(r_grid, r_g, sigma_g)
+    dV_dlnr = lognormal_volume_distribution(r_grid, r_v, sigma_g)
     x_grid = 2 * np.pi * r_grid / target_wavelength
     x_data = data['x']
     angle_180_idx = -1  # Last angle is 180°
@@ -351,16 +351,11 @@ def main():
     print(f"Interpolating hexahedral data to target mr values: {target_mr_values}")
     hex_data = interpolate_to_reference_mr(hex_data, target_mr_values, ratio_index=0)
     
-    # Particle size range (effective radius in μm) - log spacing for better physics representation
-    # Adjusted to give volume median radius range 99-8000 nm (so 100 nm tick shows)
-    r_eff_min = 0.1337  # 133.7 nm effective → 99 nm volume median
-    r_eff_max = 10.8    # 10,800 nm effective → 8000 nm volume median
-    r_eff_values = np.logspace(np.log10(r_eff_min), np.log10(r_eff_max), 20)
-    
-    # Convert to volume median radius for display consistency with other plots
-    r_v_conversion_factor = np.exp(-1.0 * ln_sigma**2)  # = exp(-0.299) ≈ 0.7410
-    r_v_min = r_eff_min * r_v_conversion_factor  # Volume median radius range
-    r_v_max = r_eff_max * r_v_conversion_factor
+    # Particle size range (volume median radius in μm) - log spacing for better physics representation
+    # Volume median radius range 99-8000 nm (so 100 nm tick shows)
+    r_v_min = 0.099  # 99 nm volume median radius
+    r_v_max = 8.0    # 8000 nm volume median radius
+    r_v_values = np.logspace(np.log10(r_v_min), np.log10(r_v_max), 20)
     
     # Mi filtering criteria
     mi_max = 0.01
@@ -394,7 +389,6 @@ def main():
         print(f"  ln(σ) = {ln_sigma}")
         print(f"  σ_g = {sigma_g:.3f}")
         print(f"  Volume median radius range: {r_v_min*1000:.0f} - {r_v_max*1000:.0f} nm (log spacing)")
-        print(f"  Effective radius range: {r_eff_min*1000:.0f} - {r_eff_max*1000:.0f} nm (internal calculation)")
         print(f"  Mi range: 1e-4 <= |mi| <= {mi_max} (log spacing)")
         print(f"  Hexahedral mi points after filtering: {np.sum(hex_mi_mask)}")
         print(f"  Spheroidal mi points after filtering: {np.sum(sph_mi_mask)}")
@@ -406,18 +400,18 @@ def main():
         # Calculate for hexahedral particles
         for mr_idx in range(len(target_mr_values)):
             for mi_idx in np.where(hex_mi_mask)[0]:
-                for r_eff in r_eff_values:
+                for r_v in r_v_values:
                     total_depol = calculate_polydisperse_depolarization(
-                        r_eff, mr_idx, mi_idx, hex_data, target_wavelength,
+                        r_v, mr_idx, mi_idx, hex_data, target_wavelength,
                         aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=0)
                     all_depol_values.append(total_depol)
         
         # Calculate for spheroidal particles  
         for mr_idx in range(len(target_mr_values)):
             for mi_idx in np.where(sph_mi_mask)[0]:
-                for r_eff in r_eff_values:
+                for r_v in r_v_values:
                     total_depol = calculate_polydisperse_depolarization(
-                        r_eff, mr_idx, mi_idx, sph_data, target_wavelength,
+                        r_v, mr_idx, mi_idx, sph_data, target_wavelength,
                         aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=1)
                     all_depol_values.append(total_depol)
         
@@ -462,14 +456,13 @@ def main():
             for mi_idx in np.where(sph_mi_mask)[0]:
                 mi_val = sph_data['mi'][mi_idx]
                 
-                for r_eff in r_eff_values:
+                for r_v in r_v_values:
                     # Calculate polydisperse depolarization
                     total_depol = calculate_polydisperse_depolarization(
-                        r_eff, mr_idx, mi_idx, sph_data, target_wavelength,
+                        r_v, mr_idx, mi_idx, sph_data, target_wavelength,
                         aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=1)
                     
-                    # Store for plotting (convert effective radius to volume median radius)
-                    r_v = r_eff * r_v_conversion_factor  # Convert to volume median radius
+                    # Store for plotting (volume median radius)
                     X_rv.append(r_v * 1000)  # Convert to nm
                     Y_mi.append(abs(mi_val))  # Use absolute value
                     Z_depol.append(total_depol)
@@ -579,14 +572,13 @@ def main():
             for mi_idx in np.where(hex_mi_mask)[0]:
                 mi_val = hex_data['mi'][mi_idx]
                 
-                for r_eff in r_eff_values:
+                for r_v in r_v_values:
                     # Calculate polydisperse depolarization
                     total_depol = calculate_polydisperse_depolarization(
-                        r_eff, mr_idx, mi_idx, hex_data, target_wavelength,
+                        r_v, mr_idx, mi_idx, hex_data, target_wavelength,
                         aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=0)
                     
-                    # Store for plotting (convert effective radius to volume median radius)
-                    r_v = r_eff * r_v_conversion_factor  # Convert to volume median radius
+                    # Store for plotting (volume median radius)
                     X_rv.append(r_v * 1000)  # Convert to nm
                     Y_mi.append(abs(mi_val))  # Use absolute value
                     Z_depol.append(total_depol)
