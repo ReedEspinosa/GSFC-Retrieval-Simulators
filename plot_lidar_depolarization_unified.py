@@ -19,9 +19,27 @@ import os
 import sys
 import argparse
 
-# Define lognormal width parameter globally
-ln_sigma = 0.8  # Given constraint on PSD width (σ_g = 2.225)
-sigma_g = np.exp(ln_sigma)  # Geometric std dev
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+
+# Lognormal size distribution parameters
+DEFAULT_LN_SIGMA = 0.8  # Default lognormal width parameter (σ_g = 2.225)
+
+# Scattering angle index for backscatter (180°)
+ANGLE_180_IDX = -1  # Last angle is 180°
+
+# Particle size range (volume median radius in μm) - log spacing for better physics representation
+# Volume median radius range 99-8000 nm (so 100 nm tick shows)
+R_V_MIN = 0.099  # 99 nm volume median radius
+R_V_MAX = 8.0    # 8000 nm volume median radius
+R_V_NPOINTS = 20  # Number of points in log spacing
+
+# Mi filtering criteria
+MI_MAX = 0.01
+
+# Specific mr values for comparison
+TARGET_MR_VALUES = np.array([1.37, 1.47, 1.57, 1.67])
 
 # Set matplotlib parameters for higher quality rendering
 plt.rcParams['figure.dpi'] = 100
@@ -128,49 +146,53 @@ def calculate_rayleigh_properties(altitude_km, wavelength_um):
 
 def interpolate_to_reference_mr(data, reference_mr, ratio_index):
     """
-    Interpolate data to reference mr values (for spheroidal data)
+    Interpolate P11 and P22 at 180° to reference mr values (for spheroidal data)
+    Optimized to only interpolate the data actually needed for depolarization calculations.
     """
     from scipy.interpolate import interp1d
     
-    print(f"Interpolating scattering matrix from mr shape {data['scama'].shape} to {len(reference_mr)} mr values...")
+    print(f"Interpolating P11 and P22 at 180° from mr shape {data['scama'].shape} to {len(reference_mr)} mr values...")
     
     original_mr = data['mr']
     original_scama = data['scama']
     
-    # Create new scattering matrix with reference mr dimensions
-    new_scama = np.zeros((original_scama.shape[0], len(reference_mr), 
-                         original_scama.shape[2], original_scama.shape[3],
-                         original_scama.shape[4], original_scama.shape[5]))
+    # Create new arrays for only the needed data: P11 and P22 at 180°
+    # Shape: (ratio_dim, mr_dim, mi_dim, x_dim, 2) where 2 = [P11, P22]
+    new_p11_p22 = np.zeros((original_scama.shape[0], len(reference_mr), 
+                           original_scama.shape[2], original_scama.shape[3], 2))
     
-    # Interpolate for each combination of other dimensions
+    # Interpolate for each combination of mi and x dimensions
     for mi_idx in range(original_scama.shape[2]):
         for x_idx in range(original_scama.shape[3]):
-            for element_idx in range(original_scama.shape[4]):
-                for angle_idx in range(original_scama.shape[5]):
-                    # Extract data for this combination
-                    values = original_scama[ratio_index, :, mi_idx, x_idx, element_idx, angle_idx]
-                    
-                    # Handle masked arrays
-                    if hasattr(values, 'mask'):
-                        values = np.ma.filled(values, fill_value=0.0)
-                    
-                    # Convert mr array if it's masked too
-                    mr_for_interp = original_mr
-                    if hasattr(mr_for_interp, 'mask'):
-                        mr_for_interp = np.ma.filled(mr_for_interp, fill_value=np.nan)
-                    
-                    # Create interpolation function
-                    interp_func = interp1d(mr_for_interp, values, bounds_error=False, fill_value='extrapolate')
-                    
-                    # Interpolate to reference mr values
-                    new_scama[ratio_index, :, mi_idx, x_idx, element_idx, angle_idx] = interp_func(reference_mr)
+            # Extract P11 and P22 at 180° for this combination
+            p11_values = original_scama[ratio_index, :, mi_idx, x_idx, 0, ANGLE_180_IDX]
+            p22_values = original_scama[ratio_index, :, mi_idx, x_idx, 1, ANGLE_180_IDX]
+            
+            # Handle masked arrays
+            if hasattr(p11_values, 'mask'):
+                p11_values = np.ma.filled(p11_values, fill_value=0.0)
+            if hasattr(p22_values, 'mask'):
+                p22_values = np.ma.filled(p22_values, fill_value=0.0)
+            
+            # Convert mr array if it's masked too
+            mr_for_interp = original_mr
+            if hasattr(mr_for_interp, 'mask'):
+                mr_for_interp = np.ma.filled(mr_for_interp, fill_value=np.nan)
+            
+            # Create interpolation functions
+            p11_interp_func = interp1d(mr_for_interp, p11_values, bounds_error=False, fill_value='extrapolate')
+            p22_interp_func = interp1d(mr_for_interp, p22_values, bounds_error=False, fill_value='extrapolate')
+            
+            # Interpolate to reference mr values
+            new_p11_p22[ratio_index, :, mi_idx, x_idx, 0] = p11_interp_func(reference_mr)
+            new_p11_p22[ratio_index, :, mi_idx, x_idx, 1] = p22_interp_func(reference_mr)
     
-    # Update data dictionary
+    # Update data dictionary with optimized structure
     interpolated_data = data.copy()
     interpolated_data['mr'] = reference_mr
-    interpolated_data['scama'] = new_scama
+    interpolated_data['p11_p22_180'] = new_p11_p22  # New optimized structure
     
-    print(f"Interpolation complete. New scama shape: {new_scama.shape}")
+    print(f"Interpolation complete. New p11_p22_180 shape: {new_p11_p22.shape}")
     return interpolated_data
 
 def lognormal_volume_distribution(r, r_v, sigma_g):
@@ -201,7 +223,7 @@ def lognormal_volume_distribution(r, r_v, sigma_g):
     return dV_dlnr
 
 def calculate_polydisperse_depolarization(r_v, mr_idx, mi_idx, data, target_wavelength, 
-                                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index):
+                                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index, ln_sigma):
     """
     Calculate bulk depolarization for lognormal size distribution using cross-section weighting.
     Scales aerosol contribution so that total extinction matches user-supplied aerosol_ext (Mm^-1).
@@ -216,11 +238,14 @@ def calculate_polydisperse_depolarization(r_v, mr_idx, mi_idx, data, target_wave
     - rayleigh_ext: Rayleigh extinction coefficient (Mm^-1) - must match units of aerosol_ext
     - rayleigh_depol: Rayleigh depolarization ratio for Lidar
     - ratio_index: 0 for hexahedral, 1 for spheroidal
+    - ln_sigma: lognormal width parameter for size distribution
     
     Returns:
     - total_depol: bulk depolarization ratio (cross-section weighted, scaled)
     """
-    # Use global ln_sigma and sigma_g
+    # Calculate sigma_g from ln_sigma
+    sigma_g = np.exp(ln_sigma)
+    
     # r_v is already the volume median radius, no conversion needed
     r_min = r_v / (sigma_g**3)
     r_max = r_v * (sigma_g**3)
@@ -228,9 +253,17 @@ def calculate_polydisperse_depolarization(r_v, mr_idx, mi_idx, data, target_wave
     dV_dlnr = lognormal_volume_distribution(r_grid, r_v, sigma_g)
     x_grid = 2 * np.pi * r_grid / target_wavelength
     x_data = data['x']
-    angle_180_idx = -1  # Last angle is 180°
-    p11_180 = data['scama'][ratio_index, mr_idx, mi_idx, :, 0, angle_180_idx].squeeze()
-    p22_180 = data['scama'][ratio_index, mr_idx, mi_idx, :, 1, angle_180_idx].squeeze()
+    
+    # Use optimized P11 and P22 at 180° if available, otherwise fall back to full scama
+    if 'p11_p22_180' in data:
+        # Use optimized structure
+        p11_180 = data['p11_p22_180'][ratio_index, mr_idx, mi_idx, :, 0].squeeze()
+        p22_180 = data['p11_p22_180'][ratio_index, mr_idx, mi_idx, :, 1].squeeze()
+    else:
+        # Fall back to full scama array (for non-interpolated data)
+        p11_180 = data['scama'][ratio_index, mr_idx, mi_idx, :, 0, ANGLE_180_IDX].squeeze()
+        p22_180 = data['scama'][ratio_index, mr_idx, mi_idx, :, 1, ANGLE_180_IDX].squeeze()
+    
     if data['qsca'].ndim == 4:
         qsca_data = data['qsca'][ratio_index, mr_idx, mi_idx, :].squeeze()
         qext_data = data['qext'][ratio_index, mr_idx, mi_idx, :].squeeze()
@@ -322,6 +355,8 @@ def main():
                        help='Plotting method: contourf (smooth contours) or pcolormesh (discrete cells, reduces aliasing)')
     parser.add_argument('--contour-level', type=float, default=0.1,
                        help='Depolarization ratio value for thick black contour (default: 0.1)')
+    parser.add_argument('--ln-sigma', type=float, default=DEFAULT_LN_SIGMA,
+                       help=f'Lognormal width parameter (σ_g) for size distribution (default: {DEFAULT_LN_SIGMA})')
     
     args = parser.parse_args()
     
@@ -333,9 +368,10 @@ def main():
     wavelengths = args.wavelengths
     plot_method = args.plot_method
     contour_level = args.contour_level
+    ln_sigma = args.ln_sigma
     
     # Specific mr values for comparison
-    target_mr_values = np.array([1.37, 1.47, 1.57, 1.67])
+    target_mr_values = TARGET_MR_VALUES
     
     # Read both datasets
     print("Reading hexahedral data...")
@@ -353,12 +389,10 @@ def main():
     
     # Particle size range (volume median radius in μm) - log spacing for better physics representation
     # Volume median radius range 99-8000 nm (so 100 nm tick shows)
-    r_v_min = 0.099  # 99 nm volume median radius
-    r_v_max = 8.0    # 8000 nm volume median radius
-    r_v_values = np.logspace(np.log10(r_v_min), np.log10(r_v_max), 20)
+    r_v_values = np.logspace(np.log10(R_V_MIN), np.log10(R_V_MAX), R_V_NPOINTS)
     
     # Mi filtering criteria
-    mi_max = 0.01
+    mi_max = MI_MAX
     
     # Process each wavelength
     for target_wavelength in wavelengths:
@@ -385,10 +419,13 @@ def main():
         hex_mi_mask = np.abs(hex_data['mi']) <= mi_max
         sph_mi_mask = np.abs(sph_data['mi']) <= mi_max
         
+        # Calculate sigma_g for display
+        sigma_g = np.exp(ln_sigma)
+        
         print(f"\nPolydisperse lognormal distributions:")
         print(f"  ln(σ) = {ln_sigma}")
         print(f"  σ_g = {sigma_g:.3f}")
-        print(f"  Volume median radius range: {r_v_min*1000:.0f} - {r_v_max*1000:.0f} nm (log spacing)")
+        print(f"  Volume median radius range: {R_V_MIN*1000:.0f} - {R_V_MAX*1000:.0f} nm (log spacing)")
         print(f"  Mi range: 1e-4 <= |mi| <= {mi_max} (log spacing)")
         print(f"  Hexahedral mi points after filtering: {np.sum(hex_mi_mask)}")
         print(f"  Spheroidal mi points after filtering: {np.sum(sph_mi_mask)}")
@@ -403,7 +440,7 @@ def main():
                 for r_v in r_v_values:
                     total_depol = calculate_polydisperse_depolarization(
                         r_v, mr_idx, mi_idx, hex_data, target_wavelength,
-                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=0)
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=0, ln_sigma=ln_sigma)
                     all_depol_values.append(total_depol)
         
         # Calculate for spheroidal particles  
@@ -412,7 +449,7 @@ def main():
                 for r_v in r_v_values:
                     total_depol = calculate_polydisperse_depolarization(
                         r_v, mr_idx, mi_idx, sph_data, target_wavelength,
-                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=1)
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=1, ln_sigma=ln_sigma)
                     all_depol_values.append(total_depol)
         
         # Get global min/max for consistent scaling across both particle types
@@ -460,7 +497,7 @@ def main():
                     # Calculate polydisperse depolarization
                     total_depol = calculate_polydisperse_depolarization(
                         r_v, mr_idx, mi_idx, sph_data, target_wavelength,
-                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=1)
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=1, ln_sigma=ln_sigma)
                     
                     # Store for plotting (volume median radius)
                     X_rv.append(r_v * 1000)  # Convert to nm
@@ -470,7 +507,7 @@ def main():
             # Create regular grid for contour plotting
             if len(X_rv) > 0:
                 # Create high-resolution meshgrid with log spacing to reduce aliasing effects
-                rv_grid = np.logspace(np.log10(r_v_min*1000), np.log10(r_v_max*1000), 200)  # Increased resolution
+                rv_grid = np.logspace(np.log10(R_V_MIN*1000), np.log10(R_V_MAX*1000), 200)  # Increased resolution
                 
                 # Create mi grid with log spacing for better physics representation
                 mi_min = 1e-4  # Minimum mi value for plotting
@@ -540,7 +577,7 @@ def main():
                 ax.set_title(f'Spheroidal mr = {mr_val:.2f}')
                 ax.set_xscale('log')
                 ax.set_yscale('log')
-                ax.set_xlim(r_v_min*1000, r_v_max*1000)
+                ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
                 ax.set_ylim(1e-4, mi_max)
                 ax.grid(True, alpha=0.3, which='both')  # Show both major and minor grid lines for both axes
                 
@@ -553,7 +590,7 @@ def main():
                 ax.set_title(f'Spheroidal mr = {mr_val:.2f}')
                 ax.set_xscale('log')
                 ax.set_yscale('log')
-                ax.set_xlim(r_v_min*1000, r_v_max*1000)
+                ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
                 ax.set_ylim(1e-4, mi_max)
                 ax.grid(True, alpha=0.3, which='both')
             
@@ -576,7 +613,7 @@ def main():
                     # Calculate polydisperse depolarization
                     total_depol = calculate_polydisperse_depolarization(
                         r_v, mr_idx, mi_idx, hex_data, target_wavelength,
-                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=0)
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=0, ln_sigma=ln_sigma)
                     
                     # Store for plotting (volume median radius)
                     X_rv.append(r_v * 1000)  # Convert to nm
@@ -586,7 +623,7 @@ def main():
             # Create regular grid for contour plotting
             if len(X_rv) > 0:
                 # Create high-resolution meshgrid with log spacing to reduce aliasing effects
-                rv_grid = np.logspace(np.log10(r_v_min*1000), np.log10(r_v_max*1000), 200)  # Increased resolution
+                rv_grid = np.logspace(np.log10(R_V_MIN*1000), np.log10(R_V_MAX*1000), 200)  # Increased resolution
                 
                 # Create mi grid with log spacing for better physics representation
                 mi_min = 1e-4  # Minimum mi value for plotting
@@ -657,7 +694,7 @@ def main():
                 ax.set_title(f'Hexahedral mr = {mr_val:.2f}')
                 ax.set_xscale('log')
                 ax.set_yscale('log')
-                ax.set_xlim(r_v_min*1000, r_v_max*1000)
+                ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
                 ax.set_ylim(1e-4, mi_max)
                 ax.grid(True, alpha=0.3, which='both')  # Show both major and minor grid lines for both axes
                 
@@ -671,7 +708,7 @@ def main():
                 ax.set_title(f'Hexahedral mr = {mr_val:.2f}')
                 ax.set_xscale('log')
                 ax.set_yscale('log')
-                ax.set_xlim(r_v_min*1000, r_v_max*1000)
+                ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
                 ax.set_ylim(1e-4, mi_max)
                 ax.grid(True, alpha=0.3, which='both')
                 
