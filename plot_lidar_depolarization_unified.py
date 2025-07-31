@@ -19,6 +19,7 @@ import os
 import sys
 import argparse
 
+
 # =============================================================================
 # CONSTANTS
 # =============================================================================
@@ -195,32 +196,74 @@ def interpolate_to_reference_mr(data, reference_mr, ratio_index):
     print(f"Interpolation complete. New p11_p22_180 shape: {new_p11_p22.shape}")
     return interpolated_data
 
-def lognormal_volume_distribution(r, r_v, sigma_g):
+def calc_depol_helper(
+    r_grid, qsca, p11_180, p22_180, vol_median_radius, ln_sigma
+):
     """
-    Calculate lognormal volume size distribution
-    
-    Parameters:
-    - r: radius array (μm)
-    - r_v: volume median radius (μm) 
-    - sigma_g: geometric standard deviation
-    
+    Calculates the bulk lidar depolarization ratio for a lognormal particle
+    volume distribution. 
+    This helper was written by Gemini and is cleaner than the original approach.
+
+    The function integrates single-particle optical properties over a lognormal
+    area distribution derived from the provided volume distribution parameters.
+
+    Args:
+        r_grid (np.ndarray): 1D array of particle radii for which the optical
+                             properties are defined [micrometers].
+        qsca (np.ndarray): 1D array of scattering efficiencies corresponding
+                           to r_grid.
+        p11_180 (np.ndarray): 1D array of the P11 scattering matrix element at
+                              180 degrees (backscatter) for each radius in r_grid.
+        p22_180 (np.ndarray): 1D array of the P22 scattering matrix element at
+                              180 degrees for each radius in r_grid.
+        vol_median_radius (float): The volume median radius of the lognormal
+                                   distribution [micrometers].
+        ln_sigma (float): The natural logarithm of the geometric standard
+                          deviation (sigma_g) of the size distribution.
+
     Returns:
-    - dV/dlnr: volume distribution (normalized to integrate to 1)
+        float: The calculated bulk lidar depolarization ratio, a dimensionless
+               quantity.
     """
-    ln_r = np.log(r)
-    ln_rv = np.log(r_v)
-    ln_sigma = np.log(sigma_g)
-    
-    # Volume distribution: dV/dlnr ∝ r³ * n(r)
-    # For lognormal: n(r) ∝ (1/r) * exp(-(ln(r) - ln(r_v))²/(2*ln²(σ_g)))
-    # So: dV/dlnr ∝ r³ * exp(-(ln(r) - ln(r_v))²/(2*ln²(σ_g)))
-    
-    dV_dlnr = r**3 * np.exp(-(ln_r - ln_rv)**2 / (2 * ln_sigma**2))
-    
-    # Normalize so integral over ln(r) equals 1
-    dV_dlnr = dV_dlnr / np.trapz(dV_dlnr, ln_r)
-    
-    return dV_dlnr
+    # The integration for bulk optical properties is weighted by the particle
+    # surface area (since C_sca = q_sca * pi * r^2). We can perform the
+    # integration over the surface area distribution directly.
+
+    # We convert the volume median radius to an area median radius.
+    # The relationship is: ln(r_volume_median) = ln(r_area_median) + (ln(sigma_g))^2
+    log_r_area_median = np.log(vol_median_radius) - ln_sigma**2
+    r_area_median = np.exp(log_r_area_median)
+
+    # Define the lognormal area distribution a(r). The total area
+    # concentration cancels out in the final ratio, so we can omit it.
+    # a(r) propto (1/r) * exp(-[ln(r) - ln(ra)]^2 / (2 * ln_sigma^2))
+    log_term = (np.log(r_grid) - np.log(r_area_median))**2
+    exp_term = np.exp(-log_term / (2 * ln_sigma**2))
+    # The full a(r) has other constants, but they cancel in the ratio.
+    area_dist = (1 / r_grid) * exp_term
+
+    # The integrands are weighted by the scattering efficiency and area distribution.
+    # Integrand propto q_sca * PhaseFunction * a(r)
+
+    # Perpendicular backscatter intensity is proportional to (P11 - P22)
+    integrand_perp = qsca * (p11_180 - p22_180) * area_dist
+
+    # Parallel backscatter intensity is proportional to (P11 + P22)
+    integrand_parallel = qsca * (p11_180 + p22_180) * area_dist
+
+    # Numerically integrate using the trapezoidal rule.
+    bulk_backscatter_perp = np.trapz(integrand_perp, r_grid)
+    bulk_backscatter_parallel = np.trapz(integrand_parallel, r_grid)
+
+    # Avoid division by zero if there is no parallel backscatter.
+    if bulk_backscatter_parallel == 0:
+        return 0.0
+
+    # The bulk depolarization ratio is the ratio of these two integrated quantities.
+    depol_ratio = bulk_backscatter_perp / bulk_backscatter_parallel
+
+    return depol_ratio
+
 
 def calculate_polydisperse_depolarization(r_v, mr_idx, mi_idx, data, target_wavelength, 
                                         aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index, ln_sigma):
@@ -250,7 +293,6 @@ def calculate_polydisperse_depolarization(r_v, mr_idx, mi_idx, data, target_wave
     r_min = r_v / (sigma_g**3)
     r_max = r_v * (sigma_g**3)
     r_grid = np.logspace(np.log10(r_min), np.log10(r_max), 25)
-    dV_dlnr = lognormal_volume_distribution(r_grid, r_v, sigma_g)
     x_grid = 2 * np.pi * r_grid / target_wavelength
     x_data = data['x']
     
@@ -282,34 +324,55 @@ def calculate_polydisperse_depolarization(r_v, mr_idx, mi_idx, data, target_wave
     p22_grid = p22_interp(x_grid)
     qsca_grid = qsca_interp(x_grid)
     qext_grid = qext_interp(x_grid)
+    
     # Scattering and extinction cross section: Csca = qsca * pi * r^2, Cext = qext * pi * r^2
     csca_grid = qsca_grid * np.pi * r_grid**2
     cext_grid = qext_grid * np.pi * r_grid**2
-    v_grid = (4/3) * np.pi * r_grid**3
-    # Number-weighted distribution: dN/dlnr = dV/dlnr / v(r)
-    number_weight = dV_dlnr / v_grid
-    # Weight for cross-section integration: number of particles * cross section
-    weight = csca_grid * number_weight # AU but weighted correctly
-    ln_r_grid = np.log(r_grid)
+    
+    # Convert volume median radius to number median radius for proper number distribution
+    # The relationship is: ln(r_volume_median) = ln(r_number_median) + 3 * (ln(sigma_g))^2
+    log_r_number_median = np.log(r_v) - 3 * ln_sigma**2
+    r_number_median = np.exp(log_r_number_median)
+    
+    # Define the lognormal number distribution n(r)
+    # n(r) ∝ (1/r) * exp(-[ln(r) - ln(rg)]^2 / (2 * ln_sigma^2))
+    log_term = (np.log(r_grid) - np.log(r_number_median))**2
+    exp_term = np.exp(-log_term / (2 * ln_sigma**2))
+    number_dist = (1 / r_grid) * exp_term
+    
+    # Weight for cross-section integration: scattering cross section * number distribution
+    # This matches the standard approach: integrand ∝ C_sca * PhaseFunction * n(r)
+    weight = csca_grid * number_dist
+    
     # Integrate cross-section-weighted P11 and P22 for aerosol (scattering only)
-    sum_p11_aero = np.trapz(p11_grid * weight, ln_r_grid)
-    sum_p22_aero = np.trapz(p22_grid * weight, ln_r_grid)
+    # Integrate over r (not ln(r)) to match standard approach
+    sum_p11_aero = np.trapz(p11_grid * weight, r_grid)
+    sum_p22_aero = np.trapz(p22_grid * weight, r_grid)
+    
     # Integrate extinction cross section for scaling
-    weight_ext = cext_grid * number_weight
-    total_aerosol_cext = np.trapz(weight_ext, ln_r_grid)  # [μm^2]
+    weight_ext = cext_grid * number_dist
+    total_aerosol_cext = np.trapz(weight_ext, r_grid)  # [μm^2]
     # Scale by extinction: scale = aerosol_ext / total_aerosol_cext
     # Units: (Mm^-1) / (μm^2) - but since we're using relative contributions,
     # the units cancel in the final depolarization ratio
     if total_aerosol_cext > 0:
-        scale = aerosol_ext / total_aerosol_cext # Does this work? We want bulk SSA*Ext_Target...
+        scale = aerosol_ext / total_aerosol_cext
     else:
         scale = 0.0
-    sum_p11_aero *= scale # WRE - At this point, this is scaled to match the user-supplied aerosol_ext with units of Sr^-1*Mm^-1
-    sum_p22_aero *= scale # WRE - At this point, this is scaled to match the user-supplied aerosol_ext with units of Sr^-1*Mm^-1
+    sum_p11_aero *= scale
+    sum_p22_aero *= scale
     delta_a = (sum_p11_aero - sum_p22_aero) / (sum_p11_aero + sum_p22_aero)
 
+    # Check against Gemini Calculation
+    # depol_g = calc_depol_helper(r_grid, qsca_grid, p11_grid, p22_grid, r_v, ln_sigma)
+    # print('r_v=%f, mr_idx=%d, mi_idx=%d, depol_g=%f, depol_a=%f, delta_a=%f' % (r_v, mr_idx, mi_idx, depol_g, delta_a, delta_a-depol_g))
+    
+    # if r_v < 0.1: # debugging: check P11 scaling
+    #     ssa = np.trapz(weight, r_grid)/total_aerosol_cext  # [μm^2]
+    #     print('r_v=%f, ssa=%f, P11=%f (~0.75 for Rayleigh)' % (r_v, ssa, sum_p11_aero/(aerosol_ext*ssa)))
+
     # Rayleigh: Get backscattering coefficient at 180° and set molecular depolarization from Greema
-    rayleigh_p11 = 0.75*rayleigh_ext # Use extinction as cross section for relative weighting
+    rayleigh_p11 = 1.5*rayleigh_ext # Use extinction as cross section for relative weighting
     delta_m = rayleigh_depol  # Molecular depolarization at used by Greema in GRASP (Cabannes line only)
     
     # Bulk depolarization ratio (Based on Burton et al. 2015, Eq. 2 and 3)
