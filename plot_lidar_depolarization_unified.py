@@ -37,7 +37,7 @@ R_V_MAX = 8.0    # 8000 nm volume median radius
 R_V_NPOINTS = 20  # Number of points in log spacing
 
 # Mi filtering criteria
-MI_MAX = 0.01
+MI_MAX = 0.02
 
 # Specific mr values for comparison
 TARGET_MR_VALUES = np.array([1.37, 1.47, 1.57, 1.67])
@@ -292,7 +292,7 @@ def calculate_polydisperse_depolarization(r_v, mr_idx, mi_idx, data, target_wave
     # r_v is already the volume median radius, no conversion needed
     r_min = r_v / (sigma_g**3)
     r_max = r_v * (sigma_g**3)
-    r_grid = np.logspace(np.log10(r_min), np.log10(r_max), 25)
+    r_grid = np.logspace(np.log10(r_min), np.log10(r_max), 50)
     x_grid = 2 * np.pi * r_grid / target_wavelength
     x_data = data['x']
     
@@ -455,7 +455,7 @@ def main():
     r_v_values = np.logspace(np.log10(R_V_MIN), np.log10(R_V_MAX), R_V_NPOINTS)
     
     # Mi filtering criteria
-    mi_max = MI_MAX
+    mi_max = MI_MAX*2 # There is some sort of interp noise at upper end of range so we crop top off later
     
     # Process each wavelength
     for target_wavelength in wavelengths:
@@ -641,7 +641,7 @@ def main():
                 ax.set_xscale('log')
                 ax.set_yscale('log')
                 ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
-                ax.set_ylim(1e-4, mi_max)
+                ax.set_ylim(1e-4, MI_MAX)
                 ax.grid(True, alpha=0.3, which='both')  # Show both major and minor grid lines for both axes
                 
             else:
@@ -654,7 +654,7 @@ def main():
                 ax.set_xscale('log')
                 ax.set_yscale('log')
                 ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
-                ax.set_ylim(1e-4, mi_max)
+                ax.set_ylim(1e-4, MI_MAX)
                 ax.grid(True, alpha=0.3, which='both')
             
 
@@ -758,7 +758,7 @@ def main():
                 ax.set_xscale('log')
                 ax.set_yscale('log')
                 ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
-                ax.set_ylim(1e-4, mi_max)
+                ax.set_ylim(1e-4, MI_MAX)
                 ax.grid(True, alpha=0.3, which='both')  # Show both major and minor grid lines for both axes
                 
             else:
@@ -772,7 +772,7 @@ def main():
                 ax.set_xscale('log')
                 ax.set_yscale('log')
                 ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
-                ax.set_ylim(1e-4, mi_max)
+                ax.set_ylim(1e-4, MI_MAX)
                 ax.grid(True, alpha=0.3, which='both')
                 
         # Add shared colorbar on the right side
