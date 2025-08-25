@@ -563,7 +563,7 @@ def main():
                         aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=1, ln_sigma=ln_sigma)
                     
                     # Store for plotting (volume median radius)
-                    X_rv.append(r_v * 1000)  # Convert to nm
+                    X_rv.append(r_v)  # Keep in μm
                     Y_mi.append(abs(mi_val))  # Use absolute value
                     Z_depol.append(total_depol)
             
@@ -637,10 +637,10 @@ def main():
                 # Only show x-axis label on bottom row, y-axis label on leftmost column
                 if mr_idx == 0:  # Leftmost column
                     ax.set_ylabel('Imaginary RI (|k|)')
-                ax.set_title(f'Spheroidal mr = {mr_val:.2f}')
+                ax.set_title(f'Spheroidal n = {mr_val:.2f}')
                 ax.set_xscale('log')
                 ax.set_yscale('log')
-                ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
+                ax.set_xlim(R_V_MIN, R_V_MAX)
                 ax.set_ylim(1e-4, MI_MAX)
                 ax.grid(True, alpha=0.3, which='both')  # Show both major and minor grid lines for both axes
                 
@@ -650,10 +650,10 @@ def main():
                 # Only show y-axis label on leftmost column
                 if mr_idx == 0:  # Leftmost column
                     ax.set_ylabel('Imaginary RI (|k|)')
-                ax.set_title(f'Spheroidal mr = {mr_val:.2f}')
+                ax.set_title(f'Spheroidal n = {mr_val:.2f}')
                 ax.set_xscale('log')
                 ax.set_yscale('log')
-                ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
+                ax.set_xlim(R_V_MIN, R_V_MAX)
                 ax.set_ylim(1e-4, MI_MAX)
                 ax.grid(True, alpha=0.3, which='both')
             
@@ -679,7 +679,7 @@ def main():
                         aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=0, ln_sigma=ln_sigma)
                     
                     # Store for plotting (volume median radius)
-                    X_rv.append(r_v * 1000)  # Convert to nm
+                    X_rv.append(r_v)  # Keep in μm
                     Y_mi.append(abs(mi_val))  # Use absolute value
                     Z_depol.append(total_depol)
             
@@ -751,13 +751,13 @@ def main():
                 
                 # Format plot with log x-axis and log y-axis
                 # Only show x-axis label on bottom row, y-axis label on leftmost column
-                ax.set_xlabel('Volume Median Radius (nm)')  # Bottom row gets x-axis labels
+                ax.set_xlabel('Volume Median Radius (μm)')  # Bottom row gets x-axis labels
                 if mr_idx == 0:  # Leftmost column
                     ax.set_ylabel('Imaginary RI (|k|)')
-                ax.set_title(f'Hexahedral mr = {mr_val:.2f}')
+                ax.set_title(f'Hexahedral n = {mr_val:.2f}')
                 ax.set_xscale('log')
                 ax.set_yscale('log')
-                ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
+                ax.set_xlim(R_V_MIN, R_V_MAX)
                 ax.set_ylim(1e-4, MI_MAX)
                 ax.grid(True, alpha=0.3, which='both')  # Show both major and minor grid lines for both axes
                 
@@ -765,13 +765,13 @@ def main():
                 ax.text(0.5, 0.5, 'No valid data\nfor this mr value', 
                        transform=ax.transAxes, ha='center', va='center')
                 # Only show x-axis label on bottom row, y-axis label on leftmost column
-                ax.set_xlabel('Volume Median Radius (nm)')  # Bottom row gets x-axis labels
+                ax.set_xlabel('Volume Median Radius (μm)')  # Bottom row gets x-axis labels
                 if mr_idx == 0:  # Leftmost column
                     ax.set_ylabel('Imaginary RI (|k|)')
-                ax.set_title(f'Hexahedral mr = {mr_val:.2f}')
+                ax.set_title(f'Hexahedral n = {mr_val:.2f}')
                 ax.set_xscale('log')
                 ax.set_yscale('log')
-                ax.set_xlim(R_V_MIN*1000, R_V_MAX*1000)
+                ax.set_xlim(R_V_MIN, R_V_MAX)
                 ax.set_ylim(1e-4, MI_MAX)
                 ax.grid(True, alpha=0.3, which='both')
                 
