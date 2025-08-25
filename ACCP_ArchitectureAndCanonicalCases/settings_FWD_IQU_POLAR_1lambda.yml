@@ -84,7 +84,7 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0]
-                    max: [10.00001]
+                    max: [30.00001]
                     min: [0.00000001]
                     value: [0.1]
             retrieved: true
@@ -93,7 +93,7 @@ retrieval:
             mode[1]:
                 initial_guess:
                     index_of_wavelength_involved: [0, 0]
-                    max: [10.0, 0.95]
+                    max: [30.0, 0.95]
                     min: [0.02, 0.02]
                     value: [1.0, 0.5]
             retrieved: true
