@@ -55,10 +55,17 @@ retrieval:
         error_type: absolute
         measurement_type[1]:
           index_of_wavelength_involved: [1] # Should adapt based on actual wavelengths used (LIDAR specific)
+          type: DP
+        standard_deviation: 0.01
+        standard_deviation_synthetic: 0.0
+      noise[5]:
+        error_type: absolute
+        measurement_type[1]:
+          index_of_wavelength_involved: [1] # Should adapt based on actual wavelengths used (LIDAR specific)
           type: VEXT
         standard_deviation: 5.0e-05
         standard_deviation_synthetic: 0.0
-      noise[5]:
+      noise[6]:
         error_type: relative
         measurement_type[1]:
           index_of_wavelength_involved: [1] # Should adapt based on actual wavelengths used (LIDAR specific)

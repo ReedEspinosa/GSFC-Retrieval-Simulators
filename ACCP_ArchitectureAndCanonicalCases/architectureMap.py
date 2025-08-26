@@ -4,7 +4,7 @@ import sys
 import re
 import warnings
 import datetime as dt
-from scipy.integrate import simps
+# from scipy.integrate import simplson as simps
 from scipy.interpolate import interp1d
 RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
 sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
@@ -264,12 +264,12 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
             phi = np.repeat(0, len(thtv))
             errModel = functools.partial(addError, errStr, concase=concase, orbit=orbit, lidErrDir=lidErrDir) # HSRL (LIDAR05/06)
             nowPix.addMeas(wvl, msTyp, nbvm, 0.01, thtv, phi, meas, errModel=errModel)
-    if 'lidar09' in archName.lower(): # TODO: this needs to be more complex, real lidar09 has DEPOL
+    if 'lidar09' in archName.lower():
         msTyp = [31, 35] # must be in ascending order
         nbvm = Nlayers*np.ones(len(msTyp), int)
         thtv = np.tile(singProf, len(msTyp))
         wvls = [0.532, 1.064] # Nλ=2
-        meas = np.r_[np.repeat(0.007, nbvm[0])]
+        meas = np.r_[np.repeat(0.007, nbvm[0]), np.repeat(0.007, nbvm[1])]  # measurements for both LS and DP
         phi = np.repeat(0, len(thtv)) # currently we assume all observations fall within a plane
         errStr = [y for y in archName.lower().split('+') if 'lidar09' in y][0]
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry

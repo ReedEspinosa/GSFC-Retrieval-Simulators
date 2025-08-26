@@ -728,11 +728,13 @@ def conCaseDefinitions(caseStr, nowPix, defineRandom = None):
         lidarInd = lidarMeasLogical.nonzero()[0][0]
         hValTrgt = np.array(nowPix.measVals[lidarInd]['thetav'][0:nowPix.measVals[lidarInd]['nbvm'][0]]) # HINT: this assumes all LIDAR measurement types have the same vertical range values
         vals['vrtProf'] = [] # Initialize list to store profiles for each mode
-        for m in range(Nmodes):
+        for m in range(nModes):
             # Calculate Gaussian profile shape at target heights (hValTrgt)
             exponent = -0.5 * ((hValTrgt - vals['vrtHght'][m]) / vals['vrtHghtStd'][m])**2
             profile_mode_m = np.exp(exponent)
             profile_mode_m_normalized = profile_mode_m / np.max(profile_mode_m) # Normalize the calculated profile so its maximum value in the array is 1.0
+            # Floor the profile values to 1e-8 to avoid GRASP constraint violations
+            profile_mode_m_normalized = np.maximum(profile_mode_m_normalized, 1e-8)
             # Append the normalized profile (converted to list for YAML compatibility)
             vals['vrtProf'].append(profile_mode_m_normalized.tolist())
         del vals['vrtHght']
