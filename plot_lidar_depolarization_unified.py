@@ -543,6 +543,9 @@ def main():
         
         print(f"Creating unified 8-panel plot: 4 spheroidal (top) + 4 hexahedral (bottom)")
         
+        # Initialize arrays to store maximum values for each subplot
+        max_depol_values = {}
+        
         # Plot spheroidal particles in top row
         for mr_idx, mr_val in enumerate(target_mr_values):
             ax = axes[0, mr_idx]  # Top row
@@ -566,6 +569,10 @@ def main():
                     X_rv.append(r_v)  # Keep in μm
                     Y_mi.append(abs(mi_val))  # Use absolute value
                     Z_depol.append(total_depol)
+            
+            # Store maximum depolarization value for this subplot
+            if len(Z_depol) > 0:
+                max_depol_values[f'Spheroidal_n={mr_val:.2f}'] = max(Z_depol)
             
             # Create regular grid for contour plotting
             if len(X_rv) > 0:
@@ -683,6 +690,10 @@ def main():
                     Y_mi.append(abs(mi_val))  # Use absolute value
                     Z_depol.append(total_depol)
             
+            # Store maximum depolarization value for this subplot
+            if len(Z_depol) > 0:
+                max_depol_values[f'Hexahedral_n={mr_val:.2f}'] = max(Z_depol)
+            
             # Create regular grid for contour plotting
             if len(X_rv) > 0:
                 # Create high-resolution meshgrid with log spacing to reduce aliasing effects
@@ -791,6 +802,12 @@ def main():
         output_file = f'lidar_depolarization_unified_comparison_{target_wavelength*1000:.0f}nm.png'
         plt.savefig(output_file, dpi=400, bbox_inches='tight')
         print(f"\nFigure saved as: {output_file}")
+        
+        # Print maximum depolarization values for each subplot
+        print(f"\nMaximum depolarization values for {target_wavelength*1000:.0f} nm:")
+        print("=" * 60)
+        for subplot_name, max_value in max_depol_values.items():
+            print(f"{subplot_name:20s}: {max_value:.4f}")
         
         # Close the figure to free memory
         plt.close(fig)
