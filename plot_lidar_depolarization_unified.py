@@ -102,6 +102,23 @@ def read_netcdf_data(file_path):
         # Add qsca reading
         data['qsca'] = nc.variables['qsca'][:]    # Scattering efficiency (same shape as x)
         
+        # Try to read aspect ratio values if available
+        # Check for common variable names for aspect ratio
+        aspect_ratio_vars = ['ratio', 'aspect_ratio', 'ar', 'psi']
+        data['aspect_ratios'] = None
+        for var_name in aspect_ratio_vars:
+            if var_name in nc.variables:
+                data['aspect_ratios'] = nc.variables[var_name][:]
+                print(f"  Found aspect ratio variable: {var_name}")
+                break
+        
+        # If no aspect ratio variable found, check ratio dimension size
+        if data['aspect_ratios'] is None:
+            ratio_dim_size = data['scama'].shape[0]  # First dimension is ratio
+            print(f"  No aspect ratio variable found, ratio dimension size: {ratio_dim_size}")
+            # Create default indices (0, 1, 2, ...) if no aspect ratio values available
+            data['aspect_ratios'] = np.arange(ratio_dim_size)
+        
         # Convert masked arrays to regular arrays if needed
         for key in data:
             if hasattr(data[key], 'mask'):
@@ -116,6 +133,9 @@ def read_netcdf_data(file_path):
         print(f"  Size parameters (x): {len(data['x'])} values")
         print(f"  Scattering angles: {len(data['angle'])} values")
         print(f"  Scattering matrix shape: {data['scama'].shape}")
+        print(f"  Aspect ratios: {len(data['aspect_ratios'])} values")
+        if len(data['aspect_ratios']) <= 10:
+            print(f"    Values: {data['aspect_ratios']}")
         print(f"  Reference wavelength: {data['lambda_ref']} μm")
         
     return data
@@ -252,8 +272,8 @@ def calc_depol_helper(
     integrand_parallel = qsca * (p11_180 + p22_180) * area_dist
 
     # Numerically integrate using the trapezoidal rule.
-    bulk_backscatter_perp = np.trapz(integrand_perp, r_grid)
-    bulk_backscatter_parallel = np.trapz(integrand_parallel, r_grid)
+    bulk_backscatter_perp = np.trapezoid(integrand_perp, r_grid)
+    bulk_backscatter_parallel = np.trapezoid(integrand_parallel, r_grid)
 
     # Avoid division by zero if there is no parallel backscatter.
     if bulk_backscatter_parallel == 0:
@@ -346,12 +366,12 @@ def calculate_polydisperse_depolarization(r_v, mr_idx, mi_idx, data, target_wave
     
     # Integrate cross-section-weighted P11 and P22 for aerosol (scattering only)
     # Integrate over r (not ln(r)) to match standard approach
-    sum_p11_aero = np.trapz(p11_grid * weight, r_grid)
-    sum_p22_aero = np.trapz(p22_grid * weight, r_grid)
+    sum_p11_aero = np.trapezoid(p11_grid * weight, r_grid)
+    sum_p22_aero = np.trapezoid(p22_grid * weight, r_grid)
     
     # Integrate extinction cross section for scaling
     weight_ext = cext_grid * number_dist
-    total_aerosol_cext = np.trapz(weight_ext, r_grid)  # [μm^2]
+    total_aerosol_cext = np.trapezoid(weight_ext, r_grid)  # [μm^2]
     # Scale by extinction: scale = aerosol_ext / total_aerosol_cext
     # Units: (Mm^-1) / (μm^2) - but since we're using relative contributions,
     # the units cancel in the final depolarization ratio
@@ -420,6 +440,10 @@ def main():
                        help='Depolarization ratio value for thick black contour (default: 0.1)')
     parser.add_argument('--ln-sigma', type=float, default=DEFAULT_LN_SIGMA,
                        help=f'Lognormal width parameter (σ_g) for size distribution (default: {DEFAULT_LN_SIGMA})')
+    parser.add_argument('--hex-ratio-index', type=int, default=None,
+                       help='Aspect ratio index for hexahedral particles (default: 0 for single-ratio files, must specify for multi-ratio files)')
+    parser.add_argument('--sph-ratio-index', type=int, default=None,
+                       help='Aspect ratio index for spheroidal particles (default: 1 for old integrated files, must specify for multi-ratio files)')
     
     args = parser.parse_args()
     
@@ -442,13 +466,53 @@ def main():
     print("\nReading spheroidal data...")
     sph_data = read_netcdf_data(spheroidal_file)
     
+    # Determine aspect ratio indices
+    hex_ratio_dim = hex_data['scama'].shape[0]
+    sph_ratio_dim = sph_data['scama'].shape[0]
+    
+    # Set default ratio indices if not specified
+    if args.hex_ratio_index is None:
+        # Default to 0 for hexahedral (typically single ratio)
+        hex_ratio_index = 0
+    else:
+        hex_ratio_index = args.hex_ratio_index
+    
+    if args.sph_ratio_index is None:
+        # Default to 1 for old integrated spheroidal files (spheres=0, spheroids=1)
+        # For new files with many ratios, user must specify
+        if sph_ratio_dim == 2:
+            sph_ratio_index = 1  # Old integrated file format
+        else:
+            sph_ratio_index = 0  # Default to first if not specified
+            print(f"Warning: Spheroidal file has {sph_ratio_dim} aspect ratios. Using index 0. Specify --sph-ratio-index if different.")
+    else:
+        sph_ratio_index = args.sph_ratio_index
+    
+    # Validate ratio indices
+    if hex_ratio_index < 0 or hex_ratio_index >= hex_ratio_dim:
+        raise ValueError(f"Hexahedral ratio index {hex_ratio_index} is out of range [0, {hex_ratio_dim-1}]")
+    if sph_ratio_index < 0 or sph_ratio_index >= sph_ratio_dim:
+        raise ValueError(f"Spheroidal ratio index {sph_ratio_index} is out of range [0, {sph_ratio_dim-1}]")
+    
+    # Get and print aspect ratio values
+    hex_aspect_ratio = hex_data['aspect_ratios'][hex_ratio_index]
+    sph_aspect_ratio = sph_data['aspect_ratios'][sph_ratio_index]
+    
+    print(f"\n{'='*60}")
+    print(f"Aspect Ratio Configuration:")
+    print(f"  Hexahedral ratio index: {hex_ratio_index} / {hex_ratio_dim-1}")
+    print(f"  Hexahedral aspect ratio value: {hex_aspect_ratio}")
+    print(f"  Spheroidal ratio index: {sph_ratio_index} / {sph_ratio_dim-1}")
+    print(f"  Spheroidal aspect ratio value: {sph_aspect_ratio}")
+    print(f"{'='*60}\n")
+    
     # Handle spheroidal data interpolation to target mr values
-    print(f"\nInterpolating spheroidal data to target mr values: {target_mr_values}")
-    sph_data = interpolate_to_reference_mr(sph_data, target_mr_values, ratio_index=1)
+    print(f"Interpolating spheroidal data to target mr values: {target_mr_values}")
+    sph_data = interpolate_to_reference_mr(sph_data, target_mr_values, ratio_index=sph_ratio_index)
     
     # Interpolate hexahedral data to same mr values for consistency
     print(f"Interpolating hexahedral data to target mr values: {target_mr_values}")
-    hex_data = interpolate_to_reference_mr(hex_data, target_mr_values, ratio_index=0)
+    hex_data = interpolate_to_reference_mr(hex_data, target_mr_values, ratio_index=hex_ratio_index)
     
     # Particle size range (volume median radius in μm) - log spacing for better physics representation
     # Volume median radius range 99-8000 nm (so 100 nm tick shows)
@@ -503,7 +567,7 @@ def main():
                 for r_v in r_v_values:
                     total_depol = calculate_polydisperse_depolarization(
                         r_v, mr_idx, mi_idx, hex_data, target_wavelength,
-                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=0, ln_sigma=ln_sigma)
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=hex_ratio_index, ln_sigma=ln_sigma)
                     all_depol_values.append(total_depol)
         
         # Calculate for spheroidal particles  
@@ -512,7 +576,7 @@ def main():
                 for r_v in r_v_values:
                     total_depol = calculate_polydisperse_depolarization(
                         r_v, mr_idx, mi_idx, sph_data, target_wavelength,
-                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=1, ln_sigma=ln_sigma)
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=sph_ratio_index, ln_sigma=ln_sigma)
                     all_depol_values.append(total_depol)
         
         # Get global min/max for consistent scaling across both particle types
@@ -563,7 +627,7 @@ def main():
                     # Calculate polydisperse depolarization
                     total_depol = calculate_polydisperse_depolarization(
                         r_v, mr_idx, mi_idx, sph_data, target_wavelength,
-                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=1, ln_sigma=ln_sigma)
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=sph_ratio_index, ln_sigma=ln_sigma)
                     
                     # Store for plotting (volume median radius)
                     X_rv.append(r_v)  # Keep in μm
@@ -577,7 +641,7 @@ def main():
             # Create regular grid for contour plotting
             if len(X_rv) > 0:
                 # Create high-resolution meshgrid with log spacing to reduce aliasing effects
-                rv_grid = np.logspace(np.log10(R_V_MIN*1000), np.log10(R_V_MAX*1000), 200)  # Increased resolution
+                rv_grid = np.logspace(np.log10(R_V_MIN), np.log10(R_V_MAX), 200)  # In micrometers to match data
                 
                 # Create mi grid with log spacing for better physics representation
                 mi_min = 1e-4  # Minimum mi value for plotting
@@ -683,7 +747,7 @@ def main():
                     # Calculate polydisperse depolarization
                     total_depol = calculate_polydisperse_depolarization(
                         r_v, mr_idx, mi_idx, hex_data, target_wavelength,
-                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=0, ln_sigma=ln_sigma)
+                        aerosol_ext, rayleigh_ext, rayleigh_depol, ratio_index=hex_ratio_index, ln_sigma=ln_sigma)
                     
                     # Store for plotting (volume median radius)
                     X_rv.append(r_v)  # Keep in μm
@@ -697,7 +761,7 @@ def main():
             # Create regular grid for contour plotting
             if len(X_rv) > 0:
                 # Create high-resolution meshgrid with log spacing to reduce aliasing effects
-                rv_grid = np.logspace(np.log10(R_V_MIN*1000), np.log10(R_V_MAX*1000), 200)  # Increased resolution
+                rv_grid = np.logspace(np.log10(R_V_MIN), np.log10(R_V_MAX), 200)  # In micrometers to match data
                 
                 # Create mi grid with log spacing for better physics representation
                 mi_min = 1e-4  # Minimum mi value for plotting
@@ -795,7 +859,7 @@ def main():
         
         # Overall figure formatting
         plt.suptitle(f'Total Lidar Depolarization Ratio at {target_wavelength*1000:.0f} nm\n'
-                    f'Spheroidal (top) vs Hexahedral (bottom) - ln(σ) = {ln_sigma}\n'
+                    f'Spheroidal (top, AR={sph_aspect_ratio:.2f}) vs Hexahedral (bottom, AR={hex_aspect_ratio:.2f}) - ln(σ) = {ln_sigma}\n'
                     f'Aerosol extinction: {aerosol_ext} Mm$^{{-1}}$, Altitude: {altitude_km} km, mi ≤ {mi_max}', fontsize=14)
         
         # Save the figure with higher DPI for smoother appearance
