@@ -38,7 +38,7 @@ fwdModelYAMLpath = os.path.join(ymlDir, 'settings_FWD_IQU_POLAR_1lambda.yml') # 
 bckYAMLpath = os.path.join(ymlDir, 'settings_BCK_POLAR_2modes.yml') # inversion YAML file
 
 # Other non-path related settings
-Nsims = 3 # the number of inversions to perform, each with its own random noise
+Nsims = 1 # the number of inversions to perform, each with its own random noise
 maxCPU = 1 # the number of processes to lssaunch, effectivly the # of CPU cores you want to dedicate to the simulation
 # conCase = 'marineVariable+dustVariableOcean' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
 conCase = 'dustVariableOcean' # conanical case scene to run, case06a-k should work (see all defintions in setupConCaseYAML function)
