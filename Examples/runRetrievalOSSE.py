@@ -25,7 +25,7 @@ from readOSSEnetCDF import osseData
 from architectureMap import returnPixel, addError
 
 # define other paths not having to do with the python code itself
-bckYAMLpath = os.path.join(parentDir, 'ACCP_ArchitectureAndCanonicalCases','settings_BCK_POLAR_2modes.yml') # location of retrieval YAML file
+bckYAMLpath = os.path.join(parentDir, 'ACCP_ArchitectureAndCanonicalCases','settings_BCK_POLAR_2modes_V1.0.0.yml') # location of retrieval YAML file (V1.0.0 for VLIDORTMatch branch of GRASP)
 # basePath = os.environ['NOBACKUP'] # THIS IS SPECIFIC TO DISCOVER. Paths below will need updating if on a different system...
 # dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp') # location of the GRASP binary to use for retrievals
 # krnlPath = os.path.join(basePath, 'local/share/grasp/kernels') # location of GRASP kernel files
