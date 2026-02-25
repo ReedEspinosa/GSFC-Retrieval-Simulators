@@ -4,7 +4,7 @@ import sys
 import re
 import warnings
 import datetime as dt
-from scipy.integrate import simps
+from scipy.integrate import simpson as simps
 from scipy.interpolate import interp1d
 RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
 sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
