@@ -1,0 +1,198 @@
+input: {driver: sdata, file: bench.sdat}
+output:
+    segment: {function: classic, stream: bench_FWD_IQU_rslts.txt}
+retrieval:
+    general: {path_to_internal_files: /usr/local/share/grasp/kernels/}
+    mode: forward
+    inversion:
+        regime: single_pixel
+        convergence: {maximum_iterations_for_stopping: 20, maximum_iterations_of_Levenberg-Marquardt: 20, minimization_convention: logarithm, normal_system_solver: sparse_matrix_solver, scale_for_finite_difference: 1.0e-03, shift_for_applying_logarithm_to_negative_values: 1.1, threshold_for_stopping: 0.001, threshold_for_stopping_Q_iterations: 1.0e-05}
+        measurement_fitting: {polarization: absolute_polarization_components}
+        noises:
+            noise[1]:
+                error_type: relative
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1]
+                    type: I
+                standard_deviation: 0.03
+                standard_deviation_synthetic: 0.0
+            noise[2]:
+                error_type: absolute
+                measurement_type[1]:
+                    index_of_wavelength_involved: [1]
+                    type: Q
+                measurement_type[2]:
+                    index_of_wavelength_involved: [1]
+                    type: U
+                standard_deviation: 0.005
+                standard_deviation_synthetic: 0.0
+    forward_model:
+        phase_matrix:
+            kernels_folder: KERNELS_BASE/
+            size_binning_method_for_triangle_bins: logarithm
+            number_of_elements: 4
+            radius:
+                mode[1]: {max: 15.0, min: 0.005}
+        radiative_transfer:
+            absolute_error_rt_calculations: 1.0e-06
+            aerosol_profile_vertical_type: gaussian
+            molecular_profile_vertical_type: exponential
+            number_of_layers: 50
+            reference_plane_for_polarization: principal_plane
+            simulating_derivatives:
+                number_of_fourier_expansion_coefficients: 6
+                number_of_gaussian_quadratures_for_expansion_coefficients: 10
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 20
+                order_of_scattering: multiple_scattering
+            simulating_observation:
+                number_of_fourier_expansion_coefficients: 6
+                number_of_gaussian_quadratures_for_expansion_coefficients: 10
+                number_of_guassian_quadratures_for_fourier_expansion_coefficients: 12
+                order_of_scattering: multiple_scattering
+    debug:
+        additional_information: false
+        verbose: true
+
+    products:
+        aerosol:
+            chemistry: false
+            lidar: true
+            optical_properties: true
+            particulate_matter: false
+            phase_matrix: false
+            refractive_index: true
+            theoretical_bimodal_extinction: false
+            theoretical_bimodal_parameters: false
+            type: false
+        error_estimation:
+            aerosol:
+                lidar: false
+                optical_properties: false
+            parameters: false
+        forcing:
+            broadband_flux: false
+            forcing: false
+        retrieval:
+            fitting: true
+            parameters: true
+            residual: true
+        surface:
+            main_characteristics: true
+
+    constraints:
+        characteristic[1]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max: [10.00001]
+                    min: [0.00000001]
+                    value: [0.009357605939569125]
+            retrieved: true
+            type: aerosol_concentration
+        characteristic[2]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [0, 0]
+                    max: [10.0, 0.95]
+                    min: [0.02, 0.02]
+                    value: [0.18482, 0.5709795355796814]
+            retrieved: true
+            type: size_distribution_lognormal
+        characteristic[3]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max: [1.65]
+                    min: [1.33]
+                    value: [1.36387]
+            retrieved: true
+            type: real_part_of_refractive_index_spectral_dependent
+        characteristic[4]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max: [0.5]
+                    min: [1e-10]
+                    value: [0.035]
+            retrieved: true
+            type: imaginary_part_of_refractive_index_spectral_dependent
+        characteristic[5]:
+            type: surface_water_cox_munk_iso
+            retrieved: true
+            mode[1]:
+                initial_guess:                       #1      #2      #3
+                    value:                          [0.02]
+                    min:                            [0.00000001]
+                    max:                            [0.045]
+                    index_of_wavelength_involved:   [1]
+            mode[2]:
+                initial_guess:                       #1      #2      #3
+                    value:                          [0.999]
+                    min:                             [0.998]
+                    max:                            [1.0000]
+                    index_of_wavelength_involved:   [1]
+            mode[3]:
+                initial_guess:                       #1      #2      #3
+                    value:                          [0.033]
+                    min:                            [0.0015]
+                    max:                            [0.1]
+                    index_of_wavelength_involved:   [ 1]
+        characteristic[6]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [0]
+                    max:   [0.9999999]
+                    min:    [0.0000001]
+                    value: [0.9999998]
+            retrieved: true
+            type: sphere_fraction
+        characteristic[7]:
+            type: vertical_profile_parameter_height
+            retrieved: true
+            mode[1]:
+                initial_guess:                      #1
+                    value:                          [1000.0 ]
+                    min:                            [500.0]
+                    max:                            [5000.0]
+                    index_of_wavelength_involved:   [0      ]
+        characteristic[8]:
+            type: vertical_profile_parameter_standard_deviation
+            retrieved: true
+            mode[1]:
+                initial_guess:                      #1
+                    value:                          [500.0 ]
+                    min:                             [200.0  ]
+                    max:                            [2000.0 ]
+                    index_of_wavelength_involved:   [0      ]
+        characteristic[9]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max:   [1.0]
+                    min:   [0.000001]
+                    value: [0.1]
+            mode[2]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max:   [1.0]
+                    min:   [0.01]
+                    value: [0.99]
+            mode[3]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max:   [0.3]
+                    min:   [0.000001]
+                    value: [0.001]
+            retrieved: true
+            type: surface_land_brdf_ross_li
+        characteristic[10]:
+            mode[1]:
+                initial_guess:
+                    index_of_wavelength_involved: [1]
+                    max: [8.0]
+                    min: [1.0e-10]
+                    value: [2.0e-10]
+            retrieved: true
+            type: surface_land_polarized_maignan_breon
+settings:
+    strict: true
