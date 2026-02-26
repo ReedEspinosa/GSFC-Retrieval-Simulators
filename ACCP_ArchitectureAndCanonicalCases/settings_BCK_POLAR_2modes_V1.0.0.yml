@@ -90,8 +90,7 @@ retrieval:
             fitting: true
             parameters: true
             residual: true
-        surface:
-            main_characteristics: true
+        surface: true
 
     constraints:
         characteristic[1]:
