@@ -559,11 +559,7 @@ class osseData(object):
             landInd = np.where(self.measData[0]['land_prct']>0)[0].tolist()
             self.invldInd = np.append(self.invldInd, landInd).astype(int)
             if self.verbose: print('%d pixels containing land were excluded' % len(landInd))
-        if oceanOnly.lower()=='ocean':
-            landInd = np.where(self.measData[0]['land_prct']>0)[0].tolist()
-            self.invldInd = np.append(self.invldInd, landInd).astype(int)
-            if self.verbose: print('%d pixels containing land were excluded' % len(landInd))
-        if oceanOnly.lower()=='land':
+        elif oceanOnly.lower()=='land':
             oceanInd = np.where(self.measData[0]['land_prct']<99.9)[0].tolist()
             self.invldInd = np.append(self.invldInd, oceanInd).astype(int)
             if self.verbose: print('%d pixels containing ocean were excluded' % len(oceanInd))
