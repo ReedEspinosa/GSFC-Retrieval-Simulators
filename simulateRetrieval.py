@@ -702,7 +702,7 @@ class simulation(object):
             crsWght = [] # this will be [upr/lwr(N=2), mode]
             for upr, lwr, in zip(upper,lower):
                 r = np.logspace(np.log10(lwr),np.log10(upr),N)
-                crsWght.append([np.trapz(ms.logNormal(mu, σ, r)[0],r) for mu,σ in zip(rslt['rv'],rslt['sigma'])]) # integrated r 0->inf this will sum to unity
+                crsWght.append([np.trapezoid(ms.logNormal(mu, σ, r)[0],r) for mu,σ in zip(rslt['rv'],rslt['sigma'])]) # integrated r 0->inf this will sum to unity
             if not np.isclose(np.sum(crsWght, axis=0), 1, rtol=0.001).all():
                 warnings.warn('The sum of the crsWght values across all modes deviated more than 0.1% from unity') # probably need to adjust N or sigma4 above
             if val is None: # we just want volume (or area if vol arugment contains area) concentration of each mode

@@ -84,9 +84,9 @@ def downsample1d(X, Y, Xnew, axis=0):
             chnkY[-1] = bndsY[1]
             chnkY[1:-1] = y[chnkInd]
             if axis==0:
-                Ynew[i,j] = np.trapz(chnkY, chnkX)/(ub-lb)
+                Ynew[i,j] = np.trapezoid(chnkY, chnkX)/(ub-lb)
             else:
-                Ynew[j,i] = np.trapz(chnkY, chnkX)/(ub-lb)
+                Ynew[j,i] = np.trapezoid(chnkY, chnkX)/(ub-lb)
     if Ynew.shape[1]==1: Ynew = Ynew[:,0] # user probably doesn't want 2D out w/ singletons, at least horizontal singletons
     return Ynew
 

@@ -125,8 +125,8 @@ def set_axis_style(ax, labels):
 violinBarColor = [0.5,0.5,0.5,1]
 figV, axV = plt.subplots(1,1, figsize=(5,4.1)) # Violin Plot figure
 figV.subplots_adjust(right=0.65)
-integratedT = np.trapz(dXdrT[:,:,:].T, simBase.rsltFwd[0]['r'][0], axis=0).T
-integratedR = np.trapz(dXdrR[:,:,:].T, simBase.rsltFwd[0]['r'][0], axis=0).T
+integratedT = np.trapezoid(dXdrT[:,:,:].T, simBase.rsltFwd[0]['r'][0], axis=0).T
+integratedR = np.trapezoid(dXdrR[:,:,:].T, simBase.rsltFwd[0]['r'][0], axis=0).T
 integratedD = 100*(integratedR - integratedT)/(integratedT) # TODO: Change this to simply 1/Truth but add minimum loading
 vldInd = np.any(integratedT>=np.percentile(integratedT,2,axis=1)[:,None], axis=0) # below 1% in N, S or V
 iD_list = []
