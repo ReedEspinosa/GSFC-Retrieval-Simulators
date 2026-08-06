@@ -167,7 +167,7 @@ def fmfCalc(r, dvdlnr):
     cutRadius = 0.5
     fInd = r<=cutRadius
     logr = np.log(r)
-    return np.trapz(dvdlnr[fInd],logr[fInd])/np.trapz(dvdlnr,logr)
+    return np.trapezoid(dvdlnr[fInd],logr[fInd])/np.trapezoid(dvdlnr,logr)
 
  
 def density_scatter(x, y, ax=None, fig=None, sort=True, bins=20,

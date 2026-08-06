@@ -24,20 +24,24 @@ from readOSSEnetCDF import osseData
 # import returnPixel and addError functions with instrument definitions from ...GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/architectureMap.py
 from architectureMap import returnPixel, addError
 
+dirGRASP = '/home/dgiles/AIST_GRASP/grasp/build/bin/grasp'
+krnlPath = '/home/dgiles/AIST_GRASP/grasp/src/retrieval/internal_files/'
+osseDataPath = '/home/dgiles/AIST_GRASP/testCase_Aug01_0000Z_VersionJune2020/testCase_Aug01_0000Z_VersionJune2020/'
+
+
 # define other paths not having to do with the python code itself
 bckYAMLpath = os.path.join(parentDir, 'ACCP_ArchitectureAndCanonicalCases','settings_BCK_POLAR_2modes_V1.0.0.yml') # location of retrieval YAML file (V1.0.0 for VLIDORTMatch branch of GRASP)
 # basePath = os.environ['NOBACKUP'] # THIS IS SPECIFIC TO DISCOVER. Paths below will need updating if on a different system...
 # dirGRASP = os.path.join(basePath, 'grasp_open/build/bin/grasp') # location of the GRASP binary to use for retrievals
 # krnlPath = os.path.join(basePath, 'local/share/grasp/kernels') # location of GRASP kernel files
 # osseDataPath = '/discover/nobackup/projects/gmao/osse2/pub/c1440_NR/OBS/A-CCP/' # base path for A-CCP OSSE data (contains gpm and ss450 folders)
-dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp' # location of the GRASP binary to use for retrievals
-krnlPath = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/src/retrieval/internal_files' # location of GRASP kernel files
-osseDataPath = '/Users/wrespino/Synced/G5NR_OSSE_RetrievalSimulations/testCase_Aug01_0000Z_VersionJune2020/' # base path for A-CCP OSSE data (contains gpm and ss450 folders)
-
+#dirGRASP = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/build/bin/grasp' # location of the GRASP binary to use for retrievals
+#krnlPath = '/Users/wrespino/Synced/Local_Code_MacBook/grasp_open/src/retrieval/internal_files' # location of GRASP kernel files
+#osseDataPath = '/Users/wrespino/Synced/G5NR_OSSE_RetrievalSimulations/testCase_Aug01_0000Z_VersionJune2020/' # base path for A-CCP OSSE data (contains gpm and ss450 folders)
 
 
 # if retrievals are divided up into multiple calls to GRASP, ensure the number of simultaneous processes is always ≤maxCPU
-maxCPU = 4
+maxCPU = 100
 
 # randomize initial guess in YAML file before retrieving
 rndIntialGuess = False
@@ -58,7 +62,7 @@ orbit = 'ss450'
 maxSZA = 60
 
 # true to skip retrievals on land pixels
-oceanOnly = False
+oceanOnly = True
 
 # If true no noise will be added to simulated measurements, else noise is added according to architectureMap.py (or Ed's simulations for lidar data)
 noiseFree = True
@@ -70,10 +74,11 @@ vrsn = 120
 wvls = [0.355, 0.36, 0.38, 0.41, 0.532, 0.55, 0.67, 0.87, 1.064, 1.55, 1.65]
 
 # specific pixels to run; set to None to run all pixels (computationally heavy)
-pixInd = [0, 2, 4, 6, 335, 6738, 6876, 9702] # SS Random Aug 2006 ind>6 are high AOD
+#pixInd = [0, 2, 4, 6, 335, 6738, 6876, 9702] # SS Random Aug 2006 ind>6 are high AOD
+pixInd = None
 
 # save output here instead of within osseDataPath (None to disable)
-customOutDir = '/Users/wrespino/Synced/OSSE_Test_Run'
+customOutDir = '/home/dgiles/AIST_GRASP/OSSE_Test_Run'
 
 # create osseData instance w/ pixels from specified date/time (detail on these arguments in comment near top of osseData class's __init__ near readOSSEnetCDF.py:30)
 od = osseData(osseDataPath, orbit, year, month, day, hour, random=random, wvls=wvls, pixInd=pixInd,

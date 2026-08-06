@@ -411,9 +411,9 @@ class osseData(object):
                 prfx = '' if getKey=='colTOTdist' else '_'+getKey.replace('dist','').replace('col','')
                 rd['modeSeperationIndex'+prfx] = minInd # note this is minimum in dvdr (not dVdlnr)
                 rd['dVdlnr'+prfx] = dvdr*rd['r'] # dvdr -> dvdlnr; dvdr = dvdr/1e6*1e6 # starts as m^3/m^2/m (I think?), divide by 1e6 -> m^3/m^2/μm, multiply by 1e6 -> μm^3/μm^2/μm
-                rd['vol'+prfx] = np.trapz(dvdr, x=rd['r'])
-                rd['vol'+prfx+'_fine'] = np.trapz(dvdr[fineInd], x=rd['r'][fineInd])
-                rd['vol'+prfx+'_coarse'] = np.trapz(dvdr[crseInd], x=rd['r'][crseInd])
+                rd['vol'+prfx] = np.trapezoid(dvdr, x=rd['r'])
+                rd['vol'+prfx+'_fine'] = np.trapezoid(dvdr[fineInd], x=rd['r'][fineInd])
+                rd['vol'+prfx+'_coarse'] = np.trapezoid(dvdr[crseInd], x=rd['r'][crseInd])
         if not incldDust: return
         for pstFx in ['', '_fine', '_coarse']:
             for rd in self.rtrvdData: # loop over pixels & find sphere fraction (assumes dust is only (and completely) non-spherical type)
@@ -474,7 +474,7 @@ class osseData(object):
                         md[key] = tempSig
                     md['RangeLidar'] = np.tile(newLayers[::-1], [self.Npix,1]) # now we flip to descending order
                 if 'LS' in md: # normalize att. backscatter signal
-                    normConstants = -np.trapz(md['LS'], x=md['RangeLidar'], axis=1) # sign flip needed since Range is in descending order
+                    normConstants = -np.trapezoid(md['LS'], x=md['RangeLidar'], axis=1) # sign flip needed since Range is in descending order
                     md['LS'] = md['LS']/normConstants[:,None]
                 for mdKey in ['LS','VBS','VExt']:
                     if mdKey in md: md[mdKey][md[mdKey] < βLowLim] = βLowLim # GRASP will not tolerate negative backscatter values

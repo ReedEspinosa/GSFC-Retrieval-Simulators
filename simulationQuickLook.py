@@ -272,7 +272,7 @@ def fmfCalc(r,dvdlnr):
     cutRadius = 0.5
     fInd = r<=cutRadius
     logr = np.log(r)
-    return np.trapz(dvdlnr[fInd],logr[fInd])/np.trapz(dvdlnr,logr)
+    return np.trapezoid(dvdlnr[fInd],logr[fInd])/np.trapezoid(dvdlnr,logr)
 try:
     true = np.asarray([fmfCalc(rf['r'], rf['dVdlnr']) for rf in simBase.rsltFwd])[keepInd]
     rtrv = np.asarray([fmfCalc(rb['r'][0,:], rb['dVdlnr'].sum(axis=0)) for rb in simBase.rsltBck])[keepInd]

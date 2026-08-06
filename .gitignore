@@ -21,4 +21,6 @@ Examples/job/*.out
 /Examples/temp/
 *.zip
 Examples/job/
+Examples/logs/*.err
+Examples/logs/*.out
 simulationQuickLook*.html

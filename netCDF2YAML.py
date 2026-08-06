@@ -191,7 +191,7 @@ if 'ZE_all' in measData[0]:
 
 #totPSD = np.zeros(measData[0]['TOTdist'].shape[1])
 #for h in range(measData[0]['VOL'].shape[0]):
-#    TOTdistIntegral = np.trapz(measData[0]['TOTdist'][h,:], x=np.log(measData[0]['radius']))
+#    TOTdistIntegral = np.trapezoid(measData[0]['TOTdist'][h,:], x=np.log(measData[0]['radius']))
 #    nrmFactor = measData[0]['VOL'][h]/TOTdistIntegral*np.diff(-measData[0]['ZE_edge'])[h]*1e6
 #    totPSD = totPSD + nrmFactor*measData[0]['TOTdist'][h,:]
 #plt.plot(measData[0]['radius'],totPSD)
@@ -203,11 +203,11 @@ if 'ZE_all' in measData[0]:
 #ind = 63            
 #r = measData[0]['radius']
 #volConc = measData[0]['VOL'][ind] # total aersol volume per m^3 of air volume?
-#volConcCol = np.trapz(measData[0]['TOTdist'][ind], x=np.log(r)) # integration of absolute size distribution in layer per um^2 footprint?
+#volConcCol = np.trapezoid(measData[0]['TOTdist'][ind], x=np.log(r)) # integration of absolute size distribution in layer per um^2 footprint?
 #Reff = measData[0]['REFF'][ind] # effective radius?
 #layWdth = (measData[0]['ZE_edge'][ind]-measData[i]['ZE_edge'][ind+1])*1e6 # layer thickness in um
 #volConcFrmCol = volConcCol/layWdth # total volume concentration from integrated PSD per volume
-#areaFrmCol = np.trapz(measData[0]['TOTdist'][ind]*(3/4)/(measData[0]['radius']**2),x=r)/layWdth # total cross sectional area from integrated PSD per volume
+#areaFrmCol = np.trapezoid(measData[0]['TOTdist'][ind]*(3/4)/(measData[0]['radius']**2),x=r)/layWdth # total cross sectional area from integrated PSD per volume
 #area = measData[0]['AREA'][ind] # total cross sectional area per volume
 #ReffConcInt = (3/4)*volConcFrmCol/areaFrmCol # effective radius from integrated PSD
 #
