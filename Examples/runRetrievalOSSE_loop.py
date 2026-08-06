@@ -13,7 +13,8 @@ parentDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # obtai
 sys.path.append(parentDir) # that should be GSFC-Retrieval-Simulators – add it to Python path
 sys.path.append(os.path.join(parentDir,"ACCP_ArchitectureAndCanonicalCases"))
 grandParentDir = os.path.dirname(parentDir)# [THIS_FILE_PATH]/../../ in POSIX (this is folder that contains GRASP_scripts and GSFC-Retrieval-Simulators
-sys.path.append(os.path.join(grandParentDir, "GSFC-GRASP-Python-Interface"))
+sys.path.append(os.path.join(grandParentDir, "gsfc-grasp-python-interface"))
+#sys.path.append(os.path.join(grandParentDir, "GSFC-GRASP-Python-Interface"))
 
 # import top level class that peforms the actual retrieval simulation; defined in [THIS_FILE_PATH]/../simulateRetrieval.py
 import simulateRetrieval as rs
@@ -24,9 +25,10 @@ from readOSSEnetCDF import osseData
 # import returnPixel and addError functions with instrument definitions from ...GSFC-Retrieval-Simulators/ACCP_ArchitectureAndCanonicalCases/architectureMap.py
 from architectureMap import returnPixel, addError
 
-dirGRASP = '/home/dgiles/AIST_GRASP/grasp/build/bin/grasp'
-krnlPath = '/home/dgiles/AIST_GRASP/grasp/src/retrieval/internal_files/'
-osseDataPath = '/home/dgiles/AIST_GRASP/testCase_Aug01_0000Z_VersionJune2020/testCase_Aug01_0000Z_VersionJune2020/'
+dirGRASP = '/home/dgiles/nobackup/AIST/grasp/build/bin/grasp'
+krnlPath = '/home/dgiles/nobackup/AIST/software/grasp/src/retrieval/internal_files/'
+#osseDataPath = '/home/dgiles/AIST_GRASP/testCase_Aug01_0000Z_VersionJune2020/testCase_Aug01_0000Z_VersionJune2020/'
+osseDataPath = '/home/dgiles/nobackup/AIST/software/GMAO_Nature_Run/'
 
 # define other paths not having to do with the python code itself
 bckYAMLpath = os.path.join(parentDir, 'ACCP_ArchitectureAndCanonicalCases','settings_BCK_POLAR_2modes_V1.0.0.yml') # location of retrieval YAML file (V1.0.0 for VLIDORTMatch branch of GRASP)
@@ -62,7 +64,7 @@ wvls = [0.355, 0.36, 0.38, 0.41, 0.532, 0.55, 0.67, 0.87, 1.064, 1.55, 1.65]
 pixInd = None
 
 # Base output directory
-customOutDir = '/home/dgiles/AIST_GRASP/OSSE_Test_Run'
+customOutDir = '/home/dgiles/nobackup/AIST/software/OSSE_Test_Run'
 
 # Set noise model to added to polarimeter measurements, polar07 error is defined in addError() method of architectureMap.py
 radNoiseFun = None if noiseFree else functools.partial(addError, 'polar07')
