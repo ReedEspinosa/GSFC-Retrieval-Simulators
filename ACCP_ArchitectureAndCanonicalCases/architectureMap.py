@@ -8,6 +8,8 @@ from scipy.integrate import simpson as simps
 from scipy.interpolate import interp1d
 RtrvSimParentDir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) # we assume GSFC-GRASP-Python-Interface is in parent of GSFC-Retrieval-Simulators
 sys.path.append(os.path.join(RtrvSimParentDir, "GSFC-GRASP-Python-Interface"))
+RtrvSimDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) # GSFC-Retrieval-Simulators (so `import err_sim` works)
+sys.path.append(RtrvSimDir)
 import runGRASP as rg
 from ACCP_functions import readKathysLidarσ
 import functools
@@ -45,6 +47,21 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         phi = np.repeat(phiConverter(phiIn=relPhi, phiOutNdim=0), len(thtv)) # currently we assume all observations fall within a plane
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errStr = 'polar0700' if 'harp0200' in archName.lower() else 'polar07'
+            errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
+            nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
+    # err_sim experiment: HARP2-like geometry & wavelengths, but a custom error model (see err_sim/)
+    if 'harperrsim' in archName.lower():
+        msTyp = [41, 42, 43] # must be in ascending order
+        thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # same view angles as harp02
+        wvls = [0.441, 0.549, 0.669, 0.873] # same wavelengths as harp02
+        nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
+        meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
+        phi = np.repeat(phiConverter(phiIn=relPhi, phiOutNdim=0), len(thtv)) # currently we assume all observations fall within a plane
+        # links to the 'errsim' branch in addError() below, which calls err_sim/customErrModel.py
+        # 'harperrsim'   -> errsim01 = analytical error propagation (Path 1)
+        # 'harperrsimmc' -> errsim02 = Monte Carlo sensor-space noise (Path 2)
+        errStr = 'errsim02' if 'harperrsimmc' in archName.lower() else 'errsim01'
+        for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)
     # HARP2 configuration with 1% error in DoLP
@@ -446,6 +463,10 @@ def addError(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbo
         noiseVctI = np.random.lognormal(sigma=np.log(1+relErr), size=len(trueSimI))
         fwdSimI = trueSimI*noiseVctI
         return np.r_[fwdSimI] # safe because of ascending order check in simulateRetrieval.py
+    # err_sim experiment: custom error model, code lives in err_sim/ (keeps new work in one spot)
+    if mtch.group(1).lower() == 'errsim': # measNm format 'errsimN' (e.g. 'errsim01')
+        from err_sim.customErrModel import customErrModel
+        return customErrModel(measNm, l, rsltFwd, concase=concase, orbit=orbit, lidErrDir=lidErrDir, verbose=verbose)
     assert False, 'No error model found for %s!' % measNm # S-Polar06 has DoLP dependent ΔDoLP
 
 
