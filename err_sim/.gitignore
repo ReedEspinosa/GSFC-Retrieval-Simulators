@@ -1,0 +1,5 @@
+# generated experiment artifacts (not source)
+*.pkl
+*.png
+*.log
+__pycache__/

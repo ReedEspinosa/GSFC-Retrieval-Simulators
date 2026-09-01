@@ -183,6 +183,31 @@ Runs in the `grasp` conda env (`/home/noahs/miniforge3/envs/grasp`). Dependencie
 added during development: `pandas`, `pyyaml` (for `runGRASP`/`architectureMap`
 import), `h5py` (real matrix read), `matplotlib` (mc_test plotting).
 
+## 8b. Running an experiment (`run_experiment.py`)
+
+`run_experiment.py` is the single entry point for a full retrieval experiment:
+forward GRASP "truth" → err_sim error model → GRASP inversion → pickle →
+`analyzeSim` console stats + scatter/spectral PNGs. All tunables sit in the
+`CONFIG` block at the top:
+
+- `INSTRUMENT` — `'harperrsim'` (Path 1) or `'harperrsimmc'` (Path 2).
+- `CONCASE`, `TAU_FACTOR` — scene and AOD loading (`randLogNrm<medianAOD>`).
+- `N_PIX`, `NSIMS`, `MAX_CPU` — scale; total retrievals = `NSIMS * N_PIX`.
+- `GEOM_SEED`, `SZA_RANGE`, `PHI_RANGE` — deterministic geometry sweep (no Sabrina
+  orbital `.nc4` needed; `harperrsim` uses fixed in-plane HARP2-like view angles).
+- `RUN_RETRIEVAL=False` — skip GRASP, just re-plot an existing pkl (fast plot iteration).
+- `PLOT_WAVE_IND`, `MAKE_PLOTS`, `RND_INITIAL_GUESS`, `DIR_GRASP`, `KRNL_PATH`.
+
+Outputs: `experiment_<instrument>.pkl`, `..._scatter_<λ>nm.png`, `..._spectralAOD.png`.
+
+**Local GRASP build caveat.** This machine's GRASP (`grasp/build/bin/grasp`) is
+compiled with a **max of 2 aerosol modes**, so `CONCASE` must be a single 2-mode
+case (e.g. `'marineVariable'`). Multi-case scenes like
+`'marineVariable+smokeVariableOcean'` (5 modes) error out here
+(`phase_matrix.radius ... maximum: 2`) and need a GRASP build with larger mode
+constants (the DISCOVER build). **Timing:** ~30 s/pixel inversion at `MAX_CPU=3`
+(21 pixels ≈ 11 min). Plots use the `Agg` backend — PNG only, no X11.
+
 ## 9. Open items / future work
 
 - **Cross-wavelength covariance (planned approach).** The per-wavelength-independent
@@ -192,9 +217,10 @@ import), `h5py` (real matrix read), `matplotlib` (mc_test plotting).
   (physical-rotation) uncertainties are identical across bands while
   transmission/phase uncertainties sit around different means. This retains
   cross-wavelength covariance. Requires reworking the cal-sim code — tabled.
-- **Run the actual retrievals.** `mc_test` is measurement-space only. The science
-  goal needs the full GRASP forward→noise→inversion loop (`runRetrievalSimulation*`
-  with `instrument='harperrsim'`/`'harperrsimmc'`) and retrieval-vs-truth analysis.
+- **Run the actual retrievals.** DONE (locally): `run_experiment.py` runs the full
+  GRASP forward→noise→inversion loop and analyzes retrieval-vs-truth. Remaining: a
+  large, statistically meaningful campaign on a machine with a many-mode GRASP build
+  (and SLURM); `mc_test` stays as the measurement-space-only sanity tool.
 - **σ downstream.** Path 1's `LAST_ANALYTIC_SIGMAS` are computed but only stashed.
   Decide whether they should also drive the inversion (BCK YAML `noises` block). Note
   the deliberate current design tests the retrieval under *incomplete* error info
@@ -211,9 +237,11 @@ import), `h5py` (real matrix read), `matplotlib` (mc_test plotting).
 ## 10. File map (err_sim/)
 - `customErrModel.py` — the error model: store, loaders, dispatcher, both paths,
   `instr_err`, dummy fallbacks.
-- `mc_test.py` — measurement-space test harness + histogram.
-- `mc_test_hist.png` — latest test figure.
+- `run_experiment.py` — unified full-pipeline runner (CONFIG block → retrieval →
+  stats + PNGs). Main entry point; see §8b.
+- `mc_test.py` — measurement-space test harness + histogram (no GRASP).
 - `ERR_SIM_OVERVIEW.md` — this file.
+- Generated (git-ignored, not committed): `experiment_*.pkl`, `*.png`, `run_test.log`.
 - `__init__.py` — makes `err_sim` importable.
 
 Related (outside err_sim): `../ALTERING_THE_MEASUREMENT_ERROR_MODEL.md`,
