@@ -52,15 +52,31 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
     # err_sim experiment: HARP2-like geometry & wavelengths, but a custom error model (see err_sim/)
     if 'harperrsim' in archName.lower():
         msTyp = [41, 42, 43] # must be in ascending order
-        thtv = np.tile([-57.0,  -44.0,  -32.0 ,  -19.0 ,  -6.0 ,  6.0,  19.0,  32.0,  44.0,  57.0], len(msTyp)) # same view angles as harp02
+        # Honour the real per-pixel view geometry when it is supplied (e.g. the orbital
+        # nc4 via selectGeomSabrina, which carries 10 signed vza and a matching per-view
+        # azimuth); fall back to HARP2's hardcoded angles when vza is None. Follows the
+        # megaharp1 pattern above, incl. phiConverter interpolating phi onto vzaNow.
+        # NOTE: with real geometry phi varies across views (~90 deg span on this orbit),
+        # so the old scalar-mean azimuth (single-plane assumption) is no longer imposed.
+        vzaNow = [-57.0, -44.0, -32.0, -19.0, -6.0, 6.0, 19.0, 32.0, 44.0, 57.0] if vza is None else vza # harp02 angles as the fallback
+        thtv = np.tile(vzaNow, len(msTyp))
         wvls = [0.441, 0.549, 0.669, 0.873] # same wavelengths as harp02
         nbvm = len(thtv)/len(msTyp)*np.ones(len(msTyp), int)
         meas = np.r_[np.repeat(0.1, nbvm[0]), np.repeat(0.01, nbvm[1]), np.repeat(0.01, nbvm[2])]
-        phi = np.repeat(phiConverter(phiIn=relPhi, phiOutNdim=0), len(thtv)) # currently we assume all observations fall within a plane
+        if vza is None:
+            phi = np.repeat(phiConverter(phiIn=relPhi, phiOutNdim=0), len(thtv)) # in-plane assumption
+        else:
+            phi = np.tile(phiConverter(vzaIn=vza, vzaOut=vzaNow, phiIn=relPhi, phiOutNdim=1), len(msTyp))
         # links to the 'errsim' branch in addError() below, which calls err_sim/customErrModel.py
-        # 'harperrsim'   -> errsim01 = analytical error propagation (Path 1)
-        # 'harperrsimmc' -> errsim02 = Monte Carlo sensor-space noise (Path 2)
-        errStr = 'errsim02' if 'harperrsimmc' in archName.lower() else 'errsim01'
+        # 'harperrsim'    -> errsim01 = analytical error propagation (Path 1)
+        # 'harperrsimmc'  -> errsim02 = Monte Carlo sensor-space noise (Path 2)
+        # 'harperrsimbck' -> errsim03 = the BCK YAML's own assumed noise (Path 3, control)
+        if 'harperrsimmc' in archName.lower():
+            errStr = 'errsim02'
+        elif 'harperrsimbck' in archName.lower():
+            errStr = 'errsim03'
+        else:
+            errStr = 'errsim01'
         for wvl in wvls: # This will be expanded for wavelength dependent measurement types/geometry
             errModel = functools.partial(addError, errStr) # this must link to an error model in addError() below
             nowPix.addMeas(wvl, msTyp, nbvm, sza, thtv, phi, meas, errModel=errModel)

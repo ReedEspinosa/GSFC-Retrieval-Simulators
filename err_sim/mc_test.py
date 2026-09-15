@@ -45,6 +45,7 @@ sys.path.insert(0, _REPO)
 sys.path.insert(0, os.path.join(_REPO, 'ACCP_ArchitectureAndCanonicalCases'))
 sys.path.insert(0, os.path.join(os.path.dirname(_REPO), 'GSFC-GRASP-Python-Interface'))
 
+import err_sim.np_compat  # noqa: F401 -- restores np.trapz for NumPy>=2; MUST precede runGRASP
 from architectureMap import returnPixel                          # noqa: E402
 import err_sim.customErrModel as cem                             # noqa: E402
 
