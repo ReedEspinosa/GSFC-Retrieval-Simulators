@@ -3,3 +3,6 @@
 *.png
 *.log
 __pycache__/
+*.json
+runs/
+tasks/

@@ -410,6 +410,44 @@ Hard-won details, each from a failure:
   `STALE?`, and distinguishes "smaller scene set is a SUBSET of the largest" (benign:
   inversion failures) from "scene sets diverge" (different runs: invalid comparison).
 
+## 8d. Cluster campaigns: one instrument per task (`run_task.py`)
+
+For a large SLURM run where each task is ONE instrument with ONE calibration:
+
+```bash
+sbatch err_sim/slurm_task_array.sh                    # array 0-249
+python err_sim/collect_tasks.py err_sim/tasks out.csv # one row per task
+```
+
+**Why one calibration per task.** Unpinned, Path 2 draws a fresh calibration matrix
+on every call, so calibration error behaves like extra RANDOM noise that averages
+away across a scene. A real instrument has exactly one calibration, so its error is a
+fixed SYSTEMATIC biasing every pixel the same way. Pinning makes that bias visible
+within a task; the spread ACROSS tasks is the instrument-to-instrument distribution.
+
+Design:
+
+- **Pinning is a selection POLICY**, orthogonal to the error math — `pin_task()` sets
+  `PINNED_INSTRUMENT_IDX` / `PINNED_CAL_IDX`, which Paths 1 and 2 both honour, so the
+  analytic path can be run per-instrument as a cross-check. Path 3 is unaffected.
+- **Channels stay distinct.** A task takes `n_wvl` CONSECUTIVE pool entries, one per
+  band, preserving the per-wavelength-instrument model of §5. A 1000-entry pool gives
+  **250 tasks** at 4 bands; `pin_task` raises past the edge rather than wrapping.
+- **Paired scenes.** Geometry and the AOD draw are seeded identically in every task
+  (`TAU_SEED`), so across-task differences are calibration, not scene variability.
+  Verified: two tasks produce identical truth AOD and different retrievals.
+- **Reproducible.** Instrument indices, the calibration index and the noise stream all
+  derive from the task index.
+- **Provenance.** Each task writes `task_NNNNN_<arch>.json` with `instrument_idx`
+  (one per band), `cal_idx`, `noise_seed` and the source `.h5`/`.csv` names. Only the
+  INDICES are stored; any calibration statistic (`||C - inv(A)||`, implied
+  sigma_DoLP, ...) can be worked back from the HDF5 later.
+
+`collect_tasks.py` emits one row per task — indices, then RMSE and bias for AOD, SSA,
+n, k at each wavelength plus rEff and rv — which is the table to regress for trends.
+It reports tasks it had to skip (missing/unreadable pickle, no retrievals) rather
+than silently dropping them.
+
 ## 9. Open items / future work
 
 - **Solar spectrum -> Thuillier.** `SOLAR_SPECTRUM='table'` + `SOLAR_TABLE_PATH` is
@@ -447,6 +485,9 @@ Hard-won details, each from a failure:
 - `summarize_paths.py` — one readable three-path report, scored on common scenes.
 - `plot_path_comparison.py` — overlay scatter, one colour per path.
 - `np_compat.py` — NumPy 2 shims for the read-only interface repo; import first.
+- `run_task.py` — ONE instrument + ONE calibration; the body of a SLURM array job.
+- `slurm_task_array.sh` — sbatch template (array 0-249).
+- `collect_tasks.py` — gather per-task results into one tidy row-per-task CSV.
 - `mc_test.py` — measurement-space test harness + histogram (no GRASP).
 - `ERR_SIM_OVERVIEW.md` — this file.
 - Generated (git-ignored): `experiment_*.pkl`, `*.png`, `runs/`.

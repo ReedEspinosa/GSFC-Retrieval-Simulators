@@ -220,8 +220,30 @@ _DUMMY_N_INSTR = 4096      # size of the synthetic instrument pool
 _DUMMY_N_CAL = 500         # calibration trials per instrument (Path 2)
 _DUMMY_SEED = 0            # deterministic dummy pool + deck shuffle
 
+# =============================================================================
+# TASK PINNING (for SLURM array runs)
+# =============================================================================
+# Normally every customErrModel() call draws a fresh instrument and, in Path 2, a
+# fresh calibration matrix.  That makes calibration error behave like extra RANDOM
+# noise which averages away over a scene -- but a real instrument has exactly ONE
+# calibration, so its error is a fixed SYSTEMATIC affecting every pixel the same way.
+#
+# Pinning fixes the matrices for a whole run, so one SLURM task == one instrument
+# with one calibration.  The bias is then visible within a task, and the spread
+# ACROSS tasks is the instrument-to-instrument distribution -- which is the quantity
+# this project is trying to measure.
+#
+# Pinning is a SELECTION POLICY, deliberately orthogonal to the error math: Paths 1
+# and 2 both honour it, so the analytic path can be run per-instrument as a
+# cross-check.  Path 3 touches no calibration product and is unaffected.
+#
+# Set these with pin_task(); None restores the random-draw behaviour.
+PINNED_INSTRUMENT_IDX = None     # sequence, one instrument index per wavelength
+PINNED_CAL_IDX = None            # int, the single calibration event for this task
+
 # module-level per-call state and singleton store
-_CURRENT_INSTRUMENT_IDX = None   # characteristic-matrix index, drawn fresh each wavelength
+_CURRENT_INSTRUMENT_IDX = None   # characteristic-matrix index in use for this call
+_CURRENT_CAL_IDX = None          # calibration-matrix index in use for this call
 _STORE = None
 
 # side channel for Path 1 sigmas (until we decide how they feed downstream)
@@ -308,6 +330,54 @@ class _MatrixStore:
                 self._warned_exhaust = True
             self._deck = list(self._rng.permutation(self.n_instr))
         return self._deck.pop()
+
+
+def pin_task(task_idx, n_wvl=4, cal_seed_base=90000, n_instr=None, n_cal=None):
+    """Pin this process to one instrument (per channel) and one calibration event.
+
+    Everything is derived DETERMINISTICALLY from ``task_idx`` -- typically
+    ``$SLURM_ARRAY_TASK_ID`` -- so any task can be replayed exactly.
+
+    Channels stay optically distinct: a task consumes ``n_wvl`` CONSECUTIVE pool
+    entries, one per wavelength, matching the per-wavelength-instrument model this
+    module already uses (see "PER-WAVELENGTH INSTRUMENT SELECTION" above).  A pool of
+    N entries therefore supplies N/n_wvl tasks -- 1000 entries -> 250 tasks at 4 bands.
+
+    The calibration is a single event for the whole instrument (one index, applied to
+    each channel's own independent ensemble), drawn from a task-seeded RNG that is
+    independent of the store's deck and of the global numpy stream.
+
+    Returns the provenance dict, which the caller should persist alongside results:
+        {'task_idx', 'instrument_idx' (one per wavelength), 'cal_idx'}
+    """
+    global PINNED_INSTRUMENT_IDX, PINNED_CAL_IDX
+    store = get_store()
+    if n_instr is None:
+        n_instr = store.n_instr
+    if n_cal is None:
+        n_cal = store.cal_mats.shape[-1]
+
+    first = int(task_idx) * int(n_wvl)
+    if first + n_wvl > n_instr:
+        raise ValueError(
+            'task_idx %d needs pool entries %d-%d but only %d instruments exist '
+            '(%d tasks available at %d wavelengths). Run the calibration sim with '
+            'more instruments.' % (task_idx, first, first + n_wvl - 1, n_instr,
+                                   n_instr // n_wvl, n_wvl))
+
+    PINNED_INSTRUMENT_IDX = [first + i for i in range(int(n_wvl))]
+    PINNED_CAL_IDX = int(np.random.default_rng(cal_seed_base + int(task_idx))
+                         .integers(n_cal))
+    return dict(task_idx=int(task_idx),
+                instrument_idx=list(PINNED_INSTRUMENT_IDX),
+                cal_idx=PINNED_CAL_IDX)
+
+
+def unpin_task():
+    """Restore the default random instrument / calibration draws."""
+    global PINNED_INSTRUMENT_IDX, PINNED_CAL_IDX
+    PINNED_INSTRUMENT_IDX = None
+    PINNED_CAL_IDX = None
 
 
 _UNSET = object()   # sentinel: distinguish "arg omitted" from an explicit None
@@ -426,7 +496,14 @@ def customErrModel(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None,
     """Route an 'errsim<NN>' call. Draws a fresh instrument EVERY call, i.e. each
     wavelength channel is an independent instrument (unique characteristic matrix)."""
     global _CURRENT_INSTRUMENT_IDX
-    _CURRENT_INSTRUMENT_IDX = get_store().draw_index()   # per-wavelength instrument
+    if PINNED_INSTRUMENT_IDX is not None:                # SLURM task: fixed instrument
+        if l >= len(PINNED_INSTRUMENT_IDX):
+            raise IndexError('wavelength index %d exceeds the %d pinned instruments; '
+                             'call pin_task(n_wvl=%d)'
+                             % (l, len(PINNED_INSTRUMENT_IDX), l + 1))
+        _CURRENT_INSTRUMENT_IDX = PINNED_INSTRUMENT_IDX[l]
+    else:
+        _CURRENT_INSTRUMENT_IDX = get_store().draw_index()   # per-wavelength instrument
     if verbose:
         print('[err_sim] wl-index %d -> instrument index %d' % (l, _CURRENT_INSTRUMENT_IDX))
 
@@ -915,11 +992,20 @@ def _load_calibration_covariance(geom, l, verbose=False):
 
 
 def _load_calibration_matrix(geom, l, verbose=False):
-    """Path 2: draw ONE random (3,3) calibration matrix C from THIS wavelength's
-    instrument's N_cal ensemble (one calibration event for this channel)."""
+    """Path 2: the (3,3) calibration matrix C for THIS wavelength's instrument.
+
+    Pinned -> the task's single calibration event, so the SAME C is used for every
+    pixel and its bias acts as a systematic rather than averaging away.
+    Unpinned -> a fresh random draw from that channel's N_cal ensemble per call.
+    """
+    global _CURRENT_CAL_IDX
     store = get_store()
     cals = store.cal_mats[_CURRENT_INSTRUMENT_IDX]
-    k = int(store._rng.integers(cals.shape[-1]))
+    if PINNED_CAL_IDX is not None:
+        k = int(PINNED_CAL_IDX)
+    else:
+        k = int(store._rng.integers(cals.shape[-1]))
+    _CURRENT_CAL_IDX = k
     return cals[:, :, k]
 
 
