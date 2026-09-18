@@ -437,7 +437,22 @@ Design:
   (`TAU_SEED`), so across-task differences are calibration, not scene variability.
   Verified: two tasks produce identical truth AOD and different retrievals.
 - **Reproducible.** Instrument indices, the calibration index and the noise stream all
-  derive from the task index.
+  derive from the task index. Note this requires seeding BOTH generators: most of the
+  initial guess comes from numpy, but `miscFunctions.loguniform` (imaginary refractive
+  index) draws from the STDLIB `random` module, which `np.random.seed` does not touch.
+- **`GUESS_SEED_MODE`** controls the second source of across-task spread, the
+  randomised initial guess:
+  * `'shared'` (default) — every task draws the SAME sequence of initial guesses, so
+    across-task differences are attributable to **calibration alone**. Implemented by
+    wrapping `scrambleInitialGuess` to reseed both RNGs from `GUESS_SEED_BASE + call`
+    and restore them afterwards, so the measurement-noise stream is untouched. Chunks
+    still differ from each other, identically in every task.
+  * `'per_task'` — the guess varies with the task, so the spread mixes calibration
+    error with initial-guess sensitivity. Use to ask how robust the retrieval is to
+    its starting point.
+  Seeding at the top of the task is NOT sufficient for `'shared'`: numpy's state when
+  the inversion begins depends on how much measurement noise was drawn first, which is
+  deliberately task-specific.
 - **Provenance.** Each task writes `task_NNNNN_<arch>.json` with `instrument_idx`
   (one per band), `cal_idx`, `noise_seed` and the source `.h5`/`.csv` names. Only the
   INDICES are stored; any calibration statistic (`||C - inv(A)||`, implied

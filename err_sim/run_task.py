@@ -86,7 +86,67 @@ INSTRUMENT = os.environ.get('ERRSIM_INSTRUMENT', 'harperrsimmc')
 OUT_DIR = os.environ.get('ERRSIM_TASK_OUT', os.path.join(_HERE, 'tasks'))
 NOISE_SEED_BASE = 700000       # measurement-noise stream = NOISE_SEED_BASE + task_idx
 CAL_SEED_BASE = 90000          # calibration-event draw    = CAL_SEED_BASE + task_idx
+
+# --- initial-guess randomisation ---------------------------------------------
+# GRASP starts each inversion chunk from a randomised initial guess
+# (rndIntialGuess=True -> graspYAML.scrambleInitialGuess).  That randomisation is a
+# SECOND source of across-task spread on top of calibration, so:
+#
+#   'shared'   -- every task draws the SAME sequence of initial guesses, so
+#                 across-task differences are attributable to CALIBRATION ALONE.
+#                 This is the isolating configuration.
+#   'per_task' -- the guess varies with the task, so the across-task spread mixes
+#                 calibration error with initial-guess sensitivity.  Use this to ask
+#                 how robust the retrieval is to its starting point.
+#
+# Seeding at the top of the task is NOT enough for 'shared': scrambleInitialGuess
+# draws mostly from numpy (np.random.uniform), and numpy's state by the time the
+# inversion starts depends on how much measurement noise was drawn first -- which is
+# deliberately task-specific.  So 'shared' reseeds BOTH generators immediately around
+# each scramble call and restores the previous state afterwards, leaving the noise
+# stream untouched.  Chunks still differ from one another (seed + chunk counter);
+# they just differ IDENTICALLY in every task.
+GUESS_SEED_MODE = 'shared'     # 'shared' | 'per_task'
+GUESS_SEED_BASE = 505050
 # =======================================================================
+
+
+_GUESS_CALL_COUNTER = {'n': 0}
+
+
+def _install_shared_initial_guess(seed_base=None):
+    """Make scrambleInitialGuess draw the same sequence in every task.
+
+    Wraps ``graspYAML.scrambleInitialGuess`` so that each call seeds numpy AND the
+    stdlib random module from ``seed_base + call_index``, then restores both RNG
+    states.  Chunk N therefore gets the same starting point in every task, while the
+    measurement-noise stream either side of the call is unaffected.
+
+    Returns the unwrapped method so a caller can undo this if needed.
+    """
+    if seed_base is None:
+        seed_base = GUESS_SEED_BASE
+    import runGRASP as rg
+    original = rg.graspYAML.scrambleInitialGuess
+    if getattr(original, '_errsim_shared_guess', False):
+        return original
+
+    def scrambleInitialGuess(self, *args, **kwargs):
+        npState, pyState = np.random.get_state(), random.getstate()
+        idx = _GUESS_CALL_COUNTER['n']
+        _GUESS_CALL_COUNTER['n'] += 1
+        np.random.seed(seed_base + idx)
+        random.seed(seed_base + idx)
+        try:
+            return original(self, *args, **kwargs)
+        finally:                       # leave the noise stream exactly as we found it
+            np.random.set_state(npState)
+            random.setstate(pyState)
+
+    scrambleInitialGuess._errsim_shared_guess = True
+    scrambleInitialGuess.__doc__ = original.__doc__
+    rg.graspYAML.scrambleInitialGuess = scrambleInitialGuess
+    return original
 
 
 def main():
@@ -140,6 +200,18 @@ def main():
     # of the same task then retrieve different answers from identical measurements.
     np.random.seed(prov['noise_seed'])
     random.seed(prov['noise_seed'])
+
+    prov['guess_seed_mode'] = GUESS_SEED_MODE
+    if GUESS_SEED_MODE == 'shared':
+        _GUESS_CALL_COUNTER['n'] = 0
+        _install_shared_initial_guess()
+        prov['guess_seed_base'] = GUESS_SEED_BASE
+        print('         initial guess: SHARED across tasks (isolates calibration)')
+    elif GUESS_SEED_MODE == 'per_task':
+        print('         initial guess: per-task (spread mixes calibration + guess)')
+    else:
+        raise ValueError("GUESS_SEED_MODE must be 'shared' or 'per_task', got %r"
+                         % GUESS_SEED_MODE)
     noiseFun = rx.errorModelOf(nowPix[0])
     simA = rx.rs.simulation(nowPix)
     simA.runSim(fwdYAML, rx.BCK_YAML, rx.NSIMS, maxCPU=rx.MAX_CPU, maxT=rx.MAX_T,
