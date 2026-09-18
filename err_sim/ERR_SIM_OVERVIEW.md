@@ -453,6 +453,26 @@ Design:
   Seeding at the top of the task is NOT sufficient for `'shared'`: numpy's state when
   the inversion begins depends on how much measurement noise was drawn first, which is
   deliberately task-specific.
+- **`NOISE_SEED_MODE`** controls the third source of spread, the measurement-noise
+  realisation:
+  * `'shared'` (default) — every task consumes the SAME sequence of random deviates.
+    The applied perturbation is still instrument-specific, because sigma depends on
+    that task's characteristic matrix; what is fixed is the draw, not the noise.
+  * `'per_task'` — each task also samples an independent realisation, closer to "many
+    real instruments" but mixing calibration with noise luck.
+
+  This matters more than it sounds at 526 pixels. Measured on a fixed truth, the
+  across-task difference is **1.30e-4** with the noise seed shared and **9.07e-4**
+  with it varying — noise-realisation luck is ~7x the calibration signal, so leaving
+  it free would have dominated the across-task spread.
+
+  Streams stay aligned because Path 2 draws `np.random.normal(size=(3, Nang))` once
+  per (pixel, wavelength) regardless of which instrument is pinned — verified: 308
+  deviates consumed for either instrument.
+
+With both switches on `'shared'`, exactly two things vary across tasks: the
+instrument and its calibration event. Scenes, initial guess and noise draws are all
+held fixed.
 - **Provenance.** Each task writes `task_NNNNN_<arch>.json` with `instrument_idx`
   (one per band), `cal_idx`, `noise_seed` and the source `.h5`/`.csv` names. Only the
   INDICES are stored; any calibration statistic (`||C - inv(A)||`, implied

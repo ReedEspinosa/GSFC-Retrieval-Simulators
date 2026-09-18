@@ -84,7 +84,24 @@ import err_sim.customErrModel as cem  # noqa: E402
 # ================================ CONFIG ================================
 INSTRUMENT = os.environ.get('ERRSIM_INSTRUMENT', 'harperrsimmc')
 OUT_DIR = os.environ.get('ERRSIM_TASK_OUT', os.path.join(_HERE, 'tasks'))
-NOISE_SEED_BASE = 700000       # measurement-noise stream = NOISE_SEED_BASE + task_idx
+NOISE_SEED_BASE = 700000       # base seed for the measurement-noise stream
+
+# --- measurement-noise realisation -------------------------------------------
+#   'shared'   -- every task seeds the noise stream identically, so all tasks consume
+#                 the SAME sequence of random deviates.  The applied perturbation is
+#                 still instrument-specific, because sigma depends on that task's
+#                 characteristic matrix -- what is held fixed is the draw, not the
+#                 resulting noise.  Removes noise-realisation luck from the
+#                 across-task spread, which matters at only 526 pixels.
+#   'per_task' -- noise seed = NOISE_SEED_BASE + task_idx, so each task also samples
+#                 an independent noise realisation.  Closer to "many real
+#                 instruments", but the spread then mixes calibration with noise luck.
+#
+# Alignment note: Path 2 draws np.random.normal(size=(3, Nang)) once per
+# (pixel, wavelength) regardless of which instrument is pinned, so the streams stay in
+# lockstep across tasks and the Nth deviate is the same everywhere.  GUESS_SEED_MODE
+# ='shared' preserves this, since the guess wrapper saves and restores RNG state.
+NOISE_SEED_MODE = 'shared'     # 'shared' | 'per_task'
 CAL_SEED_BASE = 90000          # calibration-event draw    = CAL_SEED_BASE + task_idx
 
 # --- initial-guess randomisation ---------------------------------------------
@@ -174,11 +191,19 @@ def main():
     cem.init_store()
     nWvl = len(cem.VIEW_BAND_WVLS)
     prov = cem.pin_task(taskIdx, n_wvl=nWvl, cal_seed_base=CAL_SEED_BASE)
+    if NOISE_SEED_MODE == 'shared':
+        noiseSeed = NOISE_SEED_BASE
+    elif NOISE_SEED_MODE == 'per_task':
+        noiseSeed = NOISE_SEED_BASE + taskIdx
+    else:
+        raise ValueError("NOISE_SEED_MODE must be 'shared' or 'per_task', got %r"
+                         % NOISE_SEED_MODE)
     prov.update(instrument=INSTRUMENT,
                 n_wvl=nWvl,
                 cal_h5=os.path.basename(cem.CAL_MATRIX_H5_PATH),
                 cov_csv=os.path.basename(cem.COV_MATRIX_PATH),
-                noise_seed=NOISE_SEED_BASE + taskIdx)
+                noise_seed=noiseSeed,
+                noise_seed_mode=NOISE_SEED_MODE)
     prov['tmpdir'] = tempfile.gettempdir()
     print('task %d: instruments %s, calibration %d'
           % (taskIdx, prov['instrument_idx'], prov['cal_idx']))
@@ -200,6 +225,7 @@ def main():
     # of the same task then retrieve different answers from identical measurements.
     np.random.seed(prov['noise_seed'])
     random.seed(prov['noise_seed'])
+    print('         noise: %s (seed %d)' % (NOISE_SEED_MODE, prov['noise_seed']))
 
     prov['guess_seed_mode'] = GUESS_SEED_MODE
     if GUESS_SEED_MODE == 'shared':
