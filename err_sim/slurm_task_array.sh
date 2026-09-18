@@ -4,8 +4,9 @@
 #SBATCH --time=02:00:00
 #SBATCH -o log/errsim.%A-%a.out
 #SBATCH -e log/errsim.%A-%a.err
-#SBATCH --account=s2190
-#SBATCH --array=0-249
+#SBATCH --account=s3324
+#SBATCH --cpus-per-task=40
+#SBATCH --array=0-249%50
 # =============================================================================
 # One err_sim task per array index: ONE instrument (one pool entry per wavelength
 # channel) with ONE calibration event, over the full geometry.
@@ -13,6 +14,14 @@
 #   array range  0-249  -- a 1000-entry instrument pool supplies 1000/4 = 250 tasks.
 #                          Rerun the calibration sim with more instruments to go past
 #                          that; run_task.py refuses rather than wrapping around.
+#   %50               -- at most 50 tasks resident at once, so the array does not need
+#                          250 nodes; it drains in 5 waves.
+#   --cpus-per-task   -- run_experiment picks MAX_CPU up from SLURM_CPUS_PER_TASK, so
+#                          this single directive sets the parallelism.  graspDB runs
+#                          one single-threaded GRASP process per inversion chunk, so
+#                          cores == concurrent chunks.  At 526 pixels and 40 cores the
+#                          chunk size is ceil(526/40)=14 (under MAX_T=25, itself under
+#                          the build's _KITIME=30), giving 38 chunks -- one wave.
 #
 # Every task uses IDENTICAL scenes (paired design), so the spread across tasks is
 # attributable to calibration alone.  Instrument/calibration indices and the

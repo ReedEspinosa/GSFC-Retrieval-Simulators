@@ -53,13 +53,18 @@ TAU_FACTOR = 'randLogNrm0.2'         # 'randLogNrm<medianAOD>'; sigma is hardcod
 N_PIX      = (None if os.environ.get('ERRSIM_NPIX', '').lower() in ('all', 'none')
               else int(os.environ.get('ERRSIM_NPIX', 30)))
 NSIMS      = 1                       # noise repeats per pixel
-MAX_CPU    = 12                     # parallel GRASP procs (M5 Pro: 18 cores, 6 performance)
+# Parallel GRASP processes -- one per inversion chunk, so this IS the core count the
+# run will occupy (each GRASP process is single-threaded).  Defaults to the SLURM
+# allocation when running under sbatch, so --cpus-per-task is the single knob there;
+# ERRSIM_MAXCPU overrides both.  Local default 12 (M5 Pro: 18 cores, 6 performance).
+MAX_CPU    = int(os.environ.get('ERRSIM_MAXCPU',
+                                os.environ.get('SLURM_CPUS_PER_TASK', 12)))
 # Max pixels per GRASP process. graspDB splits the inversion into ceil(Npix/MAX_CPU)
 # chunks, and one GRASP segment cannot hold more pixels than the build's constants
 # allow.  All our pixels share ix=iy=1 and differ only in time, so the binding limit
 # is _KITIME (30 in this build's generic constants set), NOT _KIMAGE (=KITIME*KIX*KIY
 # =120).  Leaving this None silently exceeds it once Npix > 30*MAX_CPU and GRASP dies.
-MAX_T      = 25                      # < _KITIME=30, with headroom
+MAX_T      = int(os.environ.get('ERRSIM_MAXT', 25))   # < _KITIME=30, with headroom
 
 # --- geometry ---
 # 'nc4'    -> real orbital geometry from Sabrina's subsampled AOS file, the same
