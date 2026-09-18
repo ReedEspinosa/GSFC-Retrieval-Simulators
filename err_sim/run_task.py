@@ -41,6 +41,7 @@ path is the one that carries calibration bias), ``ERRSIM_TASK_OUT``.
 
 import json
 import os
+import random
 import sys
 import tempfile
 
@@ -131,7 +132,14 @@ def main():
     fwdYAML = [rx.setupConCaseYAML(rx.CONCASE, npix, rx.FWD_YAML,
                                    caseLoadFctr=rx.TAU_FACTOR) for npix in nowPix]
 
-    np.random.seed(prov['noise_seed'])   # task-specific, reproducible measurement noise
+    # Seed BOTH generators.  numpy covers the measurement noise and most of
+    # scrambleInitialGuess, but miscFunctions.loguniform -- which sets the initial
+    # guess for aerosol concentration and imaginary refractive index -- uses the
+    # STDLIB random module (`from random import random`), which np.random.seed does
+    # NOT touch.  Seeding only numpy leaves the initial guess unseeded, and two runs
+    # of the same task then retrieve different answers from identical measurements.
+    np.random.seed(prov['noise_seed'])
+    random.seed(prov['noise_seed'])
     noiseFun = rx.errorModelOf(nowPix[0])
     simA = rx.rs.simulation(nowPix)
     simA.runSim(fwdYAML, rx.BCK_YAML, rx.NSIMS, maxCPU=rx.MAX_CPU, maxT=rx.MAX_T,

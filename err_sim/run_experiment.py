@@ -31,6 +31,8 @@ Usage:
 import os
 import sys
 from pprint import pformat
+import warnings
+
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')                            # headless -> PNG only, no X11
@@ -143,6 +145,64 @@ PANELS = [
 ]
 
 
+_GEOM_CACHE = {}
+
+
+def _cached_geom_reader(nc4File):
+    """Return a selectGeomSabrina-compatible reader that opens the .nc4 ONCE.
+
+    ``ACCP_functions.selectGeomSabrina`` opens and closes the file on EVERY call, so
+    walking the geometry costs one open per candidate index -- 660 for the full AOS
+    file.  Across a 250-task SLURM array that is ~165,000 opens of the same file, a
+    metadata storm on a shared filesystem (correct, just wasteful).
+
+    This reads the three variables once per process, caches them by path, and then
+    answers each index from memory.  The per-index logic below is a faithful copy of
+    selectGeomSabrina's: same cumInd -> (timeInd, crossInd) mapping, same
+    (-1,-1,-1) sentinel past the end, same Delta-sza warning, same conversion of vza
+    to signed and phi onto [0,180].  ``tests``-style equivalence against the original
+    is checked in the smoke test.
+
+    Note the returned arrays are COPIES, because the caller's conversions
+    (``phi[phi<0] += 180``) mutate in place and would otherwise corrupt the cache.
+    """
+    if nc4File not in _GEOM_CACHE:
+        from netCDF4 import Dataset
+        with Dataset(nc4File, mode='r') as nc:
+            _GEOM_CACHE[nc4File] = dict(
+                azimuth=np.array(nc.variables['azimuth'][:]),
+                sza=np.array(nc.variables['sza'][:]),
+                vza=np.array(nc.variables['vza'][:]),
+                nTime=nc.dimensions['time'].size,
+                nCross=nc.dimensions['ncross'].size,
+            )
+    g = _GEOM_CACHE[nc4File]
+
+    def reader(_path, cumInd=None, timeInd=None, crossInd=None, addVZA=None):
+        assert addVZA is None, 'cached reader does not implement addVZA'
+        if timeInd is None or crossInd is None:
+            assert cumInd is not None, 'cumInd must be provided unless timeInd and crossInd are both provided'
+            timeInd = cumInd % g['nTime']
+            crossInd = int(np.floor(cumInd / g['nTime']))
+            if crossInd >= g['nCross']:        # past the end of the file
+                return -1, -1, -1
+        phi = np.array(g['azimuth'][timeInd, crossInd, :])      # copy: mutated below
+        sza = np.array(g['sza'][timeInd, crossInd, :])
+        if np.any((sza - sza[0]) > 1):
+            warnings.warn('Delta-sza was greater than 1 deg at timeInd=%d and crossInd=%d'
+                          % (timeInd, crossInd))
+        szaAvg = sza.mean()
+        vza = np.array(g['vza'][crossInd, :])
+        assert np.all(vza >= 0), 'At least one element of vza was less than zero before conversion!'
+        vza = np.sign(phi) * vza
+        phi[phi < 0] = phi[phi < 0] + 180
+        assert np.logical_and(phi >= 0, phi <= 180).all(), \
+            'At least one element did not satisfy 0 <= phi <= 180 after conversion!'
+        return szaAvg, phi, vza
+
+    return reader
+
+
 def make_geoms():
     """Return N_PIX (sza, phi) geometries from the configured source.
 
@@ -161,8 +221,8 @@ def make_geoms():
     if GEOM_SOURCE.lower() != 'nc4':
         raise ValueError("GEOM_SOURCE must be 'nc4' or 'random', got %r" % GEOM_SOURCE)
 
-    from ACCP_functions import selectGeomSabrina
     assert os.path.isfile(GEOM_NC4), 'Geometry nc4 not found: %s' % GEOM_NC4
+    selectGeomSabrina = _cached_geom_reader(GEOM_NC4)
     wantAll = N_PIX is None
     geoms, ind, skipped = [], GEOM_START_IND, 0
     while wantAll or len(geoms) < N_PIX:
