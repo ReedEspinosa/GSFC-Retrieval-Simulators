@@ -74,12 +74,70 @@ import warnings
 # >>> CONFIGURE INPUT PATHS HERE <<<
 # =============================================================================
 # Location of the calibration-simulation repo (nsienkie-cal-uncertainty).
-# Set CAL_UNCERTAINTY_DIR in the environment to override per machine; otherwise
-# the paths below are used.
+# CAL_UNCERTAINTY_DIR overrides everything; otherwise the candidates below are tried
+# in order and the first one that EXISTS wins, so the same checkout works on a laptop
+# and on the cluster without editing.
+#
+# NOTE os.path.expanduser: os.path.join does NOT expand '~', so a tilde in
+# CAL_UNCERTAINTY_DIR would be passed to the filesystem as a literal directory name
+# and fail with a path like '~/working/.../file.h5'.
 _ERRSIM_DIR = os.path.dirname(os.path.abspath(__file__))              # .../GSFC-Retrieval-Simulators/err_sim
-_CALSIM_DIR = os.environ.get(
-    'CAL_UNCERTAINTY_DIR',
-    '/Users/nsienkie/working/uncertainty/nsienkie-cal-uncertainty')   # this machine
+_REPO_DIR = os.path.dirname(_ERRSIM_DIR)                              # .../GSFC-Retrieval-Simulators
+_REPO_PARENT = os.path.dirname(_REPO_DIR)
+
+
+def _expand(path):
+    """Expand '~' and $VARS; os.path.join does neither."""
+    return os.path.abspath(os.path.expanduser(os.path.expandvars(path))) if path else path
+
+
+def _find_calsim_dir():
+    """First existing candidate for the nsienkie-cal-uncertainty checkout."""
+    env = os.environ.get('CAL_UNCERTAINTY_DIR')
+    if env:                                   # explicit wins, even if missing, so the
+        return _expand(env)                   # error names what the user actually set
+    for cand in (
+        os.path.join(_REPO_PARENT, 'nsienkie-cal-uncertainty'),        # sibling checkout
+        os.path.join(_REPO_PARENT, '..', 'uncertainty', 'nsienkie-cal-uncertainty'),
+        '/Users/nsienkie/working/uncertainty/nsienkie-cal-uncertainty',
+    ):
+        cand = _expand(cand)
+        if os.path.isdir(cand):
+            return cand
+    return _expand(os.path.join(_REPO_PARENT, 'nsienkie-cal-uncertainty'))
+
+
+_CALSIM_DIR = _find_calsim_dir()
+
+
+def _missing_input_msg(varName, path, pattern):
+    """Explain WHY a cal-sim input is missing, not merely that it is.
+
+    Walks up the path to find the deepest part that does exist and lists what is
+    actually there, which distinguishes the usual causes: the cal-sim checkout is
+    somewhere else on this machine, the products were never copied over, or the
+    run timestamp in the filename differs from the one produced here.
+    """
+    import glob
+    lines = ['%s does not exist: %s' % (varName, path)]
+    if path != os.path.expanduser(path):
+        lines.append('  NOTE: contains an unexpanded "~"; os.path.join does not expand it.')
+    probe = os.path.dirname(path)
+    while probe and probe != os.path.dirname(probe) and not os.path.isdir(probe):
+        probe = os.path.dirname(probe)
+    lines.append('  deepest existing directory: %s' % (probe or '(none)'))
+    if probe and os.path.isdir(probe):
+        near = sorted(glob.glob(os.path.join(probe, pattern)))[:6]
+        if near:
+            lines.append('  candidates matching %s there:' % pattern)
+            lines.extend('    %s' % os.path.basename(c) for c in near)
+    lines.append('  cal-sim checkout resolved to: %s (exists=%s)'
+                 % (_CALSIM_DIR, os.path.isdir(_CALSIM_DIR)))
+    lines.append('  CAL_UNCERTAINTY_DIR=%s' % os.environ.get('CAL_UNCERTAINTY_DIR', '<unset>'))
+    lines.append('  Fix: copy the cal-sim products to this machine, or point at them with')
+    lines.append('       CAL_UNCERTAINTY_DIR=/path/to/nsienkie-cal-uncertainty, or edit')
+    lines.append('       %s / COV_MATRIX_PATH if the run timestamp differs.' % varName)
+    return '\n'.join(lines)
 
 CAL_MATRIX_H5_PATH = os.path.join(_CALSIM_DIR, 'stor_data/eval_test/2026-09-15T16:46:06.h5')   # None -> dummy pool
 COV_MATRIX_PATH    = os.path.join(_CALSIM_DIR, 'eval_results/output/csv/covariance_matrix_radcal.csv')  # None -> dummy cov
@@ -292,7 +350,7 @@ class _MatrixStore:
         Covariance is NOT read here -- it comes from cov_path via _load_covariance_matrix()."""
         import h5py
         if not os.path.isfile(h5_path):
-            raise FileNotFoundError("CAL_MATRIX_H5_PATH does not exist: %s" % h5_path)
+            raise FileNotFoundError(_missing_input_msg('CAL_MATRIX_H5_PATH', h5_path, '*.h5'))
         with h5py.File(h5_path, 'r') as f:
             # drop the V column (last of the 4 Stokes weights) -> (N_instr, 3, 3)
             self.char_mats = np.array(f['results/characteristic_matrices'][:, :, :N_STOKES])
@@ -448,7 +506,7 @@ def _load_covariance_matrix(cov_path):
     if cov_path is None:
         return _dummy_covariance()
     if not os.path.isfile(cov_path):
-        raise FileNotFoundError("COV_MATRIX_PATH does not exist: %s" % cov_path)
+        raise FileNotFoundError(_missing_input_msg('COV_MATRIX_PATH', cov_path, '*.csv'))
     return _read_cov_csv(cov_path)
 
 
