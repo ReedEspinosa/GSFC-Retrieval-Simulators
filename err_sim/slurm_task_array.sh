@@ -71,7 +71,37 @@ hostname
 echo "--- err_sim task ${SLURM_ARRAY_TASK_ID} ---"
 
 PYTHON="${PYTHON:-python}"
-cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+
+# --- locate the repository ---------------------------------------------------
+# SLURM COPIES this script into a spool directory before running it, so
+# ${BASH_SOURCE[0]} is /var/spool/slurmd/... under sbatch -- NOT where the script
+# lives.  Deriving the repo from it therefore works locally and fails on the
+# cluster with:
+#     python: can't open file '/var/spool/slurmd/err_sim/run_task.py'
+# Resolve in order of decreasing reliability, and verify before using:
+#   1. ERRSIM_REPO         -- explicit, survives any submission directory
+#   2. SLURM_SUBMIT_DIR    -- where sbatch was run from (and its parent)
+#   3. dirname of this script -- correct only when NOT spooled, i.e. running locally
+REPO=""
+for cand in "${ERRSIM_REPO:-}" \
+            "${SLURM_SUBMIT_DIR:-}" \
+            "${SLURM_SUBMIT_DIR:-}/GSFC-Retrieval-Simulators" \
+            "${SLURM_SUBMIT_DIR:-}/.." \
+            "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)"; do
+    if [[ -n "$cand" && -f "$cand/err_sim/run_task.py" ]]; then
+        REPO="$(cd "$cand" && pwd)"
+        break
+    fi
+done
+if [[ -z "$REPO" ]]; then
+    echo "FATAL: cannot locate the GSFC-Retrieval-Simulators checkout." >&2
+    echo "       Looked for err_sim/run_task.py under ERRSIM_REPO, SLURM_SUBMIT_DIR" >&2
+    echo "       (='${SLURM_SUBMIT_DIR:-unset}') and this script's directory." >&2
+    echo "       Submit from the repo root, or: sbatch --export=ALL,ERRSIM_REPO=/path/to/repo ..." >&2
+    exit 1
+fi
+cd "$REPO" || exit 1
+echo "repo: $REPO"
 
 # second arg omitted -> every valid geometry pixel
 "$PYTHON" -u err_sim/run_task.py "${SLURM_ARRAY_TASK_ID}"
