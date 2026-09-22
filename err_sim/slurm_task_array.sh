@@ -2,8 +2,8 @@
 #SBATCH --job-name=errsimTask
 #SBATCH --nodes=1
 #SBATCH --time=02:00:00
-#SBATCH -o log/errsim.%A-%a.out
-#SBATCH -e log/errsim.%A-%a.err
+#SBATCH -o errsim.%A-%a.out
+#SBATCH -e errsim.%A-%a.err
 #SBATCH --account=s3324
 #SBATCH --cpus-per-task=10
 #SBATCH --array=0-10
@@ -30,9 +30,22 @@
 #
 # Submit:   sbatch err_sim/slurm_task_array.sh
 # Collect:  python err_sim/collect_tasks.py err_sim/tasks tasks_summary.csv
+#
+# LOGS.  -o is stdout, -e is stderr; %A is the array's master job id and %a the task
+# index, so task 3 of job 12345 writes errsim.12345-3.out / .err.
+#
+# These paths are relative to the directory you ran `sbatch` FROM (SLURM sets the
+# job's working directory to the submission directory), NOT to this script.  They are
+# deliberately written into that directory rather than a log/ subdirectory: SLURM
+# opens the output files BEFORE the job script runs, and it does NOT create missing
+# parent directories, so `mkdir -p log` inside the script is far too late -- the job
+# fails or the output is discarded before line 1 executes.
+#
+# To keep logs in a subdirectory, create it BEFORE submitting and pass it explicitly:
+#     mkdir -p log && sbatch -o log/errsim.%A-%a.out -e log/errsim.%A-%a.err \
+#         err_sim/slurm_task_array.sh
+# (or use an absolute path in the directives).
 # =============================================================================
-
-mkdir -p log
 
 # Descriptor headroom: graspDB holds one open pipe per forward pixel (see
 # run_overnight.sh) -- the default 256 dies partway through a 526-pixel run.
