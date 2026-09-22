@@ -5,8 +5,8 @@
 #SBATCH -o log/errsim.%A-%a.out
 #SBATCH -e log/errsim.%A-%a.err
 #SBATCH --account=s3324
-#SBATCH --cpus-per-task=40
-#SBATCH --array=0-249%50
+#SBATCH --cpus-per-task=10
+#SBATCH --array=0-10
 # =============================================================================
 # One err_sim task per array index: ONE instrument (one pool entry per wavelength
 # channel) with ONE calibration event, over the full geometry.
