@@ -493,6 +493,58 @@ n, k at each wavelength plus rEff and rv — which is the table to regress for t
 It reports tasks it had to skip (missing/unreadable pickle, no retrievals) rather
 than silently dropping them.
 
+### 8e. The smoke-over-ocean campaign (current configuration)
+
+Set entirely by environment variables in `slurm_task_array.sh`, so no source edit is
+needed to change scene:
+
+| knob | value | why |
+|---|---|---|
+| `ERRSIM_CONCASE` | `smokeVariable` | polarimetric signal is strongest for smoke |
+| `ERRSIM_TAU_FACTOR` | `randLogNrm0.3` | median AOD 0.3; 95% of draws in ~[0.075, 1.2] |
+| `ERRSIM_BCK_YAML` | `..._errsim_smoke.yml` | a-priori box that can represent smoke truth |
+| `ERRSIM_INSTRUMENT` | `harperrsimmc` | Path 2 is the path carrying calibration bias |
+| pixels | all 526 | `run_task.py` defaults to `ERRSIM_NPIX=all` |
+| array | `0-49%50` | 50 instruments, one wave |
+
+> **`smokeVariable` is an OCEAN case.** `canonicalCaseMap` derives the surface from the
+> case NAME: `landPrct = 100` only if the string contains `desert` or `vegetation`,
+> else `0`. There is **no test for `land` anywhere**, so `smokeLand...` silently yields
+> an ocean scene — which is why the earlier `smokeLand0.3LogNormal` run reported
+> `land_prct=0`. Use `smokeDesert`/`smokeVegetation` for a land surface.
+
+**Why a separate BCK YAML.** The smoke truth sits on top of the marine a-priori box.
+Measured over 6000 `smokeVariable` draws:
+
+| parameter | truth median | marine bound | % of truth outside |
+|---|---|---|---|
+| k fine | 0.00997 | max 0.01 | **49% above** |
+| rv coarse | 0.664 | min 0.65 | **46% below** |
+| sigma coarse | 0.451 | min 0.32 | 8% below |
+| sigma fine | 0.401 | min 0.25 | 3% below |
+
+A pinned parameter cannot respond to calibration error at all, so this was destroying
+the very signal the campaign measures (and produced the huge microphysical biases seen
+in the 2026-09 run). `settings_BCK_POLAR_2modes_errsim_smoke.yml` widens fine k max to
+0.05, coarse rv min to 0.35, coarse sigma to 0.20, fine sigma to 0.15 — every parameter
+then under 1% out-of-range, with the modes still separated (0.02% of fine rv draws
+exceed the new coarse floor). **Coarse k stays capped at 0.01**: its truth is 1e-4 so it
+needs no room, and at 0.05 the weakly-constrained coarse mode ran away to the cap.
+Measurement noise is identical to the I1pct file.
+
+**Known caveat.** The coarse mode still runs high (retrieved rv ~2.6 um vs truth ~0.62,
+12% of pixels pinned at the 4.9 um ceiling). That is an information-content limit for
+smoke over black ocean, not a bounds artifact, and was left unconstrained deliberately
+rather than tuning the a-priori toward the truth. AOD and SSA are clean: bias +1.2% and
++0.9%, RMSE 0.033 and 0.019 over a 24-pixel test.
+
+**Sizing, measured not guessed** (from the 51-task 2026-09-23 run in `log/`):
+63.7 CPU-s per pixel for marine, spread only ±9%; smoke costs 0.65× that. Memory tracks
+CONCURRENCY, not pixel count (~1.4 GB per GRASP process). That run used 40 of 126
+allocated cores — these nodes are handed out whole — so the script now requests
+`--exclusive` and derives `ERRSIM_MAXCPU` from `SLURM_CPUS_ON_NODE`, cutting per-task
+wall from ~22 min to ~8 min. 50 tasks × 526 pixels ≈ 400 CPU-hours, one wave, ~12 min.
+
 ## 9. Open items / future work
 
 - **Solar spectrum -> Thuillier.** `SOLAR_SPECTRUM='table'` + `SOLAR_TABLE_PATH` is

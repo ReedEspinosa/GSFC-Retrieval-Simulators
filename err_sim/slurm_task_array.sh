@@ -6,16 +6,17 @@
 #SBATCH -o errsim.%A-%a.out
 #SBATCH -e errsim.%A-%a.err
 #SBATCH --account=s3324
-#SBATCH --array=0-249%50
+#SBATCH --array=0-49%50
 # =============================================================================
 # One err_sim task per array index: ONE instrument (one pool entry per wavelength
 # channel) with ONE calibration event, over the FULL 526-pixel geometry.
 #
-#   array range  0-249  -- a 1000-entry instrument pool supplies 1000/4 = 250 tasks.
-#                          Rerun the calibration sim with more instruments to go past
-#                          that; run_task.py refuses rather than wrapping around.
-#   %50               -- at most 50 tasks resident at once, so the array needs 50
-#                          nodes rather than 250; it drains in 5 waves.
+#   array range  0-49   -- 50 instruments.  The 1000-entry pool supports up to 250
+#                          tasks (1000/4 bands); widen to 0-249 once this smoke
+#                          configuration is confirmed.  run_task.py refuses to wrap
+#                          around rather than silently reusing instruments.
+#   %50               -- at most 50 tasks resident at once, so this array is a single
+#                          wave of 50 nodes.
 #
 # Every task uses IDENTICAL scenes (paired design), so the spread across tasks is
 # attributable to calibration alone.  Instrument/calibration indices, the initial
@@ -40,7 +41,9 @@
 #     526 px, chunk = ceil(526/126) = 5 px -> 106 chunks, all resident in one wave
 #     ~8.0 CPU-hours -> ~8 min wall (vs ~22 min if we had stayed at 40 cores)
 #     -> ~12 min with slack, i.e. a 10x margin inside the 2 h limit.
-# Whole array: 250 tasks / 50 resident = 5 waves x ~12 min ~= 60 min of node time.
+# Whole array: 50 tasks, all resident at once = one wave, ~12 min of node time,
+# ~400 CPU-hours, 26,300 retrievals.  Same instrument count as the 2026-09-23 run but
+# 17.5x the pixels each, so the per-task bias standard error falls by sqrt(526/30)=4.2x.
 #
 # Queue wait is NOT charged against --time (the last run pended 55 min), so the 2 h
 # limit applies only to the running task.
@@ -79,6 +82,11 @@ ulimit -n 8192 2>/dev/null || echo "WARNING: could not raise ulimit -n"
 # produces an OCEAN scene.  Write 'smokeDesert'/'smokeVegetation' if you ever want land.
 # 'Variable' adds 1-sigma 20% scatter to rv, sigma, height, n and k per pixel.
 export ERRSIM_CONCASE="${ERRSIM_CONCASE:-smokeVariable}"
+
+# Median AOD 0.3 (sigma_g = ln 2, so 95% of draws land in ~[0.075, 1.2]).  Thicker
+# than the 0.2 marine default: smoke plumes are optically thicker in reality and the
+# polarized signal this campaign measures grows with optical depth.
+export ERRSIM_TAU_FACTOR="${ERRSIM_TAU_FACTOR:-randLogNrm0.3}"
 
 # Retrieval settings whose a-priori box can actually REPRESENT the smoke truth.  With
 # the marine box, 49% of fine-mode k truth lay above the 0.01 cap and 46% of coarse rv
@@ -153,6 +161,7 @@ cd "$REPO" || exit 1
 # each task's provenance JSON.
 echo "repo:       $REPO"
 echo "scene:      $ERRSIM_CONCASE   (smoke over OCEAN; 'Land' suffixes are inert)"
+echo "AOD draw:   $ERRSIM_TAU_FACTOR"
 echo "bck yaml:   $ERRSIM_BCK_YAML"
 echo "instrument: $ERRSIM_INSTRUMENT"
 echo "cores:      $ERRSIM_MAXCPU of $NCORE on node"

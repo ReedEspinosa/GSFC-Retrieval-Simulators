@@ -45,7 +45,11 @@ import matplotlib.pyplot as plt
 # Override without editing this file:  ERRSIM_INSTRUMENT=harperrsimbck python err_sim/run_experiment.py
 INSTRUMENT = os.environ.get('ERRSIM_INSTRUMENT', 'harperrsim')
 CONCASE    = os.environ.get('ERRSIM_CONCASE', 'marineVariable')  # 2-mode scene (local GRASP caps modes at 2)
-TAU_FACTOR = 'randLogNrm0.2'         # 'randLogNrm<medianAOD>'; sigma is hardcoded ln(2), so 95% of draws land in [median/4, median*4]
+# 'randLogNrm<medianAOD>'; sigma is hardcoded ln(2), so 95% of draws land in
+# [median/4, median*4].  0.2 suits the marine default; the smoke campaign uses 0.3
+# (set in slurm_task_array.sh) -- thicker plumes give a stronger polarized signal,
+# which is the reason for running smoke at all.
+TAU_FACTOR = os.environ.get('ERRSIM_TAU_FACTOR', 'randLogNrm0.2')
 
 # --- how many retrievals (total = NSIMS * N_PIX) ---
 # Pixels swept over geometry.  ERRSIM_NPIX=all (or 'none') -> every valid pixel in
