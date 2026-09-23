@@ -1,30 +1,39 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""NumPy 2.x compatibility shims for the read-only GSFC-GRASP-Python-Interface repo.
+"""NumPy version-compatibility shims, so the same checkout runs on NumPy 1.x and 2.x.
 
-Two independent NumPy-2 breakages are patched here (see apply()):
-  1. np.trapz was removed  -> restore as an alias of np.trapezoid
+Patched here (see apply()):
+  1. the np.trapz / np.trapezoid split -- aliased in WHICHEVER direction is missing
   2. miscFunctions.loguniform passes a 1-element ndarray to math.log
 
-NumPy 2.0 REMOVED ``np.trapz`` (it was renamed ``np.trapezoid``).  The interface
-repo still calls ``np.trapz`` in 9 places -- runGRASP.py (parseOutAerosol,
-parsePhaseMatrix, rsltDictTools), miscFunctions.py and mieFunctions.py -- so on
-NumPy >= 2 a retrieval dies while PARSING GRASP's output, after the forward
-calculation has already succeeded:
+THE TRAPEZOID SPLIT.  NumPy 2.0 renamed ``np.trapz`` to ``np.trapezoid`` and removed
+the old name.  The two repos in play were written against different NumPy majors and
+use DIFFERENT spellings, so on any single NumPy version one of them breaks:
 
-    AttributeError: module 'numpy' has no attribute 'trapz'
+    GSFC-GRASP-Python-Interface  uses np.trapz      (runGRASP.py, miscFunctions.py,
+                                                     mieFunctions.py -- 9 call sites)
+    GSFC-Retrieval-Simulators    uses np.trapezoid  (simulateRetrieval.py,
+                                                     MADCAP_functions.py,
+                                                     readOSSEnetCDF.py, ...)
 
-GSFC-GRASP-Python-Interface is a read-only dependency (see
-../ALTERING_THE_MEASUREMENT_ERROR_MODEL.md), so instead of patching it we restore
-the alias here.  ``np.trapezoid`` is the same function under the new name and is
-signature-compatible for every call site above (all use the ``f(y, x)`` form).
+  * On NumPy >= 2 the interface repo dies while PARSING GRASP's output, after the
+    forward calculation has already succeeded:
+        AttributeError: module 'numpy' has no attribute 'trapz'
+  * On NumPy < 2 the simulator repo dies in simulateRetrieval._addReffMode:
+        AttributeError: module 'numpy' has no attribute 'trapezoid'
 
-Import this BEFORE anything that pulls in runGRASP::
+Both were observed for real -- the first on a NumPy 2.5 laptop, the second on a
+cluster whose GEOSpyD stack ships NumPy 1.x.  The interface repo is a read-only
+dependency (see ../ALTERING_THE_MEASUREMENT_ERROR_MODEL.md), so rather than editing
+either, alias whichever name is absent.  They are the same function and are
+signature-compatible for every call site here (all use the ``f(y, x)`` form).
 
-    import err_sim.np_compat   # noqa: F401  -- must precede runGRASP import
+Import this BEFORE anything that pulls in runGRASP or simulateRetrieval::
 
-Alternative if you would rather not carry a shim: pin ``numpy<2`` in the conda
-env.  That was not done here because the env's pandas expects NumPy 2.
+    import err_sim.np_compat   # noqa: F401  -- must precede those imports
+
+Pinning a NumPy version instead would not fix this: no single major satisfies both
+repos.
 """
 
 import numpy as np
@@ -80,12 +89,19 @@ def _patch_loguniform():
 
 
 def apply():
-    """Apply all NumPy-2 shims. Idempotent; no-ops on NumPy 1.x."""
-    if not hasattr(np, 'trapz'):
-        if not hasattr(np, 'trapezoid'):
-            raise ImportError('numpy has neither trapz nor trapezoid (version %s)'
-                              % np.__version__)
+    """Apply the NumPy compatibility shims. Idempotent; safe on 1.x and 2.x.
+
+    Aliases whichever of trapz/trapezoid the installed NumPy is missing, so both
+    repos' spellings resolve regardless of major version.
+    """
+    hasTrapz = hasattr(np, 'trapz')
+    hasTrapezoid = hasattr(np, 'trapezoid')
+    if not hasTrapz and not hasTrapezoid:
+        raise ImportError('numpy %s has neither trapz nor trapezoid' % np.__version__)
+    if not hasTrapz:                    # NumPy >= 2: restore the old name
         np.trapz = np.trapezoid
+    if not hasTrapezoid:                # NumPy < 2: provide the new name
+        np.trapezoid = np.trapz
     _patch_loguniform()
     return np.trapz
 
