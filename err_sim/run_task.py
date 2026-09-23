@@ -239,6 +239,12 @@ def main():
     print('task %d: instruments %s, calibration %d'
           % (taskIdx, prov['instrument_idx'], prov['cal_idx']))
     print('         tmpdir %s' % prov['tmpdir'])
+    # Resolved external trees. Printed into every task log so a misconfigured machine
+    # is obvious from the log alone rather than from a wrong-looking result later.
+    print('         base   %s%s' % (rx.ERRSIM_BASE,
+          '' if os.path.isdir(rx.ERRSIM_BASE) else '  (DOES NOT EXIST -- paths below came from discovery)'))
+    print('         grasp  %s' % rx.DIR_GRASP)
+    print('         cal h5 %s' % cem.CAL_MATRIX_H5_PATH)
 
     # --- build the (identical in every task) scenes, then run ------------
     geoms = rx.make_geoms()

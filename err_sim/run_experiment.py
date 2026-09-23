@@ -85,7 +85,8 @@ MAX_T      = int(os.environ.get('ERRSIM_MAXT', 25))   # < _KITIME=30, with headr
 # so honouring them is possible -- it would require teaching the harperrsim block in
 # architectureMap.py to accept vza, and would change the scattering-angle sampling.
 GEOM_SOURCE = 'nc4'                  # 'nc4' | 'random'
-GEOM_NC4    = '/Users/nsienkie/working/grasp_sims/data_stor/MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4'
+GEOM_NC4    = None                   # resolved below; ERRSIM_GEOM_NC4 overrides
+GEOM_NC4_NAME = 'MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4'
 GEOM_START_IND = 0                   # first cumulative pixel index to consider
 MAX_SZA     = 70.0                   # skip pixels with sza above this (matches runRetrievalSimulation)
 GEOM_SEED  = 7
@@ -103,14 +104,88 @@ RUN_RETRIEVAL     = True             # False -> skip GRASP, just re-plot existin
 MAKE_PLOTS        = True
 PLOT_WAVE_IND     = 1                # wavelength index for the scatter grid (1 = 0.549 um)
 
-# --- machine paths (edit per machine) ---
-DIR_GRASP = '/Users/nsienkie/working/grasp/build/bin/grasp'
-KRNL_PATH = '/Users/nsienkie/working/grasp/src/retrieval/internal_files'
 # =======================================================================
 
 _HERE   = os.path.dirname(os.path.abspath(__file__))
 _REPO   = os.path.dirname(_HERE)
 _PARENT = os.path.dirname(_REPO)
+
+# ============================ MACHINE PATHS ============================
+# Nothing below is machine-specific: every path is DISCOVERED relative to a base
+# directory, so the same checkout runs on the laptop and the cluster unedited.
+#
+#   ERRSIM_BASE   root to search under.  Defaults to the repo's parent, which is
+#                 '<...>/grasp_sims' on the laptop and '/gpfsm/dnb33/nsienkie/retr_sim'
+#                 on the cluster (where every tree is copied side by side).  The
+#                 laptop also needs its grandparent, since grasp/ and the cal-sim live
+#                 one level further up there -- both are searched.
+#
+# Individual overrides win over discovery and are reported verbatim on failure:
+#   ERRSIM_GRASP_BIN      the grasp executable
+#   ERRSIM_GRASP_KERNELS  the internal_files kernel directory
+#   ERRSIM_GEOM_NC4       the orbital geometry .nc4
+#   CAL_UNCERTAINTY_DIR   the cal-sim checkout (read by customErrModel)
+#
+# Run `python err_sim/check_paths.py` on a new machine to see what resolved.
+
+
+def _expand(p):
+    """Expand '~' and $VARS and absolutise; os.path.join does none of these."""
+    return os.path.abspath(os.path.expanduser(os.path.expandvars(p))) if p else p
+
+
+ERRSIM_BASE = _expand(os.environ.get('ERRSIM_BASE', _PARENT))
+
+# Roots to search, nearest first.  The grandparent covers the laptop layout where
+# grasp/ and uncertainty/ are siblings of grasp_sims/ rather than of the repo.
+_SEARCH_ROOTS = [ERRSIM_BASE, _expand(os.path.join(ERRSIM_BASE, '..')), _PARENT,
+                 _expand(os.path.join(_PARENT, '..'))]
+_SEARCH_ROOTS = list(dict.fromkeys(r for r in _SEARCH_ROOTS if r))  # de-dup, keep order
+
+
+def _resolve(envVar, relCands, isDir, what):
+    """First existing candidate, or an error naming every place we looked.
+
+    An explicit env var wins even when it does not exist, so the message reports
+    what the USER set rather than a discovery fallback they never asked for.
+    """
+    env = os.environ.get(envVar)
+    if env:
+        got = _expand(env)
+        ok = os.path.isdir(got) if isDir else os.path.isfile(got)
+        if not ok:
+            raise FileNotFoundError('%s=%s does not exist (looking for %s)'
+                                    % (envVar, got, what))
+        return got
+    tried = []
+    for root in _SEARCH_ROOTS:
+        for rel in relCands:
+            cand = _expand(os.path.join(root, rel))
+            tried.append(cand)
+            if os.path.isdir(cand) if isDir else os.path.isfile(cand):
+                return cand
+    raise FileNotFoundError(
+        '%s not found.\n  Set %s explicitly, or place it under ERRSIM_BASE=%s\n'
+        '  Looked in:\n    %s' % (what, envVar, ERRSIM_BASE, '\n    '.join(tried)))
+
+
+# The grasp binary. 'build' is a symlink to the working GCC-13 build on the laptop
+# (see ../../GRASP_BUILD_NOTES.md); build_g13 is checked too in case it is not.
+_GRASP_BIN_CANDS = ['grasp/build/bin/grasp', 'grasp/build_g13/bin/grasp',
+                    'GRASP/build/bin/grasp', 'grasp/bin/grasp', 'bin/grasp']
+_GRASP_KRNL_CANDS = ['grasp/src/retrieval/internal_files',
+                     'GRASP/src/retrieval/internal_files',
+                     'grasp/internal_files', 'internal_files']
+_GEOM_CANDS = [os.path.join(d, GEOM_NC4_NAME)
+               for d in ('data_stor', 'grasp_sims/data_stor', 'data', '.')]
+
+DIR_GRASP = _resolve('ERRSIM_GRASP_BIN', _GRASP_BIN_CANDS, False, 'the grasp executable')
+KRNL_PATH = _resolve('ERRSIM_GRASP_KERNELS', _GRASP_KRNL_CANDS, True,
+                     'the GRASP kernel directory (internal_files)')
+if GEOM_SOURCE.lower() == 'nc4':
+    GEOM_NC4 = _resolve('ERRSIM_GEOM_NC4', _GEOM_CANDS, False,
+                        'the orbital geometry file %s' % GEOM_NC4_NAME)
+# =======================================================================
 sys.path.append(os.path.join(_PARENT, 'GSFC-GRASP-Python-Interface'))
 sys.path.append(_REPO)
 sys.path.append(os.path.join(_REPO, 'ACCP_ArchitectureAndCanonicalCases'))

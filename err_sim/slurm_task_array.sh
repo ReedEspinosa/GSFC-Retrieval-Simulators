@@ -81,6 +81,28 @@
 # 256 dies partway through a 526-pixel run.
 ulimit -n 8192 2>/dev/null || echo "WARNING: could not raise ulimit -n"
 
+# --- external trees ----------------------------------------------------------
+# Everything err_sim needs from outside this repo -- the grasp binary, the GRASP
+# kernels, the orbital geometry .nc4 and the cal-sim HDF5/CSV -- is DISCOVERED under
+# ERRSIM_BASE rather than hardcoded, so laptop and cluster share one checkout.  On the
+# cluster the trees are copied side by side under a single base:
+#
+#     /gpfsm/dnb33/nsienkie/retr_sim/
+#         GSFC-Retrieval-Simulators/      <- this repo (SLURM_SUBMIT_DIR, usually)
+#         GSFC-GRASP-Python-Interface/
+#         grasp/
+#         nsienkie-cal-uncertainty/
+#         data_stor/
+#
+# The default (this repo's parent) is already correct for that layout, so this line is
+# belt and braces -- it keeps the run working if the job is submitted from elsewhere.
+# Override any single item with ERRSIM_GRASP_BIN / ERRSIM_GRASP_KERNELS /
+# ERRSIM_GEOM_NC4 / CAL_UNCERTAINTY_DIR / ERRSIM_CAL_H5 / ERRSIM_COV_CSV.
+#
+# Verify a new machine BEFORE submitting:   python err_sim/check_paths.py
+export ERRSIM_BASE="${ERRSIM_BASE:-/gpfsm/dnb33/nsienkie/retr_sim}"
+[[ -d "$ERRSIM_BASE" ]] || echo "WARNING: ERRSIM_BASE=$ERRSIM_BASE is not a directory; falling back to discovery"
+
 # --- scene under test --------------------------------------------------------
 # SMOKE OVER OCEAN.  Polarimetric signal is strongest for smoke, which is why this
 # campaign uses it rather than the marine default.

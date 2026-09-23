@@ -349,6 +349,44 @@ geometry).
 - GRASP must be the **GCC 13** build — see `../../../GRASP_BUILD_NOTES.md`. GCC 15/16
   produce a binary that segfaults in the SOS RT path.
 
+### External paths — discovered, never hardcoded
+
+**Run `python err_sim/check_paths.py` first on any new machine.** It resolves every
+external path, prints what it found, names the variable to set for anything it could
+not, and exits non-zero if the machine is not ready. It launches no GRASP, so it is
+instant.
+
+Nothing outside this repo is hardcoded. Everything is discovered under `ERRSIM_BASE`
+(default: the repo's parent), with the repo's parent and grandparent also searched, so
+one checkout runs on both layouts:
+
+```
+cluster  /gpfsm/dnb33/nsienkie/retr_sim/     laptop  ~/working/
+    GSFC-Retrieval-Simulators/                   grasp_sims/GSFC-Retrieval-Simulators/
+    GSFC-GRASP-Python-Interface/                 grasp_sims/GSFC-GRASP-Python-Interface/
+    grasp/                                       grasp_sims/data_stor/
+    nsienkie-cal-uncertainty/                    grasp/
+    data_stor/                                   uncertainty/nsienkie-cal-uncertainty/
+```
+
+| variable | overrides |
+|---|---|
+| `ERRSIM_BASE` | root to search under |
+| `ERRSIM_GRASP_BIN` | the grasp executable |
+| `ERRSIM_GRASP_KERNELS` | the `internal_files` kernel directory |
+| `ERRSIM_GEOM_NC4` | the orbital geometry `.nc4` |
+| `CAL_UNCERTAINTY_DIR` | the cal-sim checkout |
+| `ERRSIM_CAL_H5` | calibration HDF5 (bare filename resolves against the usual dir) |
+| `ERRSIM_COV_CSV` | covariance CSV (same rule) |
+
+An explicit variable wins even when it points at nothing, so the error names what
+*you* set rather than a fallback you never asked for. `ERRSIM_CAL_H5` matters in
+practice because the HDF5 filename is a run timestamp that changes every time the
+calibration sim is rerun; when the named file is missing the error lists the `.h5`
+files that *are* present. Each task also prints its resolved base, grasp binary and
+cal HDF5 into its log, so a misconfigured machine shows up in the log rather than as a
+wrong-looking result later.
+
 **NumPy compatibility shim (`np_compat.py`).** Aliases whichever of
 `np.trapz`/`np.trapezoid` the installed NumPy lacks, and fixes
 `miscFunctions.loguniform` passing a 1-element ndarray to `math.log` (NumPy 2 no

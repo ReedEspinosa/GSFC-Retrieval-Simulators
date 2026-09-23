@@ -91,20 +91,35 @@ def _expand(path):
     return os.path.abspath(os.path.expanduser(os.path.expandvars(path))) if path else path
 
 
+def _calsim_candidates():
+    """Places the nsienkie-cal-uncertainty checkout might live, nearest first.
+
+    Searched under ERRSIM_BASE (the cluster copies every tree side by side under one
+    base, e.g. /gpfsm/dnb33/nsienkie/retr_sim) and under the repo's parent and
+    grandparent (the laptop keeps it in a separate 'uncertainty/' sibling).
+    """
+    roots, seen = [], set()
+    for r in (os.environ.get('ERRSIM_BASE'), _REPO_PARENT,
+              os.path.join(_REPO_PARENT, '..')):
+        r = _expand(r) if r else None
+        if r and r not in seen:
+            seen.add(r)
+            roots.append(r)
+    rels = ('nsienkie-cal-uncertainty',
+            'uncertainty/nsienkie-cal-uncertainty',
+            'cal-uncertainty', 'cal_uncertainty')
+    return [_expand(os.path.join(root, rel)) for root in roots for rel in rels]
+
+
 def _find_calsim_dir():
     """First existing candidate for the nsienkie-cal-uncertainty checkout."""
     env = os.environ.get('CAL_UNCERTAINTY_DIR')
     if env:                                   # explicit wins, even if missing, so the
         return _expand(env)                   # error names what the user actually set
-    for cand in (
-        os.path.join(_REPO_PARENT, 'nsienkie-cal-uncertainty'),        # sibling checkout
-        os.path.join(_REPO_PARENT, '..', 'uncertainty', 'nsienkie-cal-uncertainty'),
-        '/Users/nsienkie/working/uncertainty/nsienkie-cal-uncertainty',
-    ):
-        cand = _expand(cand)
+    for cand in _calsim_candidates():
         if os.path.isdir(cand):
             return cand
-    return _expand(os.path.join(_REPO_PARENT, 'nsienkie-cal-uncertainty'))
+    return _calsim_candidates()[0]            # nearest miss, for the error message
 
 
 _CALSIM_DIR = _find_calsim_dir()
@@ -139,8 +154,21 @@ def _missing_input_msg(varName, path, pattern):
     lines.append('       %s / COV_MATRIX_PATH if the run timestamp differs.' % varName)
     return '\n'.join(lines)
 
-CAL_MATRIX_H5_PATH = os.path.join(_CALSIM_DIR, 'stor_data/eval_test/2026-09-15T16:46:06.h5')   # None -> dummy pool
-COV_MATRIX_PATH    = os.path.join(_CALSIM_DIR, 'eval_results/output/csv/covariance_matrix_radcal.csv')  # None -> dummy cov
+# Cal-sim products.  ERRSIM_CAL_H5 / ERRSIM_COV_CSV override outright (bare name is
+# resolved against the usual directory, a path with a separator is taken as given), so
+# a new calibration run can be pointed at without editing source -- the HDF5 name is a
+# run timestamp and changes every time the cal sim is rerun.
+def _calsim_file(envVar, relPath):
+    env = os.environ.get(envVar)
+    if not env:
+        return os.path.join(_CALSIM_DIR, relPath)
+    if os.sep in env or env.startswith('~') or env.startswith('$'):
+        return _expand(env)                       # explicit location
+    return os.path.join(_CALSIM_DIR, os.path.dirname(relPath), env)   # bare filename
+
+
+CAL_MATRIX_H5_PATH = _calsim_file('ERRSIM_CAL_H5', 'stor_data/eval_test/2026-09-15T16:46:06.h5')   # None -> dummy pool
+COV_MATRIX_PATH    = _calsim_file('ERRSIM_COV_CSV', 'eval_results/output/csv/covariance_matrix_radcal.csv')  # None -> dummy cov
 EAGER_LOAD = False          # True -> build the store at import; False -> on first pixel
 
 # --- radiometric calibration ---
