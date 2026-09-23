@@ -118,6 +118,28 @@ def main():
             w.writerow(r)
 
     print('collected %d task(s) -> %s' % (len(rows), outCsv))
+
+    # Campaign homogeneity.  Task filenames depend only on (index, architecture), so a
+    # directory can silently end up holding tasks from two different campaigns.  Every
+    # task records its scene, so disagreement is detectable -- report it loudly rather
+    # than averaging a marine run together with a smoke one.  (run_task.py also deletes
+    # stale outputs up front, so this should only fire on a genuinely mixed directory.)
+    provs = [json.load(open(m)) for m in metas]
+    for field in ('concase', 'tau_factor', 'bck_yaml', 'instrument', 'cal_h5',
+                  'noise_seed_mode', 'guess_seed_mode'):
+        seen = {}
+        for p in provs:
+            seen.setdefault(p.get(field, '<unrecorded>'), []).append(p.get('task_idx'))
+        if len(seen) > 1:
+            print('WARNING: tasks disagree on %r -- this directory mixes campaigns:' % field)
+            for val, idxs in sorted(seen.items(), key=lambda kv: -len(kv[1])):
+                show = ', '.join(str(i) for i in idxs[:8])
+                print('   %-46s %3d task(s): %s%s'
+                      % (val, len(idxs), show, ' ...' if len(idxs) > 8 else ''))
+    nPix = {r['n_pix'] for r in rows}
+    if len(nPix) > 1:
+        print('WARNING: tasks disagree on retrieved pixel count: %s' % sorted(nPix))
+
     if skipped:
         print('SKIPPED %d task(s):' % len(skipped))
         for t, why in skipped:

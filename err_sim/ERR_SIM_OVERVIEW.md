@@ -505,7 +505,7 @@ needed to change scene:
 | `ERRSIM_BCK_YAML` | `..._errsim_smoke.yml` | a-priori box that can represent smoke truth |
 | `ERRSIM_INSTRUMENT` | `harperrsimmc` | Path 2 is the path carrying calibration bias |
 | pixels | all 526 | `run_task.py` defaults to `ERRSIM_NPIX=all` |
-| array | `0-49%50` | 50 instruments, one wave |
+| array | `0-249%84` | all 250 instruments (the pool's exact maximum) |
 
 > **`smokeVariable` is an OCEAN case.** `canonicalCaseMap` derives the surface from the
 > case NAME: `landPrct = 100` only if the string contains `desert` or `vegetation`,
@@ -543,7 +543,20 @@ rather than tuning the a-priori toward the truth. AOD and SSA are clean: bias +1
 CONCURRENCY, not pixel count (~1.4 GB per GRASP process). That run used 40 of 126
 allocated cores — these nodes are handed out whole — so the script now requests
 `--exclusive` and derives `ERRSIM_MAXCPU` from `SLURM_CPUS_ON_NODE`, cutting per-task
-wall from ~22 min to ~8 min. 50 tasks × 526 pixels ≈ 400 CPU-hours, one wave, ~12 min.
+wall from ~22 min to ~8 min. 250 tasks × 526 pixels ≈ 2000 CPU-hours, ~21–36 min
+elapsed at 84-way concurrency, ~1.5 GB of pickles. The `%84` is a CAP, not a
+reservation — SLURM runs whatever it can schedule, so raising it only shortens the
+campaign. This is the first configuration whose per-task AOD bias standard error
+(~0.0019) falls below the calibration signal (~0.003), so the instrument-to-instrument
+trend should finally be resolvable.
+
+**Stale-output guard.** Task filenames depend only on (index, architecture), so a rerun
+overwrites the previous campaign's files — but only for tasks that SUCCEED. A task that
+dies used to leave the old pickle in place, indistinguishable from a fresh one.
+`run_task.py` now deletes its own outputs before starting, so a failed task shows up as
+MISSING rather than stale, and `collect_tasks.py` warns if the directory mixes campaigns
+(it compares `concase`, `tau_factor`, `bck_yaml`, `cal_h5`, seed modes and pixel count
+across tasks).
 
 ## 9. Open items / future work
 

@@ -195,6 +195,20 @@ def main():
     pkl = os.path.join(OUT_DIR, 'task_%05d_%s.pkl' % (taskIdx, INSTRUMENT))
     meta = os.path.join(OUT_DIR, 'task_%05d_%s.json' % (taskIdx, INSTRUMENT))
 
+    # Drop any pickle left by a PREVIOUS campaign at this index before doing any work.
+    # Task filenames depend only on (index, architecture), so a rerun with a different
+    # scene writes over the old files -- but only for the tasks that SUCCEED.  A task
+    # that dies leaves the earlier run's pickle in place, and the collector cannot tell
+    # it apart from a fresh one; a 30-pixel marine result would silently be counted as
+    # a 526-pixel smoke result.  Deleting up front makes a failed task show up as a
+    # MISSING task instead of a stale one.  Each task owns its own index, so this
+    # cannot race with its siblings.
+    for stale in (pkl, meta):
+        if os.path.exists(stale):
+            print('         removing stale output from a previous run: %s'
+                  % os.path.basename(stale))
+            os.remove(stale)
+
     # --- pin this task to its instrument + calibration -------------------
     cem.init_store()
     nWvl = len(cem.VIEW_BAND_WVLS)

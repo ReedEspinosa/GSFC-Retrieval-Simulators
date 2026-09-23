@@ -6,17 +6,21 @@
 #SBATCH -o errsim.%A-%a.out
 #SBATCH -e errsim.%A-%a.err
 #SBATCH --account=s3324
-#SBATCH --array=0-49%50
+#SBATCH --array=0-249%84
 # =============================================================================
 # One err_sim task per array index: ONE instrument (one pool entry per wavelength
 # channel) with ONE calibration event, over the FULL 526-pixel geometry.
 #
-#   array range  0-49   -- 50 instruments.  The 1000-entry pool supports up to 250
-#                          tasks (1000/4 bands); widen to 0-249 once this smoke
-#                          configuration is confirmed.  run_task.py refuses to wrap
-#                          around rather than silently reusing instruments.
-#   %50               -- at most 50 tasks resident at once, so this array is a single
-#                          wave of 50 nodes.
+#   array range  0-249  -- the FULL instrument pool.  The calibration HDF5 holds 1000
+#                          instruments and each task consumes 4 (one per band), so 250
+#                          tasks is the exact maximum; task 249 takes 996-999.  Going
+#                          further needs a larger calibration run -- run_task.py
+#                          refuses rather than silently reusing instruments.
+#   %84               -- cap on tasks resident at once, NOT a reservation: SLURM simply
+#                          runs as many as it can schedule, so a higher cap can only
+#                          shorten the campaign, never lengthen it.  84 makes 250 tasks
+#                          drain in 3 passes.  Lower it to be a quieter neighbour on a
+#                          busy cluster; raise it toward 250 to finish in one.
 #
 # Every task uses IDENTICAL scenes (paired design), so the spread across tasks is
 # attributable to calibration alone.  Instrument/calibration indices, the initial
@@ -41,9 +45,15 @@
 #     526 px, chunk = ceil(526/126) = 5 px -> 106 chunks, all resident in one wave
 #     ~8.0 CPU-hours -> ~8 min wall (vs ~22 min if we had stayed at 40 cores)
 #     -> ~12 min with slack, i.e. a 10x margin inside the 2 h limit.
-# Whole array: 50 tasks, all resident at once = one wave, ~12 min of node time,
-# ~400 CPU-hours, 26,300 retrievals.  Same instrument count as the 2026-09-23 run but
-# 17.5x the pixels each, so the per-task bias standard error falls by sqrt(526/30)=4.2x.
+# Whole array: 250 tasks at 84 resident = 250 x ~7 min / 84 ~= 21 min, or ~36 min at
+# the conservative 12 min/task.  ~2000 CPU-hours, 131,500 retrievals, ~1.5 GB of
+# pickles.  Tasks are NOT wave-synchronised -- SLURM backfills each slot as it frees --
+# so the elapsed time is total-work/concurrency rather than passes x slowest-task.
+#
+# Statistics this buys: 5x the instruments of the 2026-09-23 run and 17.5x the pixels
+# each, so the per-task AOD bias standard error falls by sqrt(526/30) = 4.2x, from
+# ~0.008 to ~0.0019 -- below the ~0.003 calibration signal, which is the first time
+# the instrument-to-instrument trend should be resolvable at all.
 #
 # Queue wait is NOT charged against --time (the last run pended 55 min), so the 2 h
 # limit applies only to the running task.
