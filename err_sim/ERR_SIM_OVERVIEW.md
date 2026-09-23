@@ -71,12 +71,19 @@ arch block, suffix-selected, so `'harperrsim' in 'harperrsimmc'` doesn't double-
 Return contract (same as all addError models): `np.r_[I, Q, U]`, length `3*Nang`,
 ascending measurement-type order.
 
-> **The `radianceNoiseFun` gate (important).** `pixel.populateFromRslt()` only calls an
-> error model when the `radianceNoiseFun` **argument** is supplied; it never consults the
-> `measVals[n]['errorModel']` that `returnPixel` bound. Calling `runSim()` without it
-> silently inverts the **noise-free** forward truth. `run_experiment.py` therefore recovers
-> the bound partial with `errorModelOf(pix)` and passes it as `radianceNoiseFun` — see the
-> docstring there. `mc_test.py` is unaffected (it calls `errorModel` directly).
+> **The `radianceNoiseFun` gate — fixed upstream in `a14a872` (2026-09-17).** Between
+> interface-repo commits `cd80445` and `a14a872`, `pixel.populateFromRslt()` only called an
+> error model when the `radianceNoiseFun` **argument** was supplied; it never consulted the
+> `measVals[n]['errorModel']` that `returnPixel` bound, so `runSim()` without it silently
+> inverted the **noise-free** forward truth. We hit this independently and worked around it:
+> `run_experiment.py` recovers the bound partial with `errorModelOf(pix)` and passes it as
+> `radianceNoiseFun`. **All err_sim results are therefore unaffected — noise was always
+> applied.** Upstream now falls back to the pixel's own model, making our override redundant
+> but exactly equivalent (task 0 rerun with `noiseFun=None` gave bit-identical AOD,
+> `max|Δ| = 0`); it is kept so this code still works against a pre-`a14a872` checkout.
+> `a14a872` also adds an assert that the model returns `N_msTyp × N_view` values — our
+> models return `3*Nang`, which satisfies it. `mc_test.py` was never affected (it calls
+> `errorModel` directly).
 
 ## 4. The three error paths (math)
 
@@ -342,11 +349,14 @@ geometry).
 - GRASP must be the **GCC 13** build — see `../../../GRASP_BUILD_NOTES.md`. GCC 15/16
   produce a binary that segfaults in the SOS RT path.
 
-**NumPy 2 shim (`np_compat.py`).** The read-only `GSFC-GRASP-Python-Interface`
-predates NumPy 2 and breaks on it twice: `np.trapz` was removed (9 call sites), and
-`miscFunctions.loguniform` passes a 1-element ndarray to `math.log`, which NumPy 2 no
-longer auto-converts. Both are patched from our side rather than editing the
-dependency. **Import `err_sim.np_compat` before anything that pulls in `runGRASP`** —
+**NumPy compatibility shim (`np_compat.py`).** Aliases whichever of
+`np.trapz`/`np.trapezoid` the installed NumPy lacks, and fixes
+`miscFunctions.loguniform` passing a 1-element ndarray to `math.log` (NumPy 2 no
+longer auto-converts). Both are patched from our side rather than editing the
+dependency. Since the interface repo's py3.12 update (`bcb2d1d`) migrated its 9
+`np.trapz` call sites to `np.trapezoid`, **both** repos now use the NumPy 2 spelling —
+so the shim's NumPy 1.x direction is what carries the cluster (GEOSpyD ships NumPy
+1.x) and must not be dropped. The `loguniform` patch is still needed on NumPy 2. **Import `err_sim.np_compat` before anything that pulls in `runGRASP`** —
 `run_experiment.py`, `mc_test.py`, `summarize_paths.py` and `plot_path_comparison.py`
 all do.
 
@@ -519,7 +529,7 @@ than silently dropping them.
 - `run_overnight.sh` — unattended all-paths campaign; see 8c.
 - `summarize_paths.py` — one readable three-path report, scored on common scenes.
 - `plot_path_comparison.py` — overlay scatter, one colour per path.
-- `np_compat.py` — NumPy 2 shims for the read-only interface repo; import first.
+- `np_compat.py` — NumPy 1.x/2.x shims for the read-only interface repo; import first.
 - `run_task.py` — ONE instrument + ONE calibration; the body of a SLURM array job.
 - `slurm_task_array.sh` — sbatch template (array 0-249).
 - `collect_tasks.py` — gather per-task results into one tidy row-per-task CSV.

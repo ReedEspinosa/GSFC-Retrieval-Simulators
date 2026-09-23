@@ -145,27 +145,34 @@ In `simulateRetrieval.runSim()` (line ~107) the loop over pixels does:
 ```python
 nowPix.populateFromRslt(self.rsltFwd[i], radianceNoiseFun=radianceNoiseFun, …)
 ```
-Inside `pixel.populateFromRslt()` (`runGRASP.py` ~1249) the truth is perturbed —
-**but only if a `radianceNoiseFun` was passed to `runSim`**:
+Inside `pixel.populateFromRslt()` (`runGRASP.py` ~1249) the truth is perturbed if the
+pixel has an error model — either its own, or one overridden by `radianceNoiseFun`:
 ```python
-if radianceNoiseFun:                     # <-- the ARGUMENT, not the stored model
+if radianceNoiseFun and isPolarimeter:   # optional override (polarimeter only)
     msDct['errorModel'] = radianceNoiseFun
-    noisyMeas = msDct['errorModel'](l, rslt, verbose=…)
+if msDct['errorModel'] is not None:      # the pixel's own model is honored
+    noisyMeas = np.asarray(msDct['errorModel'](l, rslt, verbose=…))
+    assert len(noisyMeas) == len(valid_mask)   # N_msTyp x N_view
 else:
     noisyMeas = <clean forward truth>    # no noise at all
 ```
 
-> ⚠️ **The `errModel` bound by `returnPixel`/`addMeas` is never consulted here.** The
-> branch tests the `radianceNoiseFun` argument only. Calling `runSim()` without it
-> silently inverts the **noise-free** truth — the instrument's error model is loaded,
-> bound, and never called. This is true for every commit in the current
-> `GSFC-GRASP-Python-Interface` history, so Option B below (§4) does **not** work on its
-> own: you must also pass the bound model through as `radianceNoiseFun`, e.g.
-> ```python
-> simA.runSim(..., radianceNoiseFun=nowPix.measVals[0]['errorModel'])
-> ```
-> See `err_sim/run_experiment.py::errorModelOf()` for the version that asserts every
-> wavelength shares one model first.
+> ⚠️ **Historical hazard, fixed upstream in `a14a872` (2026-09-17).** Between
+> `cd80445` (June 2025) and `a14a872`, this branch tested the `radianceNoiseFun`
+> **argument** rather than the stored model, so the `errModel` bound by
+> `returnPixel`/`addMeas` was silently ignored and `runSim()` without an explicit
+> `radianceNoiseFun` inverted the **noise-free** truth. Option B below (§4) did not
+> work on its own during that window.
+>
+> Our `err_sim` code predates the upstream fix and works around it by passing the
+> bound model back in explicitly (`err_sim/run_experiment.py::errorModelOf()`, which
+> also asserts every wavelength shares one model). **That override is now redundant
+> but is deliberately kept**: it is exactly equivalent under the fixed dependency —
+> verified by running task 0 with and without it, giving bit-identical retrieved AOD
+> (`max|Δ| = 0`) — and it keeps `err_sim` correct if the interface repo is ever
+> checked out at a pre-`a14a872` commit.
+>
+> If you are on a checkout at or after `a14a872`, plain Option B is sufficient.
 
 This happens **once per noise realization**. `Nsims` in the run scripts controls
 how many independent noisy draws (and therefore retrievals) are performed per

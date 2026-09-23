@@ -251,18 +251,26 @@ def make_geoms():
 def errorModelOf(pix):
     """Return the error model bound to ``pix``, for passing as runSim(radianceNoiseFun=...).
 
-    WHY THIS IS NEEDED.  returnPixel() binds functools.partial(addError, errStr) into
-    every measVals[n]['errorModel'], but runGRASP.pixel.populateFromRslt() only ever
-    calls an error model when the ``radianceNoiseFun`` ARGUMENT is supplied:
+    WHY THIS EXISTS.  returnPixel() binds functools.partial(addError, errStr) into
+    every measVals[n]['errorModel'], but between interface-repo commits cd80445 (Jun
+    2025) and a14a872 (Sep 2026) runGRASP.pixel.populateFromRslt() only ever called an
+    error model when the ``radianceNoiseFun`` ARGUMENT was supplied:
 
         if radianceNoiseFun:  ... = msDct['errorModel'](l, rslt, verbose=verbose)
         else:                 ... = clean forward truth
 
-    It never consults the already-stored measVals[n]['errorModel'].  So calling
-    runSim() without radianceNoiseFun silently inverts the NOISE-FREE forward truth
-    and err_sim/customErrModel.py is never invoked.  Passing the bound partial back in
-    here restores the intended behaviour without editing the read-only
+    It never consulted the already-stored measVals[n]['errorModel'], so runSim()
+    without radianceNoiseFun silently inverted the NOISE-FREE forward truth and
+    err_sim/customErrModel.py was never invoked.  Passing the bound partial back in
+    here restored the intended behaviour without editing the read-only
     GSFC-GRASP-Python-Interface repo.
+
+    STILL CORRECT AFTER a14a872, which fixed this upstream by falling back to the
+    pixel's own errorModel.  The override is now redundant rather than wrong: it
+    assigns the same bound model that the pixel already carries, and the model is
+    applied exactly once.  Verified by rerunning task 0 with noiseFun=None under the
+    fixed dependency -- retrieved AOD was bit-identical (max|diff| = 0).  Kept so this
+    code also works against a pre-a14a872 checkout of the interface repo.
 
     Safe for this experiment because every wavelength of 'harperrsim[mc]' shares one
     errStr; the assert below catches any future arch where that stops being true.

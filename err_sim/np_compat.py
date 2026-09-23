@@ -7,25 +7,31 @@ Patched here (see apply()):
   2. miscFunctions.loguniform passes a 1-element ndarray to math.log
 
 THE TRAPEZOID SPLIT.  NumPy 2.0 renamed ``np.trapz`` to ``np.trapezoid`` and removed
-the old name.  The two repos in play were written against different NumPy majors and
-use DIFFERENT spellings, so on any single NumPy version one of them breaks:
+the old name.  The two repos in play were written against different NumPy majors:
 
-    GSFC-GRASP-Python-Interface  uses np.trapz      (runGRASP.py, miscFunctions.py,
-                                                     mieFunctions.py -- 9 call sites)
     GSFC-Retrieval-Simulators    uses np.trapezoid  (simulateRetrieval.py,
                                                      MADCAP_functions.py,
                                                      readOSSEnetCDF.py, ...)
+    GSFC-GRASP-Python-Interface  used np.trapz until its py3.12 update (bcb2d1d,
+                                 merged 2026-09), which migrated all 9 call sites in
+                                 runGRASP.py / miscFunctions.py / mieFunctions.py /
+                                 polarVectorPlot.py to np.trapezoid.
 
-  * On NumPy >= 2 the interface repo dies while PARSING GRASP's output, after the
-    forward calculation has already succeeded:
+  * On NumPy >= 2 a PRE-bcb2d1d interface repo dies while PARSING GRASP's output,
+    after the forward calculation has already succeeded:
         AttributeError: module 'numpy' has no attribute 'trapz'
   * On NumPy < 2 the simulator repo dies in simulateRetrieval._addReffMode:
         AttributeError: module 'numpy' has no attribute 'trapezoid'
 
 Both were observed for real -- the first on a NumPy 2.5 laptop, the second on a
-cluster whose GEOSpyD stack ships NumPy 1.x.  The interface repo is a read-only
-dependency (see ../ALTERING_THE_MEASUREMENT_ERROR_MODEL.md), so rather than editing
-either, alias whichever name is absent.  They are the same function and are
+cluster whose GEOSpyD stack ships NumPy 1.x.
+
+Now that BOTH repos spell it ``np.trapezoid``, the NumPy 2 direction of this shim is
+dead weight on an up-to-date checkout, but the NumPy 1.x direction became MORE
+load-bearing: on the cluster there is no longer any ``trapz`` call site to fall back
+on, so every integration in both repos depends on the alias.  Keep both directions --
+the interface repo is a read-only dependency (see
+../ALTERING_THE_MEASUREMENT_ERROR_MODEL.md) that may be checked out at any commit.  They are the same function and are
 signature-compatible for every call site here (all use the ``f(y, x)`` form).
 
 Import this BEFORE anything that pulls in runGRASP or simulateRetrieval::
