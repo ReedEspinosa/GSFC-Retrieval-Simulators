@@ -24,3 +24,7 @@ Examples/job/
 Examples/logs/*.err
 Examples/logs/*.out
 simulationQuickLook*.html
+
+# stray working files
+debug.log
+run_bulk.md

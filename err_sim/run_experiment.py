@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 # 'harperrsimbck' (Path 3, control: inject exactly the BCK YAML's assumed noise)
 # Override without editing this file:  ERRSIM_INSTRUMENT=harperrsimbck python err_sim/run_experiment.py
 INSTRUMENT = os.environ.get('ERRSIM_INSTRUMENT', 'harperrsim')
-CONCASE    = 'marineVariable'        # single 2-mode ocean scene (local GRASP caps modes at 2)
+CONCASE    = os.environ.get('ERRSIM_CONCASE', 'marineVariable')  # 2-mode scene (local GRASP caps modes at 2)
 TAU_FACTOR = 'randLogNrm0.2'         # 'randLogNrm<medianAOD>'; sigma is hardcoded ln(2), so 95% of draws land in [median/4, median*4]
 
 # --- how many retrievals (total = NSIMS * N_PIX) ---
@@ -133,7 +133,29 @@ FWD_YAML = os.path.join(YML_DIR, 'settings_FWD_IQU_POLAR_1lambda.yml')
 # To restore the stock 3% assumption for every path, point BCK_YAML at
 # 'settings_BCK_POLAR_2modes.yml'. Note that runs made before this change had Paths 1/2
 # at 3% and Path 3 at 1%, so they are NOT comparable with runs made after it.
-BCK_YAML = os.path.join(YML_DIR, 'settings_BCK_POLAR_2modes_errsim_I1pct.yml')
+#
+# ERRSIM_BCK_YAML selects the file (bare name resolved against YML_DIR, or a full path):
+#   settings_BCK_POLAR_2modes_errsim_I1pct.yml  default; a-priori box tuned for MARINE
+#   settings_BCK_POLAR_2modes_errsim_smoke.yml  same noise, a-priori box widened so the
+#                                               smoke truth is REPRESENTABLE -- see below
+#
+# Why a separate file for smoke.  The smoke canonical case sits on top of the marine
+# box, so the retrieval cannot return the right answer for roughly half the scenes:
+#   k fine       truth 0.0100 vs max 0.01   -> 49% of truth ABOVE the cap
+#   rv coarse    truth 0.664  vs min 0.65   -> 46% of truth BELOW the floor
+#   sigma coarse truth 0.451  vs min 0.32   ->  8% below
+#   sigma fine   truth 0.401  vs min 0.25   ->  3% below
+# Measured over 6000 'smokeVariable' draws. That is a bound artifact, not a retrieval
+# error, and it swamps the calibration signal we are trying to measure (the 2026-09
+# campaign saw |bias|/spread of 10-37 on exactly these parameters). The smoke file
+# widens k max 0.01->0.05, rv coarse min 0.65->0.35, sigma coarse 0.32->0.20 and sigma
+# fine 0.25->0.15, taking every parameter under 1% out-of-range while keeping the fine
+# and coarse modes separated (only 0.02% of fine rv draws exceed the new coarse floor).
+BCK_YAML = os.environ.get('ERRSIM_BCK_YAML', 'settings_BCK_POLAR_2modes_errsim_I1pct.yml')
+if not os.path.isabs(BCK_YAML):
+    BCK_YAML = os.path.join(YML_DIR, BCK_YAML)
+if not os.path.isfile(BCK_YAML):
+    raise FileNotFoundError('ERRSIM_BCK_YAML does not exist: %s' % BCK_YAML)
 cem.BCK_YAML_PATH = BCK_YAML          # Path 3 injects exactly what every path assumes
 SAVE_PKL = os.path.join(_HERE, 'experiment_%s.pkl' % INSTRUMENT)
 

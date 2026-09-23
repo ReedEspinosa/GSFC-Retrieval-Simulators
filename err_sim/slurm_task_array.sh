@@ -1,35 +1,56 @@
 #!/usr/local/bin/bash
 #SBATCH --job-name=errsimTask
 #SBATCH --nodes=1
+#SBATCH --exclusive
 #SBATCH --time=02:00:00
 #SBATCH -o errsim.%A-%a.out
 #SBATCH -e errsim.%A-%a.err
 #SBATCH --account=s3324
-#SBATCH --cpus-per-task=10
-#SBATCH --array=0-10
+#SBATCH --array=0-249%50
 # =============================================================================
 # One err_sim task per array index: ONE instrument (one pool entry per wavelength
-# channel) with ONE calibration event, over the full geometry.
+# channel) with ONE calibration event, over the FULL 526-pixel geometry.
 #
 #   array range  0-249  -- a 1000-entry instrument pool supplies 1000/4 = 250 tasks.
 #                          Rerun the calibration sim with more instruments to go past
 #                          that; run_task.py refuses rather than wrapping around.
-#   %50               -- at most 50 tasks resident at once, so the array does not need
-#                          250 nodes; it drains in 5 waves.
-#   --cpus-per-task   -- run_experiment picks MAX_CPU up from SLURM_CPUS_PER_TASK, so
-#                          this single directive sets the parallelism.  graspDB runs
-#                          one single-threaded GRASP process per inversion chunk, so
-#                          cores == concurrent chunks.  At 526 pixels and 40 cores the
-#                          chunk size is ceil(526/40)=14 (under MAX_T=25, itself under
-#                          the build's _KITIME=30), giving 38 chunks -- one wave.
+#   %50               -- at most 50 tasks resident at once, so the array needs 50
+#                          nodes rather than 250; it drains in 5 waves.
 #
 # Every task uses IDENTICAL scenes (paired design), so the spread across tasks is
-# attributable to calibration alone.  Instrument/calibration indices and the
-# measurement-noise stream all derive from the array index, so any task replays
-# exactly.
+# attributable to calibration alone.  Instrument/calibration indices, the initial
+# guess and the measurement-noise stream all derive from the array index, so any task
+# replays exactly.
 #
-# Submit:   sbatch err_sim/slurm_task_array.sh
+# -----------------------------------------------------------------------------
+# SIZING -- measured, not guessed.  From the 51-task 2026-09-23 run (log/*.out):
+#
+#   * 63.7 CPU-s per pixel (forward + inversion) for the marine scene, spread only
+#     +-9% across tasks (1743-2102 CPU-s for 30 pixels).  A local A/B put the smoke
+#     scene at 0.65x that, i.e. ~42 CPU-s/px; we plan with 55 for margin.
+#   * That run requested --cpus-per-task=40 and was ALLOCATED 126 -- these nodes are
+#     handed out whole -- so 86 cores sat idle and whole-job CPU utilisation was
+#     10.3%.  Hence --exclusive plus the core autodetect below.
+#   * Memory is driven by CONCURRENCY, not pixel count: 30 concurrent GRASP processes
+#     peaked at 42 GB, i.e. ~1.4 GB each.  At ~106 concurrent that is ~150 GB against
+#     the 488 GB the node reports.  Comfortable.
+#   * Walltime used was 2.5 min of the 2 h requested (2%).
+#
+# Expected cost of THIS configuration, per task:
+#     526 px, chunk = ceil(526/126) = 5 px -> 106 chunks, all resident in one wave
+#     ~8.0 CPU-hours -> ~8 min wall (vs ~22 min if we had stayed at 40 cores)
+#     -> ~12 min with slack, i.e. a 10x margin inside the 2 h limit.
+# Whole array: 250 tasks / 50 resident = 5 waves x ~12 min ~= 60 min of node time.
+#
+# Queue wait is NOT charged against --time (the last run pended 55 min), so the 2 h
+# limit applies only to the running task.
+# -----------------------------------------------------------------------------
+#
+# Submit:   mkdir -p log && sbatch -o log/errsim.%A-%a.out -e log/errsim.%A-%a.err \
+#               err_sim/slurm_task_array.sh
 # Collect:  python err_sim/collect_tasks.py err_sim/tasks tasks_summary.csv
+# Analyse:  python err_sim/analyze_tasks.py err_sim/tasks
+#           python err_sim/plot_bias_survey.py err_sim/tasks
 #
 # LOGS.  -o is stdout, -e is stderr; %A is the array's master job id and %a the task
 # index, so task 3 of job 12345 writes errsim.12345-3.out / .err.
@@ -39,25 +60,50 @@
 # deliberately written into that directory rather than a log/ subdirectory: SLURM
 # opens the output files BEFORE the job script runs, and it does NOT create missing
 # parent directories, so `mkdir -p log` inside the script is far too late -- the job
-# fails or the output is discarded before line 1 executes.
-#
-# To keep logs in a subdirectory, create it BEFORE submitting and pass it explicitly:
-#     mkdir -p log && sbatch -o log/errsim.%A-%a.out -e log/errsim.%A-%a.err \
-#         err_sim/slurm_task_array.sh
-# (or use an absolute path in the directives).
+# fails or the output is discarded before line 1 executes.  Create log/ before
+# submitting and pass it explicitly, as in the Submit line above.
 # =============================================================================
 
-# Descriptor headroom: graspDB holds one open pipe per forward pixel (see
-# run_overnight.sh) -- the default 256 dies partway through a 526-pixel run.
+# Descriptor headroom: graspDB holds one open pipe per forward pixel -- the default
+# 256 dies partway through a 526-pixel run.
 ulimit -n 8192 2>/dev/null || echo "WARNING: could not raise ulimit -n"
+
+# --- scene under test --------------------------------------------------------
+# SMOKE OVER OCEAN.  Polarimetric signal is strongest for smoke, which is why this
+# campaign uses it rather than the marine default.
+#
+# 'smokeVariable' IS an ocean case: canonicalCaseMap sets
+#     landPrct = 100 if ('vegetation' or 'desert') in caseStr else 0
+# so smoke defaults to ocean and only the literal tokens 'Desert'/'Vegetation' make
+# it land.  BEWARE: a 'Land' suffix is NOT tested anywhere -- 'smokeLand...' silently
+# produces an OCEAN scene.  Write 'smokeDesert'/'smokeVegetation' if you ever want land.
+# 'Variable' adds 1-sigma 20% scatter to rv, sigma, height, n and k per pixel.
+export ERRSIM_CONCASE="${ERRSIM_CONCASE:-smokeVariable}"
+
+# Retrieval settings whose a-priori box can actually REPRESENT the smoke truth.  With
+# the marine box, 49% of fine-mode k truth lay above the 0.01 cap and 46% of coarse rv
+# below the 0.65 floor, so the retrieval was pinned and could not respond to
+# calibration error at all.  See the header of this file's companion YAML.
+export ERRSIM_BCK_YAML="${ERRSIM_BCK_YAML:-settings_BCK_POLAR_2modes_errsim_smoke.yml}"
+
+# Path 2 (Monte Carlo) is the path that carries calibration bias.
+export ERRSIM_INSTRUMENT="${ERRSIM_INSTRUMENT:-harperrsimmc}"
+
+# --- parallelism -------------------------------------------------------------
+# run_experiment resolves MAX_CPU as ERRSIM_MAXCPU -> SLURM_CPUS_PER_TASK -> 12.
+# Under --exclusive, SLURM_CPUS_PER_TASK is 1, so set it from the cores actually on
+# the node.  Leave a few for the parent python, HDF5 and the filesystem.
+NCORE="${SLURM_CPUS_ON_NODE:-$(nproc 2>/dev/null || echo 12)}"
+RESERVE=6
+ERRSIM_MAXCPU_AUTO=$(( NCORE > RESERVE + 4 ? NCORE - RESERVE : NCORE ))
+export ERRSIM_MAXCPU="${ERRSIM_MAXCPU:-$ERRSIM_MAXCPU_AUTO}"
 
 # --- concurrency hygiene -----------------------------------------------------
 # 1. Per-task TMPDIR.  Paired scenes require seeding the global numpy stream
 #    identically in every task, which also makes graspYAML generate IDENTICAL
 #    "unique" temp-YAML filenames across tasks.  Node-local, per-task TMPDIR keeps
 #    those names in separate directories so they cannot collide, and keeps GRASP's
-#    working dirs off the shared filesystem.  run_task.py sets this itself if unset;
-#    point it at real node-local scratch here.
+#    working dirs off the shared filesystem.
 export ERRSIM_TASK_TMPDIR="${SLURM_TMPDIR:-/tmp}/errsim_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}"
 mkdir -p "$ERRSIM_TASK_TMPDIR"
 
@@ -101,9 +147,20 @@ if [[ -z "$REPO" ]]; then
     exit 1
 fi
 cd "$REPO" || exit 1
-echo "repo: $REPO"
 
-# second arg omitted -> every valid geometry pixel
+# Echo the resolved configuration.  The 2026-09-23 run could not be identified after
+# the fact because none of this was recorded; run_task.py now also writes it into
+# each task's provenance JSON.
+echo "repo:       $REPO"
+echo "scene:      $ERRSIM_CONCASE   (smoke over OCEAN; 'Land' suffixes are inert)"
+echo "bck yaml:   $ERRSIM_BCK_YAML"
+echo "instrument: $ERRSIM_INSTRUMENT"
+echo "cores:      $ERRSIM_MAXCPU of $NCORE on node"
+echo "pixels:     ${ERRSIM_NPIX:-all (526)}"
+
+# No second argument -> every valid geometry pixel (526).  Do NOT pass a count here:
+# a positional value pins the run to that many pixels, and the previous campaign
+# silently retrieved 30 per task because the default had not been made explicit.
 "$PYTHON" -u err_sim/run_task.py "${SLURM_ARRAY_TASK_ID}"
 rc=$?
 

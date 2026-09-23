@@ -174,8 +174,16 @@ def main():
 
     # run_experiment holds the scene/geometry/GRASP configuration; import it with the
     # pixel count already decided so its module-level CONFIG resolves correctly.
+    # No explicit count -> EVERY valid geometry pixel, which is what a campaign task
+    # is for.  This must be set here: run_experiment's own default is 30 (sized for a
+    # laptop smoke test), and leaving ERRSIM_NPIX unset silently inherited it -- the
+    # 2026-09-23 cluster run asked for the full geometry and retrieved 30 pixels per
+    # task instead of 526.  An ERRSIM_NPIX already in the environment still wins, so a
+    # smoke test can shrink the run without editing anything.
     if nPixArg is not None:
         os.environ['ERRSIM_NPIX'] = str(nPixArg)
+    elif not os.environ.get('ERRSIM_NPIX'):
+        os.environ['ERRSIM_NPIX'] = 'all'
     os.environ['ERRSIM_INSTRUMENT'] = INSTRUMENT
     import importlib.util
     spec = importlib.util.spec_from_file_location(
@@ -203,7 +211,16 @@ def main():
                 cal_h5=os.path.basename(cem.CAL_MATRIX_H5_PATH),
                 cov_csv=os.path.basename(cem.COV_MATRIX_PATH),
                 noise_seed=noiseSeed,
-                noise_seed_mode=NOISE_SEED_MODE)
+                noise_seed_mode=NOISE_SEED_MODE,
+                # Scene identity. Recorded because it is NOT otherwise recoverable from
+                # the pickle: the 2026-09 campaign could not be told apart from a marine
+                # run after the fact, and 'smokeLand...' is a silent ocean case anyway
+                # (canonicalCaseMap tests only 'desert'/'vegetation' for land).
+                concase=rx.CONCASE,
+                tau_factor=rx.TAU_FACTOR,
+                bck_yaml=os.path.basename(rx.BCK_YAML),
+                fwd_yaml=os.path.basename(rx.FWD_YAML),
+                guess_seed_mode=GUESS_SEED_MODE)
     prov['tmpdir'] = tempfile.gettempdir()
     print('task %d: instruments %s, calibration %d'
           % (taskIdx, prov['instrument_idx'], prov['cal_idx']))
