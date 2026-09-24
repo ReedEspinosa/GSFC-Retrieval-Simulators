@@ -50,10 +50,13 @@
 # pickles.  Tasks are NOT wave-synchronised -- SLURM backfills each slot as it frees --
 # so the elapsed time is total-work/concurrency rather than passes x slowest-task.
 #
-# Statistics this buys: 5x the instruments of the 2026-09-23 run and 17.5x the pixels
-# each, so the per-task AOD bias standard error falls by sqrt(526/30) = 4.2x, from
-# ~0.008 to ~0.0019 -- below the ~0.003 calibration signal, which is the first time
-# the instrument-to-instrument trend should be resolvable at all.
+# This branch runs the SAME Path 2 error model on the SAME scenes as the I,Q,U
+# campaign, changing only the fitted quantity (I and DoLP rather than I, Q/I, U/I), so
+# the two are comparable instrument by instrument.  A 30-pixel local test put the DoLP
+# scheme at 2.7x its own control versus 1.4x for I,Q,U -- i.e. roughly 5.7x more
+# sensitive to real calibration error, with only +21% attributable to the information
+# lost by discarding U.  This campaign is the 526-pixel, 250-instrument version of
+# that test.
 #
 # Queue wait is NOT charged against --time (the last run pended 55 min), so the 2 h
 # limit applies only to the running task.
@@ -61,9 +64,11 @@
 #
 # Submit:   mkdir -p log && sbatch -o log/errsim.%A-%a.out -e log/errsim.%A-%a.err \
 #               err_sim/slurm_task_array.sh
-# Collect:  python err_sim/collect_tasks.py err_sim/tasks tasks_summary.csv
-# Analyse:  python err_sim/analyze_tasks.py err_sim/tasks
-#           python err_sim/plot_bias_survey.py err_sim/tasks
+# Collect:  python err_sim/collect_tasks.py err_sim/tasks_dolp tasks_dolp_summary.csv
+# Analyse:  python err_sim/analyze_tasks.py err_sim/tasks_dolp
+#           python err_sim/plot_bias_survey.py err_sim/tasks_dolp
+#           (this branch writes to tasks_dolp/, NOT tasks/, so the I,Q,U campaign's
+#            250 pickles are not overwritten -- see ERRSIM_TASK_OUT below)
 #
 # LOGS.  -o is stdout, -e is stderr; %A is the array's master job id and %a the task
 # index, so task 3 of job 12345 writes errsim.12345-3.out / .err.
@@ -124,10 +129,20 @@ export ERRSIM_TAU_FACTOR="${ERRSIM_TAU_FACTOR:-randLogNrm0.3}"
 # the marine box, 49% of fine-mode k truth lay above the 0.01 cap and 46% of coarse rv
 # below the 0.65 floor, so the retrieval was pinned and could not respond to
 # calibration error at all.  See the header of this file's companion YAML.
-export ERRSIM_BCK_YAML="${ERRSIM_BCK_YAML:-settings_BCK_POLAR_2modes_errsim_smoke.yml}"
+#
+# THIS BRANCH (dolp_retrieval) DEFAULTS TO THE I+DoLP SCHEME.  The _dolp file sets
+# measurement_fitting.polarization=degree_of_polarization (iPOBS=4), so GRASP fits I
+# and DoLP=sqrt(Q^2+U^2)/I instead of I, Q/I, U/I.  Nothing else changes: the SDATA
+# still carries measurement types 41/42/43 and the error model is untouched, so this
+# run is directly comparable to the I,Q,U campaign pixel for pixel.
+#
+# To run the ORIGINAL I,Q,U scheme from this same checkout, override at submit time:
+#     sbatch --export=ALL,ERRSIM_BCK_YAML=settings_BCK_POLAR_2modes_errsim_smoke.yml ...
+export ERRSIM_BCK_YAML="${ERRSIM_BCK_YAML:-settings_BCK_POLAR_2modes_errsim_smoke_dolp.yml}"
 
 # Path 2 (Monte Carlo) is the path that carries calibration bias.
 export ERRSIM_INSTRUMENT="${ERRSIM_INSTRUMENT:-harperrsimmc}"
+
 
 # --- parallelism -------------------------------------------------------------
 # run_experiment resolves MAX_CPU as ERRSIM_MAXCPU -> SLURM_CPUS_PER_TASK -> 12.
@@ -188,6 +203,15 @@ if [[ -z "$REPO" ]]; then
 fi
 cd "$REPO" || exit 1
 
+# Separate output directory per scheme.  Task filenames are built from (index,
+# architecture) ONLY -- and this DoLP run uses the same harperrsimmc architecture as
+# the I,Q,U campaign -- so writing to the default err_sim/tasks would land on exactly
+# the same 250 filenames and destroy that campaign's results (run_task.py deletes any
+# stale file before starting, so they would not even survive as a mixed directory).
+# Set AFTER the cd, so it resolves against the repo rather than the submission dir.
+export ERRSIM_TASK_OUT="${ERRSIM_TASK_OUT:-$REPO/err_sim/tasks_dolp}"
+mkdir -p "$ERRSIM_TASK_OUT"
+
 # Echo the resolved configuration.  The 2026-09-23 run could not be identified after
 # the fact because none of this was recorded; run_task.py now also writes it into
 # each task's provenance JSON.
@@ -198,6 +222,7 @@ echo "bck yaml:   $ERRSIM_BCK_YAML"
 echo "instrument: $ERRSIM_INSTRUMENT"
 echo "cores:      $ERRSIM_MAXCPU of $NCORE on node"
 echo "pixels:     ${ERRSIM_NPIX:-all (526)}"
+echo "output:     $ERRSIM_TASK_OUT"
 
 # No second argument -> every valid geometry pixel (526).  Do NOT pass a count here:
 # a positional value pins the run to that many pixels, and the previous campaign
