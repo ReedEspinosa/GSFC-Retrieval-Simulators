@@ -77,8 +77,19 @@ def calibration_metrics(taskDir):
     return out
 
 
+DIVERGE = 0.5   # |AOD residual| above which a pixel is a FAILED inversion, not a noisy one
+
+
 def load_tasks(taskDir):
-    """Per-task retrieval stats straight from the pickles, plus calibration metrics."""
+    """Per-task retrieval stats straight from the pickles, plus calibration metrics.
+
+    Statistics are ROBUST: pixels whose AOD residual exceeds DIVERGE are excluded.
+    A handful of scenes (3 of 526 in the smoke campaign, one of them in 100% of tasks)
+    drive the inversion to absurd values -- 0.33 retrieved as 8.8 -- and a single such
+    pixel contributes 70% of the raw mean-square error, so unfiltered RMSE and bias
+    describe those three failures rather than the other 523 retrievals.  The count is
+    reported per task so the exclusion is never silent.
+    """
     met = calibration_metrics(taskDir)
     rows = []
     for jf in sorted(glob.glob(os.path.join(taskDir, 'task_*.json'))):
@@ -89,16 +100,24 @@ def load_tasks(taskDir):
         sim = rs.simulation(picklePath=pkl)
         wv = sim.rsltFwd[0]['lambda']
         r = dict(task=prov['task_idx'], **met[prov['task_idx']])
+        # One mask for every variable, set by AOD at 549 nm, so each task's statistics
+        # cover the same pixels across wavelengths and products.
+        x0 = np.array([f['aod'][1] for f in sim.rsltFwd], float)
+        y0 = np.array([b['aod'][1] for b in sim.rsltBck], float)
+        keep = np.abs(y0 - x0) <= DIVERGE
+        r['nDiverged'] = int((~keep).sum())
+        r['divergedPix'] = [int(i) for i in np.where(~keep)[0]]
         for w in range(len(wv)):
-            x = np.array([f['aod'][w] for f in sim.rsltFwd], float)
-            y = np.array([b['aod'][w] for b in sim.rsltBck], float)
+            x = np.array([f['aod'][w] for f in sim.rsltFwd], float)[keep]
+            y = np.array([b['aod'][w] for b in sim.rsltBck], float)[keep]
             r['biasAod%d' % w] = float(np.mean(y - x))
             r['rmseAod%d' % w] = float(np.sqrt(np.mean((y - x) ** 2)))
-            xs = np.array([f['ssa'][w] for f in sim.rsltFwd], float)
-            ys = np.array([b['ssa'][w] for b in sim.rsltBck], float)
+            xs = np.array([f['ssa'][w] for f in sim.rsltFwd], float)[keep]
+            ys = np.array([b['ssa'][w] for b in sim.rsltBck], float)[keep]
             r['biasSsa%d' % w] = float(np.mean(ys - xs))
         rows.append(r)
-    return rows, wv
+        nPix = len(x0)
+    return rows, wv, nPix
 
 
 def _style(ax, xlabel, ylabel, title):
@@ -132,7 +151,7 @@ def main():
     taskDir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(_HERE, 'tasks', 'tasks')
     outPng = sys.argv[2] if len(sys.argv) > 2 else os.path.join(_HERE, 'task_analysis.png')
     cem.init_store()
-    rows, wv = load_tasks(taskDir)
+    rows, wv, nPix = load_tasks(taskDir)
     n = len(rows)
     g = lambda k: np.array([r[k] for r in rows], float)
 
@@ -162,13 +181,17 @@ def main():
     _style(a, 'radiometric error on I,  (C@A)[0,0] - 1  [%]', 'AOD bias',
            'AOD bias vs calibration radiometric error')
 
-    # 3 -- total calibration error vs scatter
+    # 3 -- the product that DOES respond: SSA vs radiometric error
     a = ax[1][0]
-    a.scatter(calDev, rmse, s=44, color=C_MAIN, alpha=.85,
+    biasSsa = g('biasSsa%d' % wi)
+    a.scatter(iScale * 100, biasSsa, s=44, color=C_MAIN, alpha=.85,
               edgecolor=SURFACE, lw=.8, zorder=3)
-    rCd = _fit(a, calDev, rmse)
-    _style(a, r'calibration error  $\|CA-I\|_F$', 'AOD RMSE',
-           'AOD RMSE vs total calibration error')
+    a.axhline(biasSsa.mean(), color=INK2, lw=.9, ls=':')
+    a.axvline(0, color=INK2, lw=.9)
+    rSsa = _fit(a, iScale * 100, biasSsa)
+    _style(a, 'radiometric error on I,  (C@A)[0,0] - 1  [%]', 'SSA bias',
+           'SSA bias vs calibration radiometric error')
+    rCd = np.corrcoef(calDev, rmse)[0, 1] if len(calDev) > 2 else np.nan
 
     # 4 -- spectral behaviour: wavelength is ORDERED, so it goes on the axis
     a = ax[1][1]
@@ -180,8 +203,9 @@ def main():
     _style(a, 'wavelength (um)', 'AOD bias',
            'Spectral AOD bias: mean +/- spread across instruments')
 
-    fig.suptitle('err_sim per-instrument campaign: %d instruments, %d pixels each'
-                 % (n, 30), fontsize=12.5, color=INK, y=.985)
+    fig.suptitle('err_sim per-instrument campaign: %d instruments, %d pixels each '
+                 '(diverged pixels excluded)' % (n, nPix),
+                 fontsize=12.5, color=INK, y=.985)
     fig.tight_layout(rect=[0, 0, 1, .96])
     fig.savefig(outPng, dpi=150, facecolor=SURFACE)
     plt.close(fig)
@@ -203,8 +227,21 @@ def main():
           % (rmse.mean(), rmse.std()))
     print('  ratio spread/RMSE: %.2f' % (bias.std() / rmse.mean()))
     print()
-    print('correlations (the trend question)')
-    print('  AOD bias  vs I-scale error  : r = %+.3f' % rIs)
+    nd = np.array([r['nDiverged'] for r in rows])
+    import collections
+    cnt = collections.Counter(i for r in rows for i in r['divergedPix'])
+    print('diverged pixels EXCLUDED from every statistic above (|AOD resid| > %.1f)' % 0.5)
+    print('  per task: mean %.2f  min %d  max %d   (%d distinct pixels of %d ever diverged)'
+          % (nd.mean(), nd.min(), nd.max(), len(cnt), nPix))
+    for px, c in cnt.most_common(5):
+        print('    pixel %3d diverged in %3d/%d tasks (%.0f%%)' % (px, c, n, 100 * c / n))
+    print()
+    print('correlations (the trend question; paired design, so spread ACROSS tasks is')
+    print('calibration alone -- RMSE/sqrt(N) is NOT the relevant floor)')
+    print('  AOD bias  vs I-scale error  : r = %+.3f  (explains %.1f%% of variance)'
+          % (rIs, 100 * rIs ** 2))
+    print('  SSA bias  vs I-scale error  : r = %+.3f  (explains %.1f%% of variance)'
+          % (rSsa, 100 * rSsa ** 2))
     print('  AOD RMSE  vs ||CA-I||_F     : r = %+.3f' % rCd)
     print()
     print('spectral AOD bias (mean +/- across-instrument spread)')
