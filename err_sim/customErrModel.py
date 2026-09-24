@@ -604,8 +604,11 @@ def customErrModel(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None,
     elif errId == 3:
         return _errsim_grasp_assumed(measNm, l, rsltFwd, concase=concase, orbit=orbit,
                                      lidErrDir=lidErrDir, verbose=verbose)
+    elif errId == 4:
+        return _errsim_analytic_dolp(measNm, l, rsltFwd, concase=concase, orbit=orbit,
+                                     lidErrDir=lidErrDir, verbose=verbose)
     else:
-        raise ValueError("Unknown err_sim id in measNm=%r (expected errsim01, errsim02 or errsim03)"
+        raise ValueError("Unknown err_sim id in measNm=%r (expected errsim01..errsim04)"
                          % measNm)
 
 
@@ -871,6 +874,117 @@ def _dolp_sigma(stokes_vec, covStokes):
 
 
 # =============================================================================
+# Path 4 -- analytic propagation into I and DoLP (the I+DoLP retrieval scheme)
+# =============================================================================
+# DOLP_COV_MODE selects which part of the Stokes covariance feeds the DoLP delta
+# method.  This is the knob the I+DoLP experiment exists to exercise:
+#
+#   'full'     sigma_DoLP = sqrt(g^T Cov g)          -- the honest propagation
+#   'diagonal' sigma_DoLP = sqrt(g^T diag(Cov) g)    -- what you get if the Q/U/I
+#              covariance is assumed uncorrelated
+#
+# DoLP mixes all three Stokes components through one gradient, so its variance picks
+# up the OFF-DIAGONAL covariance terms with weight 2*g_i*g_j -- terms that cancel out
+# of the per-component sigmas used by Paths 1-3.  Running the same scenes under both
+# modes isolates exactly how much error a diagonal-covariance assumption hides.
+DOLP_COV_MODE = os.environ.get('ERRSIM_DOLP_COV', 'full').lower()
+# Physical bounds on the perturbed DoLP.  A Gaussian draw can leave [0,1); GRASP forms
+# DoLP as sqrt(Q^2+U^2)/I, which is non-negative by construction, so a negative draw
+# would silently come back as its absolute value and quietly reduce the injected error.
+# The floor is a small POSITIVE number rather than 0: at exactly zero the polarization
+# angle is undefined and both Q and U vanish, which is a degenerate measurement to hand
+# the inversion.
+#
+# CAVEAT: clipping truncates the negative tail, so it biases DoLP upward wherever
+# sigma_DoLP is comparable to DoLP itself -- which happens on this scene, where
+# sigma_DoLP ~ 0.02 against DoLP ~ 0.05 at the nadir views.  The fraction of views
+# clipped is recorded in LAST_ANALYTIC_SIGMAS['clip_fraction']; if it is not small,
+# the injected DoLP error is no longer the Gaussian that sigma_DoLP describes.
+DOLP_CLIP = (1e-4, 0.999)
+
+
+def _errsim_analytic_dolp(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None,
+                          verbose=False):
+    """Path 4: propagate both error sources into sigma_I and sigma_DoLP, then perturb
+    I and DoLP rather than the three Stokes components independently.
+
+    Same covariance as Path 1 -- measurement noise through C=inv(A) plus the
+    calibration-matrix term -- but reduced to the two quantities an I+DoLP retrieval
+    actually fits:
+
+        sigma_I    = sqrt(Cov[0,0])
+        sigma_DoLP = sqrt(g^T Cov g),  g = d(DoLP)/d(I,Q,U)      [see _dolp_sigma]
+
+    The perturbed pair is then written back as Stokes components, because SDATA still
+    carries I, Q and U (see architectureMap: GRASP forms DoLP itself under iPOBS=4).
+    The polarization ANGLE chi = atan2(U,Q) is preserved exactly -- only the DoLP
+    magnitude is perturbed -- so GRASP recovers precisely the drawn DoLP:
+
+        I'    = I + N(0, sigma_I)
+        DoLP' = clip(DoLP + N(0, sigma_DoLP))
+        Q'    = DoLP' * I' * cos(chi)      ->  sqrt(Q'^2+U'^2)/I' == DoLP'
+        U'    = DoLP' * I' * sin(chi)
+
+    Why this path is interesting: DoLP is the product whose error propagation depends
+    most on the off-diagonal Stokes covariance, so it is where an analytic
+    diagonal-covariance treatment should diverge most from the Monte Carlo (Path 2).
+    Compare Path 4 against Path 2 under the SAME I+DoLP settings file to measure that
+    gap, and against itself with ERRSIM_DOLP_COV=diagonal to attribute it.
+    """
+    stokes, geom = _extract_truth_and_geometry(l, rsltFwd)
+    charMat = _load_characteristic_matrix(geom, l, verbose=verbose)
+    invA    = np.linalg.inv(charMat)
+    covC    = _load_calibration_covariance(geom, l, verbose=verbose)
+    covC4   = covC.reshape(N_STOKES, N_SENSOR, N_STOKES, N_SENSOR)
+    Nang    = stokes.shape[1]
+    binFac  = bin_factor(Nang)
+    kScale  = counts_scale(geom)
+
+    if DOLP_COV_MODE not in ('full', 'diagonal'):
+        raise ValueError("ERRSIM_DOLP_COV must be 'full' or 'diagonal', got %r" % DOLP_COV_MODE)
+
+    sigmaI, sigmaDoLP = np.zeros(Nang), np.zeros(Nang)
+    outI, outQ, outU = (np.zeros(Nang) for _ in range(3))
+    nClipped = 0
+    for n in range(Nang):
+        s = stokes[:, n]
+        sensorInt = charMat @ s
+        sigI = sensor_sigma(sensorInt, binFac[n], kScale)
+        covTot = invA @ np.diag(sigI**2) @ invA.T \
+            + np.einsum('a,b,iajb->ij', sensorInt, sensorInt, covC4)
+        covUse = np.diag(np.diag(covTot)) if DOLP_COV_MODE == 'diagonal' else covTot
+        sigmaI[n] = np.sqrt(max(covTot[0, 0], 0.0))
+        sd = _dolp_sigma(s, covUse)
+        sigmaDoLP[n] = 0.0 if not np.isfinite(sd) else sd
+
+        I, Q, U = s
+        P = np.hypot(Q, U)
+        chi = np.arctan2(U, Q)                       # polarization angle, preserved
+        dolp = P / I if I > 0 else 0.0
+        Inew = I + np.random.normal() * sigmaI[n]
+        dolpRaw = dolp + np.random.normal() * sigmaDoLP[n]
+        dolpNew = np.clip(dolpRaw, *DOLP_CLIP)
+        nClipped += int(dolpNew != dolpRaw)
+        Pnew = dolpNew * Inew
+        outI[n], outQ[n], outU[n] = Inew, Pnew * np.cos(chi), Pnew * np.sin(chi)
+
+    global LAST_ANALYTIC_SIGMAS
+    LAST_ANALYTIC_SIGMAS = dict(sigma_stokes=np.vstack([sigmaI, np.full(Nang, np.nan),
+                                                        np.full(Nang, np.nan)]),
+                                sigma_dolp=sigmaDoLP, wavelength=geom['bandWvl'],
+                                instrument_idx=_CURRENT_INSTRUMENT_IDX,
+                                bin_factor=binFac, counts_scale=kScale,
+                                dolp_cov_mode=DOLP_COV_MODE,
+                                clip_fraction=nClipped / float(Nang))
+    if verbose:
+        print('[err_sim] analytic-dolp: l=%d wvl=%.3f Nang=%d instr=%s cov=%s | '
+              'mean sigma_I=%.3g sigma_DoLP=%.3g clipped=%.0f%%'
+              % (l, geom['bandWvl'], Nang, _CURRENT_INSTRUMENT_IDX, DOLP_COV_MODE,
+                 sigmaI.mean(), sigmaDoLP.mean(), 100.0 * nClipped / Nang))
+    return np.r_[outI, outQ, outU]
+
+
+# =============================================================================
 # Path 2 -- Monte Carlo sensor-space noise + imperfect calibration
 # =============================================================================
 def _errsim_montecarlo(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDir=None, verbose=False):
@@ -1012,10 +1126,16 @@ def _errsim_grasp_assumed(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDi
     trueI, trueQ, trueU = stokes[0], stokes[1], stokes[2]
     noise = read_bck_noise()
 
-    missing = [k for k in ('I', 'Q', 'U') if k not in noise]
+    # Under degree_of_polarization the Q slot carries DoLP and U is never read, so a
+    # DoLP settings file legitimately has no U entry.
+    polMode = read_bck_polarization()
+    needed = ('I', 'Q') if 'degree_of_polarization' in polMode else ('I', 'Q', 'U')
+    missing = [k for k in needed if k not in noise]
     if missing:
         raise KeyError("BCK YAML noise block has no entry for %s (found %s); Path 3 needs "
-                       "I, Q and U." % (', '.join(missing), ', '.join(sorted(noise))))
+                       "%s for polarization=%s."
+                       % (', '.join(missing), ', '.join(sorted(noise)),
+                          ' and '.join(needed), polMode))
 
     def _perturb(truth, key):
         errType, sd = noise[key]
@@ -1034,7 +1154,6 @@ def _errsim_grasp_assumed(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDi
     # I ~ 0.085), which is both physically wrong and far larger than the inversion expects.
     # SDATA still carries Q and U (meas types 42/43), so we perturb q,u and multiply back
     # through the NOISED intensity, making the fitted q',u' carry exactly the drawn error.
-    polMode = read_bck_polarization()
     if 'relative_polarization' in polMode:
         with np.errstate(divide='ignore', invalid='ignore'):
             q, u = trueQ / trueI, trueU / trueI
@@ -1042,17 +1161,31 @@ def _errsim_grasp_assumed(measNm, l, rsltFwd, concase=None, orbit=None, lidErrDi
         outU = _perturb(u, 'U') * outI
     elif 'absolute_polarization' in polMode:
         outQ, outU = _perturb(trueQ, 'Q'), _perturb(trueU, 'U')
+    elif 'degree_of_polarization' in polMode:
+        # iPOBS=4: GRASP fits I and DoLP=sqrt(Q^2+U^2)/I, filling the Q SLOT with DoLP
+        # and skipping U (mod_sdata.f90:1082).  The noise block's 'Q' sigma is therefore
+        # the DoLP sigma; any 'U' entry is inert and is not consulted.  Perturb the DoLP
+        # magnitude, keep the polarization angle, and write back through the noised I so
+        # GRASP recovers exactly the drawn DoLP.
+        with np.errstate(divide='ignore', invalid='ignore'):
+            dolp = np.where(trueI > 0, np.hypot(trueQ, trueU) / trueI, 0.0)
+        chi = np.arctan2(trueU, trueQ)
+        dolpNew = np.clip(_perturb(dolp, 'Q'), *DOLP_CLIP)
+        pNew = dolpNew * outI
+        outQ, outU = pNew * np.cos(chi), pNew * np.sin(chi)
     else:
         raise NotImplementedError(
             "Path 3 does not yet handle measurement_fitting.polarization=%r (only "
-            "absolute_polarization_components and relative_polarization_components). "
-            "The noise-block sigmas would apply to a different fitted quantity." % polMode)
+            "absolute_polarization_components, relative_polarization_components and "
+            "degree_of_polarization). The noise-block sigmas would apply to a "
+            "different fitted quantity." % polMode)
 
     if verbose:
         print('[err_sim] grasp-assumed: l=%d wvl=%.3f Nang=%d pol=%s | %s'
               % (l, geom['bandWvl'], stokes.shape[1], polMode,
-                 '  '.join('%s:%s %.4g' % (k, noise[k][0][:3], noise[k][1])
-                           for k in ('I', 'Q', 'U'))))
+                 '  '.join('%s:%s %.4g' % ('DoLP' if (k == 'Q' and 'degree_of' in polMode)
+                                           else k, noise[k][0][:3], noise[k][1])
+                           for k in needed)))
     return np.r_[outI, outQ, outU]
 
 

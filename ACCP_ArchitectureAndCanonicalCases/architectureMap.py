@@ -68,10 +68,21 @@ def returnPixel(archName, sza=30, landPrct=100, relPhi=0, vza=None, nowPix=None,
         else:
             phi = np.tile(phiConverter(vzaIn=vza, vzaOut=vzaNow, phiIn=relPhi, phiOutNdim=1), len(msTyp))
         # links to the 'errsim' branch in addError() below, which calls err_sim/customErrModel.py
-        # 'harperrsim'    -> errsim01 = analytical error propagation (Path 1)
-        # 'harperrsimmc'  -> errsim02 = Monte Carlo sensor-space noise (Path 2)
-        # 'harperrsimbck' -> errsim03 = the BCK YAML's own assumed noise (Path 3, control)
-        if 'harperrsimmc' in archName.lower():
+        # 'harperrsim'     -> errsim01 = analytical error propagation (Path 1)
+        # 'harperrsimmc'   -> errsim02 = Monte Carlo sensor-space noise (Path 2)
+        # 'harperrsimbck'  -> errsim03 = the BCK YAML's own assumed noise (Path 3, control)
+        # 'harperrsimdolp' -> errsim04 = analytic propagation into I and DoLP (Path 4)
+        #
+        # NOTE on the I+DoLP scheme: msTyp stays [41,42,43] here.  GRASP forms DoLP
+        # ITSELF when the settings file asks for measurement_fitting.polarization=
+        # degree_of_polarization (iPOBS=4): mod_sdata.f90 fills the Q slot with
+        # sqrt(Q^2+U^2)/I and skips U entirely.  So the SDATA still carries I, Q and U
+        # -- U is required, since it is needed to form P -- and switching between the
+        # I,Q,U and I,DoLP schemes is purely a settings-file change.  Do NOT try to
+        # emit meas type 44/46 here; the interface's msTypMap has no route to them.
+        if 'harperrsimdolp' in archName.lower():
+            errStr = 'errsim04'
+        elif 'harperrsimmc' in archName.lower():
             errStr = 'errsim02'
         elif 'harperrsimbck' in archName.lower():
             errStr = 'errsim03'

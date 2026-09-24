@@ -596,6 +596,66 @@ MISSING rather than stale, and `collect_tasks.py` warns if the directory mixes c
 (it compares `concase`, `tau_factor`, `bck_yaml`, `cal_h5`, seed modes and pixel count
 across tasks).
 
+### 8f. The I+DoLP retrieval scheme (branch `dolp_retrieval`)
+
+Fits **I and DoLP** instead of I, Q/I, U/I. Motivation: DoLP mixes all three Stokes
+components through one gradient, so its error propagation is the one most exposed to
+the OFF-DIAGONAL Stokes covariance — and therefore where an idealised error model
+should diverge most from reality.
+
+**No SDATA or architecture change is needed.** GRASP does the conversion itself: with
+`measurement_fitting: {polarization: degree_of_polarization}` (iPOBS=4) it fills the Q
+slot with `sqrt(Q^2+U^2)/I` and **skips U entirely** (`mod_sdata.f90:1082`). SDATA still
+carries meas types 41/42/43 — U is required, since it is needed to form P. Switching
+schemes is therefore purely a settings-file swap:
+
+| | I,Q,U | I,DoLP |
+|---|---|---|
+| YAML | `..._errsim_smoke.yml` | `..._errsim_smoke_dolp.yml` |
+| `polarization:` | `relative_polarization_components` | `degree_of_polarization` |
+| output keys | `meas_I`, `meas_QoI`, `meas_UoI` | `meas_I`, `meas_PoI` |
+
+> **Keep the inert U noise entry.** GRASP never reads it under iPOBS>=4, but SDATA still
+> carries type 43 and `runGRASP.adjustNoiseTypes` refuses to run if any SDATA type lacks
+> a noise entry (`ValueError: Measurement types [43] are not covered...`). Deleting it
+> breaks the run before GRASP is invoked.
+
+**Path 4 — `harperrsimdolp` / `errsim04`** (`_errsim_analytic_dolp`). Same covariance as
+Path 1, reduced to the two quantities actually fitted: `sigma_I = sqrt(Cov[0,0])` and
+`sigma_DoLP = sqrt(g' Cov g)`. It perturbs I and the DoLP magnitude, preserves the
+polarization angle `chi = atan2(U,Q)`, and writes back through the noised I so GRASP
+recovers exactly the drawn DoLP. Paths 2 and 3 work unchanged under the DoLP YAML
+(Path 3's control was extended to interpret its Q sigma as the DoLP sigma).
+
+`ERRSIM_DOLP_COV=full|diagonal` switches `sigma_DoLP` between the honest covariance and
+a diagonal-only assumption. Measured over 6 pixels x 10 views, the off-diagonal terms
+**reduce** `sigma_DoLP` by 6-13% (ratio 0.94 at 441 nm falling to 0.87 at 873 nm), so a
+diagonal assumption OVER-states DoLP error — a modest effect, and opposite in sign to
+the naive expectation.
+
+**First result (30 pixels, identical scenes and seeds, AOD RMSE at 549 nm):**
+
+| scheme | control (Path 3) | real calibration (Path 2) | calibration adds |
+|---|---|---|---|
+| I,Q,U | 0.0253 | 0.0345 | +0.0092 (1.4x) |
+| I,DoLP | 0.0306 | 0.0827 | **+0.0521 (2.7x)** |
+
+Information loss alone costs only +21% (0.0253 -> 0.0306 between the two controls), but
+the DoLP scheme is **5.7x more sensitive to real calibration error** (+0.0521 vs
++0.0092). AOD bias goes +0.0112 -> +0.0327. That is the hypothesis confirmed: DoLP is
+where realistic calibration error bites hardest.
+
+Note Path 4 (+0.0103 bias) sits far below Path 2 (+0.0327) despite injecting a similar
+DoLP scatter (0.0129 vs 0.0141 rms) — the analytic path is zero-mean by construction and
+carries none of the SYSTEMATIC calibration bias, which is what the gap measures.
+
+**Caveat — clipping.** A Gaussian DoLP draw can go negative where `sigma_DoLP ~ DoLP`,
+which happens at the low-DoLP nadir views. Draws are clipped to `[1e-4, 0.999]` (a
+positive floor: at exactly 0 the polarization angle is undefined). The clipped fraction
+is recorded in `LAST_ANALYTIC_SIGMAS['clip_fraction']` and printed when verbose; it
+reached 7-12% at 669/873 nm on this scene, where the injected error is no longer the
+Gaussian `sigma_DoLP` describes.
+
 ## 9. Open items / future work
 
 - **Solar spectrum -> Thuillier.** `SOLAR_SPECTRUM='table'` + `SOLAR_TABLE_PATH` is
