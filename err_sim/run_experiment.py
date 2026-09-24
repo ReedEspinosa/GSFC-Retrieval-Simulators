@@ -84,6 +84,12 @@ MAX_T      = int(os.environ.get('ERRSIM_MAXT', 25))   # < _KITIME=30, with headr
 # 10 vza values per pixel (6.9-68.1 deg), which map 1:1 onto the arch's 10 angles,
 # so honouring them is possible -- it would require teaching the harperrsim block in
 # architectureMap.py to accept vza, and would change the scattering-angle sampling.
+# ERRSIM_IGNORE_VZA=1 discards the nc4's per-pixel view angles and lets the
+# architecture use its own hardcoded ones.  Needed to COMPARE against architectures
+# that ignore vza by construction (harp02/polar07 and friends use a fixed
+# -57..57 fan, while harperrsim honours the orbit's 22..68).  Without this the
+# comparison would conflate the error model with the view-angle sampling.
+IGNORE_VZA  = os.environ.get('ERRSIM_IGNORE_VZA', '0').lower() not in ('0', '', 'false', 'no')
 GEOM_SOURCE = 'nc4'                  # 'nc4' | 'random'
 GEOM_NC4    = None                   # resolved below; ERRSIM_GEOM_NC4 overrides
 GEOM_NC4_NAME = 'MAAP-GeometrySubSample_AOS_1330_LTAN_442km_alt_2023Aug12.nc4'
@@ -392,7 +398,8 @@ def run_retrieval():
         print('err_sim store: n_instr=%d, cov diag[0]=%.3e'
               % (cem.get_store().n_instr, np.diag(cem.get_store().cov_C)[0]))
 
-    nowPix = [returnPixel(INSTRUMENT, sza=sza, relPhi=phi, vza=vza, concase=CONCASE)
+    nowPix = [returnPixel(INSTRUMENT, sza=sza, relPhi=phi,
+                          vza=(None if IGNORE_VZA else vza), concase=CONCASE)
               for sza, phi, vza in make_geoms()]   # vza=None -> hardcoded HARP2 angles
     print('Instrument=%s  case=%s  pixels=%d  Nsims=%d  -> %d retrievals  (Nλ=%d)'
           % (INSTRUMENT, CONCASE, len(nowPix), NSIMS, NSIMS * len(nowPix), nowPix[0].nwl))

@@ -248,7 +248,10 @@ def main():
 
     # --- build the (identical in every task) scenes, then run ------------
     geoms = rx.make_geoms()
-    nowPix = [rx.returnPixel(INSTRUMENT, sza=sza, relPhi=phi, vza=vza, concase=rx.CONCASE)
+    if rx.IGNORE_VZA:
+        print('         vza:    IGNORED -- architecture uses its own hardcoded angles')
+    nowPix = [rx.returnPixel(INSTRUMENT, sza=sza, relPhi=phi,
+                             vza=(None if rx.IGNORE_VZA else vza), concase=rx.CONCASE)
               for sza, phi, vza in geoms]
     np.random.seed(rx.TAU_SEED)          # paired scenes: same AOD draw in every task
     fwdYAML = [rx.setupConCaseYAML(rx.CONCASE, npix, rx.FWD_YAML,
