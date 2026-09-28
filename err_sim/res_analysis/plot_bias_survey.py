@@ -28,6 +28,11 @@ import matplotlib.pyplot as plt
 _HERE = os.path.dirname(os.path.abspath(__file__))   # err_sim/res_analysis
 _ERRSIM = os.path.dirname(_HERE)                     # err_sim
 _REPO = os.path.dirname(_ERRSIM)                     # GSFC-Retrieval-Simulators
+
+# Every analysis script writes its figures here, so campaign PNGs collect in one place
+# instead of scattering next to whichever task directory was passed in.
+_PNGDIR = os.path.join(_HERE, 'pngs')
+os.makedirs(_PNGDIR, exist_ok=True)
 sys.path.insert(0, _REPO)
 sys.path.insert(0, os.path.join(os.path.dirname(_REPO), 'GSFC-GRASP-Python-Interface'))
 import err_sim.np_compat  # noqa: F401,E402
@@ -86,7 +91,7 @@ def _style(ax, xl, yl, ti):
 
 def main():
     taskDir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(_ERRSIM, 'tasks')
-    outPng = sys.argv[2] if len(sys.argv) > 2 else os.path.join(_ERRSIM, 'bias_survey.png')
+    outPng = sys.argv[2] if len(sys.argv) > 2 else os.path.join(_PNGDIR, 'bias_survey.png')
     # Bounds come from the YAML the tasks actually used, recorded in their provenance.
     import json
     metas = sorted(glob.glob(os.path.join(taskDir, 'task_*.json')))

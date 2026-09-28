@@ -29,6 +29,11 @@ import matplotlib.pyplot as plt
 _HERE = os.path.dirname(os.path.abspath(__file__))   # err_sim/res_analysis
 _ERRSIM = os.path.dirname(_HERE)                     # err_sim
 _REPO = os.path.dirname(_ERRSIM)                     # GSFC-Retrieval-Simulators
+
+# Every analysis script writes its figures here, so campaign PNGs collect in one place
+# instead of scattering next to whichever task directory was passed in.
+_PNGDIR = os.path.join(_HERE, 'pngs')
+os.makedirs(_PNGDIR, exist_ok=True)
 sys.path.insert(0, _REPO)
 sys.path.insert(0, os.path.join(os.path.dirname(_REPO), 'GSFC-GRASP-Python-Interface'))
 import err_sim.np_compat  # noqa: F401,E402  -- restores np.trapz for NumPy>=2
@@ -151,7 +156,7 @@ def main():
                  % (wvl, nCommon), fontsize=13, color=TEXT_PRIMARY, y=0.985)
     fig.tight_layout(rect=[0, 0.055, 1, 0.96])
 
-    out = os.path.join(_HERE, 'path_comparison_%03dnm.png' % int(wvl * 1000))
+    out = os.path.join(_PNGDIR, 'path_comparison_%03dnm.png' % int(wvl * 1000))
     fig.savefig(out, dpi=150, facecolor=SURFACE)
     plt.close(fig)
     print('Saved -> %s' % out)
