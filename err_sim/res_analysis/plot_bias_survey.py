@@ -25,8 +25,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_REPO = os.path.dirname(_HERE)
+_HERE = os.path.dirname(os.path.abspath(__file__))   # err_sim/res_analysis
+_ERRSIM = os.path.dirname(_HERE)                     # err_sim
+_REPO = os.path.dirname(_ERRSIM)                     # GSFC-Retrieval-Simulators
 sys.path.insert(0, _REPO)
 sys.path.insert(0, os.path.join(os.path.dirname(_REPO), 'GSFC-GRASP-Python-Interface'))
 import err_sim.np_compat  # noqa: F401,E402
@@ -84,8 +85,8 @@ def _style(ax, xl, yl, ti):
 
 
 def main():
-    taskDir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(_HERE, 'tasks', 'tasks')
-    outPng = sys.argv[2] if len(sys.argv) > 2 else os.path.join(_HERE, 'bias_survey.png')
+    taskDir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(_ERRSIM, 'tasks')
+    outPng = sys.argv[2] if len(sys.argv) > 2 else os.path.join(_ERRSIM, 'bias_survey.png')
     # Bounds come from the YAML the tasks actually used, recorded in their provenance.
     import json
     metas = sorted(glob.glob(os.path.join(taskDir, 'task_*.json')))

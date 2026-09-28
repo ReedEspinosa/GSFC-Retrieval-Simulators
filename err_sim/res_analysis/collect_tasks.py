@@ -26,8 +26,9 @@ import sys
 
 import numpy as np
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_REPO = os.path.dirname(_HERE)
+_HERE = os.path.dirname(os.path.abspath(__file__))   # err_sim/res_analysis
+_ERRSIM = os.path.dirname(_HERE)                     # err_sim
+_REPO = os.path.dirname(_ERRSIM)                     # GSFC-Retrieval-Simulators
 sys.path.insert(0, _REPO)
 sys.path.insert(0, os.path.join(os.path.dirname(_REPO), 'GSFC-GRASP-Python-Interface'))
 import err_sim.np_compat  # noqa: F401,E402
@@ -58,7 +59,7 @@ def _stat(fw, bk, fn):
 
 
 def main():
-    taskDir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(_HERE, 'tasks')
+    taskDir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(_ERRSIM, 'tasks')
     outCsv = sys.argv[2] if len(sys.argv) > 2 else os.path.join(taskDir, 'task_summary.csv')
 
     metas = sorted(glob.glob(os.path.join(taskDir, 'task_*.json')))
