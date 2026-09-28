@@ -16,7 +16,8 @@ Run it on either campaign:
 
 Usage:
     one2one.py [taskDir] [outPng] [--wvl 0.549] [--all-bands] [--scale log|linear]
-               [--rel-tol 0.10] [--abs-tol 0.03] [--bins 130] [--include-diverged]
+               [--rel-tol 0.10] [--abs-tol 0.03] [--bins 130] [--cbar percent|count]
+               [--include-diverged]
 
 --all-bands draws a 2x2 panel, one wavelength per panel, each with its own colormap
 keyed loosely to the band (blue / green / orange / purple for 441 / 549 / 669 / 873 nm).
@@ -33,6 +34,13 @@ Why the default is a LOG scale.  Campaign AOD is drawn lognormally
 (TAU_FACTOR='randLogNrm0.3', 95% of draws inside a factor of 4), so truth spans
 ~0.02 to ~2.7 with most of the mass below 0.5.  On linear axes the entire population
 crushes into the bottom-left corner.  Pass --scale linear for the untransformed view.
+
+THE COLOUR AXIS is logarithmic in both modes: bin occupancy spans ~4 decades (a few
+retrievals in the tails against >1000 in the dense core), so a linear norm would flatten
+everything outside the core into one near-empty shade.  --cbar percent (default) shows
+each bin as a SHARE of that panel's retrievals, which is comparable between panels and
+between campaigns; --cbar count shows raw occupancy, which is not, because the number of
+surviving retrievals differs once the divergence cut is applied.
 
 A note on the vertical structure.  The campaign is a PAIRED design: every task sees
 the same 526 scenes, so the truth axis carries only 526 distinct values with 250
@@ -77,6 +85,23 @@ DIVERGE = 0.5   # |retrieved - truth| above this is a failed inversion, not a no
 # against the near-white page background.
 BAND_CMAP = [(0.441, 'Blues'), (0.549, 'Greens'), (0.669, 'Oranges'), (0.873, 'Purples')]
 CMAP_FLOOR = 0.25      # drop the lightest quarter of each map
+
+
+_CBAR_LABEL = {'percent': 'share of retrievals per bin  [%]',
+               'count': 'retrievals per bin'}
+
+
+def _fmt_cbar(cb, mode):
+    """Readable decade labels.  Percent shares run from ~8e-4 % to a few %, which the
+    default LogFormatter renders as unhelpful mantissa-less ticks."""
+    from matplotlib.ticker import LogFormatterSciNotation, LogLocator, FuncFormatter
+    cb.ax.yaxis.set_major_locator(LogLocator(base=10))
+    if mode == 'percent':
+        cb.ax.yaxis.set_major_formatter(FuncFormatter(
+            lambda v, _: ('%g' % v) if v >= 0.01 else ('%.0e' % v).replace('e-0', 'e-')))
+    else:
+        cb.ax.yaxis.set_major_formatter(LogFormatterSciNotation(base=10))
+    cb.ax.yaxis.set_minor_locator(LogLocator(base=10, subs='auto', numticks=12))
 
 
 def _truncate(name, lo=CMAP_FLOOR, hi=1.0, n=256):
@@ -146,8 +171,22 @@ def panel(ax, x, y, a, cmap, showLegend=False):
         edges = np.linspace(lo, hi, a.bins + 1)
 
     H, xe, ye = np.histogram2d(x, y, bins=[edges, edges])
-    H = np.ma.masked_where(H == 0, H)        # empty bins stay background, not dark
-    pcm = ax.pcolormesh(xe, ye, H.T, cmap=cmap, norm=LogNorm(vmin=1, vmax=H.max()),
+    # The colour norm is LOGARITHMIC either way: bin occupancy spans ~4 decades (a
+    # handful of retrievals in the tails against >1000 in the dense core), so a linear
+    # norm would render everything but the core as the same near-empty shade.
+    #
+    # 'percent' rescales counts to a share of this panel's retrievals, which makes the
+    # colour comparable between panels and between campaigns -- a raw count depends on
+    # how many retrievals survived the divergence cut, so the same colour means
+    # different things in two panels.  vmin is the share of ONE retrieval, the smallest
+    # non-empty bin possible.
+    if a.cbar == 'percent':
+        H = 100.0 * H / float(x.size)
+        vmin = 100.0 / float(x.size)
+    else:
+        vmin = 1.0
+    H = np.ma.masked_where(H <= 0, H)        # empty bins stay background, not dark
+    pcm = ax.pcolormesh(xe, ye, H.T, cmap=cmap, norm=LogNorm(vmin=vmin, vmax=H.max()),
                         shading='flat', zorder=2)
 
     d = y - x
@@ -217,6 +256,9 @@ def main():
     ap.add_argument('--abs-tol', type=float, default=0.03,
                     help='additive term (default 0.03; 0 -> pure relative cone)')
     ap.add_argument('--bins', type=int, default=130)
+    ap.add_argument('--cbar', choices=('percent', 'count'), default='percent',
+                    help="colour by share of retrievals (default) or raw bin count; "
+                         "the norm is logarithmic either way")
     ap.add_argument('--include-diverged', action='store_true',
                     help='keep failed inversions (|retrieved-truth| > %.1f)' % DIVERGE)
     ap.add_argument('--title', default=None)
@@ -246,7 +288,9 @@ def main():
             ax.set_xlabel('true AOD', fontsize=9, color=INK2)
             ax.set_ylabel('retrieved AOD', fontsize=9, color=INK2)
             cb = fig.colorbar(pcm, ax=ax, pad=0.02, fraction=0.046)
+            cb.set_label(_CBAR_LABEL[a.cbar], fontsize=8, color=INK2)
             cb.ax.tick_params(labelsize=7, colors=INK2)
+            _fmt_cbar(cb, a.cbar)
             cb.outline.set_edgecolor(GRID)
             print('  %.3f um : within %.1f%%   bias %+.4f   RMSE %.4f   %d diverged'
                   % (lam[i], st['within'], st['bias'], st['rmse'], st['nDiv']))
@@ -262,8 +306,9 @@ def main():
         st['nTask'] = nTask
         annotate(ax, st)
         cb = fig.colorbar(pcm, ax=ax, pad=0.02)
-        cb.set_label('retrievals per bin', fontsize=9, color=INK2)
+        cb.set_label(_CBAR_LABEL[a.cbar], fontsize=9, color=INK2)
         cb.ax.tick_params(labelsize=8, colors=INK2)
+        _fmt_cbar(cb, a.cbar)
         cb.outline.set_edgecolor(GRID)
         ax.set_xlabel('true AOD at %.3f $\\mu$m' % lam[wi], fontsize=10, color=INK2)
         ax.set_ylabel('retrieved AOD at %.3f $\\mu$m' % lam[wi], fontsize=10, color=INK2)
