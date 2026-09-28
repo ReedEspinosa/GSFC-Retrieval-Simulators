@@ -69,6 +69,7 @@ SLOTS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#4a3aa7']
 # together on the x-axis.
 PARAMS = [
     ('aod',        'AOD',          'optical'),
+    ('angstrom',   r'$\AA$ngstrom', 'optical'),
     ('ssa',        'SSA',          'optical'),
     ('LidarRatio', 'lidar ratio',  'optical'),
     ('rv',         r'r$_v$',       'size'),
@@ -95,17 +96,44 @@ PARAMS = [
 # [0] is omitted too, and is worth a separate look: its truth is 1e-7 while the YAML
 # bounds it to [1e-9, 3e-9], i.e. the TRUTH SITS ABOVE THE A-PRIORI MAXIMUM and the
 # retrieval is pinned (it returns 1.9e-9 against a truth of 1e-7).
+# Each entry supplies `src` (the rslt key to load) and `fn(A, wi, lam)` reducing that
+# key's array to a flat per-pixel vector.  Two wavelengths are available to fn, so
+# spectral-ratio quantities like the Angstrom exponent fit here too.
 DERIVED = {
-    'windSpd': dict(src='wtrSurf', comp=2, label='wind speed',
-                    fn=lambda v: (2.0 * v - 0.003) / 0.00512),
+    # Cox-Munk slope variance -> wind speed.  Cox & Munk (1954): total slope variance
+    # = 0.003 + 0.00512*W, and canonicalCaseMap stores HALF of it (per component), so
+    # W = (2*sigma^2 - 0.003)/0.00512.  Converting back to m/s makes the relative error
+    # physically meaningful -- a percentage of a slope variance is not.
+    'windSpd': dict(src='wtrSurf', label='wind speed',
+                    fn=lambda A, wi, lam: (2.0 * A[2][wi] - 0.003) / 0.00512),
+    # Angstrom exponent from the SHORTEST and LONGEST bands, 0.441 and 0.873 um, which
+    # are close to the classic AERONET 440/870 pair.  Deliberately NOT a function of
+    # --wvl: AE is defined by a wavelength PAIR, so pinning it to the extremes keeps it
+    # comparable between runs and gives the longest lever arm.  AE is not a retrieved
+    # parameter -- it is diagnosed from retrieved AOD -- but it is the standard size
+    # proxy and is what GRASP-AOD itself uses to seed its initial guess, so it belongs
+    # beside the quantities it summarises.
+    'angstrom': dict(src='aod', label='Angstrom exp.',
+                     fn=lambda A, wi, lam: _angstrom(A, lam),
+                     # the band pair is only known once the pickles are read, so the
+                     # axis label is built at run time rather than hardcoded
+                     labelfn=lambda lam: r'$\AA$ngstrom' '\n' r'%d/%d nm'
+                                         % (round(lam[0] * 1000), round(lam[-1] * 1000))),
 }
 
 
-def _extract(var, T, R, wi, mode):
+def _angstrom(A, lam):
+    """-d ln(AOD) / d ln(lambda) between the first and last band."""
+    i0, i1 = 0, len(lam) - 1
+    with np.errstate(divide='ignore', invalid='ignore'):
+        return -np.log(A[i1] / A[i0]) / np.log(lam[i1] / lam[i0])
+
+
+def _extract(var, T, R, wi, mode, lam):
     """Reduce a variable's leading axes to a flat per-pixel pair."""
     if var in DERIVED:
-        d = DERIVED[var]
-        return d['fn'](T[d['comp']][wi]), d['fn'](R[d['comp']][wi])
+        fn = DERIVED[var]['fn']
+        return fn(T, wi, lam), fn(R, wi, lam)
     kind = VARS[var]['kind']
     if kind == 'spectral':
         return T[wi], R[wi]
@@ -122,14 +150,14 @@ def _extract(var, T, R, wi, mode):
     return T, R
 
 
-def per_task(var, T, R, keep, wi, mode, nTask):
+def per_task(var, T, R, keep, wi, mode, nTask, lam):
     """(bias%, rmse%) per task for one parameter, plus its raw-unit counterparts.
 
     T/R are (..., nPix*nTask).  Leading axes are reduced first -- wavelength by
     selection, mode by selection or summation -- then the pixel axis is split back into
     (nTask, nPix) so each task gets its own statistics.
     """
-    t, r = _extract(var, T, R, wi, mode)
+    t, r = _extract(var, T, R, wi, mode, lam)
 
     m = keep & np.isfinite(t) & np.isfinite(r)
     nPix = t.size // nTask
@@ -151,7 +179,7 @@ def per_task(var, T, R, keep, wi, mode, nTask):
         return 100 * bias / scale, 100 * rmse / scale, bias, rmse
 
 
-def pooled(var, T, R, keep, wi, mode):
+def pooled(var, T, R, keep, wi, mode, lam):
     """Per-PIXEL relative error (%) pooled over every task, plus mean bias and RMSE.
 
     This is the "typical retrieval" distribution: every retrieval from every
@@ -161,7 +189,7 @@ def pooled(var, T, R, keep, wi, mode):
     SINGLE such pixel can carry 90% of a task's mean-square error.  The median error on
     the same data is ~8%.
     """
-    t, r = _extract(var, T, R, wi, mode)
+    t, r = _extract(var, T, R, wi, mode, lam)
     m = keep & np.isfinite(t) & np.isfinite(r) & (t != 0)
     t, r = t[m], r[m]
     d = r - t
@@ -216,10 +244,11 @@ def main():
         res, pool = {}, {}
         for k in keys:
             T, R = data[DERIVED[k]['src'] if k in DERIVED else k]
-            res[k] = per_task(k, T, R, keep, wi, a.mode, nTask)
-            pool[k] = pooled(k, T, R, keep, wi, a.mode)
+            res[k] = per_task(k, T, R, keep, wi, a.mode, nTask, lam)
+            pool[k] = pooled(k, T, R, keep, wi, a.mode, lam)
         campaigns.append(dict(label=lbl, dir=d, nTask=nTask, res=res, pooled=pool,
-                              wvl=float(lam[wi]), nDiv=int((~keep).sum())))
+                              wvl=float(lam[wi]), lam=lam,
+                              nDiv=int((~keep).sum())))
         print('%-46s %d tasks, %d diverged pixels masked' % (d, nTask, int((~keep).sum())))
 
     nC = len(campaigns)
@@ -257,7 +286,10 @@ def main():
     _style(ax, 'retrieval error  [% of truth]')
 
     ax.set_xticks(xs)
-    ax.set_xticklabels([p[1] for p in PARAMS], fontsize=10.5, color=INK)
+    lam0 = campaigns[0]['lam']
+    labels = [DERIVED[k]['labelfn'](lam0) if (k in DERIVED and 'labelfn' in DERIVED[k])
+              else nm for k, nm, _ in PARAMS]
+    ax.set_xticklabels(labels, fontsize=10.5, color=INK)
     groups = [p[2] for p in PARAMS]
     for i in range(1, len(groups)):
         if groups[i] != groups[i - 1]:
