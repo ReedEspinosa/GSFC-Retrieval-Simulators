@@ -254,7 +254,7 @@ def main():
     nC = len(campaigns)
     width = 0.8 / nC
     xs = np.arange(len(PARAMS))
-    fig, ax = plt.subplots(figsize=(max(11.0, 1.3 * len(PARAMS) + 3), 7.2),
+    fig, ax = plt.subplots(figsize=(max(11.0, (1.0 + 0.2 * nC) * len(PARAMS) + 3), 7.4),
                            facecolor=SURFACE)
 
     for ci, c in enumerate(campaigns):
@@ -267,7 +267,9 @@ def main():
                                       edgecolor=SLOTS[ci % len(SLOTS)], lw=1.0),
                         whiskerprops=dict(color=SLOTS[ci % len(SLOTS)], lw=1.0),
                         capprops=dict(color=SLOTS[ci % len(SLOTS)], lw=1.0))
-        bp['boxes'][0].set_label(c['label'])
+        bp['boxes'][0].set_label('%s  (%d task%s)'
+                                 % (c['label'], c['nTask'],
+                                    '' if c['nTask'] == 1 else 's'))
         # mean bias across all calibrations -- the "typical" offset
         mb = [c['pooled'][k][1] for k in keys]
         ax.plot(xs + off, mb, marker='D', ms=5, ls='none', mfc='white',
@@ -300,9 +302,9 @@ def main():
                 ha='center', va='bottom', fontsize=9, color=INK2, style='italic')
 
     c0 = campaigns[0]
-    fig.suptitle('Typical retrieval error by parameter -- %s, %s mode, all %d calibrations '
+    fig.suptitle('Typical retrieval error by parameter -- %s, %s mode, every retrieval '
                  'pooled (box = IQR, whiskers %g-%gth pct, diamond = mean bias)'
-                 % ('%.3f $\\mu$m' % c0['wvl'], a.mode, c0['nTask'], *a.whis),
+                 % ('%.3f $\\mu$m' % c0['wvl'], a.mode, *a.whis),
                  fontsize=12, color=INK, y=.985)
     fig.tight_layout(rect=[0, 0, 1, .955])
 
